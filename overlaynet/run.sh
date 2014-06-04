@@ -12,6 +12,10 @@ elif [ $1  = 'g' ]; then
   ./exp_get
 elif [ $1  = 'p' ]; then
   ./exp_put
+elif [ $1  = 'cs' ]; then
+  ./chat_server 6000
+elif [ $1  = 'cc' ]; then
+  ./chat_client localhost 6000
 else
 	echo "Argument did not match !"
 fi
