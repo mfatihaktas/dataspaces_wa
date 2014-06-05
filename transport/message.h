@@ -1,8 +1,10 @@
 #ifndef _MESSAGE_H_
 #define _MESSAGE_H_
 
-#include <stdio>
+#include <iostream>
 #include <boost/asio.hpp>
+
+typedef unsigned char byte;
 
 class Message
 {
