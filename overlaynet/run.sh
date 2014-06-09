@@ -4,8 +4,7 @@ echo $1
 DSBIN_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa/dataspaces/dataspaces-1.3.0/install/bin
 
 if [ $1  = 'e' ]; then
-  make exp
-  ./exp
+  GLOG_logtostderr=1 ./exp
 elif [ $1  = 's' ]; then
   $DSBIN_DIR/./dataspaces_server -s 1 -c 2
 elif [ $1  = 'g' ]; then
