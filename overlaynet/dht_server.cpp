@@ -3,8 +3,8 @@
 
 #define HEADER_MSGSIZE_LENGTH 4
 
-DHTServer::DHTServer(char* host, int port, char** overlay_buffer_, 
-                     boost::function<void(void)> read_callback )
+DHTServer::DHTServer(char* host, int port, 
+                     read_callback_function read_callback )
 : io_service_(new boost::asio::io_service),
 	acceptor_(new boost::asio::ip::tcp::acceptor( *io_service_ )),
 	socket_(new boost::asio::ip::tcp::socket( *io_service_ )),
@@ -12,65 +12,77 @@ DHTServer::DHTServer(char* host, int port, char** overlay_buffer_,
 {
   this->host = host;
   this->port = port;
-  this->overlay_buffer_ = overlay_buffer_;
   //
   google::InitGoogleLogging("DHTServer");
   //
   _read_callback = read_callback;
-  //_read_callback();
+  //_read_callback('s', (char*)"aloalo");
   //
   LOG(INFO) << "constructed.";
 }
 
 DHTServer::~DHTServer()
 {
+  if (!stop_flag){
+    close();
+  }
   LOG(INFO) << "destructed.";
 }
 
 int DHTServer::close(){
+  stop_flag = 1;
+  //
   boost::system::error_code ec;
   socket_->shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
   socket_->close(ec);
   if (ec){
-    LOG(ERROR) << "ec=" << ec;
+    LOG(ERROR) << "close:: ec=" << ec;
     return 1;
   }
   io_service_->stop();
-  
+  //
+  for (int i = 0; i < handle_recv_thread_v.size(); i++){
+    handle_recv_thread_v[i]->join();
+  }
+  //
+  LOG(INFO) << "close:: closed.";
   return 0;
 }
 
-/*
-void DHTServer::handle_read_wrapper(const boost::system::error_code& error,
-                                    std::size_t bytes_recved)
+void DHTServer::handle_recv(char* msg)
 {
-  if (error){
-    LOG(ERROR) << "error=" << error;
-    return;
-  }
-  LOG(INFO) << "bytes_recved=" << bytes_recved;
-  _read_callback();
-  //
-  init_recv();
+  _read_callback('d', msg);
 }
-*/
 
 void DHTServer::init_recv()
 {
   while (!stop_flag){
-    char msgsize_buffer[HEADER_MSGSIZE_LENGTH];
-    boost::asio::read(*socket_, boost::asio::buffer( msgsize_buffer, HEADER_MSGSIZE_LENGTH ) );
+    boost::system::error_code ec;
+    char msgsize_buffer[HEADER_MSGSIZE_LENGTH+1];
+    try{
+      boost::asio::read(*socket_, boost::asio::buffer( msgsize_buffer, HEADER_MSGSIZE_LENGTH ) );
+    }
+    catch( boost::system::system_error& err)
+    {
+      LOG(ERROR) << "init_recv:: err=" << err.what();
+      LOG(INFO) << "init_recv:: client closed the conn.";
+      close();
+      return;
+    }
+    msgsize_buffer[HEADER_MSGSIZE_LENGTH] = '\0';
     std::string str(msgsize_buffer);
-    LOG(INFO) << "msgsize_buffer=" << msgsize_buffer;
+    LOG(INFO) << "init_recv:: msgsize_buffer=" << msgsize_buffer;
     int msgsize = boost::lexical_cast<int>(str);
-    LOG(INFO) << "msgsize=" << msgsize;
+    LOG(INFO) << "init_recv:: msgsize=" << msgsize;
     //
     char* msg = new char[msgsize];
     boost::asio::read(*socket_, boost::asio::buffer( msg, msgsize ) );
-    LOG(INFO) << "msg=" << msg;
+    LOG(INFO) << "init_recv:: msg=" << msg;
     //
-    *overlay_buffer_ = msg;
-  	_read_callback();
+    boost::shared_ptr< boost::thread > t_(
+      new boost::thread(&DHTServer::handle_recv, this, msg)
+    );
+    handle_recv_thread_v.push_back( t_ );
   }
 }
 
@@ -84,7 +96,7 @@ void DHTServer::init_listen()
 		  boost::lexical_cast< std::string >( port )
 	  );
 	  boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve( query );
-	  LOG(INFO) << "listening on " << endpoint;
+	  LOG(INFO) << "init_listen:: listening on " << endpoint;
 	  //
 	  acceptor_->open( endpoint.protocol() );
 	  acceptor_->set_option( boost::asio::ip::tcp::acceptor::reuse_address( false ) );
@@ -93,15 +105,15 @@ void DHTServer::init_listen()
 	  boost::system::error_code ec;
 	  acceptor_->accept( *socket_, ec );
     if (ec){
-      LOG(ERROR) << "ec=" << ec;
+      LOG(ERROR) << "init_listen:: ec=" << ec;
     }
-    LOG(INFO) << "got connection...";
+    LOG(INFO) << "init_listen:: got connection...";
     acceptor_->close();
     init_recv();
   }
   catch( std::exception & ex )
   {
-    LOG(ERROR) << "Exception=" << ex.what();
+    LOG(ERROR) << "init_listen:: Exception=" << ex.what();
   }
 }
 

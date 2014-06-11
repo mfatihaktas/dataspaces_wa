@@ -2,22 +2,28 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <boost/thread.hpp>
+
 #include "dht_server.h"
 
-char* data;
-
-void handle_read()
+void handle_read(char data_type, char* data)
 {
   std::cout << "handle_read; data=\n" << data << std::endl;
+  if (data_type == 'd'){ //dynamic
+    delete data;
+  }
 }
 
 int main(int argc, char **argv){
-  boost::function<void(void)> fp = boost::bind(handle_read);
-  DHTServer dhts( (char*)"localhost", 6000, &data, fp );
+  
+  boost::function<void(char, char*)> fp = boost::bind(handle_read, _1, _2);
+  DHTServer dhts( (char*)"localhost", 6000, fp );
   dhts.init_listen();
   
-  delete data;
-  dhts.close();
+  /*
+  boost::thread worker_thread(handle_read, 's', (char*)"hello");
+  worker_thread.join();
+  */
   //
   std::cout << "Enter\n";
   std::cin.ignore();
