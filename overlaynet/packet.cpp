@@ -61,3 +61,8 @@ char* Packet::get_data()
 {
   return data;
 }
+
+char Packet::get_header()
+{
+  return header;
+}

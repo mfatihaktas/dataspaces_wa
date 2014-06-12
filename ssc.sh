@@ -7,7 +7,7 @@ DIR=""
 
 if [ $1  = 'ssh' ]; then
   #ssh -A -t ${DELL_NAMES[$2]} hostname
-  ssh -A -t spring ssh ${DELL_NAMES[$2]}
+  ssh -A -t mfa51@spring.rutgers.edu ssh ${DELL_NAMES[$2]}
   #ssh -X ${DELL_NAMES[$2]} 'module load openmpi-x86_64'
 elif [ $1  = 'conf' ]; then
   module load openmpi-x86_64

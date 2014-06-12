@@ -17,6 +17,7 @@ class Packet{
     ~Packet();
     int get_packet_size();
     char* get_data();
+    char get_header();
     char* cast_to_chararr(size_t chararr_size, int number);
 };
 
