@@ -127,13 +127,7 @@ int main (int argc, char **argv)
   //char* ip = intf_to_ip((char*)"lo");
   //std::cout << "ip=" << ip << std::endl;
   
-  /*
-  char* lip = intf_to_ip(opt_map[(char*)"intf"]);
-  int lport = atoi(opt_map[(char*)"lport"]);
-  std::cout << "lip=" << lip << std::endl;
-  std::cout << "lport=" << lport << std::endl;
-  DHTNode dhtn(lip, lport);
-  */
+  
   DHTNode dhtn(intf_to_ip(opt_map[(char*)"intf"]), atoi(opt_map[(char*)"lport"]));
   
   //boost::function<void(char*)> fp = boost::bind(handle_read, _1);
