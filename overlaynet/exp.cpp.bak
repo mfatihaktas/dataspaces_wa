@@ -20,17 +20,31 @@
 #include <stdlib.h>
 #include <getopt.h>
 #include <map>
-//for exp
-#include <glog/logging.h>
-#include "dht_server.h"
-#include "packet.h"
-#include "dht_node.h"
+/*
+#include <boost/thread.hpp>
 
-void handle_read(char* data)
+#include "dht_server.h"
+
+void handle_read(char data_type, char* data)
 {
   std::cout << "handle_read; data=\n" << data << std::endl;
-  delete data;
+  if (data_type == 'd'){ //dynamic
+    delete data;
+  }
 }
+
+int main(int argc, char **argv){
+  
+  boost::function<void(char, char*)> fp = boost::bind(handle_read, _1, _2);
+  DHTServer dhts( (char*)"localhost", 6000, fp );
+  dhts.init_listen();
+  
+  //
+  std::cout << "Enter\n";
+  std::cin.ignore();
+	return 0;
+}
+*/
 
 char* intf_to_ip(char* intf)
 {
@@ -118,26 +132,45 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
 
 int main (int argc, char **argv)
 {
-  google::InitGoogleLogging("exp");
-  //
   std::map<char*, char*> opt_map = parse_opts(argc, argv);
   
-  //std::cout << "opt_map[(char*)\"intf\"]=" << opt_map[(char*)"intf"] << std::endl;
+  std::cout << "opt_map[(char*)\"intf\"]=" << opt_map[(char*)"intf"] << std::endl;
   
   //char* ip = intf_to_ip((char*)"lo");
   //std::cout << "ip=" << ip << std::endl;
   
-  /*
-  char* lip = intf_to_ip(opt_map[(char*)"intf"]);
-  int lport = atoi(opt_map[(char*)"lport"]);
-  std::cout << "lip=" << lip << std::endl;
-  std::cout << "lport=" << lport << std::endl;
-  DHTNode dhtn(lip, lport);
-  */
-  DHTNode dhtn(intf_to_ip(opt_map[(char*)"intf"]), atoi(opt_map[(char*)"lport"]));
+  //std::ofstream s("tmp.oarchive");
+  std::stringstream ss;
+  boost::archive::text_oarchive oa(ss);
+  std::map<int,int> m;
+  m[1] = 100;
+  m[2] = 200;
+  oa << m;
   
-  //boost::function<void(char*)> fp = boost::bind(handle_read, _1);
-  //DHTServer dhts( (char*)"localhost", 6000, fp );
+  std::string str(ss.str());
+  std::cout << "str=" << str << std::endl;
+  
+  std::stringstream ss2;
+  ss2 << str;
+  boost::archive::text_iarchive ia(ss2);
+  std::map<int,int> m2;
+  ia >> m2;
+  std::cout << "m2=\n";
+  for (std::map<int, int>::iterator it=m2.begin(); it!=m2.end(); ++it){
+    std::cout << it->first << " => " << it->second << '\n';
+  }
+  
+  /*
+  //std::map<int, int> map = {{1,2}, {2,1}};
+  std::stringstream ss;
+  boost::archive::text_oarchive oarch(ss);
+  oarch << opt_map;
+  
+  std::opt_map<char*, char*> new_map;
+  boost::archive::text_iarchive iarch(ss);
+  iarch >> new_map;
+  std::cout << (opt_map == new_map) << std::endl;
+  */
   
   return 0;
 }

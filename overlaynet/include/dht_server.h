@@ -3,7 +3,7 @@
 //
 #include <boost/asio.hpp>
 #include <boost/shared_ptr.hpp>
-#include "boost/function.hpp"
+#include <boost/function.hpp>
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/cstdint.hpp>
@@ -14,13 +14,15 @@
 
 using boost::asio::ip::tcp;
 
-typedef boost::function<void(char, char*)> read_callback_function;
+typedef boost::function<void(char*)> function_recv_callback;
 
 class DHTServer{
   public:
     DHTServer(char* host, int port, 
-              read_callback_function read_callback);
+              function_recv_callback recv_callback = NULL);
     ~DHTServer();
+    void set_recv_callback(function_recv_callback recv_callback);
+    
     int close();
     void init_listen();
     void init_recv();
@@ -34,7 +36,7 @@ class DHTServer{
     boost::shared_ptr< boost::asio::ip::tcp::acceptor > acceptor_;
     boost::shared_ptr< boost::asio::ip::tcp::socket > socket_;
     //
-    read_callback_function _read_callback;
+    function_recv_callback _recv_callback;
     std::vector< boost::shared_ptr< boost::thread > > handle_recv_thread_v;
 };
 //

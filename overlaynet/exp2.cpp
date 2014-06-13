@@ -9,7 +9,7 @@ int main(int argc, char **argv){
   DHTClient dhtc((char*)"localhost", 6000);
   dhtc.connect();
   
-  Packet packet('J', "SOS");
+  Packet packet('J', (char*)"SOS");
   char* data = packet.get_data();
   dhtc.send(packet.get_packet_size(), packet.get_data());
   

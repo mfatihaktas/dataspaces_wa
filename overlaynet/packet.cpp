@@ -1,36 +1,85 @@
 #include "packet.h"
 #include <glog/logging.h>
 
-#define SIZE_HEADER_SIZE 4
-#define TYPE_HEADER_SIZE 1
-#define MAX_MSG_SIZE 512
+#define SIZE_SIZE 4*sizeof(char)
+#define TYPE_SIZE sizeof(char)
+#define TAIL_SIZE sizeof(char)
+#define MAX_MSG_SIZE 512*sizeof(char)
 
-Packet::Packet(size_t msg_size, char* msg)
+Packet::Packet(char type, std::map<std::string, std::string> msg_map)
 {
-  header = msg[TYPE_HEADER_SIZE-1];
-  data = msg+TYPE_HEADER_SIZE;
-  packet_size = msg_size + SIZE_HEADER_SIZE;
+  this->type = type;
+  this->msg_map = msg_map;
+  //
+  std::stringstream ss;
+  boost::archive::text_oarchive oa(ss);
+  oa << msg_map;
+  std::string msg_str(ss.str());
+  
+  this->msg_size = msg_str.length();
+  this->packet_size = SIZE_SIZE + TYPE_SIZE + msg_size + TAIL_SIZE;
+  this->data = new char[packet_size];
+  
+  char* temp = cast_to_chararr(SIZE_SIZE, packet_size - SIZE_SIZE );
+  std::memcpy(data, temp, SIZE_SIZE);
+  delete temp;
+  std::memcpy(data + SIZE_SIZE, &type, TYPE_SIZE);
+  std::memcpy(data + SIZE_SIZE + TYPE_SIZE, msg_str.c_str(), msg_size);
+  data[packet_size - TAIL_SIZE] = '\0';
+  //
+  this->msg = data + TYPE_SIZE;
 }
 
-Packet::Packet(char header, const char* msg)
+Packet::Packet(size_t type__srlzedmsgmap_size, char* type__srlzedmsgmap)
 {
-  this->header = header;
+  this->msg_size = type__srlzedmsgmap_size - TYPE_SIZE;
+  this->packet_size = SIZE_SIZE + TYPE_SIZE + msg_size + TAIL_SIZE;
+  this->type = type__srlzedmsgmap[TYPE_SIZE - 1];
+  //form the packet
+  this->data = new char[packet_size];
+  
+  char* temp = cast_to_chararr(SIZE_SIZE, packet_size - SIZE_SIZE );
+  std::memcpy(data, temp, SIZE_SIZE);
+  delete temp;
+  std::memcpy(data + SIZE_SIZE, type__srlzedmsgmap, TYPE_SIZE + msg_size);
+  data[packet_size - TAIL_SIZE] = '\0';
   //
-  size_t msg_size = strlen(msg);
+  this->msg = data + TYPE_SIZE;
+  //
+  std::stringstream ss;
+  ss << msg;
+  boost::archive::text_iarchive ia(ss);
+  ia >> this->msg_map;
+}
+
+Packet::Packet(char type, char* msg)
+{
+  this->type = type;
+  //
+  this->msg_size = strlen(msg);
   if (msg_size > MAX_MSG_SIZE){
     LOG(WARNING) << "msg_size=" << msg_size << " > MAX_MSG_SIZE=" << MAX_MSG_SIZE;
     msg_size = MAX_MSG_SIZE;
   }
-  packet_size = SIZE_HEADER_SIZE + TYPE_HEADER_SIZE + msg_size + 1;
+  packet_size = SIZE_SIZE + TYPE_SIZE + msg_size + TAIL_SIZE;
   //form the packet
-  data = new char[packet_size];
+  this->data = new char[packet_size];
   
-  char* temp = cast_to_chararr(SIZE_HEADER_SIZE, packet_size - SIZE_HEADER_SIZE );
-  std::memcpy(data, temp, SIZE_HEADER_SIZE);
+  char* temp = cast_to_chararr(SIZE_SIZE, packet_size - SIZE_SIZE );
+  std::memcpy(data, temp, SIZE_SIZE);
   delete temp;
-  std::memcpy(data+SIZE_HEADER_SIZE, &header, TYPE_HEADER_SIZE);
-  std::memcpy(data+SIZE_HEADER_SIZE+TYPE_HEADER_SIZE, msg, msg_size);
-  data[packet_size-1] = '\0';
+  std::memcpy(data + SIZE_SIZE, &type, TYPE_SIZE);
+  std::memcpy(data + SIZE_SIZE + TYPE_SIZE, msg, msg_size);
+  data[packet_size - TAIL_SIZE] = '\0';
+  //
+  this->msg = data + TYPE_SIZE;
+  //
+  /*
+  std::stringstream ss;
+  ss << msg;
+  boost::archive::text_iarchive ia(ss);
+  ia >> this->msg_map;
+  */
 }
 
 char* Packet::cast_to_chararr(size_t chararr_size, int number)
@@ -52,9 +101,24 @@ Packet::~Packet()
   delete data;
 }
 
+int Packet::get_msg_size()
+{
+  return msg_size;
+}
+
 int Packet::get_packet_size()
 {
   return packet_size;
+}
+
+char Packet::get_type()
+{
+  return type;
+}
+
+char* Packet::get_msg()
+{
+  return msg;
 }
 
 char* Packet::get_data()
@@ -62,7 +126,20 @@ char* Packet::get_data()
   return data;
 }
 
-char Packet::get_header()
+std::map<std::string, std::string> Packet::get_msg_map()
 {
-  return header;
+  return msg_map;
+}
+
+std::string Packet::to_str()
+{
+  std::stringstream ss;
+  ss << "type=" << type << "\n";
+  ss << "msg=\n";
+  
+  for (std::map<std::string, std::string>::iterator it=msg_map.begin(); it!=msg_map.end(); ++it){
+    ss << "\t" << it->first << ":" << it->second << "\n";
+  }
+  
+  return ss.str();
 }

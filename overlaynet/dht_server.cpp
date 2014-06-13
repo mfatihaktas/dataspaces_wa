@@ -4,7 +4,7 @@
 #define HEADER_MSGSIZE_LENGTH 4
 
 DHTServer::DHTServer(char* host, int port, 
-                     read_callback_function read_callback )
+                     function_recv_callback recv_callback)
 : io_service_(new boost::asio::io_service),
 	acceptor_(new boost::asio::ip::tcp::acceptor( *io_service_ )),
 	socket_(new boost::asio::ip::tcp::socket( *io_service_ )),
@@ -13,10 +13,11 @@ DHTServer::DHTServer(char* host, int port,
   this->host = host;
   this->port = port;
   //
-  google::InitGoogleLogging("DHTServer");
+  _recv_callback = recv_callback;
   //
-  _read_callback = read_callback;
-  //_read_callback('s', (char*)"aloalo");
+  boost::shared_ptr< boost::thread > t_(
+    new boost::thread(&DHTServer::init_listen, this)
+  );
   //
   LOG(INFO) << "constructed.";
 }
@@ -27,6 +28,11 @@ DHTServer::~DHTServer()
     close();
   }
   LOG(INFO) << "destructed.";
+}
+
+void DHTServer::set_recv_callback(function_recv_callback recv_callback)
+{
+  _recv_callback = recv_callback;
 }
 
 int DHTServer::close(){
@@ -51,7 +57,7 @@ int DHTServer::close(){
 
 void DHTServer::handle_recv(char* msg)
 {
-  _read_callback('d', msg);
+  _recv_callback(msg);
 }
 
 void DHTServer::init_recv()
