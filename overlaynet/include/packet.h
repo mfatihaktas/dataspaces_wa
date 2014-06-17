@@ -14,6 +14,12 @@
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
 
+enum type_t {
+  JOIN_REQUEST = 'J',
+  JOIN_REPLY = 'j',
+  ROUTING_TABLE_UPDATE = 'R'
+};
+
 class Packet{
   private:
     int packet_size;
@@ -30,16 +36,16 @@ class Packet{
     Packet(size_t type__srlzedmsgmap_size, char* type__srlzedmsgmap);
     ~Packet();
     
-    int get_msg_size();
-    int get_packet_size();
+    int get_msg_size() const;
+    int get_packet_size() const;
     
-    char get_type();
-    char* get_msg();
-    char* get_data();
-    std::map<std::string, std::string> get_msg_map();
+    char get_type() const;
+    char* get_msg() const;
+    char* get_data() const;
+    std::map<std::string, std::string> get_msg_map() const;
     
-    char* cast_to_chararr(size_t chararr_size, int number);
-    std::string to_str();
+    char* cast_to_chararr(size_t chararr_size, int number) const;
+    std::string to_str() const;
 };
 
 #endif // PACKET_H

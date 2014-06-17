@@ -53,52 +53,42 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
   std::map<char*, char*> opt_map;
   //
   int c;
+  
+  static struct option long_options[] =
+  {
+    {"intf", required_argument, NULL, 0},
+    {"lport", required_argument, NULL, 1},
+    {"ipeer_lip", optional_argument, NULL, 2},
+    {"ipeer_lport", optional_argument, NULL, 3},
+    {0, 0, 0, 0}
+  };
+  
   while (1)
   {
-    static struct option long_options[] =
-    {
-      {"intf", required_argument, NULL, 0},
-      {"lport", required_argument, NULL, 0},
-      {0, 0, 0, 0}
-    };
-    //getopt_long stores the option index here.
     int option_index = 0;
     c = getopt_long (argc, argv, "s",
                      long_options, &option_index);
-    //Detect the end of the options.
-    if (c == -1)
+
+    if (c == -1) //Detect the end of the options.
       break;
     
     switch (c)
     {
-    case 0:
-      //If this option set a flag, do nothing else now.
-      if (long_options[option_index].flag != 0)
+      case 0:
+        opt_map[(char*)"intf"] = optarg;
+      case 1:
+        opt_map[(char*)"lport"] = optarg;
+      case 2:
+        opt_map[(char*)"ipeer_lip"] = optarg;
+      case 3:
+        opt_map[(char*)"ipeer_lport"] = optarg;  
+      case 's':
         break;
-      /*
-      printf ("option %s, option_index %d ", long_options[option_index].name, option_index);
-      if (optarg)
-        printf (" with arg %s\n", optarg);
-      */
-      switch (option_index)
-      {
-        case 0:
-          opt_map[(char*)"intf"] = optarg;
-        case 1:
-          opt_map[(char*)"lport"] = optarg;
-      }
-      break;
-      
-    case 's':
-      //puts ("option -s\n");
-      break;
-
-    case '?':
-      //getopt_long already printed an error message.
-      break;
-
-    default:
-      break;
+      case '?':
+        break; //getopt_long already printed an error message.
+  
+      default:
+        break;
     }
   }
   if (optind < argc){
@@ -128,7 +118,9 @@ int main (int argc, char **argv)
   //std::cout << "ip=" << ip << std::endl;
   
   
-  DHTNode dhtn(intf_to_ip(opt_map[(char*)"intf"]), atoi(opt_map[(char*)"lport"]));
+  DHTNode dhtn('1',
+                intf_to_ip(opt_map[(char*)"intf"]), atoi(opt_map[(char*)"lport"]),
+                NULL, 0 );
   
   //boost::function<void(char*)> fp = boost::bind(handle_read, _1);
   //DHTServer dhts( (char*)"localhost", 6000, fp );

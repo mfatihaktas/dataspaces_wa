@@ -44,7 +44,7 @@ Packet::Packet(size_t type__srlzedmsgmap_size, char* type__srlzedmsgmap)
   std::memcpy(data + SIZE_SIZE, type__srlzedmsgmap, TYPE_SIZE + msg_size);
   data[packet_size - TAIL_SIZE] = '\0';
   //
-  this->msg = data + TYPE_SIZE;
+  this->msg = data + SIZE_SIZE + TYPE_SIZE;
   //
   std::stringstream ss;
   ss << msg;
@@ -73,16 +73,9 @@ Packet::Packet(char type, char* msg)
   data[packet_size - TAIL_SIZE] = '\0';
   //
   this->msg = data + TYPE_SIZE;
-  //
-  /*
-  std::stringstream ss;
-  ss << msg;
-  boost::archive::text_iarchive ia(ss);
-  ia >> this->msg_map;
-  */
 }
 
-char* Packet::cast_to_chararr(size_t chararr_size, int number)
+char* Packet::cast_to_chararr(size_t chararr_size, int number) const
 {
   std::string str = boost::lexical_cast<std::string>(number);
   size_t padding_size = chararr_size - str.length();
@@ -101,43 +94,43 @@ Packet::~Packet()
   delete data;
 }
 
-int Packet::get_msg_size()
+int Packet::get_msg_size() const
 {
   return msg_size;
 }
 
-int Packet::get_packet_size()
+int Packet::get_packet_size() const
 {
   return packet_size;
 }
 
-char Packet::get_type()
+char Packet::get_type() const
 {
   return type;
 }
 
-char* Packet::get_msg()
+char* Packet::get_msg() const
 {
   return msg;
 }
 
-char* Packet::get_data()
+char* Packet::get_data() const
 {
   return data;
 }
 
-std::map<std::string, std::string> Packet::get_msg_map()
+std::map<std::string, std::string> Packet::get_msg_map() const
 {
   return msg_map;
 }
 
-std::string Packet::to_str()
+std::string Packet::to_str() const
 {
   std::stringstream ss;
   ss << "type=" << type << "\n";
   ss << "msg=\n";
   
-  for (std::map<std::string, std::string>::iterator it=msg_map.begin(); it!=msg_map.end(); ++it){
+  for (std::map<std::string, std::string>::const_iterator it=msg_map.begin(); it!=msg_map.end(); ++it){
     ss << "\t" << it->first << ":" << it->second << "\n";
   }
   

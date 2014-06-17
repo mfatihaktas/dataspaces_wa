@@ -4,11 +4,9 @@ echo $1
 DSBIN_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa/dataspaces/dataspaces-1.3.0/install/bin
 
 if [ $1  = 'e' ]; then
-  GLOG_logtostderr=1 ./exp
-elif [ $1  = 'eo' ]; then
   GLOG_logtostderr=1 ./exp --intf "lo" --lport 7000
 elif [ $1  = 'e2' ]; then
-  GLOG_logtostderr=1 ./exp2
+  GLOG_logtostderr=1 ./exp2 --intf "lo" --lport 8000 --ipeer_lip "127.0.0.1" --ipeer_lport 7000
 elif [ $1  = 's' ]; then
   $DSBIN_DIR/./dataspaces_server -s 1 -c 2
 elif [ $1  = 'g' ]; then

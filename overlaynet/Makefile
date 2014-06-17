@@ -27,12 +27,11 @@ ODIR = obj
 
 #exp_put exp_get
 all: exp exp2
-#exp2
 
-exp2: $(ODIR)/exp2.o $(ODIR)/dht_client.o $(ODIR)/packet.o
+exp: $(ODIR)/exp.o $(ODIR)/dht_node.o $(ODIR)/dht_server.o $(ODIR)/dht_client.o $(ODIR)/packet.o
 	$(CPP) -o $@ $^ $(INC) $(LIB)
 
-exp: $(ODIR)/exp.o $(ODIR)/dht_server.o $(ODIR)/packet.o $(ODIR)/dht_node.o
+exp2: $(ODIR)/exp2.o $(ODIR)/dht_node.o $(ODIR)/dht_server.o $(ODIR)/dht_client.o $(ODIR)/packet.o
 	$(CPP) -o $@ $^ $(INC) $(LIB)
 
 $(ODIR)/%.o: %.cpp

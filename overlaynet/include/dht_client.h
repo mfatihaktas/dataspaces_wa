@@ -14,17 +14,18 @@ using boost::asio::ip::tcp;
 
 class DHTClient{
   public:
-    DHTClient(char* host, int port);
+    DHTClient(char* host_ip, int port);
     ~DHTClient();
     int connect();
-    int send(size_t datasize, char* msg);
+    int close();
+    int send(size_t datasize, char* data);
   private:
-    char* host;
+    char* host_ip;
     int port;
     int stop_flag;
-    //
+    
     boost::shared_ptr< boost::asio::io_service > io_service_;
     boost::shared_ptr< boost::asio::ip::tcp::socket > socket_;
 };
-//
+
 #endif
