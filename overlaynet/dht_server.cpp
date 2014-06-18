@@ -77,13 +77,13 @@ void DHTServer::init_recv()
     }
     msgsize_buffer[HEADER_MSGSIZE_LENGTH] = '\0';
     std::string str(msgsize_buffer);
-    LOG(INFO) << "init_recv:: msgsize_buffer=" << msgsize_buffer;
+    //LOG(INFO) << "init_recv:: msgsize_buffer=" << msgsize_buffer;
     int msgsize = boost::lexical_cast<int>(str);
-    LOG(INFO) << "init_recv:: msgsize=" << msgsize;
+    //LOG(INFO) << "init_recv:: msgsize=" << msgsize;
     //
     char* msg = new char[msgsize];
     boost::asio::read(*socket_, boost::asio::buffer( msg, msgsize ) );
-    LOG(INFO) << "init_recv:: msg=" << msg;
+    //LOG(INFO) << "init_recv:: msg=" << msg;
     //
     boost::shared_ptr< boost::thread > t_(
       new boost::thread(&DHTServer::handle_recv, this, msg)

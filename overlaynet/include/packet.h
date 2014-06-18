@@ -17,6 +17,7 @@
 enum type_t {
   JOIN_REQUEST = 'J',
   JOIN_REPLY = 'j',
+  JOIN_ACK = 'a',
   ROUTING_TABLE_UPDATE = 'R'
 };
 
@@ -31,7 +32,7 @@ class Packet{
     //
     std::map<std::string, std::string> msg_map;
   public:
-    Packet(char type, char* msg); //DEPRECATED
+    Packet(char type, char* msg);
     Packet(char type, std::map<std::string, std::string> msg_map);
     Packet(size_t type__srlzedmsgmap_size, char* type__srlzedmsgmap);
     ~Packet();
