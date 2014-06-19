@@ -18,6 +18,8 @@ enum type_t {
   JOIN_REQUEST = 'J',
   JOIN_REPLY = 'j',
   JOIN_ACK = 'a',
+  PING = 'P',
+  PONG = 'p',
   ROUTING_TABLE_UPDATE = 'R'
 };
 

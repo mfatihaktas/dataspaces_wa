@@ -3,13 +3,14 @@
 
 #define HEADER_MSGSIZE_LENGTH 4
 
-DHTServer::DHTServer(char* host, int port, 
+DHTServer::DHTServer(char* host_name, char* host, int port, 
                      function_recv_callback recv_callback)
 : io_service_(new boost::asio::io_service),
 	acceptor_(new boost::asio::ip::tcp::acceptor( *io_service_ )),
 	socket_(new boost::asio::ip::tcp::socket( *io_service_ )),
 	stop_flag(0)
 {
+  this->host_name = host_name;
   this->host = host;
   this->port = port;
   //
@@ -19,7 +20,7 @@ DHTServer::DHTServer(char* host, int port,
     new boost::thread(&DHTServer::init_listen, this)
   );
   //
-  LOG(INFO) << "constructed.";
+  LOG(INFO) << "server:" << host_name << " constructed.";
 }
 
 DHTServer::~DHTServer()
@@ -27,7 +28,13 @@ DHTServer::~DHTServer()
   if (!stop_flag){
     close();
   }
-  LOG(INFO) << "destructed.";
+  //
+  LOG(INFO) << "server:" << host_name << " destructed.";
+}
+
+bool DHTServer::is_alive()
+{
+  return (stop_flag == 0);
 }
 
 void DHTServer::set_recv_callback(function_recv_callback recv_callback)
@@ -36,23 +43,40 @@ void DHTServer::set_recv_callback(function_recv_callback recv_callback)
 }
 
 int DHTServer::close(){
-  stop_flag = 1;
-  //
-  boost::system::error_code ec;
-  socket_->shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
-  socket_->close(ec);
-  if (ec){
-    LOG(ERROR) << "close:: ec=" << ec;
+  if (!is_alive()){
+    LOG(ERROR) << "close:: server:" << host_name << " is already closed!";
+    return 2;
+  }
+  try
+  {
+    stop_flag = 1;
+    //
+    boost::system::error_code ec;
+    socket_->shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
+    //socket_->shutdown(boost::asio::ip::tcp::socket::shutdown_receive, ec);
+    socket_->close(ec);
+    if (ec){
+      LOG(ERROR) << "close:: ec=" << ec;
+      return 1;
+    }
+    io_service_->stop();
+    /*TODO
+     *causing hangs when closing server
+     *commenting next waiting loop will cause exception in init_listen due to 
+     *unfinished read over the socket
+    for (int i = 0; i < handle_recv_thread_v.size(); i++){
+      handle_recv_thread_v[i]->join();
+    }
+    */
+    //
+    LOG(INFO) << "close:: server:" << host_name << " closed.";
+    return 0;
+  }
+  catch( std::exception & ex )
+  {
+    LOG(ERROR) << "init_listen:: Exception=" << ex.what();
     return 1;
   }
-  io_service_->stop();
-  //
-  for (int i = 0; i < handle_recv_thread_v.size(); i++){
-    handle_recv_thread_v[i]->join();
-  }
-  //
-  LOG(INFO) << "close:: closed.";
-  return 0;
 }
 
 void DHTServer::handle_recv(char* msg)
@@ -70,8 +94,8 @@ void DHTServer::init_recv()
     }
     catch( boost::system::system_error& err)
     {
-      LOG(ERROR) << "init_recv:: err=" << err.what();
-      LOG(INFO) << "init_recv:: client closed the conn.";
+      //LOG(ERROR) << "init_recv:: err=" << err.what();
+      LOG(INFO) << "init_recv:: server:" << host_name << "; client closed the conn.";
       close();
       return;
     }
@@ -102,10 +126,10 @@ void DHTServer::init_listen()
 		  boost::lexical_cast< std::string >( port )
 	  );
 	  boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve( query );
-	  LOG(INFO) << "init_listen:: listening on " << endpoint;
+	  LOG(INFO) << "init_listen:: server:" << host_name << " listening on " << endpoint;
 	  //
 	  acceptor_->open( endpoint.protocol() );
-	  acceptor_->set_option( boost::asio::ip::tcp::acceptor::reuse_address( false ) );
+	  acceptor_->set_option( boost::asio::ip::tcp::acceptor::reuse_address( true ) );
 	  acceptor_->bind( endpoint );
 	  acceptor_->listen( boost::asio::socket_base::max_connections );
 	  boost::system::error_code ec;
@@ -113,7 +137,7 @@ void DHTServer::init_listen()
     if (ec){
       LOG(ERROR) << "init_listen:: ec=" << ec;
     }
-    LOG(INFO) << "init_listen:: got connection...";
+    LOG(INFO) << "init_listen:: server:" << host_name << " got connection...";
     acceptor_->close();
     init_recv();
   }

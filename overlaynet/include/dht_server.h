@@ -18,7 +18,7 @@ typedef boost::function<void(char*)> function_recv_callback;
 
 class DHTServer{
   public:
-    DHTServer(char* host, int port, 
+    DHTServer(char* host_name, char* host, int port, 
               function_recv_callback recv_callback = NULL);
     ~DHTServer();
     void set_recv_callback(function_recv_callback recv_callback);
@@ -27,8 +27,9 @@ class DHTServer{
     void init_listen();
     void init_recv();
     void handle_recv(char* msg);
+    bool is_alive();
   private:
-    char* host;
+    char *host, *host_name;
     int port;
     int stop_flag;
     //

@@ -14,13 +14,14 @@ using boost::asio::ip::tcp;
 
 class DHTClient{
   public:
-    DHTClient(char* host_ip, int port);
+    DHTClient(char* client_name, char* host_ip, int port);
     ~DHTClient();
+    bool is_alive();
     int connect();
     int close();
     int send(size_t datasize, char* data);
   private:
-    char* host_ip;
+    char *host_ip, *client_name;
     int port;
     int stop_flag;
     

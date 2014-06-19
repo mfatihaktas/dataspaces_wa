@@ -3,15 +3,16 @@
 
 using boost::asio::ip::tcp;
 
-DHTClient::DHTClient(char* host_ip, int port)
+DHTClient::DHTClient(char* client_name, char* host_ip, int port)
 : io_service_(new boost::asio::io_service),
 	socket_(new boost::asio::ip::tcp::socket( *io_service_ )),
 	stop_flag(0)
 {
+  this->client_name = client_name;
   this->host_ip = host_ip;
   this->port = port;
   //
-  LOG(INFO) << "constructed.";
+  LOG(INFO) << "client:" << client_name << " constructed.";
 }
 
 DHTClient::~DHTClient()
@@ -20,22 +21,41 @@ DHTClient::~DHTClient()
     close();
   }
   //
-  LOG(INFO) << "destructed.";
+  LOG(INFO) << "client:" << client_name << " destructed.";
+}
+
+bool DHTClient::is_alive()
+{
+  return (stop_flag == 0);
 }
 
 int DHTClient::close()
 {
-  stop_flag = 1;
-  //
-  boost::system::error_code ec;
-  socket_->shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
-  socket_->close(ec);
-  if (ec){
-    LOG(ERROR) << "close:: ec=" << ec;
+  if (!is_alive()){
+    LOG(ERROR) << "close:: client:" << client_name << " is already closed!";
+    return 2;
   }
-  io_service_->stop();
-  //
-  return 0;
+  try
+  {
+    stop_flag = 1;
+    //
+    boost::system::error_code ec;
+    socket_->shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
+    //socket_->shutdown(boost::asio::ip::tcp::socket::shutdown_send, ec);
+    socket_->close(ec);
+    if (ec){
+      LOG(ERROR) << "close:: ec=" << ec;
+    }
+    io_service_->stop();
+    //
+    LOG(INFO) << "close:: client:" << client_name << " closed.";
+    return 0;
+  }
+  catch( std::exception & ex )
+  {
+    LOG(ERROR) << "close:: Exception=" << ex.what();
+    return 1;
+  }
 }
 
 int DHTClient::connect()
@@ -48,9 +68,9 @@ int DHTClient::connect()
 	    boost::lexical_cast< std::string >( port )
     );
     boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve( query );
-    LOG(INFO) << "connect:: connecting to " << endpoint << " ...";
+    LOG(INFO) << "connect:: client:" << client_name << " connecting to " << endpoint << "...";
     socket_->connect(endpoint);
-    LOG(INFO) << "connect:: connected.";
+    LOG(INFO) << "connect:: client:" << client_name << " connected.";
     return 0;
   }
   catch( std::exception & ex )
@@ -64,7 +84,7 @@ int DHTClient::send(size_t datasize, char* data){
   try
   {
     socket_->send(boost::asio::buffer(data, datasize));
-    LOG(INFO) << "send:: sent datasize=" << datasize;
+    LOG(INFO) << "send:: client:" << client_name << " sent datasize=" << datasize;
     return 0;
   }
   catch( std::exception & ex )
