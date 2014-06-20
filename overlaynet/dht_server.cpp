@@ -87,32 +87,39 @@ void DHTServer::handle_recv(char* msg)
 void DHTServer::init_recv()
 {
   while (!stop_flag){
-    boost::system::error_code ec;
-    char msgsize_buffer[HEADER_MSGSIZE_LENGTH+1];
-    try{
-      boost::asio::read(*socket_, boost::asio::buffer( msgsize_buffer, HEADER_MSGSIZE_LENGTH ) );
-    }
-    catch( boost::system::system_error& err)
+    try
     {
-      //LOG(ERROR) << "init_recv:: err=" << err.what();
-      LOG(INFO) << "init_recv:: server:" << host_name << "; client closed the conn.";
-      close();
-      return;
+      boost::system::error_code ec;
+      char msgsize_buffer[HEADER_MSGSIZE_LENGTH+1];
+      try{
+        boost::asio::read(*socket_, boost::asio::buffer( msgsize_buffer, HEADER_MSGSIZE_LENGTH ) );
+      }
+      catch( boost::system::system_error& err)
+      {
+        //LOG(ERROR) << "init_recv:: err=" << err.what();
+        LOG(INFO) << "init_recv:: server:" << host_name << "; client closed the conn.";
+        close();
+        return;
+      }
+      msgsize_buffer[HEADER_MSGSIZE_LENGTH] = '\0';
+      std::string str(msgsize_buffer);
+      //LOG(INFO) << "init_recv:: msgsize_buffer=" << msgsize_buffer;
+      int msgsize = boost::lexical_cast<int>(str);
+      //LOG(INFO) << "init_recv:: msgsize=" << msgsize;
+      //
+      char* msg = new char[msgsize];
+      boost::asio::read(*socket_, boost::asio::buffer( msg, msgsize ) );
+      //LOG(INFO) << "init_recv:: msg=" << msg;
+      //
+      boost::shared_ptr< boost::thread > t_(
+        new boost::thread(&DHTServer::handle_recv, this, msg)
+      );
+      handle_recv_thread_v.push_back( t_ );
     }
-    msgsize_buffer[HEADER_MSGSIZE_LENGTH] = '\0';
-    std::string str(msgsize_buffer);
-    //LOG(INFO) << "init_recv:: msgsize_buffer=" << msgsize_buffer;
-    int msgsize = boost::lexical_cast<int>(str);
-    //LOG(INFO) << "init_recv:: msgsize=" << msgsize;
-    //
-    char* msg = new char[msgsize];
-    boost::asio::read(*socket_, boost::asio::buffer( msg, msgsize ) );
-    //LOG(INFO) << "init_recv:: msg=" << msg;
-    //
-    boost::shared_ptr< boost::thread > t_(
-      new boost::thread(&DHTServer::handle_recv, this, msg)
-    );
-    handle_recv_thread_v.push_back( t_ );
+    catch( std::exception & ex )
+    {
+      LOG(ERROR) << "init_recv:: Exception=" << ex.what();
+    }
   }
 }
 

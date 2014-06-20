@@ -56,10 +56,11 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
   
   static struct option long_options[] =
   {
-    {"intf", required_argument, NULL, 0},
-    {"lport", required_argument, NULL, 1},
-    {"ipeer_lip", optional_argument, NULL, 2},
-    {"ipeer_lport", optional_argument, NULL, 3},
+    {"id", required_argument, NULL, 0},
+    {"intf", required_argument, NULL, 1},
+    {"lport", required_argument, NULL, 2},
+    {"ipeer_lip", required_argument, NULL, 3},
+    {"ipeer_lport", required_argument, NULL, 4},
     {0, 0, 0, 0}
   };
   
@@ -75,18 +76,24 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
     switch (c)
     {
       case 0:
-        opt_map[(char*)"intf"] = optarg;
+        opt_map[(char*)"id"] = optarg;
+        break;
       case 1:
-        opt_map[(char*)"lport"] = optarg;
+        opt_map[(char*)"intf"] = optarg;
+        break;
       case 2:
-        opt_map[(char*)"ipeer_lip"] = optarg;
+        opt_map[(char*)"lport"] = optarg;
+        break;
       case 3:
-        opt_map[(char*)"ipeer_lport"] = optarg;  
+        opt_map[(char*)"ipeer_lip"] = optarg;
+        break;
+      case 4:
+        opt_map[(char*)"ipeer_lport"] = optarg;
+        break;
       case 's':
         break;
       case '?':
         break; //getopt_long already printed an error message.
-  
       default:
         break;
     }
@@ -116,11 +123,16 @@ int main (int argc, char **argv)
   
   //char* ip = intf_to_ip((char*)"lo");
   //std::cout << "ip=" << ip << std::endl;
+  if (!opt_map.count((char*)"ipeer_lip")){
+    opt_map[(char*)"ipeer_lip"] = NULL;
+  }
+  if (!opt_map.count((char*)"ipeer_lport")){
+    opt_map[(char*)"ipeer_lport"] = (char*)"0";
+  }
   
-  
-  DHTNode dhtn('1',
+  DHTNode dhtn( *(opt_map[(char*)"id"]),
                 intf_to_ip(opt_map[(char*)"intf"]), atoi(opt_map[(char*)"lport"]),
-                NULL, 0 );
+                opt_map[(char*)"ipeer_lip"], atoi(opt_map[(char*)"ipeer_lport"]) );
   
   //boost::function<void(char*)> fp = boost::bind(handle_read, _1);
   //DHTServer dhts( (char*)"localhost", 6000, fp );
