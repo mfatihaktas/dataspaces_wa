@@ -28,5 +28,5 @@ elif [ $1  = 'k' ]; then
 elif [ $1  = 'show' ]; then
   netstat -antu
 else
-	echo "Argument did not match !"
+  echo "Argument did not match !"
 fi
