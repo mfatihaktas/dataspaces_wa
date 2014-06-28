@@ -5,7 +5,7 @@
 #include <getopt.h>
 #include <map>
 
-#include "ds_client.cpp"
+#include "gridftp_drive.cpp"
 
 void dummy_func()
 {

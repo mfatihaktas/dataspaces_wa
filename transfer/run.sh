@@ -7,9 +7,10 @@ PORT=5000
 if [ $1  = 'e' ]; then
   GLOG_logtostderr=1 ./exp --src_url="$TRANS_DIR/dummy.dat" --dst_url="ftp://127.0.0.1:5000$TRANS_DIR/recved_dummy.dat"
 elif [ $1  = 'egs' ]; then
-  GLOG_logtostderr=1 ./exp -s --port=5000
+  GLOG_logtostderr=1 ./exp_gridftp -s --port=5000
 elif [ $1  = 'egc' ]; then  
-  GLOG_logtostderr=1 ./exp --src_url="ftp://127.0.0.1:5000$TRANS_DIR/recved_dummy.dat" --dst_url="$TRANS_DIR/dummy.dat"
+  #GLOG_logtostderr=1 ./exp_gridftp --src_url="ftp://127.0.0.1:5000$TRANS_DIR/recved_dummy.dat" --dst_url="$TRANS_DIR/dummy.dat"
+  GLOG_logtostderr=1 ./exp_gridftp --src_url="$TRANS_DIR/dummy.dat" --dst_url="ftp://127.0.0.1:5000$TRANS_DIR/recved_dummy.dat"
 elif [ $1  = 'show' ]; then
   netstat -antu
 elif [ $1  = 's' ]; then

@@ -16,7 +16,7 @@ GFTP_LIB = -L/usr/lib64/ -l:libglobus_ftp_client.so
 #INC = $(BOOSTASIO_INC) $(GLOG_INC) -I/cac/u01/mfa51/Desktop/dataspaces_wa/overlaynet/include
 #LIB = $(BOOSTASIO_LIB) $(BOOST_LIB) $(GLOG_LIB)
 
-INC = $(GFTP_INC) $(GLOG_INC)
+INC = $(GFTP_INC) $(GLOG_INC) -I/cac/u01/mfa51/Desktop/dataspaces_wa/transfer/include
 LIB = $(GFTP_LIB) $(GLOG_LIB) $(BOOST_LIB)
 
 MPICC = mpicc
@@ -29,13 +29,23 @@ IDIR = include
 ODIR = obj
 
 #exp_put exp_get
-all: exp
+all: exp_gridftp
+#exp gftp_gp
+
+gftp_gp: $(ODIR)/gridftpdrv_get_put.o
+	$(CC) -o $@ $^ $(INC) $(LIB)
 
 ctos: $(ODIR)/client_to_server.o
 	$(CPP) -o $@ $^ $(INC) $(LIB)
 
+exp_gridftp: $(ODIR)/exp_gridftp.o $(ODIR)/gridftp_drive.o
+	$(CPP) -o $@ $^ $(INC) $(LIB)
+
 exp: $(ODIR)/exp.o
 	$(CPP) -o $@ $^ $(INC) $(LIB)
+
+$(ODIR)/%.o: %.c
+	$(CC) -c -o $@ $< $(INC) $(LIB)
 
 $(ODIR)/%.o: %.cpp
 	$(CPP) -c -o $@ $< $(INC) $(LIB)

@@ -5,7 +5,12 @@
 #include <getopt.h>
 #include <map>
 
-#include "gridftp.cpp"
+#include <glog/logging.h>
+
+//#include "gridftp.cpp"
+extern "C" {
+  #include "gridftp_drive.h"
+}
 
 std::map<std::string, std::string> parse_opts(int argc, char** argv)
 {
@@ -15,9 +20,9 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
   
   static struct option long_options[] =
   {
-    {"src_url", required_argument, NULL, 0},
-    {"dst_url", required_argument, NULL, 1},
-    {"port", required_argument, NULL, 2},
+    {"src_url", optional_argument, NULL, 0},
+    {"dst_url", optional_argument, NULL, 1},
+    {"port", optional_argument, NULL, 2},
     {0, 0, 0, 0}
   };
   
@@ -42,7 +47,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
         opt_map["port"] = optarg;
         break;
       case 's':
-        opt_map["s"] = 
+        opt_map["s"] = "s";
         break;
       case '?':
         break; //getopt_long already printed an error message.
@@ -70,6 +75,7 @@ int main(int argc , char **argv)
   //
   std::map<std::string, std::string> opt_map = parse_opts(argc, argv);
   
+  /*
   GridFTP gftp;
   if (opt_map.count("s")){
     gftp.init_server(5000);
@@ -77,6 +83,9 @@ int main(int argc , char **argv)
   else{
     gftp.init_file_transfer(opt_map["src_url"], opt_map["dst_url"]);
   }
+  */
+  //gridftp_put_file( (char*)(opt_map["src_url"].c_str()), (char*)(opt_map["dst_url"].c_str()) );
+  gridftp_fancy_put_file( (char*)(opt_map["src_url"].c_str()), (char*)(opt_map["dst_url"].c_str()), 2);
   
   return 0;
 }
