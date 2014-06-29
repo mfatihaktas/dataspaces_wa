@@ -1,4 +1,4 @@
-#include "gridftp_drive.h"
+#include "gridftp_api_drive.h"
 
 #define MAX_BUFFER_SIZE_W 5
 

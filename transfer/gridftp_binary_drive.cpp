@@ -1,40 +1,4 @@
-#include <iostream>
-#include <string>
-#include <stdio.h>
-#include <errno.h>
-#include <map>
-#include <vector>
-
-#include <boost/lexical_cast.hpp>
-
-#include <glog/logging.h>
-
-typedef std::map<int, FILE*> port_sstream_map;
-typedef std::map<std::string, FILE*> port_cstream_map;
-
-class GridFTP
-{
-  public:
-    static boost::condition_variable cv;
-    
-    //
-    GridFTP();
-    ~GridFTP();
-    int init_server(int port);
-    int init_file_transfer(std::string src_url, std::string dst_url, int p, int cc);
-    void read_print_stream(std::string name, FILE* fp);
-  private:
-    port_sstream_map p_ss_map;
-    port_cstream_map p_cs_map;
-    std::vector<boost::shared_ptr<boost::thread> > read_print_stream_thread_v;
-    boost::shared_ptr<boost::thread> hold_t_;
-    
-    boost::mutex m;
-    //
-    void hold();
-    void wait_for_flag();
-    void close();
-};
+#include "gridftp_binary_drive.h"
 
 void handle_signal(int signum)
 {
@@ -127,7 +91,7 @@ int GridFTP::init_file_transfer(std::string src_url, std::string dst_url, int p,
   std::string p_str = boost::lexical_cast<std::string>(p);
   std::string cc_str = boost::lexical_cast<std::string>(cc);
   
-  std::string cmd = "nohup globus-url-copy -vb -p " + p_str + " -cc " + cc_tr;
+  std::string cmd = "nohup globus-url-copy -vb -p " + p_str + " -cc " + cc_str;
   cmd += " " + src_url + " " + dst_url;
   cmd += " &";
   

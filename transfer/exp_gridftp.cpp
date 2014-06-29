@@ -7,9 +7,9 @@
 
 #include <glog/logging.h>
 
-//#include "gridftp.cpp"
+#include "gridftp_binary_drive.h"
 extern "C" {
-  #include "gridftp_drive.h"
+  #include "gridftp_api_drive.h"
 }
 
 std::map<std::string, std::string> parse_opts(int argc, char** argv)

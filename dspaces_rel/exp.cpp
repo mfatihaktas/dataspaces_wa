@@ -5,22 +5,9 @@
 #include <getopt.h>
 #include <map>
 
-#include "gridftp_drive.cpp"
+#include <glog/logging.h>
 
-void dummy_func()
-{
-  globus_result_t status = (globus_result_t)globus_module_activate(GLOBUS_FTP_CLIENT_MODULE);
-
-  if (status != GLOBUS_SUCCESS){
-    std::string tmpstr = globus_object_printable_to_string(globus_error_get(status));
-    std::cout<<"\n\t Error: Failed to load GLOBUS_FTP_CLIENT_MODULE.\n\t Error Code "<<status<<"\n\t"<<tmpstr<<std::endl;
-    exit(1);
-  }
-  
-  std::cout << "Hehe\n";
-  
-  globus_module_deactivate_all(); 
-}
+#include "dspaces_drive.h"
 
 std::map<std::string, std::string> parse_opts(int argc, char** argv)
 {
@@ -30,8 +17,8 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
   
   static struct option long_options[] =
   {
-    {"src_url", required_argument, NULL, 0},
-    {"dst_url", required_argument, NULL, 1},
+    {"src_url", optional_argument, NULL, 0},
+    {"dst_url", optional_argument, NULL, 1},
     {0, 0, 0, 0}
   };
   
@@ -80,8 +67,9 @@ int main(int argc , char **argv)
   //
   std::map<std::string, std::string> opt_map = parse_opts(argc, argv);
   
-  DSClient ds_client;
-  ds_client.send_file(opt_map["src_url"], opt_map["dst_url"]);
+  DSpacesDriver dspaces_driver;
+  dspaces_driver.dspaces_init_(2, 1);
+  
   
   return 0;
 }

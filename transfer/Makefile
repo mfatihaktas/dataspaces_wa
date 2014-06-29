@@ -32,13 +32,7 @@ ODIR = obj
 all: exp_gridftp
 #exp gftp_gp
 
-gftp_gp: $(ODIR)/gridftpdrv_get_put.o
-	$(CC) -o $@ $^ $(INC) $(LIB)
-
-ctos: $(ODIR)/client_to_server.o
-	$(CPP) -o $@ $^ $(INC) $(LIB)
-
-exp_gridftp: $(ODIR)/exp_gridftp.o $(ODIR)/gridftp_drive.o
+exp_gridftp: $(ODIR)/exp_gridftp.o $(ODIR)/gridftp_api_drive.o $(ODIR)/gridftp_binary_drive.o
 	$(CPP) -o $@ $^ $(INC) $(LIB)
 
 exp: $(ODIR)/exp.o
@@ -51,6 +45,13 @@ $(ODIR)/%.o: %.cpp
 	$(CPP) -c -o $@ $< $(INC) $(LIB)
 
 ifeq ("x","y")
+
+gftp_gp: $(ODIR)/gridftpdrv_get_put.o
+	$(CC) -o $@ $^ $(INC) $(LIB)
+
+ctos: $(ODIR)/client_to_server.o
+	$(CPP) -o $@ $^ $(INC) $(LIB)
+
 endif
 
 clean:

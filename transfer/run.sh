@@ -1,7 +1,7 @@
 #!/bin/bash
 echo $1
 
-TRANS_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa/transfer
+TRANS_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa/transfer/dummy
 PORT=5000
 
 if [ $1  = 'e' ]; then
