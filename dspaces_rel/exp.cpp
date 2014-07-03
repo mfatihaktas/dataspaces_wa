@@ -5,6 +5,7 @@
 #include <getopt.h>
 #include <map>
 
+#include <boost/lexical_cast.hpp>
 #include <glog/logging.h>
 
 #include "dspaces_drive.h"
@@ -17,8 +18,9 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
   
   static struct option long_options[] =
   {
-    {"src_url", optional_argument, NULL, 0},
-    {"dst_url", optional_argument, NULL, 1},
+    {"type", optional_argument, NULL, 0},
+    {"num_cnodes", optional_argument, NULL, 1},
+    {"app_id", optional_argument, NULL, 2},
     {0, 0, 0, 0}
   };
   
@@ -34,10 +36,13 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
     switch (c)
     {
       case 0:
-        opt_map["src_url"] = optarg;
+        opt_map["type"] = optarg;
         break;
       case 1:
-        opt_map["dst_url"] = optarg;
+        opt_map["num_cnodes"] = optarg;
+        break;
+      case 2:
+        opt_map["app_id"] = optarg;
         break;
       case 's':
         break;
@@ -67,9 +72,22 @@ int main(int argc , char **argv)
   //
   std::map<std::string, std::string> opt_map = parse_opts(argc, argv);
   
-  DSpacesDriver dspaces_driver;
-  dspaces_driver.dspaces_init_(2, 1);
+  int num_cnodes = boost::lexical_cast<int>(opt_map["num_cnodes"]);
+  int app_id = boost::lexical_cast<int>(opt_map["app_id"]);
   
+  TestClient test_client(num_cnodes-1, app_id);
+  
+  if (opt_map["type"].compare("put") == 0){
+    test_client.put_test();
+    //test_client.dummy_put();
+  }
+  else if(opt_map["type"].compare("get") == 0){
+    test_client.get_test();
+    //test_client.dummy_get();
+  }
+  else{
+    LOG(ERROR) << "main:: unknown type= " << opt_map["type"];
+  }
   
   return 0;
 }
