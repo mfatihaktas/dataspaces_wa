@@ -12,6 +12,7 @@ elif [ $1  = 'ep' ]; then
   GLOG_logtostderr=1 ./exp --type=put --num_cnodes=$NUM_CNODES --app_id=2
 elif [ $1  = 'eg' ]; then
   GLOG_logtostderr=1 ./exp --type=get --num_cnodes=$NUM_CNODES --app_id=3
+  #--type=get --num_cnodes=2 --app_id=3
 elif [ $1  = 'load' ]; then
   module load openmpi-x86_64
 elif [ $1  = 'show' ]; then

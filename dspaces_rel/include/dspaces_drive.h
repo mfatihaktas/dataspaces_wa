@@ -39,11 +39,9 @@ class TestClient
   public:
     TestClient(int num_peers, int app_id);
     ~TestClient();
+    float get_avg(int size, int* data);
     void put_test();
     void get_test();
-    
-    void dummy_put();
-    void dummy_get();
   private:
     int num_peers, app_id;
     boost::shared_ptr<DSpacesDriver> ds_driver_;

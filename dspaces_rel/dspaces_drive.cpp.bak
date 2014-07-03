@@ -94,31 +94,36 @@ int DSpacesDriver::init(int num_peers, int appid)
 int DSpacesDriver::sync_put(const char* var_name, unsigned int ver, int size,
                             int ndim, uint64_t *gdim, uint64_t *lb, uint64_t *ub, void *data)
 {
-  //init(num_peers, appid);
+  init(num_peers, appid);
   
-  dspaces_define_gdim(var_name, ndim, gdim);
+  //dspaces_define_gdim(var_name, ndim, gdim);
   
   dspaces_lock_on_write(var_name, &mpi_comm);
-  int result = dspaces_put(var_name, ver, sizeof(int),
-                           ndim, lb, ub, data);
-  dspaces_put_sync();
+  dspaces_put(var_name, ver, size*sizeof(int),
+              ndim, lb, ub, data);
   dspaces_unlock_on_write(var_name, &mpi_comm);
   
-  return result;
+  return dspaces_put_sync();
 }
 
 int DSpacesDriver::get(const char* var_name, unsigned int ver, int size,
                        int ndim, uint64_t *gdim, uint64_t *lb, uint64_t *ub, void *data)
 {
-  //init(num_peers, appid);
+  init(num_peers, appid);
+  
   usleep(1000*1000);
   
-  dspaces_define_gdim(var_name, ndim, gdim);
+  //dspaces_define_gdim(var_name, ndim, gdim);
   
   dspaces_lock_on_read(var_name, &mpi_comm);
-  int result= dspaces_get(var_name, ver, sizeof(int),
+  //std::cout << "get:: right before dspaces_get\n";
+  int result= dspaces_get(var_name, ver, size*sizeof(int),
                           ndim, lb, ub, data);
+  //std::cout << "get:: right after dspaces_get\n";
+  //std::cout << "result= " << result << "\n";
+  //debug_print(var_name, ver, size, ndim, gdim, lb, ub, (int*) data);
   dspaces_unlock_on_read(var_name, &mpi_comm);
+  //std::cout << "get:: right after dspaces_unlock_on_read\n";
   //
   
   return result;
@@ -152,8 +157,8 @@ float TestClient::get_avg(int size, int* data)
   return sum / (float) size;
 }
 
-#define TEST_SIZE 50
-#define TEST_NDIM 3
+#define TEST_SIZE 1 //50
+#define TEST_NDIM 1
 #define TEST_DATASIZE pow(TEST_SIZE, TEST_NDIM)
 #define TEST_VER 1
 #define TEST_SGDIM 100
@@ -162,7 +167,7 @@ void TestClient::put_test()
 {
   LOG(INFO) << "put_test:: started.";
   //
-  ds_driver_->init(num_peers, app_id);
+  //ds_driver_->init(num_peers, app_id);
   LOG(INFO) << "dspaces inited.";
   
   //generics
@@ -185,16 +190,16 @@ void TestClient::put_test()
   }
   
   LOG(INFO) << "put_test:: before put;";
-  //debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, (int*) data);
-  debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, NULL);
+  debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, (int*) data);
+  //debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, NULL);
   std::cout << "avg = " << get_avg(TEST_DATASIZE, data) << "\n";
   
   int result = ds_driver_->sync_put(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, data);
   LOG(INFO) << "put_test:: sync_put returned " << result;
   
   LOG(INFO) << "put_test:: after put;";
-  //debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, (int*) data);
-  debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, NULL);
+  debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, (int*) data);
+  //debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, NULL);
   std::cout << "avg= " << get_avg(TEST_DATASIZE, data) << "\n";
   
   free(gdim);
@@ -211,7 +216,7 @@ void TestClient::get_test()
 {
   LOG(INFO) << "get_test:: started.";
   //
-  ds_driver_->init(num_peers, app_id);
+  //ds_driver_->init(num_peers, app_id);
   LOG(INFO) << "get_test:: dspaces inited.";
   
   //generics
@@ -231,8 +236,8 @@ void TestClient::get_test()
   
   //
   LOG(INFO) << "get_test:: before get;";
-  //debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, (int*) data);
-  debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, NULL);
+  debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, (int*) data);
+  //debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, NULL);
   std::cout << "avg= " << get_avg(TEST_DATASIZE, data) << "\n";
   
   
@@ -240,8 +245,8 @@ void TestClient::get_test()
   LOG(INFO) << "get_test:: get returned " << result;
   
   LOG(INFO) << "get_test:: after get;";
-  //debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, (int*) data);
-  debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, NULL);
+  debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, (int*) data);
+  //debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, NULL);
   std::cout << "avg = " << get_avg(TEST_DATASIZE, data) << "\n";
   
   free(gdim);

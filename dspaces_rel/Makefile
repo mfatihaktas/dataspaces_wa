@@ -25,8 +25,8 @@ CPP = g++
 IDIR = include
 ODIR = obj
 
-all: exp dummy_get dummy_put
-# dummy2
+all: exp
+# dummy2 dummy_get dummy_put
 
 exp: $(ODIR)/exp.o $(ODIR)/dspaces_drive.o
 	$(MPICPP) -o $@ $^ $(INC) $(LIB)

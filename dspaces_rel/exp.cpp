@@ -89,5 +89,10 @@ int main(int argc , char **argv)
     LOG(ERROR) << "main:: unknown type= " << opt_map["type"];
   }
   
+  //
+  std::string temp;
+  std::cout << "Enter\n";
+  getline(std::cin, temp);
+  
   return 0;
 }
