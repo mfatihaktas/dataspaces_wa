@@ -68,7 +68,6 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
 
 int main(int argc , char **argv)
 {
-  std::string temp;
   google::InitGoogleLogging("exp");
   //
   std::map<std::string, std::string> opt_map = parse_opts(argc, argv);
@@ -76,34 +75,26 @@ int main(int argc , char **argv)
   int num_cnodes = boost::lexical_cast<int>(opt_map["num_cnodes"]);
   int app_id = boost::lexical_cast<int>(opt_map["app_id"]);
   
+  TestClient test_client(num_cnodes-1, app_id);
   if (opt_map["type"].compare("put") == 0){
-    TestClient test_client(num_cnodes-1, app_id);
-    test_client.put_ri_msg("test 1 2 3");
     //test_client.put_test();
-    //test_client.block();
-    //std::cout << "Enter to unblock\n";
-    //getline(std::cin, temp);
-    //test_client.unblock();
-    
-    std::cout << "Enter\n";
+    test_client.block();
+    std::string temp;
+    std::cout << "Enter to unblock\n";
     getline(std::cin, temp);
+    test_client.unblock();
   }
   else if(opt_map["type"].compare("get") == 0){
-    TestClient test_client(num_cnodes-1, app_id);
-    test_client.get_test();
-    //test_client.wait();
-  }
-  else if(opt_map["type"].compare("ri") == 0){
-    RIManager ri_manager(app_id, num_cnodes-1, app_id);
-    usleep(1*1000*1000);
-    ri_manager.init_listen_ri_req(1);
-    
-    std::cout << "Enter\n";
-    getline(std::cin, temp);
+    //test_client.get_test();
+    test_client.wait();
   }
   else{
     LOG(ERROR) << "main:: unknown type= " << opt_map["type"];
   }
+  //
+  std::string temp;
+  std::cout << "Enter\n";
+  getline(std::cin, temp);
   
   return 0;
 }

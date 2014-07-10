@@ -1,5 +1,41 @@
-#include "dspaces_drive.h"
+#include "ds_client.h"
 
+//************************************  RIManager  ********************************//
+RIManager::RIManager(char id, int num_peers, int app_id)
+: ds_driver_ ( new DSpacesDriver(num_peers, app_id) ),
+  num_peers(num_peers),
+  app_id(app_id)
+{
+  //
+  LOG(INFO) << "RIManager:: constructed.";
+}
+
+RIManager::~RIManager()
+{
+  //
+  LOG(INFO) << "RIManager:: destructed.";
+}
+/*
+void RIManager::init_listen_ri_req(int peer_id)
+{
+  std::string var_name = "ri_req_" + boost::lexical_cast<std::string>(peer_id);
+  
+  boost::function<void(char*)> fp_ = boost::bind(&RIManager::handle_ri, this, _1);
+  //function_cb_on_riget fp_ = boost::bind(&RIManager::handle_ri, this, _1);
+  ds_driver_->reg_cb_on_get(var_name, fp_);
+  ds_driver_->init_riget_thread(var_name, RI_MSG_SIZE);
+  
+  //
+  LOG(INFO) << "init_listen_ri_req:: done for peer_id= " << peer_id;
+}
+*/
+
+void RIManager::handle_ri(char* ri)
+{
+  LOG(INFO) << "handle_ri:: ri= " << ri;
+}
+
+//************************************  TestClient  *******************************//
 void debug_print(const char* var_name, unsigned int ver, int datasize, int ndim, 
                  uint64_t* gdim, uint64_t* lb, uint64_t* ub, int* data)
 {
@@ -38,100 +74,11 @@ void debug_print(const char* var_name, unsigned int ver, int datasize, int ndim,
   std::cout << "\n";
 }
 
-
-//************************************  DspacesDriver  *******************************//
-DSpacesDriver::DSpacesDriver(int num_peers, int appid)
-: finalized(false),
-  num_peers(num_peers),
-  appid(appid)
-{
-  MPI_Init(NULL, NULL);
-  MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Barrier(MPI_COMM_WORLD);
-  mpi_comm = MPI_COMM_WORLD;
-  
-  //
-  LOG(INFO) << "DSpacesDriver:: constructed.";
-}
-
-DSpacesDriver::~DSpacesDriver()
-{
-  if (!finalized){
-    finalize();
-  }
-  //
-  LOG(INFO) << "DSpacesDriver:: destructed.";
-}
-
-int DSpacesDriver::finalize()
-{
-  if (finalized){
-    LOG(INFO) << "finalize:: already finalized !";
-    return 2;
-  }
-  try{
-    dspaces_finalize();
-    MPI_Barrier(mpi_comm);
-    MPI_Finalize();
-  }
-  catch(std::exception & ex)
-  {
-    LOG(ERROR) << "finalize:: Exception=" << ex.what();
-    return 1;
-  }
-  //
-  finalized = true;
-  LOG(INFO) << "finalize:: finalized.";
-  return 0;
-}
-
-int DSpacesDriver::init(int num_peers, int appid)
-{
-  return dspaces_init(num_peers, appid, &mpi_comm, NULL);
-}
-
-int DSpacesDriver::sync_put(const char* var_name, unsigned int ver, int size,
-                            int ndim, uint64_t *gdim, uint64_t *lb, uint64_t *ub, void *data)
-{
-  //init(num_peers, appid);
-  
-  dspaces_define_gdim(var_name, ndim, gdim);
-  
-  dspaces_lock_on_write(var_name, &mpi_comm);
-  int result = dspaces_put(var_name, ver, sizeof(int),
-                           ndim, lb, ub, data);
-  dspaces_put_sync();
-  dspaces_unlock_on_write(var_name, &mpi_comm);
-  
-  return result;
-}
-
-int DSpacesDriver::get(const char* var_name, unsigned int ver, int size,
-                       int ndim, uint64_t *gdim, uint64_t *lb, uint64_t *ub, void *data)
-{
-  //init(num_peers, appid);
-  usleep(1000*1000);
-  
-  dspaces_define_gdim(var_name, ndim, gdim);
-  
-  dspaces_lock_on_read(var_name, &mpi_comm);
-  int result= dspaces_get(var_name, ver, sizeof(int),
-                          ndim, lb, ub, data);
-  dspaces_unlock_on_read(var_name, &mpi_comm);
-  //
-  
-  return result;
-}
-
-//************************************  TestClient  *******************************//
-
 TestClient::TestClient(int num_peers, int app_id)
-: ds_driver_ ( new DSpacesDriver(num_peers, app_id) )
+: ds_driver_ ( new DSpacesDriver(num_peers, app_id) ),
+  num_peers(num_peers),
+  app_id(app_id)
 {
-  this->num_peers = num_peers;
-  this->app_id = app_id;
-  
   //
   LOG(INFO) << "TestClient:: constructed.";
 }
@@ -162,8 +109,8 @@ void TestClient::put_test()
 {
   LOG(INFO) << "put_test:: started.";
   //
-  ds_driver_->init(num_peers, app_id);
-  LOG(INFO) << "dspaces inited.";
+  //ds_driver_->init(num_peers, app_id);
+  //LOG(INFO) << "dspaces inited.";
   
   //generics
   const char* var_name = "dummy";
@@ -189,7 +136,7 @@ void TestClient::put_test()
   debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, NULL);
   std::cout << "avg = " << get_avg(TEST_DATASIZE, data) << "\n";
   
-  int result = ds_driver_->sync_put(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, data);
+  int result = ds_driver_->sync_put(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim, lb, ub, data);
   LOG(INFO) << "put_test:: sync_put returned " << result;
   
   LOG(INFO) << "put_test:: after put;";
@@ -211,8 +158,8 @@ void TestClient::get_test()
 {
   LOG(INFO) << "get_test:: started.";
   //
-  ds_driver_->init(num_peers, app_id);
-  LOG(INFO) << "get_test:: dspaces inited.";
+  //ds_driver_->init(num_peers, app_id);
+  //LOG(INFO) << "get_test:: dspaces inited.";
   
   //generics
   const char* var_name = "dummy";
@@ -236,7 +183,7 @@ void TestClient::get_test()
   std::cout << "avg= " << get_avg(TEST_DATASIZE, data) << "\n";
   
   
-  int result = ds_driver_->get(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, data);
+  int result = ds_driver_->get(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim, lb, ub, data);
   LOG(INFO) << "get_test:: get returned " << result;
   
   LOG(INFO) << "get_test:: after get;";
@@ -254,3 +201,26 @@ void TestClient::get_test()
   LOG(INFO) << "get_test:: done.";
 }
 
+void TestClient::block()
+{
+  LOG(INFO) << "block:: blocking.";
+  ds_driver_->lock_on_write("dummy_lock");
+  LOG(INFO) << "block:: done.";
+}
+
+void TestClient::unblock()
+{
+  LOG(INFO) << "unblock:: unblocking.";
+  ds_driver_->unlock_on_write("dummy_lock");
+  LOG(INFO) << "unblock:: done.";
+}
+
+void TestClient::wait()
+{
+  LOG(INFO) << "wait:: waiting.";
+  ds_driver_->lock_on_read("dummy_lock");
+  ds_driver_->unlock_on_read("dummy_lock");
+  //ds_driver_->lock_on_write("dummy_lock");
+  //ds_driver_->unlock_on_write("dummy_lock");
+  LOG(INFO) << "wait:: done.";
+}
