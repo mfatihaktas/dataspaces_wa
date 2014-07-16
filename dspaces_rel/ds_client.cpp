@@ -1,11 +1,190 @@
 #include "ds_client.h"
 
+//************************************   RQTable   ********************************//
+RQTable::RQTable()
+{
+  //
+  LOG(INFO) << "RQTable:: constructed.";
+}
+
+RQTable::~RQTable()
+{
+  //
+  LOG(INFO) << "RQTable:: deconstructed.";
+}
+
+bool RQTable::query(std::string key, char& ds_id)
+{
+  if (key_dsid_map.count(key) ){
+    return false;
+  }
+  
+  ds_id = key_dsid_map[key];
+  return true;
+}
+
+int RQTable::add_key_dsid_pair(std::string key, char ds_id)
+{
+  if (key_dsid_map.count(key) ){
+    LOG(ERROR) << "add_key_dsid_pair:: already added key=" << key;
+    return 1;
+  }
+  key_dsid_map[key] = ds_id;
+  //
+  LOG(INFO) << "add_key_dsid_pair:: added pair <" << key << ", " << ds_id << ">";
+  return 0;
+}
+
+int RQTable::update_entry(std::string key, char ds_id)
+{
+  if (!key_dsid_map.count(key) ){
+    LOG(ERROR) << "update_entry:: non-existing key=" << key;
+    return 1;
+  }
+  key_dsid_map[key] = ds_id;
+  //
+  LOG(INFO) << "update_entry:: updated pair <" << key << ", " << ds_id << ">";
+  return 0;
+}
+
+int RQTable::del_key(std::string key)
+{
+  if (!key_dsid_map.count(key) ){
+    LOG(ERROR) << "del_key:: non-existing key=" << key;
+    return 1;
+  }
+  std::map<std::string, char>::iterator it;
+  it=key_dsid_map.find(key);
+  key_dsid_map.erase (it);
+  //
+  LOG(INFO) << "del_key:: deleted key=" << key;
+  return 0;
+}
+//************************************  BCServer  *********************************//
+BCServer::BCServer(int app_id, int num_clients, int msg_size,
+                   std::string base_comm_var_name, function_cb_on_recv f_cb)
+: app_id(app_id),
+  num_clients(num_clients),
+  msg_size(msg_size),
+  base_comm_var_name(base_comm_var_name),
+  f_cb(f_cb),
+  ds_driver_ ( new DSpacesDriver(num_clients, app_id) )
+{
+  //
+  LOG(INFO) << "BCServer:: constructed.";
+}
+
+BCServer::~BCServer()
+{
+  ds_driver_->finalize();
+  //
+  LOG(INFO) << "BCServer:: destructed.";
+}
+
+void BCServer::init_listen_client(int client_id)
+{
+  std::string var_name = base_comm_var_name + boost::lexical_cast<std::string>(client_id);
+  
+  ds_driver_->reg_cb_on_get(var_name, f_cb);
+  ds_driver_->init_riget_thread(var_name, msg_size);
+  //
+  LOG(INFO) << "init_listen_client:: done for client_id= " << client_id;
+}
+
+void BCServer::init_listen_all()
+{
+  //Assume app_id of each client app is ordered as 1,2,...,num_clients
+  for(int i=1; i<=num_clients; i++){
+    init_listen_client(i);
+  }
+  //
+  LOG(INFO) << "init_listen_all:: done.";
+}
+
+void BCServer::reinit_listen_client(int client_id)
+{
+  std::string var_name = base_comm_var_name + boost::lexical_cast<std::string>(client_id);
+  
+  ds_driver_->init_riget_thread(var_name, msg_size);
+  //
+  LOG(INFO) << "reinit_listen_client:: done for client_id= " << client_id;
+}
+
+//************************************  BCClient   ********************************//
+BCClient::BCClient(int app_id, int num_others, int msg_size,
+                   std::string base_comm_var_name)
+: app_id(app_id),
+  num_others(num_others),
+  max_msg_size(max_msg_size),
+  base_comm_var_name(base_comm_var_name),
+  ds_driver_ ( new DSpacesDriver(num_others, app_id) )
+{
+  comm_var_name = base_comm_var_name + boost::lexical_cast<std::string>(app_id);
+  ds_driver_->lock_on_write(comm_var_name.c_str() );
+  //
+  LOG(INFO) << "BCClient:: constructed.";
+}
+
+BCClient::~BCClient()
+{
+  ds_driver_->finalize();
+  //
+  LOG(INFO) << "BCClient:: destructed.";
+}
+
+int BCClient::send(std::string type, std::string msg)
+{
+  std::map<std::string, std::string> msg_map;
+  msg_map["app_id"] = boost::lexical_cast<std::string>(app_id);
+  msg_map["type"] = type;
+  
+  if (type.compare("r_get") == 0){
+    msg_map["key"] = msg;
+  }
+  else if (type.compare("r_put") == 0){
+  }
+  else{
+    LOG(ERROR) << "send:: unknown type= " << type;
+    return 1;
+  }
+  //
+  std::stringstream ss;
+  boost::archive::text_oarchive oa(ss);
+  oa << msg_map;
+  std::string msg_str(ss.str());
+  
+  int msg_size = msg_str.size();
+  if (msg_size > max_msg_size){
+    LOG(ERROR) << "put_ri_msg:: msg_size= " << msg_size << " > max_msg_size= " << max_msg_size;
+    return 1;
+  }
+  
+  //1 dimensional char array
+  uint64_t gdim = max_msg_size;
+  uint64_t lb = 0;
+  uint64_t ub = max_msg_size-1;
+  
+  char *data_ = (char*)malloc(max_msg_size*sizeof(char));
+  strcpy(data_, msg_str.c_str() );
+  for (int i=msg_size; i<max_msg_size-msg_size; i++){
+    data_[i] = '\0';
+  }
+  int result = ds_driver_->sync_put_without_lock(comm_var_name.c_str(), 1, sizeof(char), 1, &gdim, &lb, &ub, data_);
+  //LOG(INFO) << "send:: sync_put_without_lock returned " << result;
+  free(data_);
+  
+  ds_driver_->lock_on_write(comm_var_name.c_str() );
+  
+  return 0;
+}
 //************************************  RIManager  ********************************//
 RIManager::RIManager(char id, int num_cnodes, int app_id)
-: ds_driver_ ( new DSpacesDriver(num_cnodes, app_id) ),
-  num_cnodes(num_cnodes),
-  app_id(app_id)
+: num_cnodes(num_cnodes),
+  app_id(app_id),
+  bc_server_(new BCServer(app_id, num_cnodes, RI_MSG_SIZE, "ri_req_", 
+                          boost::bind(&RIManager::handle_ri_req, this, _1) ) )
 {
+  bc_server_->init_listen_all();
   //
   LOG(INFO) << "RIManager:: constructed.";
 }
@@ -18,20 +197,39 @@ RIManager::~RIManager()
 
 void RIManager::handle_ri_req(char* ri_req)
 {
+  //ri_req: serialized std::map<std::string, std::string>
+  std::map<std::string, std::string> ri_req_map;
+  
+  std::stringstream ss;
+  ss << ri_req;
+  boost::archive::text_iarchive ia(ss);
+  ia >> ri_req_map;
   //
-  LOG(INFO) << "handle_ri_req:: ri_req= " << ri_req;
+  LOG(INFO) << "handle_ri_req:: ri_req_map= ";
+  for (std::map<std::string, std::string>::const_iterator it=ri_req_map.begin(); it!=ri_req_map.end(); ++it){
+    std::cout << "\t" << it->first << ":" << it->second << "\n";
+  }
+  
+  int app_id = boost::lexical_cast<int>(ri_req_map["app_id"]);
+  bc_server_->reinit_listen_client(app_id);
+  
+  std::string type = ri_req_map["type"];
+  
+  if (type.compare("r_get") == 0){
+    handle_r_get(ri_req_map["key"]);
+  }
+  else if (type.compare("r_put") == 0){
+    //
+  }
+  else{
+    LOG(ERROR) << "handle_ri_req:: unknown type= " << type;
+  }
 }
 
-void RIManager::init_listen_ri_req(int peer_id)
+void RIManager::handle_r_get(std::string key)
 {
-  std::string var_name = "ri_req_" + boost::lexical_cast<std::string>(peer_id);
-  
-  function_cb_on_ri_req fp_handle_ri_req = boost::bind(&RIManager::handle_ri_req, this, _1);
-  ds_driver_->reg_cb_on_get(var_name, fp_handle_ri_req);
-  ds_driver_->init_riget_thread(var_name, RI_MSG_SIZE);
-  
   //
-  LOG(INFO) << "init_listen_ri_req:: done for peer_id= " << peer_id;
+  LOG(INFO) << "handle_r_get:: key= " << key;
 }
 
 //************************************  TestClient  *******************************//
@@ -224,14 +422,35 @@ void TestClient::lock_ri_var(int peer_id)
   ds_driver_->lock_on_write(var_name.c_str() );
 }
 
-void TestClient::put_ri_msg(std::string ri_msg)
+void TestClient::put_ri_msg(std::string type, std::string msg)
 {
-  int msg_size = ri_msg.size();
-  if (msg_size > RI_MSG_SIZE){
-    LOG(ERROR) << "put_ri_msg:: msg_size= " << msg_size << " > RI_MSG_SIZE= " << RI_MSG_SIZE;
+  std::map<std::string, std::string> ri_msg_map;
+  
+  ri_msg_map["app_id"] = boost::lexical_cast<std::string>(app_id);
+  ri_msg_map["type"] = type;
+  
+  if (type.compare("r_get") == 0){
+    ri_msg_map["key"] = msg;
+  }
+  else if (type.compare("r_put") == 0){
+    //
+  }
+  else{
+    LOG(ERROR) << "put_ri_msg:: unknown type= " << type;
+  }
+  //
+  std::stringstream ss;
+  boost::archive::text_oarchive oa(ss);
+  oa << ri_msg_map;
+  std::string ri_msg_str(ss.str());
+  
+  
+  int ri_msg_size = ri_msg_str.size();
+  if (ri_msg_size > RI_MSG_SIZE){
+    LOG(ERROR) << "put_ri_msg:: ri_msg_size= " << ri_msg_size << " > RI_MSG_SIZE= " << RI_MSG_SIZE;
     return;
   }
-  usleep(2*1000*1000);
+  //usleep(2*1000*1000);
   
   std::string var_name = "ri_req_" + boost::lexical_cast<std::string>(app_id);
   //1 dimensional char array
@@ -240,12 +459,14 @@ void TestClient::put_ri_msg(std::string ri_msg)
   uint64_t ub = RI_MSG_SIZE-1;
   
   char *data_ = (char*)malloc(RI_MSG_SIZE*sizeof(char));
-  strcpy(data_, ri_msg.c_str() );
-  for (int i=msg_size; i<RI_MSG_SIZE-msg_size; i++){
+  strcpy(data_, ri_msg_str.c_str() );
+  for (int i=ri_msg_size; i<RI_MSG_SIZE-ri_msg_size; i++){
     data_[i] = '\0';
   }
   int result = ds_driver_->sync_put_without_lock(var_name.c_str(), 1, sizeof(char), 1, &gdim, &lb, &ub, data_);
   LOG(INFO) << "put_ri_msg:: sync_put_without_lock returned " << result;
   
   free(data_);
+  
+  lock_ri_var(app_id);
 }

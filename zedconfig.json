@@ -3,8 +3,8 @@
         "/default.json"
     ],
     "preferences": {
-        "theme": "monokai",
-        "fontSize": 12,
+        "theme": "github",
+        "fontSize": 11,
         "tabSize": 2,
         "printMarginColumn": 100
     },

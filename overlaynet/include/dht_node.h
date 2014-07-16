@@ -144,7 +144,7 @@ struct peer_table{
                char* peer_join_lip = NULL, int peer_join_lport = 0)
   {
     if (id_pinfo_map.count(peer_id) ){
-      LOG(ERROR) << "add_peer:: already added; peer_id=" << peer_id;
+      LOG(ERROR) << "add_peer:: already added peer_id=" << peer_id;
       return 1;
     }
     boost::shared_ptr<peer_info> temp_( 

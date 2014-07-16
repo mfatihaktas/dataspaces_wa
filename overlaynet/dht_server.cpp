@@ -79,9 +79,35 @@ int DHTServer::close(){
   }
 }
 
-void DHTServer::handle_recv(char* msg)
+void DHTServer::init_listen()
 {
-  _recv_callback(msg);
+  try
+  {
+	  boost::asio::ip::tcp::resolver resolver( *io_service_ );
+	  boost::asio::ip::tcp::resolver::query query( 
+		  host,
+		  boost::lexical_cast< std::string >( port )
+	  );
+	  boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve( query );
+	  LOG(INFO) << "init_listen:: server:" << host_name << " listening on " << endpoint;
+	  //
+	  acceptor_->open( endpoint.protocol() );
+	  acceptor_->set_option( boost::asio::ip::tcp::acceptor::reuse_address( true ) );
+	  acceptor_->bind( endpoint );
+	  acceptor_->listen( boost::asio::socket_base::max_connections );
+	  boost::system::error_code ec;
+	  acceptor_->accept( *socket_, ec );
+    if (ec){
+      LOG(ERROR) << "init_listen:: ec=" << ec;
+    }
+    LOG(INFO) << "init_listen:: server:" << host_name << " got connection...";
+    acceptor_->close();
+    init_recv();
+  }
+  catch( std::exception & ex )
+  {
+    LOG(ERROR) << "init_listen:: Exception=" << ex.what();
+  }
 }
 
 void DHTServer::init_recv()
@@ -123,34 +149,7 @@ void DHTServer::init_recv()
   }
 }
 
-void DHTServer::init_listen()
+void DHTServer::handle_recv(char* msg)
 {
-  try
-  {
-	  boost::asio::ip::tcp::resolver resolver( *io_service_ );
-	  boost::asio::ip::tcp::resolver::query query( 
-		  host,
-		  boost::lexical_cast< std::string >( port )
-	  );
-	  boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve( query );
-	  LOG(INFO) << "init_listen:: server:" << host_name << " listening on " << endpoint;
-	  //
-	  acceptor_->open( endpoint.protocol() );
-	  acceptor_->set_option( boost::asio::ip::tcp::acceptor::reuse_address( true ) );
-	  acceptor_->bind( endpoint );
-	  acceptor_->listen( boost::asio::socket_base::max_connections );
-	  boost::system::error_code ec;
-	  acceptor_->accept( *socket_, ec );
-    if (ec){
-      LOG(ERROR) << "init_listen:: ec=" << ec;
-    }
-    LOG(INFO) << "init_listen:: server:" << host_name << " got connection...";
-    acceptor_->close();
-    init_recv();
-  }
-  catch( std::exception & ex )
-  {
-    LOG(ERROR) << "init_listen:: Exception=" << ex.what();
-  }
+  _recv_callback(msg);
 }
-

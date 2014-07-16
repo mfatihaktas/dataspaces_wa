@@ -142,7 +142,7 @@ void DSpacesDriver::ri_get(std::string var_name, int size)
     LOG(ERROR) << "ri_get:: get failed!";
     return;
   }
-  LOG(INFO) << "ri_get:: data=\n" << data;
+  //LOG(INFO) << "ri_get:: data=\n" << data;
   varname_cbonget_map[var_name](data);
   
   free(data);

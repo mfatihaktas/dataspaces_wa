@@ -26,7 +26,7 @@ IDIR = include
 ODIR = obj
 
 #exp_put exp_get
-all: exp exp2
+all: exp
 
 exp: $(ODIR)/exp.o $(ODIR)/dht_node.o $(ODIR)/dht_server.o $(ODIR)/dht_client.o $(ODIR)/packet.o
 	$(CPP) -o $@ $^ $(INC) $(LIB)

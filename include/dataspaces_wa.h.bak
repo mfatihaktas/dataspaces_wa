@@ -1,0 +1,21 @@
+#ifndef _DSWA_H_
+#define _DSWA_H_
+
+#include "ds_drive.h"
+
+class WADSpacesDriver
+{
+  public:
+    WADSpacesDriver(int app_id, int num_local_peers);
+    ~WADSpacesDriver();
+    int finalize();
+    int init(int num_local_peers, int appid);
+  private:
+    int app_id, num_local_peers;
+    std::string ri_var_name;
+    boost::shared_ptr<DSpacesDriver> ds_driver_;
+    //
+    void lock_ri_var();
+};
+
+#endif //end of _DSWA_H_

@@ -3,7 +3,7 @@
         "/default.json"
     ],
     "preferences": {
-        "theme": "github",
+        "theme": "monokai",
         "fontSize": 11,
         "tabSize": 2,
         "printMarginColumn": 100

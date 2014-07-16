@@ -12,8 +12,10 @@ GLOG_LIB = -L/cac/u01/mfa51/Desktop/dataspaces_wa/glog-0.3.3/install/lib -l:libg
 
 GFTP_INC = -I/usr/include/globus -I/usr/lib64/globus/include
 GFTP_LIB = -L/usr/lib64/ -l:libglobus_ftp_client.so
+
+SUB_INC = -I/cac/u01/mfa51/Desktop/dataspaces_wa/include -I/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/include
 #
-INC = $(DATASPACES_INC) $(GLOG_INC) -I/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/include
+INC = $(DATASPACES_INC) $(GLOG_INC) $(SUB_INC)
 LIB = $(DATASPACES_LIB) $(GLOG_LIB) $(BOOST_LIB)
 
 MPICC = mpicc
@@ -25,30 +27,27 @@ CPP = g++
 IDIR = include
 ODIR = obj
 
-all: exp
-# dummy2 dummy_get dummy_put
+DSPACES_REL_DIR = dspaces_rel
+DSPACES_REL_IDIR = $(DSPACES_REL_DIR)/include
+DSPACES_REL_ODIR = $(DSPACES_REL_DIR)/obj
 
-exp: $(ODIR)/exp.o $(ODIR)/ds_client.o $(ODIR)/ds_drive.o
-	$(MPICPP) -o $@ $^ $(INC) $(LIB)
+.PHONY: all clean submake_dspaces_rel dataspaces_wa
 
-dummy2: $(ODIR)/dummy2.o
-	$(MPICPP) -o $@ $^ $(INC) $(LIB)
+all: submake_dspaces_rel dataspaces_wa
 
-dummy_get: $(ODIR)/dummy_get.o
-	$(MPICPP) -o $@ $^ $(INC) $(LIB)
+submake_dspaces_rel:
+	make -C dspaces_rel
 
-dummy_put: $(ODIR)/dummy_put.o
+dataspaces_wa: $(ODIR)/dataspaces_wa.o $(DSPACES_REL_ODIR)/ds_client.o $(DSPACES_REL_ODIR)/ds_drive.o
 	$(MPICPP) -o $@ $^ $(INC) $(LIB)
 
 $(ODIR)/%.o: %.cpp
 	$(MPICPP) -c -o $@ $< $(INC) $(LIB)
 
 ifeq ("x","y")
-
 $(ODIR)/%.o: %.c
 	$(CC) -c -o $@ $< $(INC) $(LIB)
-
 endif
 
 clean:
-	rm -f $(ODIR)/*.o
+	rm -f $(ODIR)/*.o $(DSPACES_REL_ODIR)/*.o

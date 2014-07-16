@@ -78,7 +78,12 @@ int main(int argc , char **argv)
   
   if (opt_map["type"].compare("put") == 0){
     TestClient test_client(num_cnodes-1, app_id);
-    test_client.put_ri_msg("test 1 2 3");
+    for(int i=0; i<3; i++){
+      std::cout << "Enter to put_ri_msg\n";
+      getline(std::cin, temp);
+      
+      test_client.put_ri_msg("r_get", "key1");
+    }
     //test_client.put_test();
     //test_client.block();
     //std::cout << "Enter to unblock\n";
@@ -95,8 +100,7 @@ int main(int argc , char **argv)
   }
   else if(opt_map["type"].compare("ri") == 0){
     RIManager ri_manager(app_id, num_cnodes-1, app_id);
-    usleep(1*1000*1000);
-    ri_manager.init_listen_ri_req(1);
+    //usleep(1*1000*1000);
     
     std::cout << "Enter\n";
     getline(std::cin, temp);
