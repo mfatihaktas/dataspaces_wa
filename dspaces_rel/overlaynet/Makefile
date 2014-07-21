@@ -11,7 +11,7 @@ GLOG_INC = -I/cac/u01/mfa51/Desktop/dataspaces_wa/glog-0.3.3/install/include
 GLOG_LIB = -L/cac/u01/mfa51/Desktop/dataspaces_wa/glog-0.3.3/install/lib -l:libglog.a
 
 #
-INC = $(BOOSTASIO_INC) $(GLOG_INC) -I/cac/u01/mfa51/Desktop/dataspaces_wa/overlaynet/include
+INC = $(BOOSTASIO_INC) $(GLOG_INC) -I/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/overlaynet/include
 LIB = $(BOOSTASIO_LIB) $(BOOST_LIB) $(GLOG_LIB)
 
 MPICC = mpicc
@@ -29,9 +29,6 @@ ODIR = obj
 all: exp
 
 exp: $(ODIR)/exp.o $(ODIR)/dht_node.o $(ODIR)/dht_server.o $(ODIR)/dht_client.o $(ODIR)/packet.o
-	$(CPP) -o $@ $^ $(INC) $(LIB)
-
-exp2: $(ODIR)/exp2.o $(ODIR)/dht_node.o $(ODIR)/dht_server.o $(ODIR)/dht_client.o $(ODIR)/packet.o
 	$(CPP) -o $@ $^ $(INC) $(LIB)
 
 $(ODIR)/%.o: %.cpp

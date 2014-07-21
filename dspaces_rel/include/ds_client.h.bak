@@ -84,20 +84,13 @@ struct RQTable
   public:
     RQTable();
     ~RQTable();
-    bool get_key(std::string key, char& ds_id, 
-                 unsigned int& ver, int& size, int& ndim, 
-                 uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
-    int add_key(std::string key, char ds_id, 
-                unsigned int ver, int size, int ndim, 
-                uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
-    int update_key(std::string key, char ds_id);
+    bool get(std::string key, char& ds_id);
+    int add_key_dsid_pair(std::string key, char ds_id);
+    int update_entry(std::string key, char ds_id);
     int del_key(std::string key);
-    std::string to_str();
   private:
     std::map<std::string, char> key_dsid_map;
-    std::map<std::string, char>::iterator key_dsid_map_it;
-    std::map<std::string, std::map<std::string, std::vector<uint64_t> > > key_datainfo_map;
-    std::map<std::string, std::map<std::string, std::vector<uint64_t> > >::iterator key_datainfo_map_it;
+    std::map<std::string, std::map<std::string, char> > key_dsid_map;
 };
 
 //Remote Interaction Manager

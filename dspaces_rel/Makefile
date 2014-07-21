@@ -12,8 +12,10 @@ GLOG_LIB = -L/cac/u01/mfa51/Desktop/dataspaces_wa/glog-0.3.3/install/lib -l:libg
 
 GFTP_INC = -I/usr/include/globus -I/usr/lib64/globus/include
 GFTP_LIB = -L/usr/lib64/ -l:libglobus_ftp_client.so
+
+SUB_INC = -I/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/include -I/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/overlaynet/include
 #
-INC = $(DATASPACES_INC) $(GLOG_INC) -I/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/include
+INC = $(DATASPACES_INC) $(GLOG_INC) $(SUB_INC)
 LIB = $(DATASPACES_LIB) $(GLOG_LIB) $(BOOST_LIB)
 
 MPICC = mpicc
@@ -25,19 +27,18 @@ CPP = g++
 IDIR = include
 ODIR = obj
 
-all: exp
+OVERLAYNET_DIR = overlaynet
+OVERLAYNET_ODIR = $(OVERLAYNET_DIR)/obj
+
+.PHONY: all clean submake_overlaynet_dir
+
+all: submake_overlaynet_dir exp
 # dummy2 dummy_get dummy_put
 
-exp: $(ODIR)/exp.o $(ODIR)/ds_client.o $(ODIR)/ds_drive.o
-	$(MPICPP) -o $@ $^ $(INC) $(LIB)
+submake_overlaynet_dir:
+	make -C $(OVERLAYNET_DIR)
 
-dummy2: $(ODIR)/dummy2.o
-	$(MPICPP) -o $@ $^ $(INC) $(LIB)
-
-dummy_get: $(ODIR)/dummy_get.o
-	$(MPICPP) -o $@ $^ $(INC) $(LIB)
-
-dummy_put: $(ODIR)/dummy_put.o
+exp: $(ODIR)/exp.o $(ODIR)/ds_client.o $(ODIR)/ds_drive.o $(OVERLAYNET_ODIR)/dht_node.o $(OVERLAYNET_ODIR)/dht_server.o $(OVERLAYNET_ODIR)/dht_client.o $(OVERLAYNET_ODIR)/packet.o
 	$(MPICPP) -o $@ $^ $(INC) $(LIB)
 
 $(ODIR)/%.o: %.cpp
@@ -51,4 +52,5 @@ $(ODIR)/%.o: %.c
 endif
 
 clean:
+	make -C $(OVERLAYNET_DIR) clean
 	rm -f $(ODIR)/*.o

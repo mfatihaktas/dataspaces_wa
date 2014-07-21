@@ -9,15 +9,13 @@ NUM_DSCNODES=$((1+1)) #+1: RIManager
 if [ $1  = 's' ]; then
   $DSPACES_BINDIR/./dataspaces_server --server $NUM_SNODES --cnodes $NUM_DSCNODES
 elif [ $1  = 'ep' ]; then
-  GLOG_logtostderr=1 ./exp --type=put --num_DScnodes=$NUM_DSCNODES --app_id=1
+  GLOG_logtostderr=1 ./exp --type=put --num_dscnodes=$NUM_DSCNODES --app_id=1
 elif [ $1  = 'eg' ]; then
-  GLOG_logtostderr=1 ./exp --type=get --num_DScnodes=$NUM_DSCNODES --app_id=2
+  GLOG_logtostderr=1 ./exp --type=get --num_dscnodes=$NUM_DSCNODES --app_id=2
   #--type=get --num_DScnodes=2 --app_id=3
 elif [ $1  = 'er' ]; then
-  GLOG_logtostderr=1 ./exp --type=ri --num_DScnodes=$NUM_DSCNODES --app_id=10 \
+  GLOG_logtostderr=1 ./exp --type=ri --num_dscnodes=$NUM_DSCNODES --app_id=10 \
                            --lintf=lo --lport=7000
-elif [ $1  = 'load' ]; then
-  module load openmpi-x86_64
 elif [ $1  = 'show' ]; then
   netstat -antu
 else

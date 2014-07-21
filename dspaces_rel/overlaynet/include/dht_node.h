@@ -413,6 +413,7 @@ class DHTNode{
     int get_next_lport();
     void wait_for_flag();
     void close();
+    std::string to_str();
   private:
     comm_channel join_channel;
     messenger msger;

@@ -13,7 +13,8 @@ GLOG_LIB = -L/cac/u01/mfa51/Desktop/dataspaces_wa/glog-0.3.3/install/lib -l:libg
 GFTP_INC = -I/usr/include/globus -I/usr/lib64/globus/include
 GFTP_LIB = -L/usr/lib64/ -l:libglobus_ftp_client.so
 
-SUB_INC = -I/cac/u01/mfa51/Desktop/dataspaces_wa/include -I/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/include
+DATASPACESWA_DIR = /cac/u01/mfa51/Desktop/dataspaces_wa
+SUB_INC = -I$(DATASPACESWA_DIR)/include -I$(DATASPACESWA_DIR)/dspaces_rel/include -I$(DATASPACESWA_DIR)/dspaces_rel/overlaynet/include
 #
 INC = $(DATASPACES_INC) $(GLOG_INC) $(SUB_INC)
 LIB = $(DATASPACES_LIB) $(GLOG_LIB) $(BOOST_LIB)
@@ -28,17 +29,19 @@ IDIR = include
 ODIR = obj
 
 DSPACES_REL_DIR = dspaces_rel
-DSPACES_REL_IDIR = $(DSPACES_REL_DIR)/include
 DSPACES_REL_ODIR = $(DSPACES_REL_DIR)/obj
 
-.PHONY: all clean submake_dspaces_rel dataspaces_wa
+OVERLAYNET_DIR = dspaces_rel/overlaynet
+OVERLAYNET_ODIR = $(OVERLAYNET_DIR)/obj
 
-all: submake_dspaces_rel dataspaces_wa
+.PHONY: all clean submake_dspaces_rel
+
+all: submake_dspaces_rel exp
 
 submake_dspaces_rel:
-	make -C dspaces_rel
+	make -C $(DSPACES_REL_DIR)
 
-dataspaces_wa: $(ODIR)/dataspaces_wa.o $(DSPACES_REL_ODIR)/ds_client.o $(DSPACES_REL_ODIR)/ds_drive.o
+exp: $(ODIR)/exp.o $(ODIR)/dataspaces_wa.o $(DSPACES_REL_ODIR)/ds_client.o $(DSPACES_REL_ODIR)/ds_drive.o $(OVERLAYNET_ODIR)/dht_node.o $(OVERLAYNET_ODIR)/dht_server.o $(OVERLAYNET_ODIR)/dht_client.o $(OVERLAYNET_ODIR)/packet.o
 	$(MPICPP) -o $@ $^ $(INC) $(LIB)
 
 $(ODIR)/%.o: %.cpp
@@ -50,4 +53,5 @@ $(ODIR)/%.o: %.c
 endif
 
 clean:
-	rm -f $(ODIR)/*.o $(DSPACES_REL_ODIR)/*.o
+	make -C $(DSPACES_REL_DIR) clean
+	rm -f $(ODIR)/*.o

@@ -65,6 +65,18 @@ void DHTNode::close()
   LOG(INFO) << "close:: node id=" << id << " closed.";
 }
 
+std::string DHTNode::to_str()
+{
+  std::stringstream ss;
+  ss << "\t id=" << id << "\n";
+  ss << "\t lip=" << lip << "\n";
+  ss << "\t lport=" << lport << "\n";
+  ss << "\t joinhost_lip=" << joinhost_lip << "\n";
+  ss << "\t joinhost_lport=" << joinhost_lport << "\n";
+  //
+  return ss.str();
+}
+
 void DHTNode::wait_for_flag()
 {
   LOG(INFO) << "wait_for_flag:: waiting...";
@@ -137,7 +149,7 @@ void DHTNode::handle_next_ppeer()
 void DHTNode::handle_recv(char* type__srlzedmsgmap)
 {
   size_t type__srlzedmsgmap_size =  strlen(type__srlzedmsgmap);
-  boost::shared_ptr< Packet > p_ ( new Packet(type__srlzedmsgmap_size, type__srlzedmsgmap) );
+  boost::shared_ptr<Packet> p_ ( new Packet(type__srlzedmsgmap_size, type__srlzedmsgmap) );
   
   switch (p_->get_type())
   {
