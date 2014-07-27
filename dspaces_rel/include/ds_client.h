@@ -6,6 +6,7 @@
 #include "mpi.h"
 #include <map>
 #include <unistd.h>
+
 #include <string>
 
 #include <glog/logging.h>
@@ -26,16 +27,16 @@
 #include "ds_drive.h"
 #include "dht_node.h"
 
-class RIMsgCoder
+class IMsgCoder
 {
   public:
-    RIMsgCoder();
-    ~RIMsgCoder();
+    IMsgCoder();
+    ~IMsgCoder();
     std::map<std::string, std::string> decode(char* msg);
     std::string encode(std::map<std::string, std::string> msg_map);
-    int decode_r_get(std::map<std::string, std::string> msg_map,
-                     std::string& var_name, unsigned int& ver, int& size,
-                     int& ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
+    int decode_i_msg(std::map<std::string, std::string> msg_map, 
+                     std::string& var_name, unsigned int& ver, int& size, 
+                     int& ndim, uint64_t* &gdim_, uint64_t* &lb_, uint64_t* &ub_);
   
   
 };
@@ -49,7 +50,8 @@ class BCServer
 {
   public:
     BCServer(int app_id, int num_clients, int msg_size, 
-             std::string base_comm_var_name, function_cb_on_recv f_cb);
+             std::string base_comm_var_name, function_cb_on_recv f_cb,
+             boost::shared_ptr<DSpacesDriver> ds_driver_);
     ~BCServer();
     void init_listen_client(int client_id);
     void init_listen_all();
@@ -66,14 +68,15 @@ class BCClient
 {
   public:
     BCClient(int app_id, int num_others, int max_msg_size, 
-             std::string base_comm_var_name);
+             std::string base_comm_var_name,
+             boost::shared_ptr<DSpacesDriver> ds_driver_);
     ~BCClient();
-    int send(std::string type, std::map<std::string, std::string> msg_map);
+    int send(std::map<std::string, std::string> msg_map);
   private:
     int app_id, num_others, max_msg_size;
     std::string base_comm_var_name;
     std::string comm_var_name;
-    RIMsgCoder rimsg_coder;
+    IMsgCoder imsg_coder;
     boost::shared_ptr<DSpacesDriver> ds_driver_;
 };
 
@@ -87,10 +90,15 @@ struct RQTable
     bool get_key(std::string key, char& ds_id, 
                  unsigned int& ver, int& size, int& ndim, 
                  uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
+    int put_key(std::string key, char ds_id, 
+                unsigned int ver, int size, int ndim, 
+                uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
     int add_key(std::string key, char ds_id, 
                 unsigned int ver, int size, int ndim, 
                 uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
-    int update_key(std::string key, char ds_id);
+    int update_key(std::string key, char ds_id, 
+                   unsigned int ver, int size, int ndim, 
+                   uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
     int del_key(std::string key);
     std::string to_str();
   private:
@@ -101,8 +109,11 @@ struct RQTable
 };
 
 //Remote Interaction Manager
-#define RI_MSG_SIZE 100
-//typedef boost::function<void(char*)> function_cb_on_ri_req;
+//TODO: a better way for syncing client and server of bccomm
+#define WAIT_TIME_FOR_BCCLIENT_DSLOCK 100*1000
+
+#define RI_MAX_MSG_SIZE 1000
+#define LI_MAX_MSG_SIZE 1000
 
 class RIManager
 {
@@ -111,13 +122,23 @@ class RIManager
               char* lip, int lport, char* ipeer_lip, int ipeer_lport);
     ~RIManager();
     std::string to_str();
+    boost::shared_ptr<Packet> gen_r_query_packet_(char type, std::string key);
+    
     void handle_ri_req(char* ri_req);
     void handle_r_get(std::map<std::string, std::string> r_get_map);
+    
+    void handle_li_req(char* li_req);
+    void handle_l_put(std::map<std::string, std::string> l_put_map);
+    
+    void handle_wamsg(std::map<std::string, std::string> wamsg_map);
   private:
     char id;
     int num_cnodes, app_id;
-    RIMsgCoder rimsg_coder;
-    boost::shared_ptr<BCServer> bc_server_;
+    RQTable rq_table;
+    IMsgCoder imsg_coder;
+    boost::shared_ptr<DSpacesDriver> ds_driver_;
+    boost::shared_ptr<BCServer> li_bc_server_;
+    boost::shared_ptr<BCServer> ri_bc_server_;
     boost::shared_ptr<DHTNode> dht_node_;
 };
 

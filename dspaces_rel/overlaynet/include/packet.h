@@ -20,7 +20,8 @@ enum type_t {
   JOIN_ACK = 'a',
   PING = 'P',
   PONG = 'p',
-  ROUTING_TABLE_UPDATE = 'R'
+  ROUTING_TABLE_UPDATE = 'R',
+  RIMSG = 'I',
 };
 
 class Packet{

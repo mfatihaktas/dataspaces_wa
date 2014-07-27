@@ -130,10 +130,11 @@ int main (int argc, char **argv)
     opt_map[(char*)"ipeer_lport"] = (char*)"0";
   }
   
+  /*
   DHTNode dhtn( *(opt_map[(char*)"id"]),
                 intf_to_ip(opt_map[(char*)"intf"]), atoi(opt_map[(char*)"lport"]),
                 opt_map[(char*)"ipeer_lip"], atoi(opt_map[(char*)"ipeer_lport"]) );
-  
+  */
   //boost::function<void(char*)> fp = boost::bind(handle_read, _1);
   //DHTServer dhts( (char*)"localhost", 6000, fp );
   

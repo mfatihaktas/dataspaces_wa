@@ -1,19 +1,65 @@
 #include "ds_client.h"
 
-//***********************************  RIMsgCoder  ********************************//
-RIMsgCoder::RIMsgCoder()
+void debug_print(std::string var_name, unsigned int ver, int size, int ndim, 
+                 uint64_t* gdim, uint64_t* lb, uint64_t* ub, int* data)
 {
+  LOG(INFO) << "debug_print::";
+  std::cout << "var_name= " << var_name << "\n"
+            << "ver= " << ver << "\n"
+            << "size= " << size << "\n"
+            << "ndim= " << ndim << "\n";
+  std::cout << "gdim=";
+  for (int i=0; i<ndim; i++){
+    std::cout << "\t" << gdim[i] << ", ";
+  }
+  std::cout << "\n";
+  
+  std::cout << "lb=";
+  for (int i=0; i<ndim; i++){
+    std::cout << "\t" << lb[i] << ", ";
+  }
+  std::cout << "\n";
+  
+  std::cout << "ub=";
+  for (int i=0; i<ndim; i++){
+    std::cout << "\t" << ub[i] << ", ";
+  }
+  std::cout << "\n";
+  
   //
-  LOG(INFO) << "RIMsgCoder:: constructed.";
+  if (data == NULL){
+    return;
+  }
+  
+  std::cout << "data=";
+  for (int i=0; i<size; i++){
+    std::cout << "\t" << data[i] << ", ";
+  }
+  std::cout << "\n";
 }
 
-RIMsgCoder::~RIMsgCoder()
+void print_str_map(std::map<std::string, std::string> str_map)
 {
-  //
-  LOG(INFO) << "RIMsgCoder:: destructed.";
+  for (std::map<std::string, std::string>::const_iterator it=str_map.begin(); 
+       it!=str_map.end(); ++it){
+    std::cout << "\t" << it->first << ":" << it->second << "\n";
+  }
 }
 
-std::map<std::string, std::string> RIMsgCoder::decode(char* msg)
+//***********************************  IMsgCoder  ********************************//
+IMsgCoder::IMsgCoder()
+{
+  //
+  LOG(INFO) << "IMsgCoder:: constructed.";
+}
+
+IMsgCoder::~IMsgCoder()
+{
+  //
+  LOG(INFO) << "IMsgCoder:: destructed.";
+}
+
+std::map<std::string, std::string> IMsgCoder::decode(char* msg)
 {
   //msg: serialized std::map<std::string, std::string>
   std::map<std::string, std::string> msg_map;
@@ -23,18 +69,14 @@ std::map<std::string, std::string> RIMsgCoder::decode(char* msg)
   boost::archive::text_iarchive ia(ss);
   ia >> msg_map;
   //
-  /*
-  LOG(INFO) << "decode:: msg_map= ";
-  for (std::map<std::string, std::string>::const_iterator it=msg_map.begin(); it!=msg_map.end(); ++it){
-    std::cout << "\t" << it->first << ":" << it->second << "\n";
-  }
-  */
+  //LOG(INFO) << "decode:: msg_map= ";
+  //print_str_map(msg_map);
   return msg_map;
 }
 
-int RIMsgCoder::decode_r_get(std::map<std::string, std::string> msg_map,
-                             std::string& var_name, unsigned int& ver, int& size,
-                             int& ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
+int IMsgCoder::decode_i_msg(std::map<std::string, std::string> msg_map,
+                            std::string& var_name, unsigned int& ver, int& size,
+                            int& ndim, uint64_t* &gdim_, uint64_t* &lb_, uint64_t* &ub_)
 {
   try
   {
@@ -72,14 +114,14 @@ int RIMsgCoder::decode_r_get(std::map<std::string, std::string> msg_map,
   }
   catch(std::exception & ex)
   {
-    LOG(ERROR) << "decode_r_get:: Exception=" << ex.what();
+    LOG(ERROR) << "decode_i_msg:: Exception=" << ex.what();
     return 1;
   }
   
   return 0;
 }
 
-std::string RIMsgCoder::encode(std::map<std::string, std::string> msg_map)
+std::string IMsgCoder::encode(std::map<std::string, std::string> msg_map)
 {
   std::stringstream ss;
   boost::archive::text_oarchive oa(ss);
@@ -89,16 +131,17 @@ std::string RIMsgCoder::encode(std::map<std::string, std::string> msg_map)
 }
 //************************************  BCServer  *********************************//
 BCServer::BCServer(int app_id, int num_clients, int msg_size,
-                   std::string base_comm_var_name, function_cb_on_recv f_cb)
+                   std::string base_comm_var_name, function_cb_on_recv f_cb,
+                   boost::shared_ptr<DSpacesDriver> ds_driver_)
 : app_id(app_id),
   num_clients(num_clients),
   msg_size(msg_size),
   base_comm_var_name(base_comm_var_name),
   f_cb(f_cb),
-  ds_driver_ ( new DSpacesDriver(num_clients, app_id) )
+  ds_driver_ ( ds_driver_ )
 {
   //
-  LOG(INFO) << "BCServer:: constructed.";
+  LOG(INFO) << "BCServer:: constructed for comm_var_name= " << base_comm_var_name;
 }
 
 BCServer::~BCServer()
@@ -138,18 +181,19 @@ void BCServer::reinit_listen_client(int client_id)
 }
 
 //************************************  BCClient   ********************************//
-BCClient::BCClient(int app_id, int num_others, int msg_size,
-                   std::string base_comm_var_name)
+BCClient::BCClient(int app_id, int num_others, int max_msg_size,
+                   std::string base_comm_var_name, 
+                   boost::shared_ptr<DSpacesDriver> ds_driver_)
 : app_id(app_id),
   num_others(num_others),
   max_msg_size(max_msg_size),
   base_comm_var_name(base_comm_var_name),
-  ds_driver_ ( new DSpacesDriver(num_others, app_id) )
+  ds_driver_ ( ds_driver_ )
 {
   comm_var_name = base_comm_var_name + boost::lexical_cast<std::string>(app_id);
   ds_driver_->lock_on_write(comm_var_name.c_str() );
   //
-  LOG(INFO) << "BCClient:: constructed.";
+  LOG(INFO) << "BCClient:: constructed for comm_var_name= " << base_comm_var_name;
 }
 
 BCClient::~BCClient()
@@ -159,9 +203,9 @@ BCClient::~BCClient()
   LOG(INFO) << "BCClient:: destructed.";
 }
 
-int BCClient::send(std::string type, std::map<std::string, std::string> msg_map)
+int BCClient::send(std::map<std::string, std::string> msg_map)
 {
-  std::string msg_str = rimsg_coder.encode(msg_map);
+  std::string msg_str = imsg_coder.encode(msg_map);
   
   int msg_size = msg_str.size();
   if (msg_size > max_msg_size){
@@ -209,7 +253,7 @@ bool RQTable::get_key(std::string key, char& ds_id,
   }
   ds_id = key_dsid_map[key];
   
-  if (ver != NULL)
+  if (ver != 0)
   {
     std::map<std::string, std::vector<uint64_t> > datainfo_map = key_datainfo_map[key];
     ver = (unsigned int)datainfo_map["ver"].back();
@@ -225,17 +269,23 @@ bool RQTable::get_key(std::string key, char& ds_id,
   return true;
 }
 
-int RQTable::add_key(std::string key, char ds_id, 
+int RQTable::put_key(std::string key, char ds_id, 
                      unsigned int ver, int size, int ndim, 
                      uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
 {
   if (key_dsid_map.count(key) ){
-    LOG(ERROR) << "add_key_dsid_pair:: already added key=" << key;
-    return 1;
+    return update_key(key, ds_id, ver, size, ndim, gdim_, lb_, ub_);
   }
+  return add_key(key, ds_id, ver, size, ndim, gdim_, lb_, ub_);
+}
+
+int RQTable::add_key(std::string key, char ds_id, 
+                     unsigned int ver, int size, int ndim, 
+                     uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
+{
   key_dsid_map[key] = ds_id;
   
-  if (ver != NULL)
+  if (ver != 0)
   {
     std::map<std::string, std::vector<uint64_t> > datainfo_map;
     
@@ -270,15 +320,14 @@ int RQTable::add_key(std::string key, char ds_id,
   return 0;
 }
 
-int RQTable::update_key(std::string key, char ds_id)
+int RQTable::update_key(std::string key, char ds_id, 
+                        unsigned int ver, int size, int ndim, 
+                        uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
 {
-  if (!key_dsid_map.count(key) ){
-    LOG(ERROR) << "update_entry:: non-existing key=" << key;
-    return 1;
-  }
-  key_dsid_map[key] = ds_id;
+  del_key(key);
+  add_key(key, ds_id, ver, size, ndim, gdim_, lb_, ub_);
   //
-  LOG(INFO) << "update_entry:: updated pair <" << key << ", " << ds_id << ">";
+  LOG(INFO) << "update_key:: updated <" << key << ", " << ds_id << ">";
   return 0;
 }
 
@@ -335,14 +384,24 @@ std::string RQTable::to_str()
 //************************************  RIManager  ********************************//
 RIManager::RIManager(char id, int num_cnodes, int app_id,
                      char* lip, int lport, char* ipeer_lip, int ipeer_lport)
-: num_cnodes(num_cnodes),
+: id(id),
+  num_cnodes(num_cnodes),
   app_id(app_id),
-  bc_server_(new BCServer(app_id, num_cnodes, RI_MSG_SIZE, "ri_req_", 
-                          boost::bind(&RIManager::handle_ri_req, this, _1) ) ),
-  dht_node_(new DHTNode(id, lip, lport,
+  ds_driver_ ( new DSpacesDriver(num_cnodes, app_id) ),
+  li_bc_server_(new BCServer(app_id, num_cnodes, LI_MAX_MSG_SIZE, "li_req_", 
+                             boost::bind(&RIManager::handle_li_req, this, _1),
+                             ds_driver_) ),
+  ri_bc_server_(new BCServer(app_id, num_cnodes, RI_MAX_MSG_SIZE, "ri_req_", 
+                             boost::bind(&RIManager::handle_ri_req, this, _1),
+                             ds_driver_) ),
+  dht_node_(new DHTNode(id, boost::bind(&RIManager::handle_wamsg, this, _1),
+                        lip, lport, 
                         ipeer_lip, ipeer_lport) )
 {
-  bc_server_->init_listen_all();
+  usleep(WAIT_TIME_FOR_BCCLIENT_DSLOCK);
+  
+  li_bc_server_->init_listen_all();
+  ri_bc_server_->init_listen_all();
   //
   LOG(INFO) << "RIManager:: constructed.\n" << to_str();
 }
@@ -356,20 +415,58 @@ RIManager::~RIManager()
 std::string RIManager::to_str()
 {
   std::stringstream ss;
-  ss << "\t id=" << id << "\n";
   ss << "\t num_cnodes=" << num_cnodes << "\n";
   ss << "\t app_id=" << app_id << "\n";
   ss << "\t dht_node=\n" << dht_node_->to_str() << "\n";
   //
   return ss.str();
 }
+/********* handle li_req *********/
+void RIManager::handle_li_req(char* li_req)
+{
+  std::map<std::string, std::string> li_req_map = imsg_coder.decode(li_req);
+  //
+  int app_id = boost::lexical_cast<int>(li_req_map["app_id"]);
+  li_bc_server_->reinit_listen_client(app_id);
+  
+  std::string type = li_req_map["type"];
+  
+  if (type.compare("l_get") == 0){
+    //
+  }
+  else if (type.compare("l_put") == 0){
+    handle_l_put(li_req_map);
+  }
+  else{
+    LOG(ERROR) << "handle_li_req:: unknown type= " << type;
+  }
+}
 
+void RIManager::handle_l_put(std::map<std::string, std::string> l_put_map)
+{
+  LOG(INFO) << "handle_l_put:: l_put_map=";
+  print_str_map(l_put_map);
+  
+  std::string var_name;
+  unsigned int ver;
+  int size, ndim;
+  uint64_t *gdim_, *lb_, *ub_;
+  if(imsg_coder.decode_i_msg(l_put_map, var_name, ver, size, ndim, gdim_, lb_, ub_) ){
+    LOG(ERROR) << "handle_l_put:: decode_i_msg failed!";
+  }
+  //debug_print(var_name, ver, size, ndim, gdim_, lb_, ub_, NULL);
+  rq_table.put_key(var_name, this->id, ver, size, ndim, gdim_, lb_, ub_);
+  //
+  LOG(INFO) << "handle_l_put:: done.";
+  LOG(INFO) << "handle_l_put:: rq_table=\n" << rq_table.to_str();
+}
+/********* handle ri_req *********/
 void RIManager::handle_ri_req(char* ri_req)
 {
-  std::map<std::string, std::string> ri_req_map = rimsg_coder.decode(ri_req);
+  std::map<std::string, std::string> ri_req_map = imsg_coder.decode(ri_req);
   //
   int app_id = boost::lexical_cast<int>(ri_req_map["app_id"]);
-  bc_server_->reinit_listen_client(app_id);
+  ri_bc_server_->reinit_listen_client(app_id);
   
   std::string type = ri_req_map["type"];
   
@@ -382,23 +479,35 @@ void RIManager::handle_ri_req(char* ri_req)
   else{
     LOG(ERROR) << "handle_ri_req:: unknown type= " << type;
   }
+  
 }
 
 void RIManager::handle_r_get(std::map<std::string, std::string> r_get_map)
 {
+  LOG(INFO) << "handle_r_get:: r_get_map=";
+  print_str_map(r_get_map);
   
   //
-  LOG(INFO) << "handle_r_get:: ...";
+  LOG(INFO) << "handle_r_get:: done.";
+}
+/********* handle wamsg *********/
+void RIManager::handle_wamsg(std::map<std::string, std::string> wamsg_map)
+{
+  LOG(INFO) << "handle_wamsg:: wamsg_map=";
+  print_str_map(wamsg_map);
+  
+  //
+  LOG(INFO) << "handle_wamsg:: done.";
 }
 //************************************  TestClient  *******************************//
 /*
-void debug_print(const char* var_name, unsigned int ver, int datasize, int ndim, 
+void debug_print(const char* var_name, unsigned int ver, int size, int ndim, 
                  uint64_t* gdim, uint64_t* lb, uint64_t* ub, int* data)
 {
   LOG(INFO) << "debug_print::";
   std::cout << "var_name= " << var_name << "\n"
             << "ver= " << ver << "\n"
-            << "datasize= " << datasize << "\n"
+            << "size= " << size << "\n"
             << "ndim= " << ndim << "\n";
   std::cout << "gdim=";
   for (int i=0; i<ndim; i++){
@@ -424,7 +533,7 @@ void debug_print(const char* var_name, unsigned int ver, int datasize, int ndim,
   }
   
   std::cout << "data=";
-  for (int i=0; i<datasize; i++){
+  for (int i=0; i<size; i++){
     std::cout << "\t" << data[i] << ", ";
   }
   std::cout << "\n";
@@ -605,21 +714,21 @@ void TestClient::put_ri_msg(std::string type, std::string msg)
   
   
   int ri_msg_size = ri_msg_str.size();
-  if (ri_msg_size > RI_MSG_SIZE){
-    LOG(ERROR) << "put_ri_msg:: ri_msg_size= " << ri_msg_size << " > RI_MSG_SIZE= " << RI_MSG_SIZE;
+  if (ri_msg_size > RI_MAX_MSG_SIZE){
+    LOG(ERROR) << "put_ri_msg:: ri_msg_size= " << ri_msg_size << " > RI_MAX_MSG_SIZE= " << RI_MAX_MSG_SIZE;
     return;
   }
   //usleep(2*1000*1000);
   
   std::string var_name = "ri_req_" + boost::lexical_cast<std::string>(app_id);
   //1 dimensional char array
-  uint64_t gdim = RI_MSG_SIZE;
+  uint64_t gdim = RI_MAX_MSG_SIZE;
   uint64_t lb = 0;
-  uint64_t ub = RI_MSG_SIZE-1;
+  uint64_t ub = RI_MAX_MSG_SIZE-1;
   
-  char *data_ = (char*)malloc(RI_MSG_SIZE*sizeof(char));
+  char *data_ = (char*)malloc(RI_MAX_MSG_SIZE*sizeof(char));
   strcpy(data_, ri_msg_str.c_str() );
-  for (int i=ri_msg_size; i<RI_MSG_SIZE-ri_msg_size; i++){
+  for (int i=ri_msg_size; i<RI_MAX_MSG_SIZE-ri_msg_size; i++){
     data_[i] = '\0';
   }
   int result = ds_driver_->sync_put_without_lock(var_name.c_str(), 1, sizeof(char), 1, &gdim, &lb, &ub, data_);

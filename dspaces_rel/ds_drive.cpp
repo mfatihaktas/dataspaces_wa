@@ -79,11 +79,12 @@ int DSpacesDriver::get(const char* var_name, unsigned int ver, int size,
   dspaces_define_gdim(var_name, ndim, gdim_);
   
   dspaces_lock_on_read(var_name, &mpi_comm);
-  
-  usleep(1000*1000);
+  //lock_on_read(var_name);
+  //usleep(1000);
   int result= dspaces_get(var_name, ver, size,
                           ndim, lb_, ub_, data_);
   dspaces_unlock_on_read(var_name, &mpi_comm);
+  //unlock_on_read(var_name);
   
   return result;
 }
@@ -96,33 +97,39 @@ int DSpacesDriver::sync_put_without_lock(const char* var_name, unsigned int ver,
   int result = dspaces_put(var_name, ver, size,
                            ndim, lb_, ub_, data_);
   dspaces_put_sync();
+  
   dspaces_unlock_on_write(var_name, &mpi_comm);
+  //unlock_on_write(var_name);
   
   return result;
 }
 
 void DSpacesDriver::lock_on_write(const char* var_name)
 {
-  LOG(INFO) << "lock_before_write:: locking var_name= " << var_name;
+  LOG(INFO) << "lock_on_write:: locking var_name= " << var_name;
   dspaces_lock_on_write(var_name, &mpi_comm);
+  LOG(INFO) << "lock_on_write:: locked var_name= " << var_name;
 }
 
 void DSpacesDriver::unlock_on_write(const char* var_name)
 {
-  LOG(INFO) << "unlock_before_write:: unlocking var_name= " << var_name;
+  LOG(INFO) << "unlock_on_write:: unlocking var_name= " << var_name;
   dspaces_unlock_on_write(var_name, &mpi_comm);
+  LOG(INFO) << "unlock_on_write:: unlocked var_name= " << var_name;
 }
 
 void DSpacesDriver::lock_on_read(const char* var_name)
 {
-  LOG(INFO) << "lock_before_read:: locking var_name= " << var_name;
+  LOG(INFO) << "lock_on_read:: locking var_name= " << var_name;
   dspaces_lock_on_read(var_name, &mpi_comm);
+  LOG(INFO) << "lock_on_read:: locked var_name= " << var_name;
 }
 
 void DSpacesDriver::unlock_on_read(const char* var_name)
 {
-  LOG(INFO) << "unlock_before_read:: unlocking var_name= " << var_name;
+  LOG(INFO) << "unlock_on_read:: unlocking var_name= " << var_name;
   dspaces_unlock_on_read(var_name, &mpi_comm);
+  LOG(INFO) << "unlock_on_read:: unlocked var_name= " << var_name;
 }
 
 void DSpacesDriver::reg_cb_on_get(std::string var_name, function_cb_on_get cb)
@@ -138,9 +145,9 @@ void DSpacesDriver::ri_get(std::string var_name, int size)
   uint64_t lb = 0;
   uint64_t ub = size-1;
   
-  if( get(var_name.c_str(), 1, sizeof(char), 1, &gdim, &lb, &ub, data) ){
+  while( get(var_name.c_str(), 1, sizeof(char), 1, &gdim, &lb, &ub, data) ){
     LOG(ERROR) << "ri_get:: get failed!";
-    return;
+    usleep(200*1000);
   }
   //LOG(INFO) << "ri_get:: data=\n" << data;
   varname_cbonget_map[var_name](data);

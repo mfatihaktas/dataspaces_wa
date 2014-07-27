@@ -45,12 +45,13 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
   static struct option long_options[] =
   {
     {"type", optional_argument, NULL, 0},
-    {"num_dscnodes", optional_argument, NULL, 1},
-    {"app_id", optional_argument, NULL, 2},
-    {"lintf", optional_argument, NULL, 3},
-    {"lport", optional_argument, NULL, 4},
-    {"ipeer_lip", optional_argument, NULL, 5},
-    {"ipeer_lport", optional_argument, NULL, 6},
+    {"dht_id", optional_argument, NULL, 1},
+    {"num_dscnodes", optional_argument, NULL, 2},
+    {"app_id", optional_argument, NULL, 3},
+    {"lintf", optional_argument, NULL, 4},
+    {"lport", optional_argument, NULL, 5},
+    {"ipeer_lip", optional_argument, NULL, 6},
+    {"ipeer_lport", optional_argument, NULL, 7},
     {0, 0, 0, 0}
   };
   
@@ -69,21 +70,24 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
         opt_map[(char*)"type"] = optarg;
         break;
       case 1:
-        opt_map[(char*)"num_dscnodes"] = optarg;
+        opt_map[(char*)"dht_id"] = optarg;
         break;
       case 2:
-        opt_map[(char*)"app_id"] = optarg;
+        opt_map[(char*)"num_dscnodes"] = optarg;
         break;
       case 3:
-        opt_map[(char*)"lintf"] = optarg;
+        opt_map[(char*)"app_id"] = optarg;
         break;
       case 4:
-        opt_map[(char*)"lport"] = optarg;
+        opt_map[(char*)"lintf"] = optarg;
         break;
       case 5:
-        opt_map[(char*)"ipeer_lip"] = optarg;
+        opt_map[(char*)"lport"] = optarg;
         break;
       case 6:
+        opt_map[(char*)"ipeer_lip"] = optarg;
+        break;
+      case 7:
         opt_map[(char*)"ipeer_lport"] = optarg;
         break;
       case 's':
@@ -130,7 +134,7 @@ int main(int argc , char **argv)
       opt_map[(char*)"ipeer_lport"] = (char*)"0";
     }
     
-    RIManager ri_manager(app_id, num_dscnodes-1, app_id, 
+    RIManager ri_manager(opt_map[(char*)"dht_id"][0], num_dscnodes-1, app_id, 
                          intf_to_ip(opt_map[(char*)"lintf"]), atoi(opt_map[(char*)"lport"]),
                          opt_map[(char*)"ipeer_lip"], atoi(opt_map[(char*)"ipeer_lport"]) );
     //usleep(1*1000*1000);

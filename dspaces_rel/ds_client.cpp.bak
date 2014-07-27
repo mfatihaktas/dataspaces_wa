@@ -200,37 +200,84 @@ RQTable::~RQTable()
   LOG(INFO) << "RQTable:: deconstructed.";
 }
 
-bool RQTable::get(std::string key, char& ds_id)
+bool RQTable::get_key(std::string key, char& ds_id,
+                      unsigned int& ver, int& size, int& ndim, 
+                      uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
 {
   if (!key_dsid_map.count(key) ){
     return false;
   }
-  
   ds_id = key_dsid_map[key];
+  
+  if (ver != NULL)
+  {
+    std::map<std::string, std::vector<uint64_t> > datainfo_map = key_datainfo_map[key];
+    ver = (unsigned int)datainfo_map["ver"].back();
+    size = (int)datainfo_map["size"].back();
+    ndim = (int)datainfo_map["ndim"].back();
+    for(int i=0; i<ndim; i++){
+      gdim_[i] = datainfo_map["gdim"][i];
+      lb_[i] = datainfo_map["lb"][i];
+      ub_[i] = datainfo_map["ub"][i];
+    }
+  }
+  
   return true;
 }
 
-int RQTable::add_key_dsid_pair(std::string key, char ds_id)
+int RQTable::add_key(std::string key, char ds_id, 
+                     unsigned int ver, int size, int ndim, 
+                     uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
 {
   if (key_dsid_map.count(key) ){
     LOG(ERROR) << "add_key_dsid_pair:: already added key=" << key;
     return 1;
   }
   key_dsid_map[key] = ds_id;
+  
+  if (ver != NULL)
+  {
+    std::map<std::string, std::vector<uint64_t> > datainfo_map;
+    
+    std::vector<uint64_t> ver_v;
+    ver_v.push_back(ver);
+    datainfo_map["ver"] = ver_v;
+    
+    std::vector<uint64_t> size_v;
+    size_v.push_back((uint64_t)size);
+    datainfo_map["size"] = size_v;
+    
+    std::vector<uint64_t> ndim_v;
+    ndim_v.push_back((uint64_t)ndim);
+    datainfo_map["ndim"] = ndim_v;
+    
+    std::vector<uint64_t> gdim_v;
+    std::vector<uint64_t> lb_v;
+    std::vector<uint64_t> ub_v;
+    for(int i=0; i<ndim; i++){
+      gdim_v.push_back(gdim_[i]);
+      lb_v.push_back(lb_[i]);
+      ub_v.push_back(ub_[i]);
+    }
+    datainfo_map["gdim"] = gdim_v;
+    datainfo_map["lb"] = lb_v;
+    datainfo_map["ub"] = ub_v;
+    //
+    key_datainfo_map[key] = datainfo_map;
+  }
   //
-  LOG(INFO) << "add_key_dsid_pair:: added pair <" << key << ", " << ds_id << ">";
+  LOG(INFO) << "add_key:: added <" << key << ", " << ds_id << ">";
   return 0;
 }
 
-int RQTable::update_entry(std::string key, char ds_id)
+int RQTable::update_key(std::string key, char ds_id, 
+                        unsigned int ver, int size, int ndim, 
+                        uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
 {
-  if (!key_dsid_map.count(key) ){
-    LOG(ERROR) << "update_entry:: non-existing key=" << key;
-    return 1;
-  }
-  key_dsid_map[key] = ds_id;
+  del_key(key);
+  add_key(key, ds_id, ver, size, ndim, gdim_, lb_, ub_);
   //
-  LOG(INFO) << "update_entry:: updated pair <" << key << ", " << ds_id << ">";
+  LOG(INFO) << "update_key:: updated <" << key << ", " << ds_id << ">";
   return 0;
 }
 
@@ -240,12 +287,49 @@ int RQTable::del_key(std::string key)
     LOG(ERROR) << "del_key:: non-existing key=" << key;
     return 1;
   }
-  std::map<std::string, char>::iterator it;
-  it=key_dsid_map.find(key);
-  key_dsid_map.erase (it);
+  key_dsid_map_it = key_dsid_map.find(key);
+  key_dsid_map.erase(key_dsid_map_it);
+  
+  key_datainfo_map_it = key_datainfo_map.find(key);
+  key_datainfo_map.erase(key_datainfo_map_it);
   //
   LOG(INFO) << "del_key:: deleted key=" << key;
   return 0;
+}
+
+std::string RQTable::to_str()
+{
+  std::stringstream ss;
+  for (key_dsid_map_it=key_dsid_map.begin(); key_dsid_map_it!=key_dsid_map.end(); ++key_dsid_map_it){
+    std::string key = key_dsid_map_it->first;
+    ss << "key=" << key << "\n";
+    ss << "\tds_id=" << key_dsid_map_it->second << "\n";
+
+    std::map<std::string, std::vector<uint64_t> > datainfo_map = key_datainfo_map[key];
+    ss << "\tver=" << datainfo_map["ver"].back() << "\n";
+    ss << "\tsize=" << datainfo_map["size"].back() << "\n";
+    int ndim = (int)datainfo_map["ndim"].back();
+    std::string gdim = "";
+    std::string lb = "";
+    std::string ub = "";
+    for(int i=0; i<ndim; i++){
+      gdim += boost::lexical_cast<std::string>(datainfo_map["gdim"][i]);
+      lb += boost::lexical_cast<std::string>(datainfo_map["lb"][i]);
+      ub += boost::lexical_cast<std::string>(datainfo_map["ub"][i]);
+      if (i < ndim-1){
+        gdim += ",";
+        lb += ",";
+        ub += ",";
+      }
+    }
+    ss << "\tndim=" << ndim << "\n";
+    ss << "\tgdim=" << gdim << "\n";
+    ss << "\tlb=" << lb << "\n";
+    ss << "\tub=" << ub << "\n";
+    ss << "\n";
+  }
+  
+  return ss.str();
 }
 //************************************  RIManager  ********************************//
 RIManager::RIManager(char id, int num_cnodes, int app_id,
@@ -254,7 +338,8 @@ RIManager::RIManager(char id, int num_cnodes, int app_id,
   app_id(app_id),
   bc_server_(new BCServer(app_id, num_cnodes, RI_MSG_SIZE, "ri_req_", 
                           boost::bind(&RIManager::handle_ri_req, this, _1) ) ),
-  dht_node_(new DHTNode(id, lip, lport,
+  dht_node_(new DHTNode(id, boost::bind(&RIManager::handle_wamsg, this, _1),
+                        lip, lport, 
                         ipeer_lip, ipeer_lport) )
 {
   bc_server_->init_listen_all();
@@ -305,6 +390,8 @@ void RIManager::handle_r_get(std::map<std::string, std::string> r_get_map)
   //
   LOG(INFO) << "handle_r_get:: ...";
 }
+
+
 //************************************  TestClient  *******************************//
 /*
 void debug_print(const char* var_name, unsigned int ver, int datasize, int ndim, 
@@ -532,16 +619,4 @@ void TestClient::put_ri_msg(std::string type, std::string msg)
   uint64_t lb = 0;
   uint64_t ub = RI_MSG_SIZE-1;
   
-  char *data_ = (char*)malloc(RI_MSG_SIZE*sizeof(char));
-  strcpy(data_, ri_msg_str.c_str() );
-  for (int i=ri_msg_size; i<RI_MSG_SIZE-ri_msg_size; i++){
-    data_[i] = '\0';
-  }
-  int result = ds_driver_->sync_put_without_lock(var_name.c_str(), 1, sizeof(char), 1, &gdim, &lb, &ub, data_);
-  LOG(INFO) << "put_ri_msg:: sync_put_without_lock returned " << result;
-  
-  free(data_);
-  
-  lock_ri_var(app_id);
-}
-*/
+  cha

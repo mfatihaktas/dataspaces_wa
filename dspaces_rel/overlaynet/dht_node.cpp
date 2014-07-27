@@ -16,13 +16,15 @@ void handle_signal(int signum)
   DHTNode::cv.notify_one();
 }
 
-DHTNode::DHTNode(char id, char* lip, int lport,
+DHTNode::DHTNode(char id, func_rimsg_recv_cb _rimsg_recv_cb,
+                 char* lip, int lport,
                  char* joinhost_lip, int joinhost_lport )
 : join_channel((char*)"join", lip, lport, joinhost_lip, joinhost_lport),
   msger( this ),
   next_lport(lport)
 {
   this->id = id;
+  this->_rimsg_recv_cb = _rimsg_recv_cb;
   this->lip = lip;
   this->lport = lport;
   this->joinhost_lip = joinhost_lip;
@@ -44,8 +46,8 @@ DHTNode::DHTNode(char id, char* lip, int lport,
     join_channel.send_to_peer( *p_ );
   }
   //
-  wait_for_flag();
-  close();
+  //wait_for_flag();
+  //close();
 }
 
 DHTNode::~DHTNode()
@@ -97,8 +99,8 @@ void DHTNode::test()
 
 void DHTNode::ping_peer(char peer_id)
 {
-  boost::shared_ptr< Packet > p_ = msger.gen_ping();
-  ptable.send_to_peer( peer_id, *p_ );
+  boost::shared_ptr<Packet> p_ = msger.gen_ping();
+  send_to_node(peer_id, *p_);
   
   LOG(INFO) << "ping_peer:: pinged peer_id=" << peer_id;
 }
@@ -144,6 +146,48 @@ void DHTNode::handle_next_ppeer()
   boost::shared_ptr<Packet> p_ = msger.gen_join_req();
   join_channel.send_to_peer( *p_ );
 }
+/*****************************  messaging *************************************/
+int DHTNode::send_msg(char msg_type, std::map<std::string, std::string> msg_map)
+{
+  char to_id = string_to_char_(msg_map["to_id"])[0];
+  
+  std::map<std::string, std::string>::iterator it = msg_map.find("to_id");
+  msg_map.erase(it);
+  
+  msg_map["id"] = this->id;
+  boost::shared_ptr< Packet > temp_p_( new Packet(msg_type, msg_map) );
+  
+  return send_to_node(to_id, *temp_p_);
+}
+
+int DHTNode::broadcast_msg(char msg_type, std::map<std::string, std::string> msg_map)
+{
+  msg_map["id"] = this->id;
+  
+  boost::shared_ptr< Packet > temp_p_( new Packet(msg_type, msg_map) );
+  
+  //LOG(INFO) << "broadcast_msg:: broadcasting...";
+  return send_to_allpeernodes(*temp_p_);
+}
+
+int DHTNode::send_to_allpeernodes(const Packet& p)
+{
+  for (std::vector<char>::const_iterator it = ptable.peer_id_vector.begin();
+      it != ptable.peer_id_vector.end(); it++)
+  {
+    if (send_to_node(*it, p)){
+      LOG(ERROR) << "send_to_allpeernodes:: send_to_node failed for peer_id=" << *it;
+      return 1;
+    }
+  }
+  
+  return 0;
+}
+
+int DHTNode::send_to_node(char id, const Packet& p)
+{
+  return ptable.send_to_peer(id, p);
+}
 
 /*****************************  handle_*** ************************************/
 void DHTNode::handle_recv(char* type__srlzedmsgmap)
@@ -167,6 +211,9 @@ void DHTNode::handle_recv(char* type__srlzedmsgmap)
       break;
     case PONG:
       handle_pong(*p_);
+      break;
+    case RIMSG:
+      handle_rimsg(*p_);
       break;
   }
   //
@@ -277,10 +324,18 @@ void DHTNode::handle_ping(const Packet& p)
   char id = (msg_map["id"].c_str())[0];
   
   boost::shared_ptr< Packet > p_ = msger.gen_pong();
-  ptable.send_to_peer( id, *p_ );
+  send_to_node(id, *p_);
 }
 
 void DHTNode::handle_pong(const Packet& p)
 {
   LOG(INFO) << "handle_pong:: p = \n" << p.to_str();
+}
+
+void DHTNode::handle_rimsg(const Packet& p)
+{
+  LOG(INFO) << "handle_rimsg:: p = \n" << p.to_str();
+  std::map<std::string, std::string> msg_map = p.get_msg_map();
+  
+  _rimsg_recv_cb(msg_map);
 }

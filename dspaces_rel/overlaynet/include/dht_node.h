@@ -293,6 +293,8 @@ struct prospective_peer_table
   }
 };
 
+typedef boost::function<void(std::map<std::string, std::string>)> func_rimsg_recv_cb;
+
 class DHTNode{
   struct messenger{
     DHTNode* dhtnode_;
@@ -393,12 +395,17 @@ class DHTNode{
     int next_lport;
     static boost::condition_variable cv;
     //
-    DHTNode(char id, char* lip, int lport, 
+    DHTNode(char id, func_rimsg_recv_cb _rimsg_recv_cb,
+            char* lip, int lport, 
             char* joinhost_lip = NULL, int joinhost_lport = 0 );
     ~DHTNode();
     
     void ping_peer(char peer_id);
     void test();
+    int send_msg(char msg_type, std::map<std::string, std::string> msg_map); //target_node_id is within msg_map
+    int broadcast_msg(char msg_type, std::map<std::string, std::string> msg_map);
+    int send_to_allpeernodes(const Packet& p);
+    int send_to_node(char id, const Packet& p);
     
     void fill_pptable(std::map<std::string, std::string> msg_map);
     void handle_next_ppeer();
@@ -409,6 +416,7 @@ class DHTNode{
     void handle_join_ack(const Packet& p);
     void handle_ping(const Packet& p);
     void handle_pong(const Packet& p);
+    void handle_rimsg(const Packet& p);
     
     int get_next_lport();
     void wait_for_flag();
@@ -421,6 +429,8 @@ class DHTNode{
     prospective_peer_table pptable;
     //
     boost::mutex m;
+    
+    func_rimsg_recv_cb _rimsg_recv_cb;
 };
 
 
