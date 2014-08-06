@@ -26,6 +26,7 @@
 
 #include "ds_drive.h"
 #include "dht_node.h"
+#include "packet.h"
 
 class IMsgCoder
 {
@@ -88,7 +89,7 @@ struct RQTable
     RQTable();
     ~RQTable();
     bool get_key(std::string key, char& ds_id, 
-                 unsigned int& ver, int& size, int& ndim, 
+                 unsigned int* ver, int* size, int* ndim, 
                  uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
     int put_key(std::string key, char ds_id, 
                 unsigned int ver, int size, int ndim, 
@@ -110,10 +111,27 @@ struct RQTable
 
 //Remote Interaction Manager
 //TODO: a better way for syncing client and server of bccomm
-#define WAIT_TIME_FOR_BCCLIENT_DSLOCK 100*1000
+#define WAIT_TIME_FOR_BCCLIENT_DSLOCK 500*1000
 
 #define RI_MAX_MSG_SIZE 1000
 #define LI_MAX_MSG_SIZE 1000
+
+struct syncer{
+  public:
+    syncer();
+    ~syncer();
+    int add_sync_point(std::string key, int num_peers);
+    int del_sync_point(std::string key);
+    int wait(std::string key);
+    int notify(std::string key);
+  private:
+    std::map<std::string, boost::shared_ptr<boost::condition_variable> > key_cv_map;
+    std::map<std::string, boost::shared_ptr<boost::condition_variable> >::iterator key_cv_map_it;
+    std::map<std::string, boost::shared_ptr<boost::mutex> > key_m_map;
+    std::map<std::string, boost::shared_ptr<boost::mutex> >::iterator key_m_map_it;
+    std::map<std::string, int> key_numpeers_map;
+    std::map<std::string, int>::iterator key_numpeers_map_it;
+};
 
 class RIManager
 {
@@ -122,7 +140,6 @@ class RIManager
               char* lip, int lport, char* ipeer_lip, int ipeer_lport);
     ~RIManager();
     std::string to_str();
-    boost::shared_ptr<Packet> gen_r_query_packet_(char type, std::string key);
     
     void handle_ri_req(char* ri_req);
     void handle_r_get(std::map<std::string, std::string> r_get_map);
@@ -131,11 +148,19 @@ class RIManager
     void handle_l_put(std::map<std::string, std::string> l_put_map);
     
     void handle_wamsg(std::map<std::string, std::string> wamsg_map);
+    void handle_r_query(std::map<std::string, std::string> r_query_map);
+    void handle_rq_reply(std::map<std::string, std::string> rq_reply_map);
+    
+    char remote_query(std::string key);
+    int broadcast_msg(char msg_type, std::map<std::string, std::string> msg_map);
+    int send_msg(char ds_id, char msg_type, std::map<std::string, std::string> msg_map);
   private:
     char id;
     int num_cnodes, app_id;
     RQTable rq_table;
     IMsgCoder imsg_coder;
+    syncer rq_syncer;
+    
     boost::shared_ptr<DSpacesDriver> ds_driver_;
     boost::shared_ptr<BCServer> li_bc_server_;
     boost::shared_ptr<BCServer> ri_bc_server_;

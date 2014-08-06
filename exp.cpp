@@ -185,7 +185,7 @@ int main(int argc , char **argv)
   
   if (strcmp(opt_map[(char*)"type"], (char*)"l_put") == 0){
     WADspacesDriver wads_driver(app_id, num_dscnodes-1);
-    l_put_test(wads_driver);
+    //l_put_test(wads_driver);
     
     std::cout << "Enter\n";
     getline(std::cin, temp);
@@ -198,7 +198,23 @@ int main(int argc , char **argv)
   }
   else if (strcmp(opt_map[(char*)"type"], (char*)"r_get") == 0){
     WADspacesDriver wads_driver(app_id, num_dscnodes-1);
-    r_get_test(wads_driver);
+    //r_get_test(wads_driver);
+    
+    std::cout << "Enter\n";
+    getline(std::cin, temp);
+  }
+  else if (strcmp(opt_map[(char*)"type"], (char*)"ri_t") == 0){
+    if (!opt_map.count((char*)"ipeer_lip")){
+      opt_map[(char*)"ipeer_lip"] = NULL;
+      opt_map[(char*)"ipeer_lport"] = (char*)"0";
+    }
+    
+    RIManager ri_manager(opt_map[(char*)"dht_id"][0], num_dscnodes-1, app_id, 
+                         intf_to_ip(opt_map[(char*)"lintf"]), atoi(opt_map[(char*)"lport"]),
+                         opt_map[(char*)"ipeer_lip"], atoi(opt_map[(char*)"ipeer_lport"]) );
+
+    usleep(5*1000*1000);
+    ri_manager.remote_query("dummy");
     
     std::cout << "Enter\n";
     getline(std::cin, temp);
@@ -208,12 +224,10 @@ int main(int argc , char **argv)
       opt_map[(char*)"ipeer_lip"] = NULL;
       opt_map[(char*)"ipeer_lport"] = (char*)"0";
     }
-    
     RIManager ri_manager(opt_map[(char*)"dht_id"][0], num_dscnodes-1, app_id, 
                          intf_to_ip(opt_map[(char*)"lintf"]), atoi(opt_map[(char*)"lport"]),
                          opt_map[(char*)"ipeer_lip"], atoi(opt_map[(char*)"ipeer_lport"]) );
-    //usleep(1*1000*1000);
-    
+
     std::cout << "Enter\n";
     getline(std::cin, temp);
   }

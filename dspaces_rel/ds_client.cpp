@@ -245,7 +245,7 @@ RQTable::~RQTable()
 }
 
 bool RQTable::get_key(std::string key, char& ds_id,
-                      unsigned int& ver, int& size, int& ndim, 
+                      unsigned int* ver, int* size, int* ndim, 
                       uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
 {
   if (!key_dsid_map.count(key) ){
@@ -253,13 +253,13 @@ bool RQTable::get_key(std::string key, char& ds_id,
   }
   ds_id = key_dsid_map[key];
   
-  if (ver != 0)
+  if (ver != NULL)
   {
     std::map<std::string, std::vector<uint64_t> > datainfo_map = key_datainfo_map[key];
-    ver = (unsigned int)datainfo_map["ver"].back();
-    size = (int)datainfo_map["size"].back();
-    ndim = (int)datainfo_map["ndim"].back();
-    for(int i=0; i<ndim; i++){
+    *ver = (unsigned int)datainfo_map["ver"].back();
+    *size = (int)datainfo_map["size"].back();
+    *ndim = (int)datainfo_map["ndim"].back();
+    for(int i=0; i<*ndim; i++){
       gdim_[i] = datainfo_map["gdim"][i];
       lb_[i] = datainfo_map["lb"][i];
       ub_[i] = datainfo_map["ub"][i];
@@ -381,6 +381,72 @@ std::string RQTable::to_str()
   
   return ss.str();
 }
+//************************************   syncer  **********************************//
+syncer::syncer()
+{
+  LOG(INFO) << "syncer:: constructed.";
+}
+
+syncer::~syncer()
+{
+  LOG(INFO) << "syncer:: destructed.";
+}
+
+int syncer::add_sync_point(std::string key, int num_peers)
+{
+  if (key_cv_map.count(key) ){
+    LOG(ERROR) << "add_sync_point:: already added key=" << key;
+    return 1;
+  }
+  boost::shared_ptr<boost::condition_variable> t_cv_( new boost::condition_variable() );
+  boost::shared_ptr<boost::mutex> t_m_( new boost::mutex() );
+  
+  key_cv_map[key] = t_cv_;
+  key_m_map[key] = t_m_;
+  key_numpeers_map[key] = num_peers;
+  
+  return 0;
+}
+
+int syncer::del_sync_point(std::string key)
+{
+  if (!key_cv_map.count(key) ){
+    LOG(ERROR) << "del_sync_point:: non-existing key=" << key;
+    return 1;
+  }
+  key_cv_map_it = key_cv_map.find(key);
+  key_cv_map.erase(key_cv_map_it);
+  
+  key_m_map_it = key_m_map.find(key);
+  key_m_map.erase(key_m_map_it);
+  
+  key_numpeers_map_it = key_numpeers_map.find(key);
+  key_numpeers_map.erase(key_numpeers_map_it);
+  
+  return 0;
+}
+
+int syncer::wait(std::string key)
+{
+  boost::mutex::scoped_lock lock(*key_m_map[key]);
+  key_cv_map[key]->wait(lock);
+  
+  return 0;
+}
+
+int syncer::notify(std::string key)
+{
+  int num_peers_to_wait = key_numpeers_map[key];
+  --num_peers_to_wait;
+  
+  if (num_peers_to_wait == 0){
+    key_cv_map[key]->notify_one();
+    return 0;
+  }
+  key_numpeers_map[key] = num_peers_to_wait;
+  
+  return 0;
+}
 //************************************  RIManager  ********************************//
 RIManager::RIManager(char id, int num_cnodes, int app_id,
                      char* lip, int lport, char* ipeer_lip, int ipeer_lport)
@@ -393,15 +459,19 @@ RIManager::RIManager(char id, int num_cnodes, int app_id,
                              ds_driver_) ),
   ri_bc_server_(new BCServer(app_id, num_cnodes, RI_MAX_MSG_SIZE, "ri_req_", 
                              boost::bind(&RIManager::handle_ri_req, this, _1),
-                             ds_driver_) ),
-  dht_node_(new DHTNode(id, boost::bind(&RIManager::handle_wamsg, this, _1),
-                        lip, lport, 
-                        ipeer_lip, ipeer_lport) )
+                             ds_driver_) )
 {
   usleep(WAIT_TIME_FOR_BCCLIENT_DSLOCK);
   
   li_bc_server_->init_listen_all();
   ri_bc_server_->init_listen_all();
+  
+  //to avoid problem with bc_server and bc_client sync_with_time
+  boost::shared_ptr<DHTNode> t_sp_(
+    new DHTNode(id, boost::bind(&RIManager::handle_wamsg, this, _1),
+                lip, lport, ipeer_lip, ipeer_lport) 
+  );
+  this->dht_node_ = t_sp_;
   //
   LOG(INFO) << "RIManager:: constructed.\n" << to_str();
 }
@@ -482,6 +552,8 @@ void RIManager::handle_ri_req(char* ri_req)
   
 }
 
+//Dor now assuming r_get will only be used for remote data
+//TODO: a global get which will return local or remote data based on where data is
 void RIManager::handle_r_get(std::map<std::string, std::string> r_get_map)
 {
   LOG(INFO) << "handle_r_get:: r_get_map=";
@@ -490,14 +562,97 @@ void RIManager::handle_r_get(std::map<std::string, std::string> r_get_map)
   //
   LOG(INFO) << "handle_r_get:: done.";
 }
+
+//PI: a key cannot be produced in multiple dataspaces
+char RIManager::remote_query(std::string key)
+{
+  LOG(INFO) << "remote_query:: started;";
+  
+  std::map<std::string, std::string> r_q_map;
+  r_q_map["type"] = "r_query";
+  r_q_map["key"] = key;
+  
+  if (broadcast_msg(RIMSG, r_q_map) ){
+    LOG(ERROR) << "remote_query:: broadcast_msg failed!";
+  }
+  
+  rq_syncer.add_sync_point(key, dht_node_->get_num_peers() );
+  rq_syncer.wait(key);
+  rq_syncer.del_sync_point(key);
+  
+  LOG(INFO) << "remote_query:: done.";
+}
+
+int RIManager::broadcast_msg(char msg_type, std::map<std::string, std::string> msg_map)
+{
+  return dht_node_->broadcast_msg(msg_type, msg_map);
+}
+
+int RIManager::send_msg(char ds_id, char msg_type, std::map<std::string, std::string> msg_map)
+{
+  return dht_node_->send_msg(ds_id, msg_type, msg_map);
+}
+
 /********* handle wamsg *********/
 void RIManager::handle_wamsg(std::map<std::string, std::string> wamsg_map)
 {
-  LOG(INFO) << "handle_wamsg:: wamsg_map=";
-  print_str_map(wamsg_map);
+  std::string type = wamsg_map["type"];
+  
+  if (type.compare("r_query") == 0){
+    handle_r_query(wamsg_map);
+  }
+  else if (type.compare("rq_reply") == 0){
+    //
+  }
+  else{
+    LOG(ERROR) << "handle_ri_req:: unknown type= " << type;
+  }
   
   //
   LOG(INFO) << "handle_wamsg:: done.";
+}
+
+void RIManager::handle_r_query(std::map<std::string, std::string> r_query_map)
+{
+  LOG(INFO) << "handle_r_query:: r_query_map=";
+  print_str_map(r_query_map);
+  
+  std::string key = r_query_map["key"];
+  
+  std::map<std::string, std::string> rq_reply_map;
+  rq_reply_map["type"] = "rq_reply";
+  rq_reply_map["key"] = key;
+  
+  char to_id = r_query_map["id"].c_str()[0];
+  char ds_id;
+  if(rq_table.get_key(key, ds_id, NULL, NULL, NULL, NULL, NULL, NULL) ){
+    //LOG(INFO) << "handle_r_query:: does not exist; key= " << key;
+    rq_reply_map["ds_id"] = "None";
+  }
+  else{
+    rq_reply_map["ds_id"] = ds_id;
+  }
+  
+  if(send_msg(to_id, RIMSG, rq_reply_map) ){
+    LOG(ERROR) << "handle_r_query:: send_msg to to_id= " << to_id << " failed!";
+  }
+  //
+  LOG(INFO) << "handle_r_query:: done.";
+}
+
+void RIManager::handle_rq_reply(std::map<std::string, std::string> rq_reply_map)
+{
+  LOG(INFO) << "handle_rq_reply:: rq_reply_map=";
+  print_str_map(rq_reply_map);
+  
+  std::string key = rq_reply_map["key"];
+  char ds_id = rq_reply_map["ds_id"].c_str()[0];
+  
+  rq_table.put_key(key, ds_id, 0, 0, 0, NULL, NULL, NULL);
+  
+  rq_syncer.notify(key);
+  //
+  LOG(INFO) << "handle_rq_reply:: done.";
 }
 //************************************  TestClient  *******************************//
 /*

@@ -84,7 +84,7 @@ int DHTClient::send(size_t datasize, char* data){
   try
   {
     socket_->send(boost::asio::buffer(data, datasize));
-    LOG(INFO) << "send:: client:" << client_name << " sent datasize=" << datasize;
+    //LOG(INFO) << "send:: client:" << client_name << " sent datasize=" << datasize;
     return 0;
   }
   catch( std::exception & ex )

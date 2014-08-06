@@ -32,6 +32,11 @@ void handle_read(char* data)
   delete data;
 }
 
+void handle_msg(std::map<std::string, std::string> wamsg_map)
+{
+  std::cout << "handle_msg; msg_map=..." << std::endl;
+}
+
 char* intf_to_ip(char* intf)
 {
   int fd;
@@ -112,7 +117,6 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
   return opt_map;
 }
 
-
 int main (int argc, char **argv)
 {
   google::InitGoogleLogging("exp");
@@ -130,11 +134,9 @@ int main (int argc, char **argv)
     opt_map[(char*)"ipeer_lport"] = (char*)"0";
   }
   
-  /*
-  DHTNode dhtn( *(opt_map[(char*)"id"]),
+  DHTNode dhtn( *(opt_map[(char*)"id"]), boost::bind(&handle_msg, _1),
                 intf_to_ip(opt_map[(char*)"intf"]), atoi(opt_map[(char*)"lport"]),
                 opt_map[(char*)"ipeer_lip"], atoi(opt_map[(char*)"ipeer_lport"]) );
-  */
   //boost::function<void(char*)> fp = boost::bind(handle_read, _1);
   //DHTServer dhts( (char*)"localhost", 6000, fp );
   

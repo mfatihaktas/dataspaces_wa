@@ -4,11 +4,22 @@ echo $1
 DSBIN_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa/dataspaces/dataspaces-1.3.0/install/bin
 
 if [ $1  = 'e' ]; then
-  GLOG_logtostderr=1 ./exp --id 1 --intf "lo" --lport 7000
+  GLOG_logtostderr=1 ./exp --id 1 --intf "ib0" --lport 7000
 elif [ $1  = 'e2' ]; then
-  GLOG_logtostderr=1 ./exp --id 2 --intf "lo" --lport 8000 --ipeer_lip "127.0.0.1" --ipeer_lport 7000
+  GLOG_logtostderr=1 ./exp --id 2 --intf "ib0" --lport 8000 --ipeer_lip "10.0.0.151" --ipeer_lport 7000
 elif [ $1  = 'e3' ]; then
-  GLOG_logtostderr=1 ./exp --id 3 --intf "lo" --lport 9000 --ipeer_lip "127.0.0.1" --ipeer_lport 7000
+  GLOG_logtostderr=1 ./exp --id 3 --intf "ib0" --lport 9000 --ipeer_lip "10.0.0.151" --ipeer_lport 7000
+elif [ $1  = 'e2r' ]; then
+  GLOG_logtostderr=1 ./exp --id 2 --intf "ib0" --lport 8000 --ipeer_lip "10.0.0.151" --ipeer_lport 7000
+elif [ $1  = 'de' ]; then
+  GLOG_logtostderr=1
+  gdb --args ./exp --id 1 --intf "ib0" --lport 7000
+elif [ $1  = 'de2' ]; then
+  GLOG_logtostderr=1
+  gdb --args ./exp --id 2 --intf "ib0" --lport 8000 --ipeer_lip "10.0.0.151" --ipeer_lport 7000
+elif [ $1  = 'de3' ]; then
+  
+  gdb --args ./exp --id 3 --intf "ib0" --lport 9000 --ipeer_lip "10.0.0.151" --ipeer_lport 7000
 elif [ $1  = 's' ]; then
   $DSBIN_DIR/./dataspaces_server -s 1 -c 2
 elif [ $1  = 'g' ]; then

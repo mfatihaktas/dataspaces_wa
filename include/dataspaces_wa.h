@@ -17,7 +17,7 @@ struct RMessenger
 };
 
 //TODO: a better way for syncing client and server of bccomm
-#define WAIT_TIME_FOR_BCSERVER_DSLOCK 200*1000
+#define WAIT_TIME_FOR_BCSERVER_DSLOCK 1000*1000
 
 #define RI_MSG_SIZE 1000
 

@@ -52,8 +52,8 @@ int DHTServer::close(){
     stop_flag = 1;
     //
     boost::system::error_code ec;
-    socket_->shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
-    //socket_->shutdown(boost::asio::ip::tcp::socket::shutdown_receive, ec);
+    //socket_->shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
+    socket_->shutdown(boost::asio::ip::tcp::socket::shutdown_receive, ec);
     socket_->close(ec);
     if (ec){
       LOG(ERROR) << "close:: ec=" << ec;

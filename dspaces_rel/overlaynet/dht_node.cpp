@@ -15,7 +15,7 @@ void handle_signal(int signum)
   LOG(INFO) << "handle_signal:: recved signum=" << signum;
   DHTNode::cv.notify_one();
 }
-
+//************************************  DHTNode  **********************************//
 DHTNode::DHTNode(char id, func_rimsg_recv_cb _rimsg_recv_cb,
                  char* lip, int lport,
                  char* joinhost_lip, int joinhost_lport )
@@ -46,13 +46,18 @@ DHTNode::DHTNode(char id, func_rimsg_recv_cb _rimsg_recv_cb,
     join_channel.send_to_peer( *p_ );
   }
   //
-  //wait_for_flag();
-  //close();
+  wait_for_flag();
+  close();
 }
 
 DHTNode::~DHTNode()
 {
   LOG(INFO) << "destructed.";
+}
+
+int DHTNode::get_num_peers()
+{
+  return ptable.peer_id_vector.size();
 }
 
 int DHTNode::get_next_lport()
@@ -147,13 +152,8 @@ void DHTNode::handle_next_ppeer()
   join_channel.send_to_peer( *p_ );
 }
 /*****************************  messaging *************************************/
-int DHTNode::send_msg(char msg_type, std::map<std::string, std::string> msg_map)
+int DHTNode::send_msg(char to_id, char msg_type, std::map<std::string, std::string> msg_map)
 {
-  char to_id = string_to_char_(msg_map["to_id"])[0];
-  
-  std::map<std::string, std::string>::iterator it = msg_map.find("to_id");
-  msg_map.erase(it);
-  
   msg_map["id"] = this->id;
   boost::shared_ptr< Packet > temp_p_( new Packet(msg_type, msg_map) );
   
