@@ -42,10 +42,10 @@ submake_dspaces_rel:
 	make -C $(DSPACES_REL_DIR)
 
 exp: $(ODIR)/exp.o $(ODIR)/dataspaces_wa.o $(DSPACES_REL_ODIR)/ds_client.o $(DSPACES_REL_ODIR)/ds_drive.o $(OVERLAYNET_ODIR)/dht_node.o $(OVERLAYNET_ODIR)/dht_server.o $(OVERLAYNET_ODIR)/dht_client.o $(OVERLAYNET_ODIR)/packet.o
-	$(MPICPP) -o $@ $^ $(INC) $(LIB)
+	$(MPICPP) -g -o $@ $^ $(INC) $(LIB)
 
 $(ODIR)/%.o: %.cpp
-	$(MPICPP) -c -o $@ $< $(INC) $(LIB)
+	$(MPICPP) -g -c -o $@ $< $(INC) $(LIB)
 
 ifeq ("x","y")
 $(ODIR)/%.o: %.c

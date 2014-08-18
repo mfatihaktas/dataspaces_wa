@@ -68,6 +68,7 @@ int DHTServer::close(){
       handle_recv_thread_v[i]->join();
     }
     */
+    //acceptor_->close();
     //
     LOG(INFO) << "close:: server:" << host_name << " closed.";
     return 0;

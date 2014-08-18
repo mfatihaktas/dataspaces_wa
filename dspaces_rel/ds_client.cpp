@@ -1,10 +1,10 @@
 #include "ds_client.h"
 
-void debug_print(std::string var_name, unsigned int ver, int size, int ndim, 
+void debug_print(std::string key, unsigned int ver, int size, int ndim, 
                  uint64_t* gdim, uint64_t* lb, uint64_t* ub, int* data)
 {
   LOG(INFO) << "debug_print::";
-  std::cout << "var_name= " << var_name << "\n"
+  std::cout << "key= " << key << "\n"
             << "ver= " << ver << "\n"
             << "size= " << size << "\n"
             << "ndim= " << ndim << "\n";
@@ -75,12 +75,12 @@ std::map<std::string, std::string> IMsgCoder::decode(char* msg)
 }
 
 int IMsgCoder::decode_i_msg(std::map<std::string, std::string> msg_map,
-                            std::string& var_name, unsigned int& ver, int& size,
+                            std::string& key, unsigned int& ver, int& size,
                             int& ndim, uint64_t* &gdim_, uint64_t* &lb_, uint64_t* &ub_)
 {
   try
   {
-    var_name = msg_map["var_name"];
+    key = msg_map["key"];
     ver = boost::lexical_cast<unsigned int>(msg_map["ver"]);
     size = boost::lexical_cast<int>(msg_map["size"]);
     ndim = boost::lexical_cast<int>(msg_map["ndim"]);
@@ -146,17 +146,17 @@ BCServer::BCServer(int app_id, int num_clients, int msg_size,
 
 BCServer::~BCServer()
 {
-  ds_driver_->finalize();
+  //ds_driver_->finalize();
   //
   LOG(INFO) << "BCServer:: destructed.";
 }
 
 void BCServer::init_listen_client(int client_id)
 {
-  std::string var_name = base_comm_var_name + boost::lexical_cast<std::string>(client_id);
-  
-  ds_driver_->reg_cb_on_get(var_name, f_cb);
-  ds_driver_->init_riget_thread(var_name, msg_size);
+  std::string key = base_comm_var_name + boost::lexical_cast<std::string>(client_id);
+  //
+  ds_driver_->reg_cb_on_get(key, f_cb);
+  ds_driver_->init_riget_thread(key, msg_size);
   //
   LOG(INFO) << "init_listen_client:: done for client_id= " << client_id;
 }
@@ -173,9 +173,9 @@ void BCServer::init_listen_all()
 
 void BCServer::reinit_listen_client(int client_id)
 {
-  std::string var_name = base_comm_var_name + boost::lexical_cast<std::string>(client_id);
+  std::string key = base_comm_var_name + boost::lexical_cast<std::string>(client_id);
   
-  ds_driver_->init_riget_thread(var_name, msg_size);
+  ds_driver_->init_riget_thread(key, msg_size);
   //
   LOG(INFO) << "reinit_listen_client:: done for client_id= " << client_id;
 }
@@ -193,12 +193,12 @@ BCClient::BCClient(int app_id, int num_others, int max_msg_size,
   comm_var_name = base_comm_var_name + boost::lexical_cast<std::string>(app_id);
   ds_driver_->lock_on_write(comm_var_name.c_str() );
   //
-  LOG(INFO) << "BCClient:: constructed for comm_var_name= " << base_comm_var_name;
+  LOG(INFO) << "BCClient:: constructed for comm_var_name= " << comm_var_name;
 }
 
 BCClient::~BCClient()
 {
-  ds_driver_->finalize();
+  //ds_driver_->finalize();
   //
   LOG(INFO) << "BCClient:: destructed.";
 }
@@ -465,7 +465,6 @@ RIManager::RIManager(char id, int num_cnodes, int app_id,
   
   li_bc_server_->init_listen_all();
   ri_bc_server_->init_listen_all();
-  
   //to avoid problem with bc_server and bc_client sync_with_time
   boost::shared_ptr<DHTNode> t_sp_(
     new DHTNode(id, boost::bind(&RIManager::handle_wamsg, this, _1),
@@ -478,6 +477,7 @@ RIManager::RIManager(char id, int num_cnodes, int app_id,
 
 RIManager::~RIManager()
 {
+  //dht_node_->close();
   //
   LOG(INFO) << "RIManager:: destructed.";
 }
@@ -517,15 +517,15 @@ void RIManager::handle_l_put(std::map<std::string, std::string> l_put_map)
   LOG(INFO) << "handle_l_put:: l_put_map=";
   print_str_map(l_put_map);
   
-  std::string var_name;
+  std::string key;
   unsigned int ver;
   int size, ndim;
   uint64_t *gdim_, *lb_, *ub_;
-  if(imsg_coder.decode_i_msg(l_put_map, var_name, ver, size, ndim, gdim_, lb_, ub_) ){
+  if(imsg_coder.decode_i_msg(l_put_map, key, ver, size, ndim, gdim_, lb_, ub_) ){
     LOG(ERROR) << "handle_l_put:: decode_i_msg failed!";
   }
-  //debug_print(var_name, ver, size, ndim, gdim_, lb_, ub_, NULL);
-  rq_table.put_key(var_name, this->id, ver, size, ndim, gdim_, lb_, ub_);
+  //debug_print(key, ver, size, ndim, gdim_, lb_, ub_, NULL);
+  rq_table.put_key(key, this->id, ver, size, ndim, gdim_, lb_, ub_);
   //
   LOG(INFO) << "handle_l_put:: done.";
   LOG(INFO) << "handle_l_put:: rq_table=\n" << rq_table.to_str();
@@ -534,14 +534,22 @@ void RIManager::handle_l_put(std::map<std::string, std::string> l_put_map)
 void RIManager::handle_ri_req(char* ri_req)
 {
   std::map<std::string, std::string> ri_req_map = imsg_coder.decode(ri_req);
+  LOG(INFO) << "handle_ri_req:: ri_req_map=";
+  print_str_map(ri_req_map);
   //
   int app_id = boost::lexical_cast<int>(ri_req_map["app_id"]);
   ri_bc_server_->reinit_listen_client(app_id);
-  
+  //
+  //usleep(100*1000);
+  boost::shared_ptr<BCClient> bc_client_(
+    new BCClient(app_id, num_cnodes, RI_MAX_MSG_SIZE, "ri_reply_", ds_driver_)
+  );
+  appid_bcclient_map[app_id] = bc_client_;
+  //
   std::string type = ri_req_map["type"];
   
   if (type.compare("r_get") == 0){
-    handle_r_get(ri_req_map);
+    handle_r_get(app_id, ri_req_map);
   }
   else if (type.compare("r_put") == 0){
     //
@@ -554,17 +562,50 @@ void RIManager::handle_ri_req(char* ri_req)
 
 //Dor now assuming r_get will only be used for remote data
 //TODO: a global get which will return local or remote data based on where data is
-void RIManager::handle_r_get(std::map<std::string, std::string> r_get_map)
+void RIManager::handle_r_get(int app_id, std::map<std::string, std::string> r_get_map)
 {
   LOG(INFO) << "handle_r_get:: r_get_map=";
   print_str_map(r_get_map);
   
+  std::string key = r_get_map["key"];
+  
+  std::map<std::string, std::string> msg_map;
+  msg_map["key"] = key;
+  
+  char ds_id;
+  if (!rq_table.get_key(key, ds_id, NULL, NULL, NULL, NULL, NULL, NULL) ){
+    if (!remote_query(key) ){
+      LOG(ERROR) << "handle_r_get:: remote_query failed!";
+    }
+    if (!rq_table.get_key(key, ds_id, NULL, NULL, NULL, NULL, NULL, NULL) ){
+      LOG(INFO) << "handle_r_get:: key= " << key << " does not exist.";
+      //
+      msg_map["ds_id"] = '?';
+    }
+    else{
+      LOG(INFO) << "handle_r_get:: key= " << key << " exists in ds_id= " << ds_id << ".";
+      //
+      msg_map["ds_id"] = ds_id;
+    }
+  }
+  else{
+    LOG(INFO) << "handle_r_get:: key= " << key << " exists in ds_id= " << ds_id << ".";
+    //
+    msg_map["ds_id"] = ds_id;
+  }
+  /*
+  std::cout << "handle_r_get:: ;;;\n";
+  usleep(10*1000*1000);
+  std::cout << "handle_r_get:: ...\n";
+  
+  appid_bcclient_map[app_id]->send(msg_map);
+  */
   //
   LOG(INFO) << "handle_r_get:: done.";
 }
 
 //PI: a key cannot be produced in multiple dataspaces
-char RIManager::remote_query(std::string key)
+bool RIManager::remote_query(std::string key)
 {
   LOG(INFO) << "remote_query:: started;";
   
@@ -574,6 +615,7 @@ char RIManager::remote_query(std::string key)
   
   if (broadcast_msg(RIMSG, r_q_map) ){
     LOG(ERROR) << "remote_query:: broadcast_msg failed!";
+    return false;
   }
   
   rq_syncer.add_sync_point(key, dht_node_->get_num_peers() );
@@ -581,6 +623,7 @@ char RIManager::remote_query(std::string key)
   rq_syncer.del_sync_point(key);
   
   LOG(INFO) << "remote_query:: done.";
+  return true;
 }
 
 int RIManager::broadcast_msg(char msg_type, std::map<std::string, std::string> msg_map)
@@ -592,7 +635,6 @@ int RIManager::send_msg(char ds_id, char msg_type, std::map<std::string, std::st
 {
   return dht_node_->send_msg(ds_id, msg_type, msg_map);
 }
-
 /********* handle wamsg *********/
 void RIManager::handle_wamsg(std::map<std::string, std::string> wamsg_map)
 {
@@ -602,7 +644,7 @@ void RIManager::handle_wamsg(std::map<std::string, std::string> wamsg_map)
     handle_r_query(wamsg_map);
   }
   else if (type.compare("rq_reply") == 0){
-    //
+    handle_rq_reply(wamsg_map);
   }
   else{
     LOG(ERROR) << "handle_ri_req:: unknown type= " << type;
@@ -614,8 +656,8 @@ void RIManager::handle_wamsg(std::map<std::string, std::string> wamsg_map)
 
 void RIManager::handle_r_query(std::map<std::string, std::string> r_query_map)
 {
-  LOG(INFO) << "handle_r_query:: r_query_map=";
-  print_str_map(r_query_map);
+  //LOG(INFO) << "handle_r_query:: r_query_map=";
+  //print_str_map(r_query_map);
   
   std::string key = r_query_map["key"];
   
@@ -625,13 +667,16 @@ void RIManager::handle_r_query(std::map<std::string, std::string> r_query_map)
   
   char to_id = r_query_map["id"].c_str()[0];
   char ds_id;
-  if(rq_table.get_key(key, ds_id, NULL, NULL, NULL, NULL, NULL, NULL) ){
+  if(!rq_table.get_key(key, ds_id, NULL, NULL, NULL, NULL, NULL, NULL) ){
     //LOG(INFO) << "handle_r_query:: does not exist; key= " << key;
-    rq_reply_map["ds_id"] = "None";
+    rq_reply_map["ds_id"] = '?';
   }
   else{
     rq_reply_map["ds_id"] = ds_id;
   }
+  
+  //LOG(INFO) << "handle_r_query:: rq_reply_map=";
+  //print_str_map(rq_reply_map);
   
   if(send_msg(to_id, RIMSG, rq_reply_map) ){
     LOG(ERROR) << "handle_r_query:: send_msg to to_id= " << to_id << " failed!";
@@ -647,250 +692,11 @@ void RIManager::handle_rq_reply(std::map<std::string, std::string> rq_reply_map)
   
   std::string key = rq_reply_map["key"];
   char ds_id = rq_reply_map["ds_id"].c_str()[0];
-  
-  rq_table.put_key(key, ds_id, 0, 0, 0, NULL, NULL, NULL);
+  if (ds_id != '?'){
+    rq_table.put_key(key, ds_id, 0, 0, 0, NULL, NULL, NULL);
+  }
   
   rq_syncer.notify(key);
   //
   LOG(INFO) << "handle_rq_reply:: done.";
 }
-//************************************  TestClient  *******************************//
-/*
-void debug_print(const char* var_name, unsigned int ver, int size, int ndim, 
-                 uint64_t* gdim, uint64_t* lb, uint64_t* ub, int* data)
-{
-  LOG(INFO) << "debug_print::";
-  std::cout << "var_name= " << var_name << "\n"
-            << "ver= " << ver << "\n"
-            << "size= " << size << "\n"
-            << "ndim= " << ndim << "\n";
-  std::cout << "gdim=";
-  for (int i=0; i<ndim; i++){
-    std::cout << "\t" << gdim[i] << ", ";
-  }
-  std::cout << "\n";
-  
-  std::cout << "lb=";
-  for (int i=0; i<ndim; i++){
-    std::cout << "\t" << lb[i] << ", ";
-  }
-  std::cout << "\n";
-  
-  std::cout << "ub=";
-  for (int i=0; i<ndim; i++){
-    std::cout << "\t" << ub[i] << ", ";
-  }
-  std::cout << "\n";
-  
-  //
-  if (data == NULL){
-    return;
-  }
-  
-  std::cout << "data=";
-  for (int i=0; i<size; i++){
-    std::cout << "\t" << data[i] << ", ";
-  }
-  std::cout << "\n";
-}
-
-TestClient::TestClient(int num_cnodes, int app_id)
-: ds_driver_ ( new DSpacesDriver(num_cnodes, app_id) ),
-  num_cnodes(num_cnodes),
-  app_id(app_id)
-{
-  lock_ri_var(app_id);
-  //
-  LOG(INFO) << "TestClient:: constructed.";
-}
-
-TestClient::~TestClient()
-{
-  //
-  LOG(INFO) << "TestClient:: destructed.";
-}
-
-float TestClient::get_avg(int size, int* data)
-{
-  float sum = 0;
-  for (int i=0; i<size; i++){
-    sum += data[i];
-  }
-  
-  return sum / (float) size;
-}
-
-#define TEST_SIZE 5
-#define TEST_NDIM 1
-#define TEST_DATASIZE pow(TEST_SIZE, TEST_NDIM)
-#define TEST_VER 1
-#define TEST_SGDIM 10
-
-void TestClient::put_test()
-{
-  LOG(INFO) << "put_test:: started.";
-  //
-  
-  //generics
-  const char* var_name = "dummy";
-  uint64_t* gdim = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t));
-  for (int i=0; i<TEST_NDIM; i++){
-    gdim[i] = TEST_SGDIM;
-  }
-  //specifics
-  int *data = (int*)malloc(TEST_DATASIZE*sizeof(int));
-  uint64_t *lb = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t));
-  uint64_t *ub = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t));
-  for (int i=0; i<TEST_NDIM; i++){
-    lb[i] = 0;
-    ub[i] = TEST_SIZE-1;
-  }
-  
-  for (int i=0; i<TEST_DATASIZE; i++){
-    data[i] = (i+1);
-  }
-  
-  LOG(INFO) << "put_test:: before put;";
-  //debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, (int*) data);
-  debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, NULL);
-  std::cout << "avg = " << get_avg(TEST_DATASIZE, data) << "\n";
-  
-  int result = ds_driver_->sync_put(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim, lb, ub, data);
-  LOG(INFO) << "put_test:: sync_put returned " << result;
-  
-  LOG(INFO) << "put_test:: after put;";
-  //debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, (int*) data);
-  debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, NULL);
-  std::cout << "avg= " << get_avg(TEST_DATASIZE, data) << "\n";
-  
-  free(gdim);
-  free(lb);
-  free(ub);
-  free(data);
-  
-  //
-  LOG(INFO) << "put_test:: done.";
-}
-
-void TestClient::get_test()
-{
-  LOG(INFO) << "get_test:: started.";
-  //
-  
-  //generics
-  const char* var_name = "dummy";
-  uint64_t* gdim = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t));
-  for (int i=0; i<TEST_NDIM; i++){
-    gdim[i] = TEST_SGDIM;
-  }
-  //specifics
-  int *data = (int*)malloc(TEST_DATASIZE*sizeof(int));
-  uint64_t *lb = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t));
-  uint64_t *ub = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t));
-  for (int i=0; i<TEST_NDIM; i++){
-    lb[i] = 0;
-    ub[i] = TEST_SIZE-1;
-  }
-  
-  //
-  LOG(INFO) << "get_test:: before get;";
-  //debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, (int*) data);
-  debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, NULL);
-  std::cout << "avg= " << get_avg(TEST_DATASIZE, data) << "\n";
-  
-  int result = ds_driver_->get(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim, lb, ub, data);
-  LOG(INFO) << "get_test:: get returned " << result;
-  
-  LOG(INFO) << "get_test:: after get;";
-  //debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, (int*) data);
-  debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, NULL);
-  std::cout << "avg = " << get_avg(TEST_DATASIZE, data) << "\n";
-  
-  free(gdim);
-  free(lb);
-  free(ub);
-  free(data);
-  
-  //
-  LOG(INFO) << "get_test:: done.";
-}
-
-void TestClient::block()
-{
-  LOG(INFO) << "block:: blocking.";
-  ds_driver_->lock_on_write("dummy_lock");
-  LOG(INFO) << "block:: done.";
-}
-
-void TestClient::unblock()
-{
-  LOG(INFO) << "unblock:: unblocking.";
-  ds_driver_->unlock_on_write("dummy_lock");
-  LOG(INFO) << "unblock:: done.";
-}
-
-void TestClient::wait()
-{
-  LOG(INFO) << "wait:: waiting.";
-  ds_driver_->lock_on_read("dummy_lock");
-  ds_driver_->unlock_on_read("dummy_lock");
-  //ds_driver_->lock_on_write("dummy_lock");
-  //ds_driver_->unlock_on_write("dummy_lock");
-  LOG(INFO) << "wait:: done.";
-}
-
-void TestClient::lock_ri_var(int peer_id)
-{
-  std::string var_name = "ri_req_" + boost::lexical_cast<std::string>(peer_id);
-  ds_driver_->lock_on_write(var_name.c_str() );
-}
-
-void TestClient::put_ri_msg(std::string type, std::string msg)
-{
-  std::map<std::string, std::string> ri_msg_map;
-  
-  ri_msg_map["app_id"] = boost::lexical_cast<std::string>(app_id);
-  ri_msg_map["type"] = type;
-  
-  if (type.compare("r_get") == 0){
-    ri_msg_map["key"] = msg;
-  }
-  else if (type.compare("r_put") == 0){
-    //
-  }
-  else{
-    LOG(ERROR) << "put_ri_msg:: unknown type= " << type;
-  }
-  //
-  std::stringstream ss;
-  boost::archive::text_oarchive oa(ss);
-  oa << ri_msg_map;
-  std::string ri_msg_str(ss.str());
-  
-  
-  int ri_msg_size = ri_msg_str.size();
-  if (ri_msg_size > RI_MAX_MSG_SIZE){
-    LOG(ERROR) << "put_ri_msg:: ri_msg_size= " << ri_msg_size << " > RI_MAX_MSG_SIZE= " << RI_MAX_MSG_SIZE;
-    return;
-  }
-  //usleep(2*1000*1000);
-  
-  std::string var_name = "ri_req_" + boost::lexical_cast<std::string>(app_id);
-  //1 dimensional char array
-  uint64_t gdim = RI_MAX_MSG_SIZE;
-  uint64_t lb = 0;
-  uint64_t ub = RI_MAX_MSG_SIZE-1;
-  
-  char *data_ = (char*)malloc(RI_MAX_MSG_SIZE*sizeof(char));
-  strcpy(data_, ri_msg_str.c_str() );
-  for (int i=ri_msg_size; i<RI_MAX_MSG_SIZE-ri_msg_size; i++){
-    data_[i] = '\0';
-  }
-  int result = ds_driver_->sync_put_without_lock(var_name.c_str(), 1, sizeof(char), 1, &gdim, &lb, &ub, data_);
-  LOG(INFO) << "put_ri_msg:: sync_put_without_lock returned " << result;
-  
-  free(data_);
-  
-  lock_ri_var(app_id);
-}
-*/

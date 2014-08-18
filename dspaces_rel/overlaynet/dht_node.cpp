@@ -46,8 +46,8 @@ DHTNode::DHTNode(char id, func_rimsg_recv_cb _rimsg_recv_cb,
     join_channel.send_to_peer( *p_ );
   }
   //
-  wait_for_flag();
-  close();
+  //wait_for_flag();
+  //close();
 }
 
 DHTNode::~DHTNode()
@@ -162,6 +162,10 @@ int DHTNode::send_msg(char to_id, char msg_type, std::map<std::string, std::stri
 
 int DHTNode::broadcast_msg(char msg_type, std::map<std::string, std::string> msg_map)
 {
+  if (ptable.peer_id_vector.empty() ){
+    LOG(INFO) << "broadcast_msg:: no peer to broadcast.";
+    return 2;
+  }
   msg_map["id"] = this->id;
   
   boost::shared_ptr< Packet > temp_p_( new Packet(msg_type, msg_map) );

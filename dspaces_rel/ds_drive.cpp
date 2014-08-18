@@ -1,6 +1,8 @@
 #include "ds_drive.h"
 
 //************************************  DspacesDriver  *******************************//
+#define INTER_LOCK_TIME 1000 //usec
+
 DSpacesDriver::DSpacesDriver(int num_peers, int appid)
 : finalized(false),
   num_peers(num_peers),
@@ -14,14 +16,37 @@ DSpacesDriver::DSpacesDriver(int num_peers, int appid)
   
   init(num_peers, appid);
   //
+  if (gettimeofday(&construct_time, NULL) ){
+    LOG(ERROR) << "DSpacesDriver:: gettimeofday returned non-zero.";
+    return;
+  }
+  refresh_last_lock_time();
+  /*
+  LOG(INFO) << "DSpacesDriver:: construct_time.tv_usec=" << construct_time.tv_usec;
+  LOG(INFO) << "DSpacesDriver:: construct_time.tv_sec=" << construct_time.tv_sec;
+  usleep(1000*1000);
+  LOG(INFO) << "DSpacesDriver:: 1sec passed.";
+  
+  if (gettimeofday(&construct_time, NULL) ){
+    LOG(ERROR) << "DSpacesDriver:: gettimeofday returned non-zero.";
+    return;
+  }
+  
+  LOG(INFO) << "DSpacesDriver:: construct_time.tv_usec=" << construct_time.tv_usec;
+  LOG(INFO) << "DSpacesDriver:: construct_time.tv_sec=" << construct_time.tv_sec;
+  */
+  //
   LOG(INFO) << "DSpacesDriver:: constructed.";
 }
 
 DSpacesDriver::~DSpacesDriver()
 {
+  /*
+  //riget_threads cause hanging.
   for (int i = 0; i < riget_thread_v.size(); i++){
     riget_thread_v[i]->join();
   }
+  */
   //LOG(INFO) << "~DSpacesDriver:: all riget_threads joined.";
   
   if (!finalized){
@@ -62,6 +87,7 @@ int DSpacesDriver::init(int num_peers, int appid)
 int DSpacesDriver::sync_put(const char* var_name, unsigned int ver, int size,
                             int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
 {
+  //boost::lock_guard<boost::mutex> guard(dspaces_mtx);
   dspaces_define_gdim(var_name, ndim, gdim_);
   
   dspaces_lock_on_write(var_name, &mpi_comm);
@@ -78,13 +104,19 @@ int DSpacesDriver::get(const char* var_name, unsigned int ver, int size,
 {
   dspaces_define_gdim(var_name, ndim, gdim_);
   
-  dspaces_lock_on_read(var_name, &mpi_comm);
-  //lock_on_read(var_name);
-  //usleep(1000);
+  property_mtx.lock();
+  do_timing("get");
+  refresh_last_lock_time();
+  property_mtx.unlock();
+  
+  //dspaces_lock_on_read(var_name, &mpi_comm);
+  lock_on_read(var_name);
+  
+  //boost::lock_guard<boost::mutex> guard(dspaces_mtx);
   int result= dspaces_get(var_name, ver, size,
                           ndim, lb_, ub_, data_);
-  dspaces_unlock_on_read(var_name, &mpi_comm);
-  //unlock_on_read(var_name);
+  //dspaces_unlock_on_read(var_name, &mpi_comm);
+  unlock_on_read(var_name);
   
   return result;
 }
@@ -92,6 +124,7 @@ int DSpacesDriver::get(const char* var_name, unsigned int ver, int size,
 int DSpacesDriver::sync_put_without_lock(const char* var_name, unsigned int ver, int size,
                                          int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
 {
+  //boost::lock_guard<boost::mutex> guard(dspaces_mtx);
   dspaces_define_gdim(var_name, ndim, gdim_);
   
   int result = dspaces_put(var_name, ver, size,
@@ -106,10 +139,17 @@ int DSpacesDriver::sync_put_without_lock(const char* var_name, unsigned int ver,
 
 void DSpacesDriver::lock_on_write(const char* var_name)
 {
+  property_mtx.lock();
+  do_timing("lock_on_write");
+  
   LOG(INFO) << "lock_on_write:: locking var_name= " << var_name;
   dspaces_lock_on_write(var_name, &mpi_comm);
   LOG(INFO) << "lock_on_write:: locked var_name= " << var_name;
+  
+  refresh_last_lock_time();
+  property_mtx.unlock();
 }
+
 
 void DSpacesDriver::unlock_on_write(const char* var_name)
 {
@@ -137,6 +177,16 @@ void DSpacesDriver::reg_cb_on_get(std::string var_name, function_cb_on_get cb)
   varname_cbonget_map[var_name] = cb;
 }
 
+void DSpacesDriver::init_riget_thread(std::string var_name, int size)
+{
+  boost::shared_ptr<boost::thread> t_(
+    new boost::thread(&DSpacesDriver::ri_get, this, var_name, size)
+  );
+  riget_thread_v.push_back(t_);
+  //
+  LOG(INFO) << "init_riget_thread:: inited for var_name= " << var_name;
+}
+
 void DSpacesDriver::ri_get(std::string var_name, int size)
 {
   //1 dimensional char array is expected
@@ -147,7 +197,7 @@ void DSpacesDriver::ri_get(std::string var_name, int size)
   
   while( get(var_name.c_str(), 1, sizeof(char), 1, &gdim, &lb, &ub, data) ){
     LOG(ERROR) << "ri_get:: get failed!";
-    usleep(200*1000);
+    usleep(1000*1000);
   }
   //LOG(INFO) << "ri_get:: data=\n" << data;
   varname_cbonget_map[var_name](data);
@@ -155,12 +205,68 @@ void DSpacesDriver::ri_get(std::string var_name, int size)
   free(data);
 }
 
-void DSpacesDriver::init_riget_thread(std::string var_name, int size)
+/* Exclusive access on locks.*/
+void DSpacesDriver::do_timing(const char* called_from)
 {
-  boost::shared_ptr<boost::thread> t_(
-    new boost::thread(&DSpacesDriver::ri_get, this, var_name, size)
-  );
-  riget_thread_v.push_back(t_);
+  //boost::lock_guard<boost::mutex> guard(property_mtx);
   //
-  LOG(INFO) << "init_riget_thread:: inited for var_name= " << var_name;
+  timeval inter_lock_time_val;
+  get_inter_lock_time(&inter_lock_time_val);
+  
+  LOG(INFO) << called_from << "_" << "do_timing:: inter_lock_time_val=" << inter_lock_time_val.tv_sec << "..." << inter_lock_time_val.tv_usec;
+  
+  if(inter_lock_time_val.tv_sec > 0){
+    return;
+  }
+  
+  time_t diff = INTER_LOCK_TIME - inter_lock_time_val.tv_usec;
+  LOG(INFO) << called_from << "_" << "do_timing:: diff= " << diff << " usec.";
+  if (diff > 0){
+    LOG(INFO) << called_from << "_" << "do_timing:: sleeping for " << diff << " usec.";
+    usleep(diff);
+    LOG(INFO) << called_from << "_" << "do_timing:: DONE sleeping for " << diff << " usec.";
+  }
+}
+
+time_t DSpacesDriver::get_inter_lock_time(struct timeval *result)
+{
+  struct timeval time_val;
+  if (gettimeofday(&time_val, NULL) ){
+    LOG(ERROR) << "get_inter_lock_time:: gettimeofday returned non-zero.";
+    return 1;
+  }
+  timeval_subtract(result, &time_val, &last_lock_time);
+  
+  return 0;
+}
+
+void DSpacesDriver::timeval_subtract (struct timeval *result, struct timeval *x, struct timeval *y)
+{
+  //Perform the carry for the later subtraction by updating y.
+  if (x->tv_usec < y->tv_usec) {
+    int nsec = (y->tv_usec - x->tv_usec) / 1000000 + 1;
+    y->tv_usec -= 1000000 * nsec;
+    y->tv_sec += nsec;
+  }
+  if (x->tv_usec - y->tv_usec > 1000000) {
+    int nsec = (x->tv_usec - y->tv_usec) / 1000000;
+    y->tv_usec += 1000000 * nsec;
+    y->tv_sec -= nsec;
+  }
+
+  //Compute the time remaining to wait. tv_usec is certainly positive.
+  result->tv_sec = x->tv_sec - y->tv_sec;
+  result->tv_usec = x->tv_usec - y->tv_usec;
+}
+
+int DSpacesDriver::refresh_last_lock_time()
+{
+  //boost::lock_guard<boost::mutex> guard(property_mtx);
+  //
+  if (gettimeofday(&last_lock_time, NULL) ){
+    LOG(ERROR) << "refresh_last_lock_time:: gettimeofday returned non-zero.";
+    return 1;
+  }
+  
+  return 0;
 }

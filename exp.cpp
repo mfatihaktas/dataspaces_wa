@@ -119,9 +119,8 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
 #define TEST_VER 1
 #define TEST_SGDIM 10
 
-void l_put_test(WADspacesDriver& wads_driver)
+void l_put_test(std::string var_name, WADspacesDriver& wads_driver)
 {
-  std::string var_name = "dummy";
   uint64_t* gdim = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t));
   for (int i=0; i<TEST_NDIM; i++){
     gdim[i] = TEST_SGDIM;
@@ -182,10 +181,12 @@ int main(int argc , char **argv)
   
   int num_dscnodes = boost::lexical_cast<int>(opt_map[(char*)"num_dscnodes"]);
   int app_id = boost::lexical_cast<int>(opt_map[(char*)"app_id"]);
+  char lip[100];
   
   if (strcmp(opt_map[(char*)"type"], (char*)"l_put") == 0){
     WADspacesDriver wads_driver(app_id, num_dscnodes-1);
-    //l_put_test(wads_driver);
+    l_put_test("dummy", wads_driver);
+    //l_put_test("dummy2", wads_driver);
     
     std::cout << "Enter\n";
     getline(std::cin, temp);
@@ -198,36 +199,45 @@ int main(int argc , char **argv)
   }
   else if (strcmp(opt_map[(char*)"type"], (char*)"r_get") == 0){
     WADspacesDriver wads_driver(app_id, num_dscnodes-1);
-    //r_get_test(wads_driver);
+    
+    usleep(2*1000*1000);
+    r_get_test(wads_driver);
     
     std::cout << "Enter\n";
     getline(std::cin, temp);
   }
   else if (strcmp(opt_map[(char*)"type"], (char*)"ri_t") == 0){
+    char* lip_t = intf_to_ip(opt_map[(char*)"lintf"]);
+    strcpy(lip, lip_t);
+    std::cout << "main:: 1 lip= " << lip << "\n";
+    //
     if (!opt_map.count((char*)"ipeer_lip")){
       opt_map[(char*)"ipeer_lip"] = NULL;
       opt_map[(char*)"ipeer_lport"] = (char*)"0";
     }
     
     RIManager ri_manager(opt_map[(char*)"dht_id"][0], num_dscnodes-1, app_id, 
-                         intf_to_ip(opt_map[(char*)"lintf"]), atoi(opt_map[(char*)"lport"]),
+                         lip, atoi(opt_map[(char*)"lport"]),
                          opt_map[(char*)"ipeer_lip"], atoi(opt_map[(char*)"ipeer_lport"]) );
 
-    usleep(5*1000*1000);
-    ri_manager.remote_query("dummy");
+    //usleep(5*1000*1000);
+    //ri_manager.remote_query("dummy");
     
     std::cout << "Enter\n";
     getline(std::cin, temp);
   }
   else if (strcmp(opt_map[(char*)"type"], (char*)"ri") == 0){
+    char* lip_t = intf_to_ip(opt_map[(char*)"lintf"]);
+    strcpy(lip, lip_t);
+    std::cout << "main:: 1 lip= " << lip << "\n";
+    //
     if (!opt_map.count((char*)"ipeer_lip")){
       opt_map[(char*)"ipeer_lip"] = NULL;
       opt_map[(char*)"ipeer_lport"] = (char*)"0";
     }
     RIManager ri_manager(opt_map[(char*)"dht_id"][0], num_dscnodes-1, app_id, 
-                         intf_to_ip(opt_map[(char*)"lintf"]), atoi(opt_map[(char*)"lport"]),
+                         lip, atoi(opt_map[(char*)"lport"]),
                          opt_map[(char*)"ipeer_lip"], atoi(opt_map[(char*)"ipeer_lport"]) );
-
     std::cout << "Enter\n";
     getline(std::cin, temp);
   }

@@ -36,7 +36,7 @@ class IMsgCoder
     std::map<std::string, std::string> decode(char* msg);
     std::string encode(std::map<std::string, std::string> msg_map);
     int decode_i_msg(std::map<std::string, std::string> msg_map, 
-                     std::string& var_name, unsigned int& ver, int& size, 
+                     std::string& key, unsigned int& ver, int& size, 
                      int& ndim, uint64_t* &gdim_, uint64_t* &lb_, uint64_t* &ub_);
   
   
@@ -142,7 +142,7 @@ class RIManager
     std::string to_str();
     
     void handle_ri_req(char* ri_req);
-    void handle_r_get(std::map<std::string, std::string> r_get_map);
+    void handle_r_get(int app_id, std::map<std::string, std::string> r_get_map);
     
     void handle_li_req(char* li_req);
     void handle_l_put(std::map<std::string, std::string> l_put_map);
@@ -151,7 +151,7 @@ class RIManager
     void handle_r_query(std::map<std::string, std::string> r_query_map);
     void handle_rq_reply(std::map<std::string, std::string> rq_reply_map);
     
-    char remote_query(std::string key);
+    bool remote_query(std::string key);
     int broadcast_msg(char msg_type, std::map<std::string, std::string> msg_map);
     int send_msg(char ds_id, char msg_type, std::map<std::string, std::string> msg_map);
   private:
@@ -165,28 +165,8 @@ class RIManager
     boost::shared_ptr<BCServer> li_bc_server_;
     boost::shared_ptr<BCServer> ri_bc_server_;
     boost::shared_ptr<DHTNode> dht_node_;
-};
-
-/*
-class TestClient
-{
-  public:
-    TestClient(int num_cnodes, int app_id);
-    ~TestClient();
-    float get_avg(int size, int* data);
-    void put_test();
-    void get_test();
     
-    void lock_ri_var(int peer_id);
-    void put_ri_msg(std::string type, std::string msg);
-    
-    void block();
-    void unblock();
-    void wait();
-  private:
-    int num_cnodes, app_id;
-    boost::shared_ptr<DSpacesDriver> ds_driver_;
+    std::map<int, boost::shared_ptr<BCClient> > appid_bcclient_map;
 };
-*/
 
 #endif //end of _DSCLIENT_H_

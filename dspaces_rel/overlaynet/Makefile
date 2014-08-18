@@ -29,10 +29,10 @@ ODIR = obj
 all: exp
 
 exp: $(ODIR)/exp.o $(ODIR)/dht_node.o $(ODIR)/dht_server.o $(ODIR)/dht_client.o $(ODIR)/packet.o
-	$(CPP) -o $@ $^ $(INC) $(LIB)
+	$(CPP) -g -o $@ $^ $(INC) $(LIB)
 
 $(ODIR)/%.o: %.cpp
-	$(CPP) -c -o $@ $< $(INC) $(LIB)
+	$(CPP) -g -c -o $@ $< $(INC) $(LIB)
 
 ifeq ("x","y")
 #boost chat example

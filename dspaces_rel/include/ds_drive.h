@@ -7,6 +7,7 @@
 #include <map>
 #include <unistd.h>
 #include <string>
+#include <sys/time.h>
 
 #include <glog/logging.h>
 #include <boost/shared_ptr.hpp>
@@ -39,11 +40,22 @@ class DSpacesDriver
     void reg_cb_on_get(std::string var_name, function_cb_on_get cb);
     void ri_get(std::string var_name, int size);
     void init_riget_thread(std::string var_name, int size);
+    
+    void do_timing(const char*);
+    time_t get_inter_lock_time(struct timeval *result);
+    void timeval_subtract (struct timeval *result, struct timeval *x, struct timeval *y);
+    int refresh_last_lock_time();
   private:
     bool finalized;
     int num_peers, appid;
     int nprocs, rank;
     MPI_Comm mpi_comm;
+    
+    struct timeval construct_time;
+    struct timeval last_lock_time;
+    
+    boost::mutex property_mtx;
+    boost::mutex dspaces_mtx;
     //
     std::map<std::string, function_cb_on_get> varname_cbonget_map;
     std::vector<boost::shared_ptr<boost::thread> > riget_thread_v;
