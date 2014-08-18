@@ -111,7 +111,7 @@ struct RQTable
 
 //Remote Interaction Manager
 //TODO: a better way for syncing client and server of bccomm
-#define WAIT_TIME_FOR_BCCLIENT_DSLOCK 500*1000
+#define WAIT_TIME_FOR_BCCLIENT_DSLOCK 100*1000
 
 #define RI_MAX_MSG_SIZE 1000
 #define LI_MAX_MSG_SIZE 1000

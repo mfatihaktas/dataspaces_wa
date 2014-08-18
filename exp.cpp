@@ -200,7 +200,7 @@ int main(int argc , char **argv)
   else if (strcmp(opt_map[(char*)"type"], (char*)"r_get") == 0){
     WADspacesDriver wads_driver(app_id, num_dscnodes-1);
     
-    usleep(2*1000*1000);
+    //usleep(2*1000*1000);
     r_get_test(wads_driver);
     
     std::cout << "Enter\n";

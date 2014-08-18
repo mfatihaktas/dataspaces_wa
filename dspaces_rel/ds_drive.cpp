@@ -2,6 +2,7 @@
 
 //************************************  DspacesDriver  *******************************//
 #define INTER_LOCK_TIME 1000 //usec
+#define INTER_RI_GET_TIME 2*1000*1000 //usec
 
 DSpacesDriver::DSpacesDriver(int num_peers, int appid)
 : finalized(false),
@@ -15,26 +16,6 @@ DSpacesDriver::DSpacesDriver(int num_peers, int appid)
   mpi_comm = MPI_COMM_WORLD;
   
   init(num_peers, appid);
-  //
-  if (gettimeofday(&construct_time, NULL) ){
-    LOG(ERROR) << "DSpacesDriver:: gettimeofday returned non-zero.";
-    return;
-  }
-  refresh_last_lock_time();
-  /*
-  LOG(INFO) << "DSpacesDriver:: construct_time.tv_usec=" << construct_time.tv_usec;
-  LOG(INFO) << "DSpacesDriver:: construct_time.tv_sec=" << construct_time.tv_sec;
-  usleep(1000*1000);
-  LOG(INFO) << "DSpacesDriver:: 1sec passed.";
-  
-  if (gettimeofday(&construct_time, NULL) ){
-    LOG(ERROR) << "DSpacesDriver:: gettimeofday returned non-zero.";
-    return;
-  }
-  
-  LOG(INFO) << "DSpacesDriver:: construct_time.tv_usec=" << construct_time.tv_usec;
-  LOG(INFO) << "DSpacesDriver:: construct_time.tv_sec=" << construct_time.tv_sec;
-  */
   //
   LOG(INFO) << "DSpacesDriver:: constructed.";
 }
@@ -197,7 +178,7 @@ void DSpacesDriver::ri_get(std::string var_name, int size)
   
   while( get(var_name.c_str(), 1, sizeof(char), 1, &gdim, &lb, &ub, data) ){
     LOG(ERROR) << "ri_get:: get failed!";
-    usleep(1000*1000);
+    usleep(INTER_RI_GET_TIME);
   }
   //LOG(INFO) << "ri_get:: data=\n" << data;
   varname_cbonget_map[var_name](data);

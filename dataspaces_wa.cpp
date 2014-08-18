@@ -62,7 +62,6 @@ WADspacesDriver::WADspacesDriver(int app_id, int num_local_peers)
   ri_bc_client_( new BCClient(app_id, num_local_peers, RI_MSG_SIZE, "ri_req_", ds_driver_) )
 {
   usleep(WAIT_TIME_FOR_BCSERVER_DSLOCK);
-  
   //
   LOG(INFO) << "WADspacesDriver:: constructed.";
 }
