@@ -202,6 +202,8 @@ int main(int argc , char **argv)
     
     //usleep(2*1000*1000);
     r_get_test(wads_driver);
+    //std::cout << "main:: calling r_get_test again!\n";
+    //r_get_test(wads_driver);
     
     std::cout << "Enter\n";
     getline(std::cin, temp);

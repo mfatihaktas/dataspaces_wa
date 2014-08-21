@@ -18,7 +18,7 @@ class Dummy
     
     ~Dummy()
     {
-      std::cout << "Dummy:: desstructed.\n";
+      std::cout << "Dummy:: destructed.\n";
     };
     
     void dummy_put()
@@ -51,8 +51,9 @@ class Dummy
       int ts=0;
       while(ts<10){
         int num;
-        printf ("User number: ");
-        scanf ("%d", &num);
+        //printf ("User number: ");
+        //scanf ("%d", &num);
+        num = ts+1;
         
         int *num_ = (int*)malloc(sizeof(int));
         num_[0] = num;

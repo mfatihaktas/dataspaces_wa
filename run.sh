@@ -20,6 +20,7 @@ elif [ $1  = 'rm1' ]; then
   GLOG_logtostderr=1 ./exp --type="ri_t" --dht_id='1' --num_dscnodes=$NUM_DSCNODES --app_id=10 \
                            --lintf="em2" --lport=8000 --ipeer_lip="192.168.2.152" --ipeer_lport=7000
 elif [ $1  = 'drm1' ]; then
+  export GLOG_logtostderr=1
   gdb --args ./exp --type="ri_t" --dht_id='1' --num_dscnodes=$NUM_DSCNODES --app_id=10 \
                    --lintf="em2" --lport=8000 --ipeer_lip="192.168.2.152" --ipeer_lport=7000
 elif [ $1  = 'rm2' ]; then

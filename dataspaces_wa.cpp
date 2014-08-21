@@ -61,7 +61,7 @@ WADspacesDriver::WADspacesDriver(int app_id, int num_local_peers)
   li_bc_client_( new BCClient(app_id, num_local_peers, RI_MSG_SIZE, "li_req_", ds_driver_) ),
   ri_bc_client_( new BCClient(app_id, num_local_peers, RI_MSG_SIZE, "ri_req_", ds_driver_) )
 {
-  usleep(WAIT_TIME_FOR_BCSERVER_DSLOCK);
+  //usleep(WAIT_TIME_FOR_BCSERVER_DSLOCK);
   //
   LOG(INFO) << "WADspacesDriver:: constructed.";
 }
@@ -95,21 +95,16 @@ int WADspacesDriver::remote_get(std::string key, unsigned int ver, int size,
     return 1;
   }
   //
-  /*
   boost::shared_ptr<BCServer> bc_server_( 
     new BCServer(app_id, 0, RI_MAX_MSG_SIZE, "ri_reply_", 
                  boost::bind(&WADspacesDriver::handle_ri_reply, this, _1),
                  ds_driver_)
   );
-  std::cout << "remote_get:: ;;;\n";
-  usleep(5*1000*1000);
-  
   bc_server_->init_listen_client(app_id);
   
-  std::cout << "remote_get:: ...\n";
-  */
-  //
-  
+  rg_syncer.add_sync_point(key, 1);
+  rg_syncer.wait(key);
+  rg_syncer.del_sync_point(key);
   //
   LOG(INFO) << "remote_get:: done.";
 }
@@ -120,6 +115,10 @@ int WADspacesDriver::handle_ri_reply(char* ri_reply)
   
   LOG(INFO) << "handle_ri_reply:: ri_reply_map=";
   wa_print_str_map(ri_reply_map);
+  
+  std::string key = ri_reply_map["key"];
+  
+  rg_syncer.notify(key);
   //
   LOG(INFO) << "handle_ri_reply:: done.";
 }

@@ -38,6 +38,7 @@ class WADspacesDriver
     boost::shared_ptr<BCClient> ri_bc_client_;
     RMessenger rmessenger;
     IMsgCoder imsg_coder;
+    syncer rg_syncer; //remote_get_syncer
 };
 
 #endif //end of _DSWA_H_

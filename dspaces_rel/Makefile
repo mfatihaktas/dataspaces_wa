@@ -32,13 +32,19 @@ OVERLAYNET_ODIR = $(OVERLAYNET_DIR)/obj
 
 .PHONY: all clean submake_overlaynet_dir
 
-all: submake_overlaynet_dir exp
+all: submake_overlaynet_dir exp dummy_put dummy_get
 # dummy2 dummy_get dummy_put
 
 submake_overlaynet_dir:
 	make -C $(OVERLAYNET_DIR)
 
 exp: $(ODIR)/exp.o $(ODIR)/ds_client.o $(ODIR)/ds_drive.o $(OVERLAYNET_ODIR)/dht_node.o $(OVERLAYNET_ODIR)/dht_server.o $(OVERLAYNET_ODIR)/dht_client.o $(OVERLAYNET_ODIR)/packet.o
+	$(MPICPP) -g -o $@ $^ $(INC) $(LIB)
+
+dummy_put: $(ODIR)/dummy_put.o
+	$(MPICPP) -g -o $@ $^ $(INC) $(LIB)
+
+dummy_get: $(ODIR)/dummy_get.o
 	$(MPICPP) -g -o $@ $^ $(INC) $(LIB)
 
 $(ODIR)/%.o: %.cpp

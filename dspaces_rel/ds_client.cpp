@@ -191,7 +191,7 @@ BCClient::BCClient(int app_id, int num_others, int max_msg_size,
   ds_driver_ ( ds_driver_ )
 {
   comm_var_name = base_comm_var_name + boost::lexical_cast<std::string>(app_id);
-  ds_driver_->lock_on_write(comm_var_name.c_str() );
+  //ds_driver_->lock_on_write(comm_var_name.c_str() );
   //
   LOG(INFO) << "BCClient:: constructed for comm_var_name= " << comm_var_name;
 }
@@ -223,11 +223,12 @@ int BCClient::send(std::map<std::string, std::string> msg_map)
   for (int i=msg_size; i<max_msg_size-msg_size; i++){
     data_[i] = '\0';
   }
-  int result = ds_driver_->sync_put_without_lock(comm_var_name.c_str(), 1, sizeof(char), 1, &gdim, &lb, &ub, data_);
+  int result = ds_driver_->sync_put(comm_var_name.c_str(), 1, sizeof(char), 1, &gdim, &lb, &ub, data_);
+  //int result = ds_driver_->sync_put_without_lock(comm_var_name.c_str(), 1, sizeof(char), 1, &gdim, &lb, &ub, data_);
   //LOG(INFO) << "send:: sync_put_without_lock returned " << result;
   free(data_);
   
-  ds_driver_->lock_on_write(comm_var_name.c_str() );
+  //ds_driver_->lock_on_write(comm_var_name.c_str() );
   
   return 0;
 }
@@ -461,7 +462,7 @@ RIManager::RIManager(char id, int num_cnodes, int app_id,
                              boost::bind(&RIManager::handle_ri_req, this, _1),
                              ds_driver_) )
 {
-  usleep(WAIT_TIME_FOR_BCCLIENT_DSLOCK);
+  //usleep(WAIT_TIME_FOR_BCCLIENT_DSLOCK);
   
   li_bc_server_->init_listen_all();
   ri_bc_server_->init_listen_all();
@@ -540,7 +541,6 @@ void RIManager::handle_ri_req(char* ri_req)
   int app_id = boost::lexical_cast<int>(ri_req_map["app_id"]);
   ri_bc_server_->reinit_listen_client(app_id);
   //
-  //usleep(100*1000);
   boost::shared_ptr<BCClient> bc_client_(
     new BCClient(app_id, num_cnodes, RI_MAX_MSG_SIZE, "ri_reply_", ds_driver_)
   );
@@ -593,13 +593,7 @@ void RIManager::handle_r_get(int app_id, std::map<std::string, std::string> r_ge
     //
     msg_map["ds_id"] = ds_id;
   }
-  /*
-  std::cout << "handle_r_get:: ;;;\n";
-  usleep(10*1000*1000);
-  std::cout << "handle_r_get:: ...\n";
-  
   appid_bcclient_map[app_id]->send(msg_map);
-  */
   //
   LOG(INFO) << "handle_r_get:: done.";
 }
@@ -681,6 +675,9 @@ void RIManager::handle_r_query(std::map<std::string, std::string> r_query_map)
   if(send_msg(to_id, RIMSG, rq_reply_map) ){
     LOG(ERROR) << "handle_r_query:: send_msg to to_id= " << to_id << " failed!";
   }
+  
+  LOG(INFO) << "handle_r_query:: rq_reply_map=";
+  print_str_map(rq_reply_map);
   //
   LOG(INFO) << "handle_r_query:: done.";
 }

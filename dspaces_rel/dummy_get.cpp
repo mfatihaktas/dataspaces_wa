@@ -18,7 +18,7 @@ class Dummy
     
     ~Dummy()
     {
-      std::cout << "Dummy:: desstructed.\n";
+      std::cout << "Dummy:: destructed.\n";
     };
     
     void dummy_get()
@@ -52,10 +52,12 @@ class Dummy
       while(ts<10){
         ts++;
     
+        /*
         printf("Press enter to read a number\n");
         char enter = 0;
         while (enter != '\r' && enter != '\n') { enter = getchar(); }
-    
+        */
+        
         //int num;
         int* num_ = (int*)malloc(sizeof(int));
         

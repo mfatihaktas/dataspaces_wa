@@ -71,11 +71,15 @@ int DSpacesDriver::sync_put(const char* var_name, unsigned int ver, int size,
   //boost::lock_guard<boost::mutex> guard(dspaces_mtx);
   dspaces_define_gdim(var_name, ndim, gdim_);
   
-  dspaces_lock_on_write(var_name, &mpi_comm);
+  //dspaces_lock_on_write(var_name, &mpi_comm);
+  lock_on_write(var_name);
+  
   int result = dspaces_put(var_name, ver, size,
                            ndim, lb_, ub_, data_);
   dspaces_put_sync();
-  dspaces_unlock_on_write(var_name, &mpi_comm);
+  
+  //dspaces_unlock_on_write(var_name, &mpi_comm);
+  unlock_on_write(var_name);
   
   return result;
 }
@@ -112,8 +116,8 @@ int DSpacesDriver::sync_put_without_lock(const char* var_name, unsigned int ver,
                            ndim, lb_, ub_, data_);
   dspaces_put_sync();
   
-  dspaces_unlock_on_write(var_name, &mpi_comm);
-  //unlock_on_write(var_name);
+  //dspaces_unlock_on_write(var_name, &mpi_comm);
+  unlock_on_write(var_name);
   
   return result;
 }
@@ -134,9 +138,15 @@ void DSpacesDriver::lock_on_write(const char* var_name)
 
 void DSpacesDriver::unlock_on_write(const char* var_name)
 {
+  //property_mtx.lock();
+  //do_timing("unlock_on_write");
+  
   LOG(INFO) << "unlock_on_write:: unlocking var_name= " << var_name;
   dspaces_unlock_on_write(var_name, &mpi_comm);
   LOG(INFO) << "unlock_on_write:: unlocked var_name= " << var_name;
+  
+  //refresh_last_lock_time();
+  //property_mtx.unlock();
 }
 
 void DSpacesDriver::lock_on_read(const char* var_name)
@@ -194,18 +204,18 @@ void DSpacesDriver::do_timing(const char* called_from)
   timeval inter_lock_time_val;
   get_inter_lock_time(&inter_lock_time_val);
   
-  LOG(INFO) << called_from << "_" << "do_timing:: inter_lock_time_val=" << inter_lock_time_val.tv_sec << "..." << inter_lock_time_val.tv_usec;
+  LOG(INFO) << called_from << "." << "do_timing:: inter_lock_time_val=" << inter_lock_time_val.tv_sec << "..." << inter_lock_time_val.tv_usec;
   
   if(inter_lock_time_val.tv_sec > 0){
     return;
   }
   
   time_t diff = INTER_LOCK_TIME - inter_lock_time_val.tv_usec;
-  LOG(INFO) << called_from << "_" << "do_timing:: diff= " << diff << " usec.";
+  LOG(INFO) << called_from << "." << "do_timing:: diff= " << diff << " usec.";
   if (diff > 0){
-    LOG(INFO) << called_from << "_" << "do_timing:: sleeping for " << diff << " usec.";
+    LOG(INFO) << called_from << "." << "do_timing:: sleeping for " << diff << " usec.";
     usleep(diff);
-    LOG(INFO) << called_from << "_" << "do_timing:: DONE sleeping for " << diff << " usec.";
+    LOG(INFO) << called_from << "." << "do_timing:: DONE sleeping for " << diff << " usec.";
   }
 }
 
