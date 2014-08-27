@@ -75,7 +75,7 @@ WADspacesDriver::~WADspacesDriver()
 int WADspacesDriver::local_put(std::string key, unsigned int ver, int size,
                                int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
 {
-  std::map<std::string, std::string> msg_map = rmessenger.gen_i_msg("l_put", app_id, key, ver, 
+  std::map<std::string, std::string> msg_map = rmessenger.gen_i_msg(LOCAL_PUT, app_id, key, ver, 
                                                                     size, ndim, gdim_, lb_, ub_);
   if (li_bc_client_->send(msg_map) ){
     LOG(ERROR) << "local_put:: li_bc_client_->send failed!";
@@ -88,7 +88,7 @@ int WADspacesDriver::local_put(std::string key, unsigned int ver, int size,
 int WADspacesDriver::remote_get(std::string key, unsigned int ver, int size,
                                 int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
 {
-  std::map<std::string, std::string> msg_map = rmessenger.gen_i_msg("r_get", app_id, key, ver, 
+  std::map<std::string, std::string> msg_map = rmessenger.gen_i_msg(REMOTE_GET, app_id, key, ver, 
                                                                     size, ndim, gdim_, lb_, ub_);
   if (ri_bc_client_->send(msg_map)){
     LOG(ERROR) << "remote_get:: ri_bc_client_->send failed!";

@@ -116,6 +116,17 @@ struct RQTable
 #define RI_MAX_MSG_SIZE 1000
 #define LI_MAX_MSG_SIZE 1000
 
+const std::string REMOTE_QUERY = "rq";
+const std::string REMOTE_QUERY_REPLY = "rq_reply";
+const std::string REMOTE_GET = "rg";
+const std::string REMOTE_GET_REPLY = "rg_reply";
+const std::string REMOTE_PUT = "rp";
+const std::string REMOTE_PUT_REPLY = "rp_reply";
+const std::string LOCAL_GET = "lg";
+const std::string LOCAL_GET_REPLY = "lg_reply";
+const std::string LOCAL_PUT = "lp";
+const std::string LOCAL_PUT_REPLY = "lp_reply";
+
 struct syncer{
   public:
     syncer();

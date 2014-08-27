@@ -502,10 +502,10 @@ void RIManager::handle_li_req(char* li_req)
   
   std::string type = li_req_map["type"];
   
-  if (type.compare("l_get") == 0){
+  if (type.compare(LOCAL_GET) == 0){
     //
   }
-  else if (type.compare("l_put") == 0){
+  else if (type.compare(LOCAL_PUT) == 0){
     handle_l_put(li_req_map);
   }
   else{
@@ -548,10 +548,10 @@ void RIManager::handle_ri_req(char* ri_req)
   //
   std::string type = ri_req_map["type"];
   
-  if (type.compare("r_get") == 0){
+  if (type.compare(REMOTE_GET) == 0){
     handle_r_get(app_id, ri_req_map);
   }
-  else if (type.compare("r_put") == 0){
+  else if (type.compare(REMOTE_PUT) == 0){
     //
   }
   else{
@@ -570,6 +570,7 @@ void RIManager::handle_r_get(int app_id, std::map<std::string, std::string> r_ge
   std::string key = r_get_map["key"];
   
   std::map<std::string, std::string> msg_map;
+  msg_map["type"] = REMOTE_GET_REPLY;
   msg_map["key"] = key;
   
   char ds_id;
@@ -604,7 +605,7 @@ bool RIManager::remote_query(std::string key)
   LOG(INFO) << "remote_query:: started;";
   
   std::map<std::string, std::string> r_q_map;
-  r_q_map["type"] = "r_query";
+  r_q_map["type"] = REMOTE_QUERY;
   r_q_map["key"] = key;
   
   if (broadcast_msg(RIMSG, r_q_map) ){
@@ -634,10 +635,10 @@ void RIManager::handle_wamsg(std::map<std::string, std::string> wamsg_map)
 {
   std::string type = wamsg_map["type"];
   
-  if (type.compare("r_query") == 0){
+  if (type.compare(REMOTE_QUERY) == 0){
     handle_r_query(wamsg_map);
   }
-  else if (type.compare("rq_reply") == 0){
+  else if (type.compare(REMOTE_QUERY_REPLY) == 0){
     handle_rq_reply(wamsg_map);
   }
   else{
@@ -656,7 +657,7 @@ void RIManager::handle_r_query(std::map<std::string, std::string> r_query_map)
   std::string key = r_query_map["key"];
   
   std::map<std::string, std::string> rq_reply_map;
-  rq_reply_map["type"] = "rq_reply";
+  rq_reply_map["type"] = REMOTE_QUERY_REPLY;
   rq_reply_map["key"] = key;
   
   char to_id = r_query_map["id"].c_str()[0];

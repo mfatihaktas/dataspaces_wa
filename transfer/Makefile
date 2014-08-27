@@ -28,14 +28,9 @@ CPP = g++
 IDIR = include
 ODIR = obj
 
-#exp_put exp_get
-all: exp_gridftp
-#exp gftp_gp
+all: exp
 
-exp_gridftp: $(ODIR)/exp_gridftp.o $(ODIR)/gridftp_api_drive.o $(ODIR)/gridftp_binary_drive.o
-	$(CPP) -o $@ $^ $(INC) $(LIB)
-
-exp: $(ODIR)/exp.o
+exp: $(ODIR)/exp.o $(ODIR)/gftp_drive.o $(ODIR)/gridftp_api_drive.o
 	$(CPP) -o $@ $^ $(INC) $(LIB)
 
 $(ODIR)/%.o: %.c
