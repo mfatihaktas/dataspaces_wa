@@ -1,6 +1,9 @@
 #ifndef RDMA_MESSAGES_H
 #define RDMA_MESSAGES_H
 
+#include <stdlib.h>
+#include <stdint.h>
+
 const char *DEFAULT_PORT = "12345";
 const size_t BUFFER_SIZE = 10 * 1024 * 1024;
 

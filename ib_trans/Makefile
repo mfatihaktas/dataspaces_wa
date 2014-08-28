@@ -35,17 +35,20 @@ ODIR = obj
 #LD			:= gcc
 #LDFLAGS := ${LDFLAGS} -lrdmacm -libverbs -lpthread
 
-APPS		:= den_server den_client
-#client server
+APPS		:= server client
 
 all: ${APPS}
 
-den_client: $(ODIR)/den_client.o $(ODIR)/common.o
-	${CC} -o $@ $^ $(INC) $(LIB)
+server: $(ODIR)/server.o $(ODIR)/common.o
+	${CPP} -o $@ $^ $(INC) $(LIB)
 
-den_server: $(ODIR)/den_server.o $(ODIR)/common.o
-	${CC} -o $@ $^ $(INC) $(LIB)
+client: $(ODIR)/client.o $(ODIR)/common.o
+	${CPP} -o $@ $^ $(INC) $(LIB)
 
+$(ODIR)/%.o: %.cpp
+	$(CPP) -c -o $@ $< $(INC) $(LIB)
+
+ifeq ("x","y")
 client: $(ODIR)/client.o $(ODIR)/common.o
 	${CC} -o $@ $^ $(INC) $(LIB)
 
@@ -54,6 +57,7 @@ server: $(ODIR)/server.o $(ODIR)/common.o
 
 $(ODIR)/%.o: %.c
 	$(CC) -c -o $@ $< $(INC) $(LIB)
+endif
 
 clean:
-	rm -f *.o ${APPS}
+	rm -f obj/*.o ${APPS}

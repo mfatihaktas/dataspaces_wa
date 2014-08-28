@@ -16,6 +16,8 @@ struct client_context
   uint32_t peer_rkey;
   
   const char *var_name;
+  size_t data_size; //bytes
+  char* data_addr;
 };
 
 static void write_remote(struct rdma_cm_id *id, uint32_t len)
@@ -75,7 +77,7 @@ static void send_var_name(struct rdma_cm_id *id)
   write_remote(id, strlen(ctx->var_name) + 1);
 }
 
-static void send_chunk(struct rdma_cm_id *id, ssize_t chunk_size, char* chunk)
+static void send_chunk(struct rdma_cm_id *id, size_t chunk_size, char* chunk)
 {
   struct client_context *ctx = (struct client_context *)id->context;
 
@@ -111,6 +113,9 @@ static void on_completion(struct ibv_wc *wc)
 
       printf("received MR, sending VAR_NAME.\n");
       send_var_name(id);
+      usleep(3*1000*1000);
+      printf("sending data...\n");
+      send_chunk(id, ctx->data_size, ctx->data_addr);
     }
     else if (ctx->msg->id == MSG_DONE) {
       printf("received DONE, disconnecting\n");
@@ -132,7 +137,15 @@ int main(int argc, char **argv)
   }
 
   ctx.var_name = argv[2];
-
+  size_t data_size = 1024;
+  char* data_addr = (char*)malloc(sizeof(char)*data_size);
+  int i;
+  for (i=0; i<data_size; i++){
+    data_addr[i] = 'A';
+  }
+  ctx.data_size = data_size;
+  ctx.data_addr = data_addr;
+  
   rc_init(
     on_pre_conn,
     NULL, // on connect

@@ -1,5 +1,5 @@
-#include "common.h"
 #include "messages.h"
+#include "common.h"
 
 struct conn_context
 {
@@ -27,7 +27,7 @@ void print_conn_context(struct conn_context* cc)
   //free(buffer);
 }
 
-static void post_receive(struct rdma_cm_id *id)
+void post_receive(struct rdma_cm_id *id)
 {
   struct ibv_recv_wr wr, *bad_wr = NULL;
 
@@ -40,7 +40,7 @@ static void post_receive(struct rdma_cm_id *id)
   TEST_NZ(ibv_post_recv(id->qp, &wr, &bad_wr));
 }
 
-static void send_message(struct rdma_cm_id *id)
+void send_message(struct rdma_cm_id *id)
 {
   struct conn_context *ctx = (struct conn_context *)id->context;
 
@@ -62,8 +62,8 @@ static void send_message(struct rdma_cm_id *id)
   TEST_NZ(ibv_post_send(id->qp, &wr, &bad_wr));
 }
 
-/* STATE HANDLERS */
-static void on_pre_conn(struct rdma_cm_id *id)
+// STATE HANDLERS
+void on_pre_conn(struct rdma_cm_id *id)
 {
   struct conn_context *ctx = (struct conn_context *)malloc(sizeof(struct conn_context));
 
@@ -78,7 +78,7 @@ static void on_pre_conn(struct rdma_cm_id *id)
   post_receive(id);
 }
 
-static void on_connection(struct rdma_cm_id *id)
+void on_connection(struct rdma_cm_id *id)
 {
   struct conn_context *ctx = (struct conn_context *)id->context;
   
@@ -89,7 +89,7 @@ static void on_connection(struct rdma_cm_id *id)
   send_message(id);
 }
 
-static void on_disconnect(struct rdma_cm_id *id)
+void on_disconnect(struct rdma_cm_id *id)
 {
   struct conn_context *ctx = (struct conn_context *)id->context;
 
@@ -104,7 +104,7 @@ static void on_disconnect(struct rdma_cm_id *id)
   free(ctx);
 }
 
-static void on_completion(struct ibv_wc *wc)
+void on_completion(struct ibv_wc *wc)
 {
   struct rdma_cm_id *id = (struct rdma_cm_id *)(uintptr_t)wc->wr_id;
   struct conn_context *ctx = (struct conn_context *)id->context;
@@ -117,7 +117,6 @@ static void on_completion(struct ibv_wc *wc)
     if (size == 0) {
       ctx->msg->id = MSG_DONE;
       send_message(id);
-
       // don't need post_receive() since we're done with this connection
     }
     else {
@@ -141,10 +140,10 @@ static void on_completion(struct ibv_wc *wc)
 int main(int argc, char **argv)
 {
   rc_init(
-    on_pre_conn,
-    on_connection,
-    on_completion,
-    on_disconnect);
+    boost::bind(&on_pre_conn, _1),
+    boost::bind(&on_connection, _1),
+    boost::bind(&on_completion, _1),
+    boost::bind(&on_disconnect, _1) );
 
   printf("waiting for connections. interrupt (^C) to exit.\n");
 
