@@ -1,33 +1,30 @@
-#include "messages.h"
-#include "common.h"
-
-struct conn_context
-{
-  char *buffer;
-  struct ibv_mr *buffer_mr;
-
-  struct message *msg;
-  struct ibv_mr *msg_mr;
-};
+#include "server.h"
 
 void print_conn_context(struct conn_context* cc)
 {
-  /*
-  char* buffer = (char*)malloc(sizeof(char)*(recved_num_bytes+1));
-  memcpy(buffer, cc->buffer, recved_num_bytes);
-  //buffer = cc->buffer;
-  buffer[recved_num_bytes] = '\0';
-  */
   printf("print_conn_context:: conn_context=\n");
   printf("\t buffer=%s\n", cc->buffer);
   printf("\t msg=\n");
   printf("\t\t id=%d\n", cc->msg->id);
   printf("\t\t mr.addr=%l\n", cc->msg->data.mr.addr);
   printf("\t\t mr.rkey=%l\n", cc->msg->data.mr.rkey);
-  //free(buffer);
 }
 
-void post_receive(struct rdma_cm_id *id)
+IBServer::IBServer(const char* lport, data_recv_cb dr_cb)
+: lport(lport),
+  dr_cb(dr_cb)
+{
+  //
+  LOG(INFO) << "IBServer constructed: lport= " << lport;
+}
+
+IBServer::~IBServer()
+{
+  //
+  LOG(INFO) << "IBServer destructed.";
+}
+
+void IBServer::post_receive(struct rdma_cm_id *id)
 {
   struct ibv_recv_wr wr, *bad_wr = NULL;
 
@@ -40,7 +37,7 @@ void post_receive(struct rdma_cm_id *id)
   TEST_NZ(ibv_post_recv(id->qp, &wr, &bad_wr));
 }
 
-void send_message(struct rdma_cm_id *id)
+void IBServer::send_message(struct rdma_cm_id *id)
 {
   struct conn_context *ctx = (struct conn_context *)id->context;
 
@@ -63,7 +60,7 @@ void send_message(struct rdma_cm_id *id)
 }
 
 // STATE HANDLERS
-void on_pre_conn(struct rdma_cm_id *id)
+void IBServer::on_pre_conn(struct rdma_cm_id *id)
 {
   struct conn_context *ctx = (struct conn_context *)malloc(sizeof(struct conn_context));
 
@@ -78,7 +75,7 @@ void on_pre_conn(struct rdma_cm_id *id)
   post_receive(id);
 }
 
-void on_connection(struct rdma_cm_id *id)
+void IBServer::on_connection(struct rdma_cm_id *id)
 {
   struct conn_context *ctx = (struct conn_context *)id->context;
   
@@ -89,7 +86,7 @@ void on_connection(struct rdma_cm_id *id)
   send_message(id);
 }
 
-void on_disconnect(struct rdma_cm_id *id)
+void IBServer::on_disconnect(struct rdma_cm_id *id)
 {
   struct conn_context *ctx = (struct conn_context *)id->context;
 
@@ -99,12 +96,12 @@ void on_disconnect(struct rdma_cm_id *id)
   free(ctx->buffer);
   free(ctx->msg);
 
-  printf("finished receiving.\n");
+  LOG(INFO) << "on_disconnect:: done.";
 
   free(ctx);
 }
 
-void on_completion(struct ibv_wc *wc)
+void IBServer::on_completion(struct ibv_wc *wc)
 {
   struct rdma_cm_id *id = (struct rdma_cm_id *)(uintptr_t)wc->wr_id;
   struct conn_context *ctx = (struct conn_context *)id->context;
@@ -112,7 +109,7 @@ void on_completion(struct ibv_wc *wc)
   if (wc->opcode == IBV_WC_RECV_RDMA_WITH_IMM) {
     uint32_t size = ntohl(wc->imm_data);
     
-    print_conn_context(ctx);
+    //print_conn_context(ctx);
     
     if (size == 0) {
       ctx->msg->id = MSG_DONE;
@@ -120,8 +117,6 @@ void on_completion(struct ibv_wc *wc)
       // don't need post_receive() since we're done with this connection
     }
     else {
-      printf("received %i bytes.\n", size);
-      //post_receive(id);
       
       if (ctx->msg->id == MSG_DONE){
         printf("MSG_DONE received.\n");
@@ -129,25 +124,35 @@ void on_completion(struct ibv_wc *wc)
         send_message(id);
         return;
       }
+      else if(size == 3){
+        if(strcmp(ctx->buffer, (char*)"EOF") ){
+          LOG(INFO) << "on_completion:: EOF received.";
+          ctx->msg->id = MSG_DONE;
+          send_message(id);
+          
+          rc_disconnect(id);
+          
+          return;
+        }
+      }
+      char* data_ = (char*)malloc(sizeof(char)*size);
+      memcpy(data_, ctx->buffer, size);
+      dr_cb(size, data_);
       
-      
-      //ctx->msg->id = MSG_READY;
-      //send_message(id);
+      post_receive(id);
     }
   }
 }
 
-int main(int argc, char **argv)
+void IBServer::init()
 {
   rc_init(
-    boost::bind(&on_pre_conn, _1),
-    boost::bind(&on_connection, _1),
-    boost::bind(&on_completion, _1),
-    boost::bind(&on_disconnect, _1) );
-
-  printf("waiting for connections. interrupt (^C) to exit.\n");
-
-  rc_server_loop(DEFAULT_PORT);
-  
-  return 0;
+    boost::bind(&IBServer::on_pre_conn, this, _1),
+    boost::bind(&IBServer::on_connection, this, _1),
+    boost::bind(&IBServer::on_completion, this, _1),
+    boost::bind(&IBServer::on_disconnect, this, _1) );
+    
+    LOG(INFO) << "init:: waiting for connections. interrupt (^C) to exit.";
+    
+    rc_server_loop(lport);
 }

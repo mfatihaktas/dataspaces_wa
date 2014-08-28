@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-const char *DEFAULT_PORT = "12345";
 const size_t BUFFER_SIZE = 10 * 1024 * 1024;
 
 enum message_id

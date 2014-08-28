@@ -17,6 +17,9 @@
 
 #include <boost/lexical_cast.hpp>
 #include <glog/logging.h>
+//
+#include "server.h"
+#include "client.h"
 
 char* intf_to_ip(const char* intf)
 {
@@ -43,7 +46,8 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
   static struct option long_options[] =
   {
     {"type", optional_argument, NULL, 0},
-    {"...", optional_argument, NULL, 1},
+    {"port", optional_argument, NULL, 1},
+    {"s_addr", optional_argument, NULL, 2},
     {0, 0, 0, 0}
   };
   
@@ -62,7 +66,10 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
         opt_map[(char*)"type"] = optarg;
         break;
       case 1:
-        opt_map[(char*)"dht_id"] = optarg;
+        opt_map[(char*)"port"] = optarg;
+        break;
+      case 2:
+        opt_map[(char*)"s_addr"] = optarg;
         break;
       case '?':
         break; //getopt_long already printed an error message.
@@ -84,12 +91,42 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
   return opt_map;
 }
 
+void recv_handler(size_t size, char* data_)
+{
+  LOG(INFO) << "recv_handler:: recved size= " << size;
+  free(data_);
+}
+
 int main(int argc , char **argv)
 {
   std::string temp;
   google::InitGoogleLogging("exp");
   //
   std::map<char*, char*> opt_map = parse_opts(argc, argv);
+  
+  if (strcmp(opt_map[(char*)"type"], (char*)"server") == 0){
+    IBServer ib_server(opt_map[(char*)"port"], boost::bind(&recv_handler, _1, _2) );
+    ib_server.init();
+  }
+  else if (strcmp(opt_map[(char*)"type"], (char*)"client") == 0){
+    size_t data_size = 1024*1024*1024;
+    char* data_ = (char*)malloc(sizeof(char)*data_size);
+    
+    // for (int i=0; i<data_size; i++){
+    //   data_[i] = 'A';
+    // }
+    
+    IBClient ib_client(opt_map[(char*)"s_addr"], opt_map[(char*)"port"],
+                       data_size, data_);
+    ib_client.init();
+    
+    free(data_);
+    // std::cout << "Enter\n";
+    // getline(std::cin, temp);
+  }
+  else{
+     LOG(ERROR) << "main:: unknown type= " << opt_map[(char*)"type"];
+  }
   
   
   return 0;

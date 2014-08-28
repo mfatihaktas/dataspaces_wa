@@ -13,6 +13,10 @@
       "Split:Switch Focus": {
           "mac": "Command-Tab",
           "win": "Ctrl-Tab"
+      },
+      "Navigate:Goto": {
+          "mac": "Command-O",
+          "win": "Ctrl-O"
       }
     },
     "commands": {},

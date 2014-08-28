@@ -17,8 +17,8 @@ SUB_INC = -I/cac/u01/mfa51/Desktop/dataspaces_wa/ib_trans/include
 
 IB_LIB = -lrdmacm -libverbs -lpthread
 #
-INC = $(SUB_INC) #$(DATASPACES_INC) $(GLOG_INC) 
-LIB = $(IB_LIB) #$(DATASPACES_LIB) $(GLOG_LIB) $(BOOST_LIB)
+INC = $(SUB_INC) $(GLOG_INC) #$(DATASPACES_INC)
+LIB = $(IB_LIB) $(GLOG_LIB) # $(BOOST_LIB) #$(DATASPACES_LIB) 
 
 MPICC = mpicc
 MPICPP = mpic++
@@ -35,14 +35,11 @@ ODIR = obj
 #LD			:= gcc
 #LDFLAGS := ${LDFLAGS} -lrdmacm -libverbs -lpthread
 
-APPS		:= server client
+APPS := exp
 
 all: ${APPS}
 
-server: $(ODIR)/server.o $(ODIR)/common.o
-	${CPP} -o $@ $^ $(INC) $(LIB)
-
-client: $(ODIR)/client.o $(ODIR)/common.o
+exp: $(ODIR)/exp.o $(ODIR)/server.o $(ODIR)/client.o $(ODIR)/common.o
 	${CPP} -o $@ $^ $(INC) $(LIB)
 
 $(ODIR)/%.o: %.cpp

@@ -1,26 +1,23 @@
-#include <fcntl.h>
-#include <libgen.h>
+#include "client.h"
 
-#include "common.h"
-#include "messages.h"
-
-struct client_context
+IBClient::IBClient(const char* s_laddr, const char* s_lport, 
+                   size_t data_size, char* data_)
+: s_laddr(s_laddr),
+  s_lport(s_lport),
+  data_size(data_size),
+  data_(data_)
 {
-  char *buffer;
-  struct ibv_mr *buffer_mr;
+  //
+  LOG(INFO) << "IBClient:: constructed:\n" << to_str();
+}
 
-  struct message *msg;
-  struct ibv_mr *msg_mr;
+IBClient::~IBClient()
+{
+  //
+  LOG(INFO) << "IBClient:: destructed.";
+}
 
-  uint64_t peer_addr;
-  uint32_t peer_rkey;
-  
-  const char *var_name;
-  size_t data_size; //bytes
-  char* data_addr;
-};
-
-static void write_remote(struct rdma_cm_id *id, uint32_t len)
+void IBClient::write_remote(struct rdma_cm_id *id, uint32_t len)
 {
   struct client_context *ctx = (struct client_context *)id->context;
 
@@ -48,7 +45,7 @@ static void write_remote(struct rdma_cm_id *id, uint32_t len)
   TEST_NZ(ibv_post_send(id->qp, &wr, &bad_wr));
 }
 
-static void post_receive(struct rdma_cm_id *id)
+void IBClient::post_receive(struct rdma_cm_id *id)
 {
   struct client_context *ctx = (struct client_context *)id->context;
 
@@ -68,16 +65,7 @@ static void post_receive(struct rdma_cm_id *id)
   TEST_NZ(ibv_post_recv(id->qp, &wr, &bad_wr));
 }
 
-static void send_var_name(struct rdma_cm_id *id)
-{
-  struct client_context *ctx = (struct client_context *)id->context;
-  
-  strcpy(ctx->buffer, ctx->var_name);
-  
-  write_remote(id, strlen(ctx->var_name) + 1);
-}
-
-static void send_chunk(struct rdma_cm_id *id, size_t chunk_size, char* chunk)
+void IBClient::send_chunk(struct rdma_cm_id *id, size_t chunk_size, char* chunk)
 {
   struct client_context *ctx = (struct client_context *)id->context;
 
@@ -88,7 +76,7 @@ static void send_chunk(struct rdma_cm_id *id, size_t chunk_size, char* chunk)
 }
 
 /* STATE HANDLERS */
-static void on_pre_conn(struct rdma_cm_id *id)
+void IBClient::on_pre_conn(struct rdma_cm_id *id)
 {
   struct client_context *ctx = (struct client_context *)id->context;
 
@@ -101,7 +89,7 @@ static void on_pre_conn(struct rdma_cm_id *id)
   post_receive(id);
 }
 
-static void on_completion(struct ibv_wc *wc)
+void IBClient::on_completion(struct ibv_wc *wc)
 {
   struct rdma_cm_id *id = (struct rdma_cm_id *)(uintptr_t)(wc->wr_id);
   struct client_context *ctx = (struct client_context *)id->context;
@@ -111,14 +99,13 @@ static void on_completion(struct ibv_wc *wc)
       ctx->peer_addr = ctx->msg->data.mr.addr;
       ctx->peer_rkey = ctx->msg->data.mr.rkey;
 
-      printf("received MR, sending VAR_NAME.\n");
-      send_var_name(id);
-      usleep(3*1000*1000);
-      printf("sending data...\n");
-      send_chunk(id, ctx->data_size, ctx->data_addr);
+      LOG(INFO) << "on_completion:: sending data...";
+      send_chunk(id, data_size, data_);
+      
+      send_chunk(id, 3, (char*)"EOF");
     }
     else if (ctx->msg->id == MSG_DONE) {
-      printf("received DONE, disconnecting\n");
+      LOG(INFO) << "on_completion:: received DONE, disconnecting.";
       rc_disconnect(id);
       return;
     }
@@ -127,32 +114,27 @@ static void on_completion(struct ibv_wc *wc)
   }
 }
 
-int main(int argc, char **argv)
+void IBClient::init()
 {
   struct client_context ctx;
-
-  if (argc != 3) {
-    fprintf(stderr, "usage: %s <server-address> <var-name>\n", argv[0]);
-    return 1;
-  }
-
-  ctx.var_name = argv[2];
-  size_t data_size = 1024;
-  char* data_addr = (char*)malloc(sizeof(char)*data_size);
-  int i;
-  for (i=0; i<data_size; i++){
-    data_addr[i] = 'A';
-  }
-  ctx.data_size = data_size;
-  ctx.data_addr = data_addr;
   
   rc_init(
-    on_pre_conn,
+    boost::bind(&IBClient::on_pre_conn, this, _1),
     NULL, // on connect
-    on_completion,
+    boost::bind(&IBClient::on_completion, this, _1),
     NULL); // on disconnect
 
-  rc_client_loop(argv[1], DEFAULT_PORT, &ctx);
+  rc_client_loop(s_laddr, s_lport, &ctx);
+}
 
-  return 0;
+std::string IBClient::to_str()
+{
+  std::stringstream ss;
+
+  ss << "s_laddr= " << s_laddr << "\n";
+  ss << "s_lport= " << s_lport << "\n";
+  ss << "data_size= " << boost::lexical_cast<std::string>(data_size) << "\n";
+  ss << "\n";
+  
+  return ss.str();
 }
