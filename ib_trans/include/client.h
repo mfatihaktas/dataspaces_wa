@@ -23,6 +23,7 @@ class IBClient{
     ~IBClient();
     void write_remote(struct rdma_cm_id *id, uint32_t len);
     void post_receive(struct rdma_cm_id *id);
+    void send_data(struct rdma_cm_id *id);
     void send_chunk(struct rdma_cm_id *id, size_t chunk_size, char* chunk);
     void init();
     //state handlers

@@ -125,7 +125,7 @@ void IBServer::on_completion(struct ibv_wc *wc)
         return;
       }
       else if(size == 3){
-        if(strcmp(ctx->buffer, (char*)"EOF") ){
+        if(!strcmp(ctx->buffer, (char*)"EOF") ){
           LOG(INFO) << "on_completion:: EOF received.";
           ctx->msg->id = MSG_DONE;
           send_message(id);

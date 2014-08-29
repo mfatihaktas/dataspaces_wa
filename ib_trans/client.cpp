@@ -26,21 +26,21 @@ void IBClient::write_remote(struct rdma_cm_id *id, uint32_t len)
 
   memset(&wr, 0, sizeof(wr));
 
+  if (len) {
+    sge.addr = (uintptr_t)ctx->buffer;
+    sge.length = len;
+    sge.lkey = ctx->buffer_mr->lkey;
+    
+    wr.sg_list = &sge;
+    wr.num_sge = 1;
+  }
+  
   wr.wr_id = (uintptr_t)id;
   wr.opcode = IBV_WR_RDMA_WRITE_WITH_IMM;
   wr.send_flags = IBV_SEND_SIGNALED;
   wr.imm_data = htonl(len);
   wr.wr.rdma.remote_addr = ctx->peer_addr;
   wr.wr.rdma.rkey = ctx->peer_rkey;
-
-  if (len) {
-    wr.sg_list = &sge;
-    wr.num_sge = 1;
-
-    sge.addr = (uintptr_t)ctx->buffer;
-    sge.length = len;
-    sge.lkey = ctx->buffer_mr->lkey;
-  }
 
   TEST_NZ(ibv_post_send(id->qp, &wr, &bad_wr));
 }
@@ -63,6 +63,35 @@ void IBClient::post_receive(struct rdma_cm_id *id)
   sge.lkey = ctx->msg_mr->lkey;
 
   TEST_NZ(ibv_post_recv(id->qp, &wr, &bad_wr));
+}
+
+void IBClient::send_data(struct rdma_cm_id *id)
+{
+  LOG(INFO) << "send_data:: started.";
+  
+  char* data_t_ = data_;
+  size_t data_size_t = data_size;
+  
+  size_t chunk_size;
+  char* chunk_ = (char*)malloc(sizeof(char)*BUFFER_SIZE);
+  while(data_size_t){
+    switch (data_size_t >= BUFFER_SIZE){
+      case 1:
+        chunk_size = BUFFER_SIZE;
+        break;
+      case 0:
+        chunk_size = data_size_t;
+    }
+    memcpy(chunk_, data_t_, chunk_size);
+    send_chunk(id, chunk_size, chunk_);
+    
+    data_size_t -= chunk_size;
+    data_t_ += chunk_size;
+  }
+  free(chunk_);
+  send_chunk(id, 3, (char*)"EOF");
+  //
+  LOG(INFO) << "send_data:: done.";
 }
 
 void IBClient::send_chunk(struct rdma_cm_id *id, size_t chunk_size, char* chunk)
@@ -99,10 +128,7 @@ void IBClient::on_completion(struct ibv_wc *wc)
       ctx->peer_addr = ctx->msg->data.mr.addr;
       ctx->peer_rkey = ctx->msg->data.mr.rkey;
 
-      LOG(INFO) << "on_completion:: sending data...";
-      send_chunk(id, data_size, data_);
-      
-      send_chunk(id, 3, (char*)"EOF");
+      send_data(id);
     }
     else if (ctx->msg->id == MSG_DONE) {
       LOG(INFO) << "on_completion:: received DONE, disconnecting.";

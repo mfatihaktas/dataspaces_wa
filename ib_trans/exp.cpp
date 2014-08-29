@@ -91,9 +91,11 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
   return opt_map;
 }
 
+size_t total_recved_size = 0;
 void recv_handler(size_t size, char* data_)
 {
-  LOG(INFO) << "recv_handler:: recved size= " << size;
+  total_recved_size += size;
+  LOG(INFO) << "recv_handler:: recved size= " << size << ", total_recved_size= " << (float)total_recved_size/(1024*1024) << "MB";
   free(data_);
 }
 
@@ -109,7 +111,7 @@ int main(int argc , char **argv)
     ib_server.init();
   }
   else if (strcmp(opt_map[(char*)"type"], (char*)"client") == 0){
-    size_t data_size = 1024*1024*1024;
+    size_t data_size = 1024*1024*1000;
     char* data_ = (char*)malloc(sizeof(char)*data_size);
     
     // for (int i=0; i<data_size; i++){
