@@ -4,8 +4,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-const size_t BUFFER_SIZE = 10 * 10 * 1024 * 1024;
-
 enum message_id
 {
   MSG_INVALID = 0,

@@ -5,7 +5,8 @@ IBClient::IBClient(const char* s_laddr, const char* s_lport,
 : s_laddr(s_laddr),
   s_lport(s_lport),
   data_size(data_size),
-  data_(data_)
+  data_(data_),
+  num_srs(0)
 {
   //
   LOG(INFO) << "IBClient:: constructed:\n" << to_str();
@@ -43,6 +44,8 @@ void IBClient::write_remote(struct rdma_cm_id *id, uint32_t len)
   wr.wr.rdma.rkey = ctx->peer_rkey;
 
   TEST_NZ(ibv_post_send(id->qp, &wr, &bad_wr));
+  num_srs += 1;
+  LOG(INFO) << "write_remote:: len= " << len << " num_srs= " << num_srs;
 }
 
 void IBClient::post_receive(struct rdma_cm_id *id)

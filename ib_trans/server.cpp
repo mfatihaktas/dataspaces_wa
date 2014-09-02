@@ -117,7 +117,6 @@ void IBServer::on_completion(struct ibv_wc *wc)
       // don't need post_receive() since we're done with this connection
     }
     else {
-      
       if (ctx->msg->id == MSG_DONE){
         printf("MSG_DONE received.\n");
         ctx->msg->id = MSG_DONE;

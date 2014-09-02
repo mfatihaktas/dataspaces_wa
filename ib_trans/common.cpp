@@ -47,7 +47,7 @@ void build_context(struct ibv_context *verbs)
 
   TEST_Z(s_ctx->pd = ibv_alloc_pd(s_ctx->ctx));
   TEST_Z(s_ctx->comp_channel = ibv_create_comp_channel(s_ctx->ctx));
-  TEST_Z(s_ctx->cq = ibv_create_cq(s_ctx->ctx, 10, NULL, s_ctx->comp_channel, 0)); /* cqe=10 is arbitrary */
+  TEST_Z(s_ctx->cq = ibv_create_cq(s_ctx->ctx, MAX_QP__CQ_SIZE, NULL, s_ctx->comp_channel, 0));
   TEST_NZ(ibv_req_notify_cq(s_ctx->cq, 0));
 
   TEST_NZ(pthread_create(&s_ctx->cq_poller_thread, NULL, poll_cq, NULL));
@@ -69,12 +69,8 @@ void build_qp_attr(struct ibv_qp_init_attr *qp_attr)
   qp_attr->recv_cq = s_ctx->cq;
   qp_attr->qp_type = IBV_QPT_RC;
 
-  // qp_attr->cap.max_send_wr = 10;
-  // qp_attr->cap.max_recv_wr = 10;
-  // qp_attr->cap.max_send_sge = 1;
-  // qp_attr->cap.max_recv_sge = 1;
-  qp_attr->cap.max_send_wr = 10;
-  qp_attr->cap.max_recv_wr = 10;
+  qp_attr->cap.max_send_wr = MAX_QP__CQ_SIZE;
+  qp_attr->cap.max_recv_wr = MAX_QP__CQ_SIZE;
   qp_attr->cap.max_send_sge = 1;
   qp_attr->cap.max_recv_sge = 1;
 }
@@ -134,14 +130,16 @@ void event_loop(struct rdma_event_channel *ec, int exit_on_disconnect)
 
 void * poll_cq(void *ctx)
 {
+  //struct ibv_cq *cq = ((struct context*)ctx)->cq;
   struct ibv_cq *cq;
   struct ibv_wc wc;
 
   while (1) {
+    //LOG(INFO) << "poll_cq:: before ibv_get_cq_event.";
     TEST_NZ(ibv_get_cq_event(s_ctx->comp_channel, &cq, &ctx));
     ibv_ack_cq_events(cq, 1);
     TEST_NZ(ibv_req_notify_cq(cq, 0));
-
+    //LOG(INFO) << "poll_cq:: before ibv_poll_cq.";
     while (ibv_poll_cq(cq, 1, &wc)) {
       if (wc.status == IBV_WC_SUCCESS)
         s_on_completion_cb(&wc);

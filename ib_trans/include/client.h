@@ -35,4 +35,6 @@ class IBClient{
     const char *s_laddr, *s_lport;
     size_t data_size;
     char* data_;
+    
+    int num_srs;
 };
