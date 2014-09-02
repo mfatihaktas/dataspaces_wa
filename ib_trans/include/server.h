@@ -30,4 +30,6 @@ class IBServer{
   private:
     const char* lport;
     data_recv_cb dr_cb;
+    //
+    Connector connector;
 };

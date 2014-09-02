@@ -67,10 +67,10 @@ void IBServer::on_pre_conn(struct rdma_cm_id *id)
   id->context = ctx;
 
   posix_memalign((void **)&ctx->buffer, sysconf(_SC_PAGESIZE), BUFFER_SIZE);
-  TEST_Z(ctx->buffer_mr = ibv_reg_mr(rc_get_pd(), ctx->buffer, BUFFER_SIZE, IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE));
+  TEST_Z(ctx->buffer_mr = ibv_reg_mr(connector.rc_get_pd(), ctx->buffer, BUFFER_SIZE, IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE));
 
   posix_memalign((void **)&ctx->msg, sysconf(_SC_PAGESIZE), sizeof(*ctx->msg));
-  TEST_Z(ctx->msg_mr = ibv_reg_mr(rc_get_pd(), ctx->msg, sizeof(*ctx->msg), IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE));
+  TEST_Z(ctx->msg_mr = ibv_reg_mr(connector.rc_get_pd(), ctx->msg, sizeof(*ctx->msg), IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE));
 
   post_receive(id);
 }
@@ -129,7 +129,7 @@ void IBServer::on_completion(struct ibv_wc *wc)
           ctx->msg->id = MSG_DONE;
           send_message(id);
           
-          rc_disconnect(id);
+          connector.rc_disconnect(id);
           
           return;
         }
@@ -145,7 +145,7 @@ void IBServer::on_completion(struct ibv_wc *wc)
 
 void IBServer::init()
 {
-  rc_init(
+  connector.rc_init(
     boost::bind(&IBServer::on_pre_conn, this, _1),
     boost::bind(&IBServer::on_connection, this, _1),
     boost::bind(&IBServer::on_completion, this, _1),
@@ -153,5 +153,5 @@ void IBServer::init()
     
     LOG(INFO) << "init:: waiting for connections. interrupt (^C) to exit.";
     
-    rc_server_loop(lport);
+  connector.rc_server_loop(lport);
 }

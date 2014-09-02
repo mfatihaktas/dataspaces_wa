@@ -18,7 +18,7 @@ SUB_INC = -I/cac/u01/mfa51/Desktop/dataspaces_wa/ib_trans/include
 IB_LIB = -lrdmacm -libverbs -lpthread
 #
 INC = $(SUB_INC) $(GLOG_INC) #$(DATASPACES_INC)
-LIB = $(IB_LIB) $(GLOG_LIB) # $(BOOST_LIB) #$(DATASPACES_LIB) 
+LIB = $(IB_LIB) $(GLOG_LIB) $(BOOST_LIB) #$(DATASPACES_LIB) 
 
 MPICC = mpicc
 MPICPP = mpic++

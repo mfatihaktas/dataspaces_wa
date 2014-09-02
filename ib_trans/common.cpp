@@ -2,27 +2,31 @@
 
 const int TIMEOUT_IN_MS = 500;
 
-struct context {
-  struct ibv_context *ctx;
-  struct ibv_pd *pd;
-  struct ibv_cq *cq;
-  struct ibv_comp_channel *comp_channel;
+void rc_die(const char *reason)
+{
+  fprintf(stderr, "%s\n", reason);
+  exit(EXIT_FAILURE);
+}
 
-  pthread_t cq_poller_thread;
-};
+struct context* Connector::s_ctx = NULL;
 
-static struct context *s_ctx = NULL;
-static pre_conn_cb_fn s_on_pre_conn_cb = NULL;
-static connect_cb_fn s_on_connect_cb = NULL;
-static completion_cb_fn s_on_completion_cb = NULL;
-static disconnect_cb_fn s_on_disconnect_cb = NULL;
+Connector::Connector()
+{
+  s_on_pre_conn_cb = NULL;
+  s_on_connect_cb = NULL;
+  s_on_completion_cb = NULL;
+  s_on_disconnect_cb = NULL;
+  //
+  LOG(INFO) << "Connector:: constructed.";
+}
 
-static void build_context(struct ibv_context *verbs);
-static void build_qp_attr(struct ibv_qp_init_attr *qp_attr);
-static void event_loop(struct rdma_event_channel *ec, int exit_on_disconnect);
-static void * poll_cq(void *);
+Connector::~Connector()
+{
+  //
+  LOG(INFO) << "Connector:: destructed.";
+}
 
-void build_connection(struct rdma_cm_id *id)
+void Connector::build_connection(struct rdma_cm_id *id)
 {
   struct ibv_qp_init_attr qp_attr;
 
@@ -32,7 +36,7 @@ void build_connection(struct rdma_cm_id *id)
   TEST_NZ(rdma_create_qp(id, s_ctx->pd, &qp_attr));
 }
 
-void build_context(struct ibv_context *verbs)
+void Connector::build_context(struct ibv_context *verbs)
 {
   if (s_ctx) {
     if (s_ctx->ctx != verbs)
@@ -50,10 +54,16 @@ void build_context(struct ibv_context *verbs)
   TEST_Z(s_ctx->cq = ibv_create_cq(s_ctx->ctx, MAX_QP__CQ_SIZE, NULL, s_ctx->comp_channel, 0));
   TEST_NZ(ibv_req_notify_cq(s_ctx->cq, 0));
 
-  TEST_NZ(pthread_create(&s_ctx->cq_poller_thread, NULL, poll_cq, NULL));
+  //TEST_NZ(pthread_create(&s_ctx->cq_poller_thread, NULL, &Connector::poll_cq, NULL) );
+  TEST_NZ(pthread_create(&s_ctx->cq_poller_thread, NULL, &Connector::poll_cq_helper, this) );
+  
+  // boost::shared_ptr<boost::thread> t_(
+  //   new boost::thread(&Connector::poll_cq, this, s_ctx)
+  // );
+  // s_ctx->cq_poller_thread_ = t_;
 }
 
-void build_params(struct rdma_conn_param *params)
+void Connector::build_params(struct rdma_conn_param *params)
 {
   memset(params, 0, sizeof(*params));
 
@@ -61,7 +71,7 @@ void build_params(struct rdma_conn_param *params)
   params->rnr_retry_count = 7; /* infinite retry */
 }
 
-void build_qp_attr(struct ibv_qp_init_attr *qp_attr)
+void Connector::build_qp_attr(struct ibv_qp_init_attr *qp_attr)
 {
   memset(qp_attr, 0, sizeof(*qp_attr));
 
@@ -75,7 +85,7 @@ void build_qp_attr(struct ibv_qp_init_attr *qp_attr)
   qp_attr->cap.max_recv_sge = 1;
 }
 
-void event_loop(struct rdma_event_channel *ec, int exit_on_disconnect)
+void Connector::event_loop(struct rdma_event_channel *ec, int exit_on_disconnect)
 {
   struct rdma_cm_event *event = NULL;
   struct rdma_conn_param cm_params;
@@ -128,18 +138,23 @@ void event_loop(struct rdma_event_channel *ec, int exit_on_disconnect)
   }
 }
 
-void * poll_cq(void *ctx)
+void* Connector::poll_cq_helper(void* context)
+{
+  return ( (Connector*)context)->poll_cq(s_ctx);
+}
+
+void* Connector::poll_cq(void *ctx)
 {
   //struct ibv_cq *cq = ((struct context*)ctx)->cq;
   struct ibv_cq *cq;
   struct ibv_wc wc;
 
   while (1) {
-    //LOG(INFO) << "poll_cq:: before ibv_get_cq_event.";
+    // LOG(INFO) << "poll_cq:: before ibv_get_cq_event.";
     TEST_NZ(ibv_get_cq_event(s_ctx->comp_channel, &cq, &ctx));
     ibv_ack_cq_events(cq, 1);
     TEST_NZ(ibv_req_notify_cq(cq, 0));
-    //LOG(INFO) << "poll_cq:: before ibv_poll_cq.";
+    // LOG(INFO) << "poll_cq:: before ibv_poll_cq.";
     while (ibv_poll_cq(cq, 1, &wc)) {
       if (wc.status == IBV_WC_SUCCESS)
         s_on_completion_cb(&wc);
@@ -151,7 +166,7 @@ void * poll_cq(void *ctx)
   return NULL;
 }
 
-void rc_init(pre_conn_cb_fn pc, connect_cb_fn conn, completion_cb_fn comp, disconnect_cb_fn disc)
+void Connector::rc_init(pre_conn_cb_fn pc, connect_cb_fn conn, completion_cb_fn comp, disconnect_cb_fn disc)
 {
   s_on_pre_conn_cb = pc;
   s_on_connect_cb = conn;
@@ -159,7 +174,7 @@ void rc_init(pre_conn_cb_fn pc, connect_cb_fn conn, completion_cb_fn comp, disco
   s_on_disconnect_cb = disc;
 }
 
-void rc_client_loop(const char *host, const char *port, void *context)
+void Connector::rc_client_loop(const char *host, const char *port, void *context)
 {
   struct addrinfo *addr;
   struct rdma_cm_id *conn = NULL;
@@ -183,7 +198,7 @@ void rc_client_loop(const char *host, const char *port, void *context)
   rdma_destroy_event_channel(ec);
 }
 
-void rc_server_loop(const char *port)
+void Connector::rc_server_loop(const char *port)
 {
   struct sockaddr_in addr;
   struct rdma_cm_id *listener = NULL;
@@ -204,18 +219,12 @@ void rc_server_loop(const char *port)
   rdma_destroy_event_channel(ec);
 }
 
-void rc_disconnect(struct rdma_cm_id *id)
+void Connector::rc_disconnect(struct rdma_cm_id *id)
 {
   rdma_disconnect(id);
 }
 
-void rc_die(const char *reason)
-{
-  fprintf(stderr, "%s\n", reason);
-  exit(EXIT_FAILURE);
-}
-
-struct ibv_pd * rc_get_pd()
+struct ibv_pd* Connector::rc_get_pd()
 {
   return s_ctx->pd;
 }

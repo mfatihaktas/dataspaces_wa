@@ -10,6 +10,9 @@ elif [ $1  = 'rc' ]; then
 elif [ $1  = 'ds' ]; then
   export GLOG_logtostderr=1
   gdb --args ./exp --type=server --port=1234
+elif [ $1  = 'dc' ]; then
+  export GLOG_logtostderr=1
+  gdb --args ./exp --type=client --port=1234 --s_addr=127.0.0.1
 else
   echo "Argument did not match !"
 fi

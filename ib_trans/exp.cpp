@@ -97,12 +97,12 @@ void recv_handler(size_t size, char* data_)
   total_recved_size += size;
   LOG(INFO) << "recv_handler:: recved size= " << size << ", total_recved_size= " << (float)total_recved_size/(1024*1024) << "MB";
   
-  int *int_data_ = reinterpret_cast<int*>(data_);
+  // int *int_data_ = reinterpret_cast<int*>(data_);
   
-  for (int i = 0; i < size; i++){
-    std::cout << int_data_[i] << ",";
-  }
-  std::cout << "\n";
+  // for (int i = 0; i < size; i++){
+  //   std::cout << int_data_[i] << ",";
+  // }
+  // std::cout << "\n";
   
   free(data_);
 }
@@ -119,21 +119,21 @@ int main(int argc , char **argv)
     ib_server.init();
   }
   else if (strcmp(opt_map[(char*)"type"], (char*)"client") == 0){
-    // size_t data_size = 1024*1024*1000;
-    // char* data_ = (char*)malloc(sizeof(char)*data_size);
+    size_t data_size = 1024*1024*100;
+    char* data_ = (char*)malloc(sizeof(char)*data_size);
     
     // for (int i=0; i<data_size; i++){
     //   data_[i] = 'A';
     // }
     
-    size_t data_size = 1024;
-    int *int_data_ = (int*)malloc(sizeof(int)*data_size);
+    // size_t data_size = 1024;
+    // int *int_data_ = (int*)malloc(sizeof(int)*data_size);
     
-    for (int i = 0; i < data_size; i++){
-      int_data_[i] = i;
-    }
+    // for (int i = 0; i < data_size; i++){
+    //   int_data_[i] = i;
+    // }
     
-    char *data_ = reinterpret_cast<char*>(int_data_);
+    // char *data_ = reinterpret_cast<char*>(int_data_);
     
     IBClient ib_client(opt_map[(char*)"s_addr"], opt_map[(char*)"port"],
                        data_size, data_);

@@ -113,10 +113,10 @@ void IBClient::on_pre_conn(struct rdma_cm_id *id)
   struct client_context *ctx = (struct client_context *)id->context;
 
   posix_memalign((void **)&ctx->buffer, sysconf(_SC_PAGESIZE), BUFFER_SIZE);
-  TEST_Z(ctx->buffer_mr = ibv_reg_mr(rc_get_pd(), ctx->buffer, BUFFER_SIZE, IBV_ACCESS_LOCAL_WRITE));
+  TEST_Z(ctx->buffer_mr = ibv_reg_mr(connector.rc_get_pd(), ctx->buffer, BUFFER_SIZE, IBV_ACCESS_LOCAL_WRITE));
 
   posix_memalign((void **)&ctx->msg, sysconf(_SC_PAGESIZE), sizeof(*ctx->msg));
-  TEST_Z(ctx->msg_mr = ibv_reg_mr(rc_get_pd(), ctx->msg, sizeof(*ctx->msg), IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE));
+  TEST_Z(ctx->msg_mr = ibv_reg_mr(connector.rc_get_pd(), ctx->msg, sizeof(*ctx->msg), IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE));
 
   post_receive(id);
 }
@@ -135,7 +135,7 @@ void IBClient::on_completion(struct ibv_wc *wc)
     }
     else if (ctx->msg->id == MSG_DONE) {
       LOG(INFO) << "on_completion:: received DONE, disconnecting.";
-      rc_disconnect(id);
+      connector.rc_disconnect(id);
       return;
     }
 
@@ -147,13 +147,13 @@ void IBClient::init()
 {
   struct client_context ctx;
   
-  rc_init(
+  connector.rc_init(
     boost::bind(&IBClient::on_pre_conn, this, _1),
     NULL, // on connect
     boost::bind(&IBClient::on_completion, this, _1),
     NULL); // on disconnect
 
-  rc_client_loop(s_laddr, s_lport, &ctx);
+  connector.rc_client_loop(s_laddr, s_lport, &ctx);
 }
 
 std::string IBClient::to_str()

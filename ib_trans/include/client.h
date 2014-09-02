@@ -37,4 +37,6 @@ class IBClient{
     char* data_;
     
     int num_srs;
+    //
+    Connector connector;
 };
