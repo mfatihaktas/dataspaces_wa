@@ -9,7 +9,8 @@ struct RMessenger
   public:
     RMessenger();
     ~RMessenger();
-    std::map<std::string, std::string> gen_i_msg(std::string msg_type, int app_id, std::string key, 
+    std::map<std::string, std::string> gen_i_msg(std::string msg_type, int app_id,
+                                                 std::string data_type, std::string key,
                                                  unsigned int ver, int size, int ndim, 
                                                  uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
   private:
@@ -26,9 +27,9 @@ class WADspacesDriver
   public:
     WADspacesDriver(int app_id, int num_local_peers);
     ~WADspacesDriver();
-    int local_put(std::string key, unsigned int ver, int size,
+    int local_put(std::string data_type, std::string key, unsigned int ver, int size,
                   int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
-    int remote_get(std::string key, unsigned int ver, int size,
+    int remote_get(std::string data_type, std::string key, unsigned int ver, int size,
                    int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
     int handle_ri_reply(char* ri_reply);
   private:

@@ -138,7 +138,7 @@ void l_put_test(std::string var_name, WADspacesDriver& wads_driver)
     data[i] = (i+1);
   }
   //debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, NULL);
-  int result = wads_driver.local_put(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim, lb, ub, data);
+  int result = wads_driver.local_put("int", var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim, lb, ub, data);
   
   free(gdim);
   free(lb);
@@ -163,8 +163,7 @@ void r_get_test(WADspacesDriver& wads_driver)
   }
   
   //debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, NULL);
-  int result = wads_driver.remote_get(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim, lb, ub, data);
-  
+  int result = wads_driver.remote_get("int", var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim, lb, ub, data);
   
   free(gdim);
   free(lb);

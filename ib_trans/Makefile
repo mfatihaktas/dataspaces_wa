@@ -39,7 +39,7 @@ APPS := exp
 
 all: ${APPS}
 
-exp: $(ODIR)/exp.o $(ODIR)/server.o $(ODIR)/client.o $(ODIR)/common.o
+exp: $(ODIR)/exp.o $(ODIR)/common.o $(ODIR)/ib_delivery.o
 	${CPP} -o $@ $^ $(INC) $(LIB)
 
 $(ODIR)/%.o: %.cpp

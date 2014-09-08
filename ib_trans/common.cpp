@@ -51,7 +51,7 @@ void Connector::build_context(struct ibv_context *verbs)
 
   TEST_Z(s_ctx->pd = ibv_alloc_pd(s_ctx->ctx));
   TEST_Z(s_ctx->comp_channel = ibv_create_comp_channel(s_ctx->ctx));
-  TEST_Z(s_ctx->cq = ibv_create_cq(s_ctx->ctx, MAX_QP__CQ_SIZE, NULL, s_ctx->comp_channel, 0));
+  TEST_Z(s_ctx->cq = ibv_create_cq(s_ctx->ctx, MAX_QP__CQ_LENGTH, NULL, s_ctx->comp_channel, 0));
   TEST_NZ(ibv_req_notify_cq(s_ctx->cq, 0));
 
   //TEST_NZ(pthread_create(&s_ctx->cq_poller_thread, NULL, &Connector::poll_cq, NULL) );
@@ -79,8 +79,8 @@ void Connector::build_qp_attr(struct ibv_qp_init_attr *qp_attr)
   qp_attr->recv_cq = s_ctx->cq;
   qp_attr->qp_type = IBV_QPT_RC;
 
-  qp_attr->cap.max_send_wr = MAX_QP__CQ_SIZE;
-  qp_attr->cap.max_recv_wr = MAX_QP__CQ_SIZE;
+  qp_attr->cap.max_send_wr = MAX_QP__CQ_LENGTH;
+  qp_attr->cap.max_recv_wr = MAX_QP__CQ_LENGTH;
   qp_attr->cap.max_send_sge = 1;
   qp_attr->cap.max_recv_sge = 1;
 }

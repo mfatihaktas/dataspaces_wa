@@ -18,8 +18,7 @@
 #include <boost/lexical_cast.hpp>
 #include <glog/logging.h>
 //
-#include "server.h"
-#include "client.h"
+#include "ib_delivery.h"
 
 char* intf_to_ip(const char* intf)
 {
@@ -91,18 +90,20 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
   return opt_map;
 }
 
+#define data_type double
+const std::string data_type_str = "double";
+
 size_t total_recved_size = 0;
-void recv_handler(size_t size, char* data_)
+void recv_handler(size_t size, void* data_)
 {
   total_recved_size += size;
   LOG(INFO) << "recv_handler:: recved size= " << size << ", total_recved_size= " << (float)total_recved_size/(1024*1024) << "MB";
   
-  // int *int_data_ = reinterpret_cast<int*>(data_);
-  
-  // for (int i = 0; i < size; i++){
-  //   std::cout << int_data_[i] << ",";
-  // }
-  // std::cout << "\n";
+  int length = size/sizeof(data_type);
+  for (int i = 0; i < length; i++){
+    std::cout << static_cast<data_type*>(data_)[i] << ",";
+  }
+  std::cout << "\n";
   
   free(data_);
 }
@@ -114,39 +115,55 @@ int main(int argc , char **argv)
   //
   std::map<char*, char*> opt_map = parse_opts(argc, argv);
   
+  std::string ib_lports[] = {"1234","1235","1236","1237"};
+  std::list<std::string> ib_lport_list(ib_lports, ib_lports + sizeof(ib_lports) / sizeof(std::string) );
+  
+  DDManager dd_manager(ib_lport_list);
   if (strcmp(opt_map[(char*)"type"], (char*)"server") == 0){
-    IBServer ib_server(opt_map[(char*)"port"], boost::bind(&recv_handler, _1, _2) );
-    ib_server.init();
+    // boost::shared_ptr<IBServer<data_type> > ib_server_{
+    //   new IBServer<data_type>(opt_map[(char*)"port"], boost::bind(&recv_handler, _1, _2) );
+    // };
+    // IBServer<data_type> *ib_server_ = new IBServer<data_type>(opt_map[(char*)"port"], boost::bind(&recv_handler, _1, _2) );
+    // ib_server_->init();
+    
+    // IBServer<data_type> ib_server(opt_map[(char*)"port"], boost::bind(&recv_handler, _1, _2) );
+    // ib_server.init();
+    
+    dd_manager.init_ib_server(data_type_str, opt_map[(char*)"port"], boost::bind(&recv_handler, _1, _2) );
   }
   else if (strcmp(opt_map[(char*)"type"], (char*)"client") == 0){
-    size_t data_size = 1024*1024*100;
-    char* data_ = (char*)malloc(sizeof(char)*data_size);
+    size_t data_length = 1024;
+    void* data_ = (void*)malloc(sizeof(data_type)*data_length);
     
-    // for (int i=0; i<data_size; i++){
-    //   data_[i] = 'A';
-    // }
+    for (int i = 0; i < data_length; i++){
+      static_cast<data_type*>(data_)[i] = (data_type)i*1.2;
+    }
     
-    // size_t data_size = 1024;
-    // int *int_data_ = (int*)malloc(sizeof(int)*data_size);
+    // IBClient<data_type> ib_client(opt_map[(char*)"s_addr"], opt_map[(char*)"port"],
+    //                               data_length, data_);
+    // ib_client.init();
     
-    // for (int i = 0; i < data_size; i++){
-    //   int_data_[i] = i;
-    // }
-    
-    // char *data_ = reinterpret_cast<char*>(int_data_);
-    
-    IBClient ib_client(opt_map[(char*)"s_addr"], opt_map[(char*)"port"],
-                       data_size, data_);
-    ib_client.init();
+    dd_manager.init_ib_client(data_type_str, 
+                              opt_map[(char*)"s_addr"], opt_map[(char*)"port"],
+                              data_length, data_);
     
     free(data_);
     // std::cout << "Enter\n";
     // getline(std::cin, temp);
   }
+  else if (strcmp(opt_map[(char*)"type"], (char*)"bqueue") == 0){
+    BQueue<int> bq;
+    
+    bq.create_timed_push_thread(12);
+    
+    LOG(INFO) << "main:: bq.pop() is blocking...";
+    int popped = bq.pop();
+    
+    LOG(INFO) << "main:: popped = " << popped;
+  }
   else{
      LOG(ERROR) << "main:: unknown type= " << opt_map[(char*)"type"];
   }
-  
   
   return 0;
 }

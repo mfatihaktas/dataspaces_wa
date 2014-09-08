@@ -21,12 +21,15 @@
 #include <boost/serialization/map.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
-//for boost tokenizer
-#include <boost/tokenizer.hpp>
 
 #include "ds_drive.h"
 #include "dht_node.h"
 #include "packet.h"
+
+#include "ib_delivery.h"
+
+#define TEST_NZ(x) do { int r=x; if (r){ printf("error: " #x " failed (returned non-zero=%d).", r); } } while (0)
+#define TEST_Z(x)  do { if (!(x)) printf("error: " #x " failed (returned zero or null)."); } while (0)
 
 class IMsgCoder
 {
@@ -113,11 +116,13 @@ struct RQTable
 //TODO: a better way for syncing client and server of bccomm
 #define WAIT_TIME_FOR_BCCLIENT_DSLOCK 100*1000
 
-#define RI_MAX_MSG_SIZE 1000
-#define LI_MAX_MSG_SIZE 1000
+const size_t RI_MAX_MSG_SIZE = 1000;
+const size_t LI_MAX_MSG_SIZE = 1000;
 
 const std::string REMOTE_QUERY = "rq";
 const std::string REMOTE_QUERY_REPLY = "rq_reply";
+const std::string REMOTE_FETCH = "rf";
+
 const std::string REMOTE_GET = "rg";
 const std::string REMOTE_GET_REPLY = "rg_reply";
 const std::string REMOTE_PUT = "rp";
@@ -136,6 +141,8 @@ struct syncer{
     int wait(std::string key);
     int notify(std::string key);
   private:
+    boost::mutex mutex;
+  
     std::map<std::string, boost::shared_ptr<boost::condition_variable> > key_cv_map;
     std::map<std::string, boost::shared_ptr<boost::condition_variable> >::iterator key_cv_map_it;
     std::map<std::string, boost::shared_ptr<boost::mutex> > key_m_map;
@@ -178,6 +185,8 @@ class RIManager
     boost::shared_ptr<DHTNode> dht_node_;
     
     std::map<int, boost::shared_ptr<BCClient> > appid_bcclient_map;
+    
+    DDManager dd_manager;
 };
 
 #endif //end of _DSCLIENT_H_

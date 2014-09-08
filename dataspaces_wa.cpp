@@ -21,13 +21,15 @@ RMessenger::~RMessenger()
   LOG(INFO) << "RMessenger:: destructed.";
 }
 
-std::map<std::string, std::string> RMessenger::gen_i_msg(std::string msg_type, int app_id, std::string key, 
+std::map<std::string, std::string> RMessenger::gen_i_msg(std::string msg_type, int app_id, 
+                                                         std::string data_type, std::string key,
                                                          unsigned int ver, int size, int ndim, 
                                                          uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
 {
   std::map<std::string, std::string> msg_map;
   msg_map["type"] = msg_type;
   msg_map["app_id"] = boost::lexical_cast<std::string>(app_id);
+  msg_map["data_type"] = data_type;
   msg_map["key"] = key;
   msg_map["ver"] = boost::lexical_cast<std::string>(ver);
   msg_map["size"] = boost::lexical_cast<std::string>(size);
@@ -72,11 +74,11 @@ WADspacesDriver::~WADspacesDriver()
   LOG(INFO) << "WADspacesDriver:: destructed.";
 }
 
-int WADspacesDriver::local_put(std::string key, unsigned int ver, int size,
+int WADspacesDriver::local_put(std::string data_type, std::string key, unsigned int ver, int size,
                                int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
 {
-  std::map<std::string, std::string> msg_map = rmessenger.gen_i_msg(LOCAL_PUT, app_id, key, ver, 
-                                                                    size, ndim, gdim_, lb_, ub_);
+  std::map<std::string, std::string> msg_map = rmessenger.gen_i_msg(LOCAL_PUT, app_id, data_type,
+                                                                    key, ver, size, ndim, gdim_, lb_, ub_);
   if (li_bc_client_->send(msg_map) ){
     LOG(ERROR) << "local_put:: li_bc_client_->send failed!";
     return 1;
@@ -85,11 +87,11 @@ int WADspacesDriver::local_put(std::string key, unsigned int ver, int size,
   return ds_driver_->sync_put(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_);
 }
 
-int WADspacesDriver::remote_get(std::string key, unsigned int ver, int size,
+int WADspacesDriver::remote_get(std::string data_type, std::string key, unsigned int ver, int size,
                                 int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
 {
-  std::map<std::string, std::string> msg_map = rmessenger.gen_i_msg(REMOTE_GET, app_id, key, ver, 
-                                                                    size, ndim, gdim_, lb_, ub_);
+  std::map<std::string, std::string> msg_map = rmessenger.gen_i_msg(REMOTE_GET, app_id, data_type, 
+                                                                    key, ver, size, ndim, gdim_, lb_, ub_);
   if (ri_bc_client_->send(msg_map)){
     LOG(ERROR) << "remote_get:: ri_bc_client_->send failed!";
     return 1;

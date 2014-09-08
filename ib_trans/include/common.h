@@ -16,12 +16,12 @@
 #include <glog/logging.h>
 //
 #define TEST_NZ(x) do { int r=x; if ((r)){ printf("r= %d\n", r); rc_die("error: " #x " failed (returned non-zero)." );} } while (0)
-#define TEST_Z(x)  do { if (!(x)) rc_die("error: " #x " failed (returned zero/null)."); } while (0)
+#define TEST_Z(x)  do { if (!(x)) rc_die("error: " #x " failed (returned zero)."); } while (0)
 
 void rc_die(const char *reason);
 
-const size_t BUFFER_SIZE = 10 * 1024 * 1024;
-const size_t MAX_QP__CQ_SIZE = 100;
+const size_t BUFFER_LENGTH = 10 * 1024 * 1024;
+const size_t MAX_QP__CQ_LENGTH = 100;
 
 struct context {
   struct ibv_context *ctx;

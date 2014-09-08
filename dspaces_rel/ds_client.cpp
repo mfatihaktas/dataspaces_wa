@@ -395,6 +395,8 @@ syncer::~syncer()
 
 int syncer::add_sync_point(std::string key, int num_peers)
 {
+  boost::lock_guard<boost::mutex> guard(this->mutex);
+  
   if (key_cv_map.count(key) ){
     LOG(ERROR) << "add_sync_point:: already added key=" << key;
     return 1;
@@ -411,6 +413,8 @@ int syncer::add_sync_point(std::string key, int num_peers)
 
 int syncer::del_sync_point(std::string key)
 {
+  boost::lock_guard<boost::mutex> guard(this->mutex);
+  
   if (!key_cv_map.count(key) ){
     LOG(ERROR) << "del_sync_point:: non-existing key=" << key;
     return 1;
@@ -437,6 +441,8 @@ int syncer::wait(std::string key)
 
 int syncer::notify(std::string key)
 {
+  boost::lock_guard<boost::mutex> guard(this->mutex);
+  
   int num_peers_to_wait = key_numpeers_map[key];
   --num_peers_to_wait;
   
@@ -579,24 +585,54 @@ void RIManager::handle_r_get(int app_id, std::map<std::string, std::string> r_ge
       LOG(ERROR) << "handle_r_get:: remote_query failed!";
     }
     if (!rq_table.get_key(key, ds_id, NULL, NULL, NULL, NULL, NULL, NULL) ){
-      LOG(INFO) << "handle_r_get:: key= " << key << " does not exist.";
-      //
-      msg_map["ds_id"] = '?';
-    }
-    else{
-      LOG(INFO) << "handle_r_get:: key= " << key << " exists in ds_id= " << ds_id << ".";
-      //
-      msg_map["ds_id"] = ds_id;
+      ds_id = '?';
     }
   }
-  else{
-    LOG(INFO) << "handle_r_get:: key= " << key << " exists in ds_id= " << ds_id << ".";
-    //
-    msg_map["ds_id"] = ds_id;
+  
+  if(ds_id == '?'){
+    LOG(INFO) << "handle_r_get:: key= " << key << " does not exist.";
+    msg_map["ds_id"] = '?';
+    appid_bcclient_map[app_id]->send(msg_map);
+    return;
   }
+  
+  LOG(INFO) << "handle_r_get:: key= " << key << " exists in ds_id= " << ds_id << ".";
+  if (remote_fetch(ds_id, r_get_map) ){
+    LOG(INFO) << "handle_r_get:: remote_fetch failed!";
+    msg_map["ds_id"] = '?';
+    appid_bcclient_map[app_id]->send(msg_map);
+    return;
+  }
+  
   appid_bcclient_map[app_id]->send(msg_map);
   //
   LOG(INFO) << "handle_r_get:: done.";
+}
+
+bool RIManager::remote_fetch(char ds_id, std::map<std::string, std::string> r_fetch_map)
+{
+  LOG(INFO) << "remote_fetch:: started;";
+  
+  r_fetch_map["type"] = REMOTE_FETCH;
+  
+  std::string ib_lport = dd_manager.get_next_avail_ib_lport();
+  r_fetch_map["ib_lport"] = ib_lport;
+  if(send_msg(ds_id, RIMSG, r_q_map) ){
+    LOG(ERROR) << "remote_fetch:: send_msg to to_id= " << to_id << " failed!";
+    return false;
+  }
+  
+  dd_manager.init_ib_server(r_fetch_map["data_type"], ib_lport, boost::bind(&handle_ib_receive, _1, _2) );
+  
+  
+  dd_manager.give_ib_lport_back(ib_lport);
+  //
+  LOG(INFO) << "remote_fetch:: done.";
+}
+
+void RIManager::handle_ib_receive(size_t size, void* data_)
+{
+  LOG(INFO) << "handle_ib_receive:: recved size= " << size << ", total_recved_size= " << (float)total_recved_size/(1024*1024) << "MB";
 }
 
 //PI: a key cannot be produced in multiple dataspaces
@@ -677,8 +713,8 @@ void RIManager::handle_r_query(std::map<std::string, std::string> r_query_map)
     LOG(ERROR) << "handle_r_query:: send_msg to to_id= " << to_id << " failed!";
   }
   
-  LOG(INFO) << "handle_r_query:: rq_reply_map=";
-  print_str_map(rq_reply_map);
+  // LOG(INFO) << "handle_r_query:: rq_reply_map=";
+  // print_str_map(rq_reply_map);
   //
   LOG(INFO) << "handle_r_query:: done.";
 }

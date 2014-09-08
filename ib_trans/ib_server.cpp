@@ -1,14 +1,14 @@
 #include "server.h"
 
-void print_conn_context(struct conn_context* cc)
-{
-  printf("print_conn_context:: conn_context=\n");
-  printf("\t buffer=%s\n", cc->buffer);
-  printf("\t msg=\n");
-  printf("\t\t id=%d\n", cc->msg->id);
-  printf("\t\t mr.addr=%l\n", cc->msg->data.mr.addr);
-  printf("\t\t mr.rkey=%l\n", cc->msg->data.mr.rkey);
-}
+// void print_conn_context(struct conn_context* cc)
+// {
+//   printf("print_conn_context:: conn_context=\n");
+//   printf("\t buffer=%s\n", cc->buffer);
+//   printf("\t msg=\n");
+//   printf("\t\t id=%d\n", cc->msg->id);
+//   printf("\t\t mr.addr=%l\n", cc->msg->data.mr.addr);
+//   printf("\t\t mr.rkey=%l\n", cc->msg->data.mr.rkey);
+// }
 
 IBServer::IBServer(const char* lport, data_recv_cb dr_cb)
 : lport(lport),
@@ -124,7 +124,7 @@ void IBServer::on_completion(struct ibv_wc *wc)
         return;
       }
       else if(size == 3){
-        if(!strcmp(ctx->buffer, (char*)"EOF") ){
+        if(!strcmp((char*)ctx->buffer, (char*)"EOF") ){
           LOG(INFO) << "on_completion:: EOF received.";
           ctx->msg->id = MSG_DONE;
           send_message(id);
@@ -134,7 +134,7 @@ void IBServer::on_completion(struct ibv_wc *wc)
           return;
         }
       }
-      char* data_ = (char*)malloc(sizeof(char)*size);
+      data_type* data_ = (data_type*)malloc(sizeof(data_type)*size);
       memcpy(data_, ctx->buffer, size);
       dr_cb(size, data_);
       
