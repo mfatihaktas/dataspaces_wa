@@ -485,7 +485,7 @@ bool RFManager::receive_put(std::string ib_laddr, std::string ib_lport,
   key_data_map[key] = malloc(size*get_data_length(ndim, gdim_, lb_, ub_) );
   
   dd_manager_->init_ib_server(key, data_type, ib_lport.c_str(), 
-                              boost::bind(&RFManager::handle_ib_receive, this, _1, _2, _3, _4) );
+                              boost::bind(&RFManager::handle_ib_receive, this, _1, _2, _3) );
   dd_manager_->give_ib_lport_back(ib_lport);
   
   ds_driver_->sync_put(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, key_data_map[key]);
@@ -500,7 +500,7 @@ bool RFManager::receive_put(std::string ib_laddr, std::string ib_lport,
   return true;
 }
 
-void RFManager::handle_ib_receive(std::string key, size_t size, size_t data_size, void* data_)
+void RFManager::handle_ib_receive(std::string key, size_t data_size, void* data_)
 {
   if (!key_recvedsize_map.count(key) ){
     LOG(ERROR) << "handle_ib_receive:: data is received for an unexpected key= " << key;
@@ -510,8 +510,8 @@ void RFManager::handle_ib_receive(std::string key, size_t size, size_t data_size
   size_t recved_size = key_recvedsize_map[key];
   LOG(INFO) << "handle_ib_receive:: for key= " << key << ", recved recved_size= " << recved_size << ", total_received_size= " << (float)(recved_size+data_size)/1024/1024 << "(MB)";
   
-  size_t recved_length = recved_size/size;
-  memcpy(key_data_map[key]+recved_length, data_, data_size);
+  char* data_t_ = static_cast<char*>(key_data_map[key]);
+  memcpy(data_t_+recved_size, data_, data_size);
   
   key_recvedsize_map[key] += data_size;
   

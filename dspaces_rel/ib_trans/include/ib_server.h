@@ -4,7 +4,7 @@
 #include "messages.h"
 #include "common.h"
 
-typedef boost::function<void(std::string, size_t, size_t, void*)> data_recv_cb;
+typedef boost::function<void(std::string, size_t, void*)> data_recv_cb;
 
 template <class data_type>
 class IBServer{
@@ -149,7 +149,7 @@ class IBServer{
           }
           data_type* data_ = (data_type*)malloc(size);
           memcpy(data_, ctx->buffer, size);
-          dr_cb(key, sizeof(data_type), size, data_);
+          dr_cb(key, size, data_);
           
           post_receive(id);
         }

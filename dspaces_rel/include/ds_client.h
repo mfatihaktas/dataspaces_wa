@@ -167,7 +167,7 @@ class RFManager
     bool receive_put(std::string ib_laddr, std::string ib_lport,
                      std::string data_type, std::string key, unsigned int ver, int size,
                      int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
-    void handle_ib_receive(std::string key, size_t size, size_t data_size, void* data_);
+    void handle_ib_receive(std::string key, size_t data_size, void* data_);
     
     bool get_send(std::string data_type, std::string key, unsigned int ver, int size,
                   int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_,
