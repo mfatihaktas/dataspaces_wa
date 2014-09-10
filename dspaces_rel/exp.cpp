@@ -52,6 +52,7 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
     {"lport", optional_argument, NULL, 5},
     {"ipeer_lip", optional_argument, NULL, 6},
     {"ipeer_lport", optional_argument, NULL, 7},
+    {"ib_lintf", optional_argument, NULL, 8},
     {0, 0, 0, 0}
   };
   
@@ -89,6 +90,9 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
         break;
       case 7:
         opt_map[(char*)"ipeer_lport"] = optarg;
+        break;
+      case 8:
+        opt_map[(char*)"ib_lintf"] = optarg;
         break;
       case 's':
         break;
@@ -134,9 +138,13 @@ int main(int argc , char **argv)
       opt_map[(char*)"ipeer_lport"] = (char*)"0";
     }
     
+    std::string wa_ib_lports[] = {"1234","1235","1236","1237"};
+    std::list<std::string> wa_ib_lport_list(wa_ib_lports, wa_ib_lports + sizeof(wa_ib_lports) / sizeof(std::string) );
+    
     RIManager ri_manager(opt_map[(char*)"dht_id"][0], num_dscnodes-1, app_id, 
                          intf_to_ip(opt_map[(char*)"lintf"]), atoi(opt_map[(char*)"lport"]),
-                         opt_map[(char*)"ipeer_lip"], atoi(opt_map[(char*)"ipeer_lport"]) );
+                         opt_map[(char*)"ipeer_lip"], atoi(opt_map[(char*)"ipeer_lport"]),
+                         intf_to_ip(opt_map[(char*)"ib_lintf"]), wa_ib_lport_list);
     //usleep(1*1000*1000);
     
     std::cout << "Enter\n";

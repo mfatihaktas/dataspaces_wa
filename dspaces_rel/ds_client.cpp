@@ -1,7 +1,9 @@
 #include "ds_client.h"
 
+#ifndef _PRINT_FUNCS_
+#define _PRINT_FUNCS_
 void debug_print(std::string key, unsigned int ver, int size, int ndim, 
-                 uint64_t* gdim, uint64_t* lb, uint64_t* ub, int* data)
+                 uint64_t* gdim, uint64_t* lb, uint64_t* ub, int* data, size_t data_length)
 {
   LOG(INFO) << "debug_print::";
   std::cout << "key= " << key << "\n"
@@ -32,7 +34,7 @@ void debug_print(std::string key, unsigned int ver, int size, int ndim,
   }
   
   std::cout << "data=";
-  for (int i=0; i<size; i++){
+  for (int i=0; i<data_length; i++){
     std::cout << "\t" << data[i] << ", ";
   }
   std::cout << "\n";
@@ -45,6 +47,7 @@ void print_str_map(std::map<std::string, std::string> str_map)
     std::cout << "\t" << it->first << ":" << it->second << "\n";
   }
 }
+#endif
 
 //***********************************  IMsgCoder  ********************************//
 IMsgCoder::IMsgCoder()
@@ -454,19 +457,138 @@ int syncer::notify(std::string key)
   
   return 0;
 }
-//************************************  RIManager  ********************************//
+
+//************************************  RFManager  ********************************//
+RFManager::RFManager(std::list<std::string> wa_ib_lport_list, boost::shared_ptr<DSpacesDriver> ds_driver_)
+: dd_manager_(new DDManager(wa_ib_lport_list) ),
+  ds_driver_(ds_driver_)
+{
+  LOG(INFO) << "RFManager:: constructed.";
+}
+
+RFManager::~RFManager()
+{
+  LOG(INFO) << "RFManager:: destructed.";
+}
+
+
+std::string RFManager::get_ib_lport()
+{
+  return dd_manager_->get_next_avail_ib_lport();
+}
+
+bool RFManager::receive_put(std::string ib_laddr, std::string ib_lport,
+                            std::string data_type, std::string key, unsigned int ver, int size,
+                            int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
+{
+  key_recvedsize_map[key] = 0;
+  key_data_map[key] = malloc(size*get_data_length(ndim, gdim_, lb_, ub_) );
+  
+  dd_manager_->init_ib_server(key, data_type, ib_lport.c_str(), 
+                              boost::bind(&RFManager::handle_ib_receive, this, _1, _2, _3, _4) );
+  dd_manager_->give_ib_lport_back(ib_lport);
+  
+  ds_driver_->sync_put(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, key_data_map[key]);
+  
+  free(key_data_map[key]);
+  
+  std::map<std::string, void*>::iterator key_data_map_itr = key_data_map.find(key);
+  key_data_map.erase(key_data_map_itr);
+  std::map<std::string, size_t>::iterator key_recvedsize_map_itr = key_recvedsize_map.find(key);
+  key_recvedsize_map.erase(key_recvedsize_map_itr);
+  
+  return true;
+}
+
+void RFManager::handle_ib_receive(std::string key, size_t size, size_t data_size, void* data_)
+{
+  if (!key_recvedsize_map.count(key) ){
+    LOG(ERROR) << "handle_ib_receive:: data is received for an unexpected key= " << key;
+    return;
+  }
+  
+  size_t recved_size = key_recvedsize_map[key];
+  LOG(INFO) << "handle_ib_receive:: for key= " << key << ", recved recved_size= " << recved_size << ", total_received_size= " << (float)(recved_size+data_size)/1024/1024 << "(MB)";
+  
+  size_t recved_length = recved_size/size;
+  memcpy(key_data_map[key]+recved_length, data_, data_size);
+  
+  key_recvedsize_map[key] += data_size;
+  
+  //
+  // LOG(INFO) << "handle_ib_receive:: key_data_map[key]=";
+  // for(int i=0; i<(data_size/size); i++){
+  //     std::cout << static_cast<int*>(key_data_map[key])[i] << ", ";
+  // }
+  // std::cout << "\n";
+  //
+  free(data_);
+}
+
+bool RFManager::get_send(std::string data_type, std::string key, unsigned int ver, int size,
+                         int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_,
+                         const char* ib_laddr, const char* ib_lport)
+{
+  size_t data_length = get_data_length(ndim, gdim_, lb_, ub_);
+  if (!data_length){
+    LOG(ERROR) << "get_send:: data_length=0!";
+    return false;
+  }
+  void* data_ = malloc(size*data_length);
+  
+  debug_print(key, ver, size, ndim, gdim_, lb_, ub_, NULL, 0);
+  if (ds_driver_->get(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_) ){
+    LOG(ERROR) << "get_send:: ds_driver_->get for key= " << key << " failed!";
+    return false;
+  }
+  
+  dd_manager_->init_ib_client(ib_laddr, ib_lport, data_type, data_length, data_);
+  free(data_);
+  
+  return true;
+}
+
+size_t RFManager::get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_)
+{
+  uint64_t dim_length[ndim];
+  
+  for(int i=0; i<ndim; i++){
+    uint64_t lb = lb_[i];
+    if (lb < 0 || lb > gdim_[i]){
+      LOG(ERROR) << "get_data_length:: lb= " << lb << " is not feasible!";
+      return 0;
+    }
+    uint64_t ub = ub_[i];
+    if (ub < 0 || ub > gdim_[i] || ub < lb){
+      LOG(ERROR) << "get_data_length:: ub= " << ub << " is not feasible!";
+      return 0;
+    }
+    dim_length[i] = ub - lb;
+  }
+  
+  size_t volume = 1;
+  for(int i=0; i<ndim; i++){
+    volume *= (size_t)dim_length[i];
+  }
+  
+  return volume;
+}
+//******************************************  RIManager ******************************************//
 RIManager::RIManager(char id, int num_cnodes, int app_id,
-                     char* lip, int lport, char* ipeer_lip, int ipeer_lport)
+                     char* lip, int lport, char* ipeer_lip, int ipeer_lport,
+                     char* ib_laddr, std::list<std::string> wa_ib_lport_list)
 : id(id),
   num_cnodes(num_cnodes),
   app_id(app_id),
+  ib_laddr(ib_laddr),
   ds_driver_ ( new DSpacesDriver(num_cnodes, app_id) ),
   li_bc_server_(new BCServer(app_id, num_cnodes, LI_MAX_MSG_SIZE, "li_req_", 
                              boost::bind(&RIManager::handle_li_req, this, _1),
                              ds_driver_) ),
   ri_bc_server_(new BCServer(app_id, num_cnodes, RI_MAX_MSG_SIZE, "ri_req_", 
                              boost::bind(&RIManager::handle_ri_req, this, _1),
-                             ds_driver_) )
+                             ds_driver_) ),
+  rf_manager_(new RFManager(wa_ib_lport_list, ds_driver_) )
 {
   //usleep(WAIT_TIME_FOR_BCCLIENT_DSLOCK);
   
@@ -530,6 +652,7 @@ void RIManager::handle_l_put(std::map<std::string, std::string> l_put_map)
   uint64_t *gdim_, *lb_, *ub_;
   if(imsg_coder.decode_i_msg(l_put_map, key, ver, size, ndim, gdim_, lb_, ub_) ){
     LOG(ERROR) << "handle_l_put:: decode_i_msg failed!";
+    return;
   }
   //debug_print(key, ver, size, ndim, gdim_, lb_, ub_, NULL);
   rq_table.put_key(key, this->id, ver, size, ndim, gdim_, lb_, ub_);
@@ -597,7 +720,7 @@ void RIManager::handle_r_get(int app_id, std::map<std::string, std::string> r_ge
   }
   
   LOG(INFO) << "handle_r_get:: key= " << key << " exists in ds_id= " << ds_id << ".";
-  if (remote_fetch(ds_id, r_get_map) ){
+  if (!remote_fetch(ds_id, r_get_map) ){
     LOG(INFO) << "handle_r_get:: remote_fetch failed!";
     msg_map["ds_id"] = '?';
     appid_bcclient_map[app_id]->send(msg_map);
@@ -615,25 +738,44 @@ bool RIManager::remote_fetch(char ds_id, std::map<std::string, std::string> r_fe
   
   r_fetch_map["type"] = REMOTE_FETCH;
   
-  std::string ib_lport = dd_manager.get_next_avail_ib_lport();
+  std::string ib_lport = rf_manager_->get_ib_lport();
+  std::string ib_laddr_str( (const char*) ib_laddr);
+  r_fetch_map["ib_laddr"] = ib_laddr_str;
   r_fetch_map["ib_lport"] = ib_lport;
-  if(send_msg(ds_id, RIMSG, r_q_map) ){
-    LOG(ERROR) << "remote_fetch:: send_msg to to_id= " << to_id << " failed!";
+  if(send_msg(ds_id, RIMSG, r_fetch_map) ){
+    LOG(ERROR) << "remote_fetch:: send_msg to to_id= " << ds_id << " failed!";
     return false;
   }
   
-  dd_manager.init_ib_server(r_fetch_map["data_type"], ib_lport, boost::bind(&handle_ib_receive, _1, _2) );
+  std::string key;
+  unsigned int ver;
+  int size, ndim;
+  uint64_t *gdim_, *lb_, *ub_;
+  if(imsg_coder.decode_i_msg(r_fetch_map, key, ver, size, ndim, gdim_, lb_, ub_) ){
+    LOG(ERROR) << "remote_fetch:: decode_i_msg failed!";
+    free(gdim_);
+    free(lb_);
+    free(ub_);
+    return false;
+  }
   
-  
-  dd_manager.give_ib_lport_back(ib_lport);
+  if (!rf_manager_->receive_put(ib_laddr_str, ib_lport, 
+                                r_fetch_map["data_type"], key, ver, size,
+                                ndim, gdim_, lb_, ub_) ){
+    LOG(ERROR) << "remote_fetch:: rf_manager_->receive_put failed!";
+    free(gdim_);
+    free(lb_);
+    free(ub_);
+    return false;
+  }
+  free(gdim_);
+  free(lb_);
+  free(ub_);
   //
   LOG(INFO) << "remote_fetch:: done.";
+  return true;
 }
 
-void RIManager::handle_ib_receive(size_t size, void* data_)
-{
-  LOG(INFO) << "handle_ib_receive:: recved size= " << size << ", total_recved_size= " << (float)total_recved_size/(1024*1024) << "MB";
-}
 
 //PI: a key cannot be produced in multiple dataspaces
 bool RIManager::remote_query(std::string key)
@@ -677,6 +819,9 @@ void RIManager::handle_wamsg(std::map<std::string, std::string> wamsg_map)
   else if (type.compare(REMOTE_QUERY_REPLY) == 0){
     handle_rq_reply(wamsg_map);
   }
+  else if (type.compare(REMOTE_FETCH) == 0){
+    handle_r_fetch(wamsg_map);
+  }
   else{
     LOG(ERROR) << "handle_ri_req:: unknown type= " << type;
   }
@@ -687,8 +832,8 @@ void RIManager::handle_wamsg(std::map<std::string, std::string> wamsg_map)
 
 void RIManager::handle_r_query(std::map<std::string, std::string> r_query_map)
 {
-  //LOG(INFO) << "handle_r_query:: r_query_map=";
-  //print_str_map(r_query_map);
+  LOG(INFO) << "handle_r_query:: r_query_map=";
+  print_str_map(r_query_map);
   
   std::string key = r_query_map["key"];
   
@@ -733,4 +878,33 @@ void RIManager::handle_rq_reply(std::map<std::string, std::string> rq_reply_map)
   rq_syncer.notify(key);
   //
   LOG(INFO) << "handle_rq_reply:: done.";
+}
+
+void RIManager::handle_r_fetch(std::map<std::string, std::string> r_fetch_map)
+{
+  LOG(INFO) << "handle_r_fetch:: r_fetch_map=";
+  print_str_map(r_fetch_map);
+  
+  std::string key;
+  unsigned int ver;
+  int size, ndim;
+  uint64_t *gdim_, *lb_, *ub_;
+  if(imsg_coder.decode_i_msg(r_fetch_map, key, ver, size, ndim, gdim_, lb_, ub_) ){
+    LOG(ERROR) << "handle_r_fetch:: decode_i_msg failed!";
+    free(gdim_);
+    free(lb_);
+    free(ub_);
+    return;
+  }
+  
+  if (!rf_manager_->get_send(r_fetch_map["data_type"], key, ver, size,
+                             ndim, gdim_, lb_, ub_,
+                             r_fetch_map["ib_laddr"].c_str(), r_fetch_map["ib_lport"].c_str() ) ){
+    LOG(ERROR) << "handle_r_fetch:: rf_manager_->get_send failed!";
+  }
+  free(gdim_);
+  free(lb_);
+  free(ub_);
+  //
+  LOG(INFO) << "handle_r_fetch:: done.";
 }

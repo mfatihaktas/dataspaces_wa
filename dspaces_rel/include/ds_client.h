@@ -21,6 +21,7 @@
 #include <boost/serialization/map.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
+#include <boost/tokenizer.hpp>
 
 #include "ds_drive.h"
 #include "dht_node.h"
@@ -28,9 +29,14 @@
 
 #include "ib_delivery.h"
 
+
+#ifndef _TEST_MACROS_
+#define _TEST_MACROS_
 #define TEST_NZ(x) do { int r=x; if (r){ printf("error: " #x " failed (returned non-zero=%d).", r); } } while (0)
 #define TEST_Z(x)  do { if (!(x)) printf("error: " #x " failed (returned zero or null)."); } while (0)
+#endif
 
+/*******************************************************************************************/
 class IMsgCoder
 {
   public:
@@ -151,11 +157,36 @@ struct syncer{
     std::map<std::string, int>::iterator key_numpeers_map_it;
 };
 
+class RFManager
+{
+  public:
+    RFManager(std::list<std::string> wa_ib_lport_list, boost::shared_ptr<DSpacesDriver> ds_driver_);
+    ~RFManager();
+    std::string get_ib_lport();
+    
+    bool receive_put(std::string ib_laddr, std::string ib_lport,
+                     std::string data_type, std::string key, unsigned int ver, int size,
+                     int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
+    void handle_ib_receive(std::string key, size_t size, size_t data_size, void* data_);
+    
+    bool get_send(std::string data_type, std::string key, unsigned int ver, int size,
+                  int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_,
+                  const char* ib_laddr, const char* ib_lport);
+    size_t get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_);
+  private:
+    boost::shared_ptr<DSpacesDriver> ds_driver_;
+    boost::shared_ptr<DDManager> dd_manager_;
+    
+    std::map<std::string, size_t> key_recvedsize_map;
+    std::map<std::string, void*> key_data_map;
+};
+
 class RIManager
 {
   public:
     RIManager(char id, int num_cnodes, int app_id, 
-              char* lip, int lport, char* ipeer_lip, int ipeer_lport);
+              char* lip, int lport, char* ipeer_lip, int ipeer_lport, 
+              char* ib_laddr, std::list<std::string> wa_ib_lport_list);
     ~RIManager();
     std::string to_str();
     
@@ -168,7 +199,9 @@ class RIManager
     void handle_wamsg(std::map<std::string, std::string> wamsg_map);
     void handle_r_query(std::map<std::string, std::string> r_query_map);
     void handle_rq_reply(std::map<std::string, std::string> rq_reply_map);
+    void handle_r_fetch(std::map<std::string, std::string> r_fetch_map);
     
+    bool remote_fetch(char ds_id, std::map<std::string, std::string> r_fetch_map);
     bool remote_query(std::string key);
     int broadcast_msg(char msg_type, std::map<std::string, std::string> msg_map);
     int send_msg(char ds_id, char msg_type, std::map<std::string, std::string> msg_map);
@@ -178,15 +211,15 @@ class RIManager
     RQTable rq_table;
     IMsgCoder imsg_coder;
     syncer rq_syncer;
+    char* ib_laddr;
     
     boost::shared_ptr<DSpacesDriver> ds_driver_;
     boost::shared_ptr<BCServer> li_bc_server_;
     boost::shared_ptr<BCServer> ri_bc_server_;
     boost::shared_ptr<DHTNode> dht_node_;
+    boost::shared_ptr<RFManager> rf_manager_;
     
-    std::map<int, boost::shared_ptr<BCClient> > appid_bcclient_map;
-    
-    DDManager dd_manager;
+    std::map<int, boost::shared_ptr<BCClient> > appid_bcclient_map; //TODO: prettify
 };
 
 #endif //end of _DSCLIENT_H_

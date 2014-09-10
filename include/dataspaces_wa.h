@@ -27,7 +27,11 @@ class WADspacesDriver
   public:
     WADspacesDriver(int app_id, int num_local_peers);
     ~WADspacesDriver();
+    void print_str_map(std::map<std::string, std::string> str_map);
+    
     int local_put(std::string data_type, std::string key, unsigned int ver, int size,
+                  int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
+    int local_get(std::string key, unsigned int ver, int size,
                   int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
     int remote_get(std::string data_type, std::string key, unsigned int ver, int size,
                    int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
@@ -40,6 +44,8 @@ class WADspacesDriver
     RMessenger rmessenger;
     IMsgCoder imsg_coder;
     syncer rg_syncer; //remote_get_syncer
+    
+    std::map<std::string, char> key_dsid_map; //for getting rq_reply
 };
 
 #endif //end of _DSWA_H_

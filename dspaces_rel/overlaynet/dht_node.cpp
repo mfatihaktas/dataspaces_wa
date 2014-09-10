@@ -338,7 +338,7 @@ void DHTNode::handle_pong(const Packet& p)
 
 void DHTNode::handle_rimsg(const Packet& p)
 {
-  LOG(INFO) << "handle_rimsg:: p = \n" << p.to_str();
+  // LOG(INFO) << "handle_rimsg:: p = \n" << p.to_str();
   std::map<std::string, std::string> msg_map = p.get_msg_map();
   
   _rimsg_recv_cb(msg_map);

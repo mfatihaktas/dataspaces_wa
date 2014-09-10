@@ -13,7 +13,8 @@ GLOG_LIB = -L/cac/u01/mfa51/Desktop/dataspaces_wa/glog-0.3.3/install/lib -l:libg
 GFTP_INC = -I/usr/include/globus -I/usr/lib64/globus/include
 GFTP_LIB = -L/usr/lib64/ -l:libglobus_ftp_client.so
 
-SUB_INC = -I/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/include -I/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/overlaynet/include
+DSPACES_REL_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel
+SUB_INC = -I$(DSPACES_REL_DIR)/include -I$(DSPACES_REL_DIR)/overlaynet/include -I$(DSPACES_REL_DIR)/ib_trans/include
 #
 INC = $(DATASPACES_INC) $(GLOG_INC) $(SUB_INC)
 LIB = $(DATASPACES_LIB) $(GLOG_LIB) $(BOOST_LIB)
@@ -30,15 +31,21 @@ ODIR = obj
 OVERLAYNET_DIR = overlaynet
 OVERLAYNET_ODIR = $(OVERLAYNET_DIR)/obj
 
+IBTRANS_DIR = ib_trans
+IBTRANS_ODIR = $(IBTRANS_DIR)/obj
+
 .PHONY: all clean submake_overlaynet_dir
 
-all: submake_overlaynet_dir exp dummy_put dummy_get
+all: submake_overlaynet_dir submake_ibtrans_dir exp dummy_put dummy_get
 # dummy2 dummy_get dummy_put
 
 submake_overlaynet_dir:
 	make -C $(OVERLAYNET_DIR)
 
-exp: $(ODIR)/exp.o $(ODIR)/ds_client.o $(ODIR)/ds_drive.o $(OVERLAYNET_ODIR)/dht_node.o $(OVERLAYNET_ODIR)/dht_server.o $(OVERLAYNET_ODIR)/dht_client.o $(OVERLAYNET_ODIR)/packet.o
+submake_ibtrans_dir:
+	make -C $(IBTRANS_DIR)
+
+exp: $(ODIR)/exp.o $(ODIR)/ds_client.o $(ODIR)/ds_drive.o $(OVERLAYNET_ODIR)/dht_node.o $(OVERLAYNET_ODIR)/dht_server.o $(OVERLAYNET_ODIR)/dht_client.o $(OVERLAYNET_ODIR)/packet.o $(IBTRANS_ODIR)/ib_delivery.o $(IBTRANS_ODIR)/common.o
 	$(MPICPP) -g -o $@ $^ $(INC) $(LIB)
 
 dummy_put: $(ODIR)/dummy_put.o

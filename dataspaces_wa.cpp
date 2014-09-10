@@ -1,13 +1,5 @@
 #include "dataspaces_wa.h"
 
-void wa_print_str_map(std::map<std::string, std::string> str_map)
-{
-  for (std::map<std::string, std::string>::const_iterator it=str_map.begin(); 
-       it!=str_map.end(); ++it){
-    std::cout << "\t" << it->first << ":" << it->second << "\n";
-  }
-}
-
 //***********************************  RMessenger  ********************************//
 RMessenger::RMessenger()
 {
@@ -74,6 +66,14 @@ WADspacesDriver::~WADspacesDriver()
   LOG(INFO) << "WADspacesDriver:: destructed.";
 }
 
+void WADspacesDriver::print_str_map(std::map<std::string, std::string> str_map)
+{
+  for (std::map<std::string, std::string>::const_iterator it=str_map.begin(); 
+       it!=str_map.end(); ++it){
+    std::cout << "\t" << it->first << ":" << it->second << "\n";
+  }
+}
+
 int WADspacesDriver::local_put(std::string data_type, std::string key, unsigned int ver, int size,
                                int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
 {
@@ -85,6 +85,12 @@ int WADspacesDriver::local_put(std::string data_type, std::string key, unsigned 
   }
   
   return ds_driver_->sync_put(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_);
+}
+
+int WADspacesDriver::local_get(std::string key, unsigned int ver, int size,
+                               int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
+{
+  return ds_driver_->get(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_);
 }
 
 int WADspacesDriver::remote_get(std::string data_type, std::string key, unsigned int ver, int size,
@@ -107,8 +113,19 @@ int WADspacesDriver::remote_get(std::string data_type, std::string key, unsigned
   rg_syncer.add_sync_point(key, 1);
   rg_syncer.wait(key);
   rg_syncer.del_sync_point(key);
+  
+  if (key_dsid_map[key] == '?'){
+    LOG(INFO) << "remote_get:: key= " << key << " does not exist";
+    return 1;
+  }
+  
+  if (ds_driver_->get(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_) ){
+    LOG(ERROR) << "remote_get:: ds_driver_->get failed!";
+    return 1;
+  }
   //
   LOG(INFO) << "remote_get:: done.";
+  return 0;
 }
 
 int WADspacesDriver::handle_ri_reply(char* ri_reply)
@@ -116,11 +133,13 @@ int WADspacesDriver::handle_ri_reply(char* ri_reply)
   std::map<std::string, std::string> ri_reply_map = imsg_coder.decode(ri_reply);
   
   LOG(INFO) << "handle_ri_reply:: ri_reply_map=";
-  wa_print_str_map(ri_reply_map);
+  print_str_map(ri_reply_map);
   
   std::string key = ri_reply_map["key"];
+  key_dsid_map[key] = ri_reply_map["ds_id"].c_str()[0];
   
   rg_syncer.notify(key);
   //
   LOG(INFO) << "handle_ri_reply:: done.";
+  return 0;
 }
