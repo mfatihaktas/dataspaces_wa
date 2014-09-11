@@ -90,8 +90,8 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
   return opt_map;
 }
 
-#define data_type double
-const std::string data_type_str = "double";
+#define data_type int
+const std::string data_type_str = "int";
 
 size_t total_recved_size = 0;
 void recv_handler(std::string key, size_t data_size, void* data_)
@@ -99,11 +99,11 @@ void recv_handler(std::string key, size_t data_size, void* data_)
   total_recved_size += data_size;
   LOG(INFO) << "recv_handler:: key= " << key << ", recved data_size= " << data_size << ", total_recved_size= " << (float)total_recved_size/(1024*1024) << "MB";
   
-  size_t length = data_size/sizeof(data_type);
-  for (int i = 0; i < length; i++){
-    std::cout << static_cast<data_type*>(data_)[i] << ",";
-  }
-  std::cout << "\n";
+  // size_t length = data_size/sizeof(data_type);
+  // for (int i = 0; i < length; i++){
+  //   std::cout << static_cast<data_type*>(data_)[i] << ",";
+  // }
+  // std::cout << "\n";
   
   free(data_);
 }
@@ -130,9 +130,11 @@ int main(int argc , char **argv)
     // ib_server.init();
     
     dd_manager.init_ib_server("dummy", data_type_str, opt_map[(char*)"port"], boost::bind(&recv_handler, _1, _2, _3) );
+    
+    std::cout << "main:: deneme...\n";
   }
   else if (strcmp(opt_map[(char*)"type"], (char*)"client") == 0){
-    size_t data_length = 1024;
+    size_t data_length = 1024*1024*256;
     void* data_ = (void*)malloc(sizeof(data_type)*data_length);
     
     for (int i = 0; i < data_length; i++){

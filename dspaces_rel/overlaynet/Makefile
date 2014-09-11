@@ -26,7 +26,10 @@ IDIR = include
 ODIR = obj
 
 #exp_put exp_get
-all: exp
+
+APPS := exp
+
+all: ${APPS}
 
 exp: $(ODIR)/exp.o $(ODIR)/dht_node.o $(ODIR)/dht_server.o $(ODIR)/dht_client.o $(ODIR)/packet.o
 	$(CPP) -g -o $@ $^ $(INC) $(LIB)
@@ -73,4 +76,4 @@ $(ODIR)/common.o: common.c
 endif
 
 clean:
-	rm -f $(ODIR)/*.o
+	rm -f $(ODIR)/*.o ${APPS}

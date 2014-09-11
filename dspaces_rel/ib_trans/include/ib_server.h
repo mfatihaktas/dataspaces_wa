@@ -118,7 +118,7 @@ class IBServer{
     {
       struct rdma_cm_id *id = (struct rdma_cm_id *)(uintptr_t)wc->wr_id;
       struct conn_context *ctx = (struct conn_context *)id->context;
-    
+      
       if (wc->opcode == IBV_WC_RECV_RDMA_WITH_IMM) {
         uint32_t size = ntohl(wc->imm_data);
         
@@ -136,8 +136,13 @@ class IBServer{
             send_message(id);
             return;
           }
-          else if(size == 3){
-            if(!strcmp((char*)ctx->buffer, (char*)"EOF") ){
+          else if (size == 3) {
+            // LOG(INFO) << "on_completion:: the one recved with size-3= " << (char*)ctx->buffer;
+            char is_eof_buf[4];
+            memcpy(is_eof_buf, (char*)ctx->buffer, 3);
+            is_eof_buf[3] = '\0';
+            // LOG(INFO) << "on_completion:: is_eof_buf= " << is_eof_buf;
+            if(!strcmp(is_eof_buf, (char*)"EOF") ){
               LOG(INFO) << "on_completion:: EOF received.";
               ctx->msg->id = MSG_DONE;
               send_message(id);

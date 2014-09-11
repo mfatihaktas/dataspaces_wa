@@ -2,6 +2,7 @@
 #define DHTNODE_H
 
 #include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
@@ -313,7 +314,9 @@ class DHTNode{
       msg_map["lip"] = dhtnode_->lip;
       msg_map["lport"] = boost::lexical_cast<std::string>(dhtnode_->get_next_lport() );
       
-      boost::shared_ptr< Packet > temp_( new Packet(JOIN_REQUEST, msg_map) );
+      // boost::shared_ptr< Packet > temp_( new Packet(JOIN_REQUEST, msg_map) );
+      boost::shared_ptr<Packet> temp_ = boost::make_shared<Packet>(JOIN_REQUEST, msg_map);
+      
       return temp_;
     }
     

@@ -481,6 +481,7 @@ bool RFManager::receive_put(std::string ib_laddr, std::string ib_lport,
                             std::string data_type, std::string key, unsigned int ver, int size,
                             int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
 {
+  LOG(INFO) << "receive_put:: started for key= " << key << ", ib_laddr= " << ib_laddr << ", ib_lport= " << ib_lport;
   key_recvedsize_map[key] = 0;
   key_data_map[key] = malloc(size*get_data_length(ndim, gdim_, lb_, ub_) );
   
@@ -488,7 +489,10 @@ bool RFManager::receive_put(std::string ib_laddr, std::string ib_lport,
                               boost::bind(&RFManager::handle_ib_receive, this, _1, _2, _3) );
   dd_manager_->give_ib_lport_back(ib_lport);
   
-  ds_driver_->sync_put(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, key_data_map[key]);
+  if (ds_driver_->sync_put(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, key_data_map[key]) ){
+    LOG(ERROR) << "receive_put:: ds_driver_->sync_put failed!";
+    return false;
+  }
   
   free(key_data_map[key]);
   
@@ -496,7 +500,8 @@ bool RFManager::receive_put(std::string ib_laddr, std::string ib_lport,
   key_data_map.erase(key_data_map_itr);
   std::map<std::string, size_t>::iterator key_recvedsize_map_itr = key_recvedsize_map.find(key);
   key_recvedsize_map.erase(key_recvedsize_map_itr);
-  
+  //
+  LOG(INFO) << "receive_put:: done.";
   return true;
 }
 
@@ -508,7 +513,7 @@ void RFManager::handle_ib_receive(std::string key, size_t data_size, void* data_
   }
   
   size_t recved_size = key_recvedsize_map[key];
-  LOG(INFO) << "handle_ib_receive:: for key= " << key << ", recved recved_size= " << recved_size << ", total_received_size= " << (float)(recved_size+data_size)/1024/1024 << "(MB)";
+  LOG(INFO) << "handle_ib_receive:: for key= " << key << ", recved data_size= " << data_size << ", total_received_size= " << (float)(recved_size+data_size)/1024/1024 << "(MB)";
   
   char* data_t_ = static_cast<char*>(key_data_map[key]);
   memcpy(data_t_+recved_size, data_, data_size);
@@ -563,7 +568,7 @@ size_t RFManager::get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint
       LOG(ERROR) << "get_data_length:: ub= " << ub << " is not feasible!";
       return 0;
     }
-    dim_length[i] = ub - lb;
+    dim_length[i] = ub - lb+1;
   }
   
   size_t volume = 1;
@@ -727,6 +732,7 @@ void RIManager::handle_r_get(int app_id, std::map<std::string, std::string> r_ge
     return;
   }
   
+  msg_map["ds_id"] = ds_id;
   appid_bcclient_map[app_id]->send(msg_map);
   //
   LOG(INFO) << "handle_r_get:: done.";

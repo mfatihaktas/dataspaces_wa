@@ -183,11 +183,11 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
   return opt_map;
 }
 
-#define TEST_SIZE 5
+#define TEST_SIZE 1024*1024*256
 #define TEST_NDIM 1
 #define TEST_DATASIZE pow(TEST_SIZE, TEST_NDIM)
 #define TEST_VER 1
-#define TEST_SGDIM 10
+#define TEST_SGDIM 1024*1024*257
 
 void l_put_test(std::string var_name, WADspacesDriver& wads_driver)
 {
@@ -205,7 +205,7 @@ void l_put_test(std::string var_name, WADspacesDriver& wads_driver)
   }
   
   for (int i=0; i<TEST_DATASIZE; i++){
-    data[i] = (i+1)*12;
+    data[i] = (i+1);
   }
   
   size_t data_length = get_data_length(TEST_NDIM, gdim, lb, ub);
@@ -214,7 +214,7 @@ void l_put_test(std::string var_name, WADspacesDriver& wads_driver)
     LOG(ERROR) << "l_put_test:: wads_driver.local_put failed!";
     return;
   }
-  exp_debug_print(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim, lb, ub, data, data_length);
+  //exp_debug_print(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim, lb, ub, data, data_length);
   
   free(gdim);
   free(lb);
@@ -245,7 +245,7 @@ void l_get_test(std::string var_name, WADspacesDriver& wads_driver)
   //exp_debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, NULL);
   int result = wads_driver.local_get(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim, lb, ub, data);
   LOG(INFO) << "l_get_test:: after local_get;";
-  exp_debug_print(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim, lb, ub, static_cast<int*>(data), TEST_DATASIZE);
+  // exp_debug_print(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim, lb, ub, static_cast<int*>(data), TEST_DATASIZE);
   
   free(gdim);
   free(lb);
@@ -269,12 +269,12 @@ void r_get_test(WADspacesDriver& wads_driver)
     ub[i] = TEST_SIZE-1;
   }
   
-  //exp_debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, NULL);
+  // exp_debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, NULL);
   if (wads_driver.remote_get("int", var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim, lb, ub, data) ){
     LOG(ERROR) << "r_get_test:: wads_driver.remote_get failed!";
   }
-  size_t data_length = get_data_length(TEST_NDIM, gdim, lb, ub);
-  exp_debug_print(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim, lb, ub, data, data_length);
+  // size_t data_length = get_data_length(TEST_NDIM, gdim, lb, ub);
+  // exp_debug_print(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim, lb, ub, data, data_length);
   //
   free(gdim);
   free(lb);
