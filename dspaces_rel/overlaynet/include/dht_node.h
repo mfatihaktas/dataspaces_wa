@@ -25,12 +25,14 @@
 struct comm_channel {
   char *lip, *peer_lip, *channel_name;
   int lport, peer_lport;
-  boost::shared_ptr< DHTServer > server_;
-  boost::shared_ptr< DHTClient > client_;
+  boost::shared_ptr<DHTServer> server_;
+  boost::shared_ptr<DHTClient> client_;
   //
   comm_channel(char* channel_name, char* lip, int lport, char* peer_lip = NULL, int peer_lport = 0)
-  : server_( new DHTServer(channel_name, lip, lport) ),
-    client_( new DHTClient(channel_name, peer_lip, peer_lport) )
+  // : server_( new DHTServer(channel_name, lip, lport) ),
+    // client_( new DHTClient(channel_name, peer_lip, peer_lport) )
+  : server_(boost::make_shared<DHTServer>(channel_name, lip, lport) ),
+    client_(boost::make_shared<DHTClient>(channel_name, peer_lip, peer_lport) )
   {
     this->channel_name = channel_name;
     this->lip = lip;
@@ -47,11 +49,13 @@ struct comm_channel {
     client_.reset();
     server_.reset();
     
-    boost::shared_ptr< DHTServer > temp_server_( new DHTServer(channel_name, lip, lport) );
+    // boost::shared_ptr< DHTServer > temp_server_( new DHTServer(channel_name, lip, lport) );
+    boost::shared_ptr<DHTServer> temp_server_ = boost::make_shared<DHTServer>(channel_name, lip, lport);
     server_ = temp_server_;
     
     //to make sure if first node gets closed by ctrl+c shared_ptr client_ will exist to get closed
-    boost::shared_ptr< DHTClient > temp_client_( new DHTClient(channel_name, NULL, 0) );
+    // boost::shared_ptr< DHTClient > temp_client_( new DHTClient(channel_name, NULL, 0) );
+    boost::shared_ptr<DHTClient> temp_client_ = boost::make_shared<DHTClient>(channel_name, (char*)"", 0);
     client_ = temp_client_;
     
     LOG(INFO) << "reinit:: done.";
@@ -62,7 +66,8 @@ struct comm_channel {
     this->peer_lip = peer_lip;
     this->peer_lport = peer_lport;
     client_.reset();
-    boost::shared_ptr< DHTClient > temp_client_( new DHTClient(channel_name, peer_lip, peer_lport) );
+    // boost::shared_ptr< DHTClient > temp_client_( new DHTClient(channel_name, peer_lip, peer_lport) );
+    boost::shared_ptr<DHTClient> temp_client_ = boost::make_shared<DHTClient>(channel_name, peer_lip, peer_lport);
     client_ = temp_client_;
   }
   
@@ -148,9 +153,10 @@ struct peer_table{
       LOG(ERROR) << "add_peer:: already added peer_id=" << peer_id;
       return 1;
     }
-    boost::shared_ptr<peer_info> temp_( 
-      new peer_info(peer_id, peer_name, lip, lport, peer_lip, peer_lport, peer_join_lip, peer_join_lport)
-    );
+    // boost::shared_ptr<peer_info> temp_( 
+    //   new peer_info(peer_id, peer_name, lip, lport, peer_lip, peer_lport, peer_join_lip, peer_join_lport)
+    // );
+    boost::shared_ptr<peer_info> temp_ = boost::make_shared<peer_info>(peer_id, peer_name, lip, lport, peer_lip, peer_lport, peer_join_lip, peer_join_lport);
     id_pinfo_map[peer_id] = temp_;
     //
     LOG(INFO) << "add_peer:: added peer_id=" << peer_id << "; peer_info=\n" << temp_->to_str();
@@ -183,7 +189,8 @@ struct peer_table{
   {
     boost::shared_ptr<peer_info> pinfo_ = id_pinfo_map[peer_id];
     
-    boost::shared_ptr<comm_channel> cc_(new comm_channel(pinfo_->peer_name, pinfo_->lip, pinfo_->lport, pinfo_->peer_lip, pinfo_->peer_lport) );
+    // boost::shared_ptr<comm_channel> cc_(new comm_channel(pinfo_->peer_name, pinfo_->lip, pinfo_->lport, pinfo_->peer_lip, pinfo_->peer_lport) );
+    boost::shared_ptr<comm_channel> cc_ = boost::make_shared<comm_channel>(pinfo_->peer_name, pinfo_->lip, pinfo_->lport, pinfo_->peer_lip, pinfo_->peer_lport);
     id_commchannel_map[peer_id] = cc_;
     //
     LOG(INFO) << "add_comm_channel:: added comm_channel=\n" << cc_->to_str();
@@ -270,9 +277,10 @@ struct prospective_peer_table
   
   int push(char* join_lip, int join_lport)
   {
-    boost::shared_ptr<prospective_peer_info> ppinfo_ (
-      new prospective_peer_info(join_lip, join_lport)
-    );
+    // boost::shared_ptr<prospective_peer_info> ppinfo_ (
+    //   new prospective_peer_info(join_lip, join_lport)
+    // );
+    boost::shared_ptr<prospective_peer_info> ppinfo_ = boost::make_shared<prospective_peer_info>(join_lip, join_lport);
     ppeer_vector.push_back(ppinfo_);
     //
     LOG(INFO) << "push:: pushed prospective_peer_info=\n" << ppinfo_->to_str() << "\n";
@@ -305,7 +313,7 @@ class DHTNode{
       this->dhtnode_ = dhtnode_;
     }
     
-    boost::shared_ptr< Packet > gen_join_req()
+    boost::shared_ptr<Packet> gen_join_req()
     {
       std::map<std::string, std::string> msg_map;
       msg_map["join_lip"] = dhtnode_->lip;
@@ -314,13 +322,13 @@ class DHTNode{
       msg_map["lip"] = dhtnode_->lip;
       msg_map["lport"] = boost::lexical_cast<std::string>(dhtnode_->get_next_lport() );
       
-      // boost::shared_ptr< Packet > temp_( new Packet(JOIN_REQUEST, msg_map) );
+      // boost::shared_ptr<Packet> temp_( new Packet(JOIN_REQUEST, msg_map) );
       boost::shared_ptr<Packet> temp_ = boost::make_shared<Packet>(JOIN_REQUEST, msg_map);
       
       return temp_;
     }
     
-    boost::shared_ptr< Packet > gen_join_reply(char peer_id, bool pos)
+    boost::shared_ptr<Packet> gen_join_reply(char peer_id, bool pos)
     {
       std::map<std::string, std::string> msg_map;
       msg_map["join_lip"] = dhtnode_->lip;
@@ -359,34 +367,38 @@ class DHTNode{
         }
       }
       //
-      boost::shared_ptr< Packet > temp_ ( new Packet(JOIN_REPLY, msg_map) );
+      // boost::shared_ptr<Packet> temp_ ( new Packet(JOIN_REPLY, msg_map) );
+      boost::shared_ptr<Packet> temp_ = boost::make_shared<Packet>(JOIN_REPLY, msg_map);
       return temp_;
     }
     
-    boost::shared_ptr< Packet > gen_join_ack()
+    boost::shared_ptr<Packet> gen_join_ack()
     {
       std::map<std::string, std::string> msg_map;
       msg_map["id"] = dhtnode_->id;
       
-      boost::shared_ptr< Packet > temp_( new Packet(JOIN_ACK, msg_map) );
+      // boost::shared_ptr<Packet> temp_( new Packet(JOIN_ACK, msg_map) );
+      boost::shared_ptr<Packet> temp_ = boost::make_shared<Packet>(JOIN_ACK, msg_map);
       return temp_;
     }
     
-    boost::shared_ptr< Packet > gen_ping()
+    boost::shared_ptr<Packet> gen_ping()
     {
       std::map<std::string, std::string> msg_map;
       msg_map["id"] = dhtnode_->id;
       
-      boost::shared_ptr< Packet > temp_( new Packet(PING, msg_map) );
+      // boost::shared_ptr<Packet> temp_( new Packet(PING, msg_map) );
+      boost::shared_ptr<Packet> temp_ = boost::make_shared<Packet>(PING, msg_map);
       return temp_;
     }
     
-    boost::shared_ptr< Packet > gen_pong()
+    boost::shared_ptr<Packet> gen_pong()
     {
       std::map<std::string, std::string> msg_map;
       msg_map["id"] = dhtnode_->id;
       
-      boost::shared_ptr< Packet > temp_( new Packet(PONG, msg_map) );
+      // boost::shared_ptr<Packet> temp_( new Packet(PONG, msg_map) );
+      boost::shared_ptr<Packet> temp_ = boost::make_shared<Packet>(PONG, msg_map);
       return temp_;
     }
   };

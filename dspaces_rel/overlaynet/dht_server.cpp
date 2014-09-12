@@ -8,6 +8,9 @@ DHTServer::DHTServer(char* host_name, char* host, int port,
 : io_service_(new boost::asio::io_service),
 	acceptor_(new boost::asio::ip::tcp::acceptor( *io_service_ )),
 	socket_(new boost::asio::ip::tcp::socket( *io_service_ )),
+// : io_service_(boost::make_shared<boost::asio::io_service>() ),
+//   acceptor_(boost::make_shared<boost::asio::ip::tcp::acceptor>(*io_service_) ),
+//   socket_(boost::make_shared<boost::asio::ip::tcp::socket>(*io_service_)),
 	stop_flag(0)
 {
   this->host_name = host_name;
@@ -16,9 +19,10 @@ DHTServer::DHTServer(char* host_name, char* host, int port,
   //
   _recv_callback = recv_callback;
   //
-  boost::shared_ptr< boost::thread > t_(
-    new boost::thread(&DHTServer::init_listen, this)
-  );
+  // boost::shared_ptr< boost::thread > t_(
+  //   new boost::thread(&DHTServer::init_listen, this)
+  // );
+  boost::shared_ptr<boost::thread> t_ = boost::make_shared<boost::thread>(&DHTServer::init_listen, this);
   //
   LOG(INFO) << "server:" << host_name << " constructed.";
 }
@@ -102,7 +106,7 @@ void DHTServer::init_listen()
       LOG(ERROR) << "init_listen:: ec=" << ec;
     }
     LOG(INFO) << "init_listen:: server:" << host_name << " got connection...";
-    acceptor_->close();
+    // acceptor_->close();
     init_recv();
   }
   catch( std::exception & ex )
@@ -138,9 +142,11 @@ void DHTServer::init_recv()
       boost::asio::read(*socket_, boost::asio::buffer( msg, msgsize ) );
       //LOG(INFO) << "init_recv:: msg=" << msg;
       //
-      boost::shared_ptr< boost::thread > t_(
-        new boost::thread(&DHTServer::handle_recv, this, msg)
-      );
+      // boost::shared_ptr< boost::thread > t_(
+      //   new boost::thread(&DHTServer::handle_recv, this, msg)
+      // );
+      boost::shared_ptr<boost::thread> t_ = boost::make_shared<boost::thread>(&DHTServer::handle_recv, this, msg);
+      
       handle_recv_thread_v.push_back( t_ );
     }
     catch( std::exception & ex )

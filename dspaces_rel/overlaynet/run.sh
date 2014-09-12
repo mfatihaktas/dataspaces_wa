@@ -6,11 +6,15 @@ DSBIN_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa/dataspaces/dataspaces-1.3.0/insta
 if [ $1  = 'e' ]; then
   GLOG_logtostderr=1 ./exp --id 1 --intf "em2" --lport 7000
 elif [ $1  = 'e2' ]; then
-  GLOG_logtostderr=1 ./exp --id 2 --intf "ib0" --lport 8000 --ipeer_lip "10.0.0.151" --ipeer_lport 7000
+  GLOG_logtostderr=1 ./exp --id 2 --intf "em2" --lport 8000 --ipeer_lip "192.168.2.151" --ipeer_lport 7000
 elif [ $1  = 'e3' ]; then
-  GLOG_logtostderr=1 ./exp --id 3 --intf "ib0" --lport 9000 --ipeer_lip "10.0.0.151" --ipeer_lport 7000
+  GLOG_logtostderr=1 ./exp --id 3 --intf "em2" --lport 9000 --ipeer_lip "192.168.2.151" --ipeer_lport 7000
 elif [ $1  = 're2' ]; then
   GLOG_logtostderr=1 ./exp --id 2 --intf "em2" --lport 8000 --ipeer_lip "192.168.2.152" --ipeer_lport 7000
+elif [ $1  = 're3' ]; then
+  GLOG_logtostderr=1 ./exp --id 3 --intf "em2" --lport 9000 --ipeer_lip "192.168.2.152" --ipeer_lport 7000
+elif [ $1  = 're4' ]; then
+  GLOG_logtostderr=1 ./exp --id 4 --intf "em2" --lport 9100 --ipeer_lip "192.168.2.152" --ipeer_lport 7000
 elif [ $1  = 'de' ]; then
   GLOG_logtostderr=1
   gdb --args ./exp --id 1 --intf "ib0" --lport 7000

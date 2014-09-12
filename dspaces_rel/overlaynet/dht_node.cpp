@@ -46,8 +46,8 @@ DHTNode::DHTNode(char id, func_rimsg_recv_cb _rimsg_recv_cb,
     join_channel.send_to_peer( *p_ );
   }
   //
-  //wait_for_flag();
-  //close();
+  wait_for_flag();
+  close();
 }
 
 DHTNode::~DHTNode()
@@ -155,7 +155,8 @@ void DHTNode::handle_next_ppeer()
 int DHTNode::send_msg(char to_id, char msg_type, std::map<std::string, std::string> msg_map)
 {
   msg_map["id"] = this->id;
-  boost::shared_ptr< Packet > temp_p_( new Packet(msg_type, msg_map) );
+  // boost::shared_ptr<Packet> temp_p_( new Packet(msg_type, msg_map) );
+  boost::shared_ptr<Packet> temp_p_ = boost::make_shared<Packet>(msg_type, msg_map);
   
   return send_to_node(to_id, *temp_p_);
 }
@@ -168,7 +169,8 @@ int DHTNode::broadcast_msg(char msg_type, std::map<std::string, std::string> msg
   }
   msg_map["id"] = this->id;
   
-  boost::shared_ptr< Packet > temp_p_( new Packet(msg_type, msg_map) );
+  // boost::shared_ptr< Packet > temp_p_( new Packet(msg_type, msg_map) );
+  boost::shared_ptr<Packet> temp_p_ = boost::make_shared<Packet>(msg_type, msg_map);
   
   //LOG(INFO) << "broadcast_msg:: broadcasting...";
   return send_to_allpeernodes(*temp_p_);
@@ -197,7 +199,8 @@ int DHTNode::send_to_node(char id, const Packet& p)
 void DHTNode::handle_recv(char* type__srlzedmsgmap)
 {
   size_t type__srlzedmsgmap_size =  strlen(type__srlzedmsgmap);
-  boost::shared_ptr<Packet> p_ ( new Packet(type__srlzedmsgmap_size, type__srlzedmsgmap) );
+  // boost::shared_ptr<Packet> p_ ( new Packet(type__srlzedmsgmap_size, type__srlzedmsgmap) );
+  boost::shared_ptr<Packet> p_ = boost::make_shared<Packet>(type__srlzedmsgmap_size, type__srlzedmsgmap);
   
   switch (p_->get_type())
   {
