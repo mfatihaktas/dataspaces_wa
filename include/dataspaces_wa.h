@@ -43,7 +43,7 @@ class WADspacesDriver
     boost::shared_ptr<BCClient> ri_bc_client_;
     RMessenger rmessenger;
     IMsgCoder imsg_coder;
-    syncer rg_syncer; //remote_get_syncer
+    syncer<std::string> rg_syncer; //remote_get_syncer
     
     std::map<std::string, char> key_dsid_map; //for getting rq_reply
 };

@@ -252,6 +252,8 @@ bool RQTable::get_key_ver(std::string key, unsigned int ver,
                           char& ds_id, int* size, int* ndim, 
                           uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
 {
+  boost::lock_guard<boost::mutex> guard(this->mutex);
+  
   key_ver_pair kv = std::make_pair(key, ver);
   
   if (!key_ver__dsid_map.count(kv) ){
@@ -290,6 +292,8 @@ int RQTable::add_key_ver(std::string key, unsigned int ver,
                          char ds_id, int size, int ndim, 
                          uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
 {
+  boost::lock_guard<boost::mutex> guard(this->mutex);
+  
   key_ver_pair kv = std::make_pair(key, ver);
   
   key_ver__dsid_map[kv] = ds_id;
@@ -340,6 +344,8 @@ int RQTable::del_key_ver(std::string key, unsigned int ver)
 {
   key_ver_pair kv = std::make_pair(key, ver);
   
+  boost::lock_guard<boost::mutex> guard(this->mutex);
+  
   if (!key_ver__dsid_map.count(kv) ){
     LOG(ERROR) << "del_key:: non-existing kv= <" << key << ", " << ver << ">";
     return 1;
@@ -359,6 +365,8 @@ bool RQTable::is_feasible_to_get(std::string key, unsigned int ver,
 {
   key_ver_pair kv = std::make_pair(key, ver);
   
+  boost::lock_guard<boost::mutex> guard(this->mutex);
+  
   if (!key_ver__datainfo_map.count(kv) ){
     return false;
   }
@@ -369,7 +377,6 @@ bool RQTable::is_feasible_to_get(std::string key, unsigned int ver,
   if (ndim != _ndim || size != _size) {
     return false;
   }
-  
   // uint64_t _gdim_[ndim];
   // uint64_t _lb_[ndim];
   // uint64_t _ub_[ndim];
@@ -400,6 +407,9 @@ bool RQTable::is_feasible_to_get(std::string key, unsigned int ver,
 std::string RQTable::to_str()
 {
   std::stringstream ss;
+  
+  boost::lock_guard<boost::mutex> guard(this->mutex);
+  
   for (key_ver__dsid_map_it=key_ver__dsid_map.begin(); key_ver__dsid_map_it!=key_ver__dsid_map.end(); ++key_ver__dsid_map_it){
     key_ver_pair kv = key_ver__dsid_map_it->first;
     
@@ -435,6 +445,8 @@ std::string RQTable::to_str()
 std::map<std::string, std::string> RQTable::to_str_str_map()
 {
   std::map<std::string, std::string> str_str_map;
+  
+  boost::lock_guard<boost::mutex> guard(this->mutex);
   
   int counter = 0;
   for (key_ver__dsid_map_it=key_ver__dsid_map.begin(); key_ver__dsid_map_it!=key_ver__dsid_map.end(); ++key_ver__dsid_map_it){
@@ -472,78 +484,6 @@ std::map<std::string, std::string> RQTable::to_str_str_map()
     
     counter++;
   }
-}
-//************************************   syncer  **********************************//
-syncer::syncer()
-{
-  LOG(INFO) << "syncer:: constructed.";
-}
-
-syncer::~syncer()
-{
-  LOG(INFO) << "syncer:: destructed.";
-}
-
-int syncer::add_sync_point(std::string key, int num_peers)
-{
-  boost::lock_guard<boost::mutex> guard(this->mutex);
-  
-  if (key_cv_map.count(key) ){
-    LOG(ERROR) << "add_sync_point:: already added key=" << key;
-    return 1;
-  }
-  boost::shared_ptr<boost::condition_variable> t_cv_( new boost::condition_variable() );
-  boost::shared_ptr<boost::mutex> t_m_( new boost::mutex() );
-  
-  key_cv_map[key] = t_cv_;
-  key_m_map[key] = t_m_;
-  key_numpeers_map[key] = num_peers;
-  
-  return 0;
-}
-
-int syncer::del_sync_point(std::string key)
-{
-  boost::lock_guard<boost::mutex> guard(this->mutex);
-  
-  if (!key_cv_map.count(key) ){
-    LOG(ERROR) << "del_sync_point:: non-existing key=" << key;
-    return 1;
-  }
-  key_cv_map_it = key_cv_map.find(key);
-  key_cv_map.erase(key_cv_map_it);
-  
-  key_m_map_it = key_m_map.find(key);
-  key_m_map.erase(key_m_map_it);
-  
-  key_numpeers_map_it = key_numpeers_map.find(key);
-  key_numpeers_map.erase(key_numpeers_map_it);
-  
-  return 0;
-}
-
-int syncer::wait(std::string key)
-{
-  boost::mutex::scoped_lock lock(*key_m_map[key]);
-  key_cv_map[key]->wait(lock);
-  
-  return 0;
-}
-
-int syncer::notify(std::string key)
-{
-  boost::lock_guard<boost::mutex> guard(this->mutex);
-  
-  int num_peers_to_wait = key_numpeers_map[key];
-  --num_peers_to_wait;
-  
-  if (num_peers_to_wait == 0){
-    key_cv_map[key]->notify_one();
-    return 0;
-  }
-  key_numpeers_map[key] = num_peers_to_wait;
-  
-  return 0;
 }
 
 //************************************  RFManager  ********************************//
@@ -854,9 +794,9 @@ bool RIManager::remote_query(std::string key, unsigned int ver)
     return false;
   }
   
-  rq_syncer.add_sync_point(key, dht_node_->get_num_peers() );
-  rq_syncer.wait(key);
-  rq_syncer.del_sync_point(key);
+  rq_syncer.add_sync_point(std::make_pair(key, ver), dht_node_->get_num_peers() );
+  rq_syncer.wait(std::make_pair(key, ver) );
+  rq_syncer.del_sync_point(std::make_pair(key, ver) );
   
   LOG(INFO) << "remote_query:: done.";
   return true;
@@ -989,7 +929,7 @@ void RIManager::handle_rq_reply(std::map<std::string, std::string> rq_reply_map)
     rq_table.put_key_ver(key, ver, ds_id, 0, 0, NULL, NULL, NULL);
   }
   
-  rq_syncer.notify(key);
+  rq_syncer.notify( std::make_pair(key, ver) );
   //
   LOG(INFO) << "handle_rq_reply:: done.";
 }

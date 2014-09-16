@@ -34,6 +34,88 @@
 #define TEST_NZ(x) do { int r=x; if (r){ printf("error: " #x " failed (returned non-zero=%d).", r); } } while (0)
 #define TEST_Z(x)  do { if (!(x)) printf("error: " #x " failed (returned zero or null)."); } while (0)
 #endif
+
+
+//************************************   syncer  **********************************//
+template <typename T>
+struct syncer{
+  private:
+    boost::mutex mutex;
+  
+    typename std::map<T, boost::shared_ptr<boost::condition_variable> > point_cv_map;
+    typename std::map<T, boost::shared_ptr<boost::condition_variable> >::iterator point_cv_map_it;
+    typename std::map<T, boost::shared_ptr<boost::mutex> > point_m_map;
+    typename std::map<T, boost::shared_ptr<boost::mutex> >::iterator point_m_map_it;
+    typename std::map<T, int> point_numpeers_map;
+    typename std::map<T, int>::iterator point_numpeers_map_it;
+  public:
+    syncer()
+    {
+      LOG(INFO) << "syncer:: constructed.";
+    };
+    ~syncer()
+    {
+      LOG(INFO) << "syncer:: destructed.";
+    };
+    int add_sync_point(T point, int num_peers)
+    {
+      boost::lock_guard<boost::mutex> guard(this->mutex);
+      
+      if (point_cv_map.count(point) ){
+        LOG(ERROR) << "add_sync_point:: already added point.";
+        return 1;
+      }
+      boost::shared_ptr<boost::condition_variable> t_cv_( new boost::condition_variable() );
+      boost::shared_ptr<boost::mutex> t_m_( new boost::mutex() );
+      
+      point_cv_map[point] = t_cv_;
+      point_m_map[point] = t_m_;
+      point_numpeers_map[point] = num_peers;
+      
+      return 0;
+    };
+    int del_sync_point(T point)
+    {
+      boost::lock_guard<boost::mutex> guard(this->mutex);
+      
+      if (!point_cv_map.count(point) ){
+        LOG(ERROR) << "del_sync_point:: non-existing point.";
+        return 1;
+      }
+      point_cv_map_it = point_cv_map.find(point);
+      point_cv_map.erase(point_cv_map_it);
+      
+      point_m_map_it = point_m_map.find(point);
+      point_m_map.erase(point_m_map_it);
+      
+      point_numpeers_map_it = point_numpeers_map.find(point);
+      point_numpeers_map.erase(point_numpeers_map_it);
+      
+      return 0;
+    };
+    int wait(T point)
+    {
+      boost::mutex::scoped_lock lock(*point_m_map[point]);
+      point_cv_map[point]->wait(lock);
+      
+      return 0;
+    };
+    int notify(T point)
+    {
+      boost::lock_guard<boost::mutex> guard(this->mutex);
+      
+      int num_peers_to_wait = point_numpeers_map[point];
+      --num_peers_to_wait;
+      
+      if (num_peers_to_wait == 0){
+        point_cv_map[point]->notify_one();
+        return 0;
+      }
+      point_numpeers_map[point] = num_peers_to_wait;
+      
+      return 0;
+    };
+};
 /*******************************************************************************************/
 class IMsgCoder
 {
@@ -115,29 +197,12 @@ struct RQTable
     std::string to_str();
     std::map<std::string, std::string> to_str_str_map();
   private:
+    boost::mutex mutex;
+  
     std::map<key_ver_pair, char> key_ver__dsid_map;
     std::map<key_ver_pair, char>::iterator key_ver__dsid_map_it;
     std::map<key_ver_pair, std::map<std::string, std::vector<uint64_t> > > key_ver__datainfo_map;
     std::map<key_ver_pair, std::map<std::string, std::vector<uint64_t> > >::iterator key_ver__datainfo_map_it;
-};
-
-struct syncer{
-  public:
-    syncer();
-    ~syncer();
-    int add_sync_point(std::string key, int num_peers);
-    int del_sync_point(std::string key);
-    int wait(std::string key);
-    int notify(std::string key);
-  private:
-    boost::mutex mutex;
-  
-    std::map<std::string, boost::shared_ptr<boost::condition_variable> > key_cv_map;
-    std::map<std::string, boost::shared_ptr<boost::condition_variable> >::iterator key_cv_map_it;
-    std::map<std::string, boost::shared_ptr<boost::mutex> > key_m_map;
-    std::map<std::string, boost::shared_ptr<boost::mutex> >::iterator key_m_map_it;
-    std::map<std::string, int> key_numpeers_map;
-    std::map<std::string, int>::iterator key_numpeers_map_it;
 };
 
 class RFManager
@@ -217,7 +282,7 @@ class RIManager
     int num_cnodes, app_id;
     RQTable rq_table;
     IMsgCoder imsg_coder;
-    syncer rq_syncer;
+    syncer<key_ver_pair> rq_syncer;
     char* ib_laddr;
     
     boost::shared_ptr<DSpacesDriver> ds_driver_;
