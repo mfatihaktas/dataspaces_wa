@@ -29,13 +29,11 @@
 
 #include "ib_delivery.h"
 
-
 #ifndef _TEST_MACROS_
 #define _TEST_MACROS_
 #define TEST_NZ(x) do { int r=x; if (r){ printf("error: " #x " failed (returned non-zero=%d).", r); } } while (0)
 #define TEST_Z(x)  do { if (!(x)) printf("error: " #x " failed (returned zero or null)."); } while (0)
 #endif
-
 /*******************************************************************************************/
 class IMsgCoder
 {
@@ -92,51 +90,36 @@ class BCClient
 
 //Remote Query Table
 //A key 'k' can only be in a single dataspaces
+typedef std::pair<std::string, unsigned int> key_ver_pair;
 struct RQTable
 {
   public:
     RQTable();
     ~RQTable();
-    bool get_key(std::string key, char& ds_id, 
-                 unsigned int* ver, int* size, int* ndim, 
-                 uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
-    int put_key(std::string key, char ds_id, 
-                unsigned int ver, int size, int ndim, 
-                uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
-    int add_key(std::string key, char ds_id, 
-                unsigned int ver, int size, int ndim, 
-                uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
-    int update_key(std::string key, char ds_id, 
-                   unsigned int ver, int size, int ndim, 
-                   uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
-    int del_key(std::string key);
+    bool get_key_ver(std::string key, unsigned int ver, 
+                     char& ds_id, int* size, int* ndim, 
+                     uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
+    int put_from_map(std::map<std::string, std::string> map);
+    int put_key_ver(std::string key, unsigned int ver, 
+                    char ds_id, int size, int ndim, 
+                    uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
+    int add_key_ver(std::string key, unsigned int ver, 
+                    char ds_id, int size, int ndim, 
+                    uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
+    int update_key_ver(std::string key, unsigned int ver, 
+                       char ds_id, int size, int ndim, 
+                       uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
+    int del_key_ver(std::string key, unsigned int ver);
+    bool is_feasible_to_get(std::string key, unsigned int ver, 
+                            int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
     std::string to_str();
+    std::map<std::string, std::string> to_str_str_map();
   private:
-    std::map<std::string, char> key_dsid_map;
-    std::map<std::string, char>::iterator key_dsid_map_it;
-    std::map<std::string, std::map<std::string, std::vector<uint64_t> > > key_datainfo_map;
-    std::map<std::string, std::map<std::string, std::vector<uint64_t> > >::iterator key_datainfo_map_it;
+    std::map<key_ver_pair, char> key_ver__dsid_map;
+    std::map<key_ver_pair, char>::iterator key_ver__dsid_map_it;
+    std::map<key_ver_pair, std::map<std::string, std::vector<uint64_t> > > key_ver__datainfo_map;
+    std::map<key_ver_pair, std::map<std::string, std::vector<uint64_t> > >::iterator key_ver__datainfo_map_it;
 };
-
-//Remote Interaction Manager
-//TODO: a better way for syncing client and server of bccomm
-#define WAIT_TIME_FOR_BCCLIENT_DSLOCK 100*1000
-
-const size_t RI_MAX_MSG_SIZE = 1000;
-const size_t LI_MAX_MSG_SIZE = 1000;
-
-const std::string REMOTE_QUERY = "rq";
-const std::string REMOTE_QUERY_REPLY = "rq_reply";
-const std::string REMOTE_FETCH = "rf";
-
-const std::string REMOTE_GET = "rg";
-const std::string REMOTE_GET_REPLY = "rg_reply";
-const std::string REMOTE_PUT = "rp";
-const std::string REMOTE_PUT_REPLY = "rp_reply";
-const std::string LOCAL_GET = "lg";
-const std::string LOCAL_GET_REPLY = "lg_reply";
-const std::string LOCAL_PUT = "lp";
-const std::string LOCAL_PUT_REPLY = "lp_reply";
 
 struct syncer{
   public:
@@ -181,6 +164,27 @@ class RFManager
     std::map<std::string, void*> key_data_map;
 };
 
+//Remote Interaction Manager
+//TODO: a better way for syncing client and server of bccomm
+#define WAIT_TIME_FOR_BCCLIENT_DSLOCK 100*1000
+
+const size_t RI_MAX_MSG_SIZE = 1000;
+const size_t LI_MAX_MSG_SIZE = 1000;
+
+const std::string REMOTE_QUERY = "rq";
+const std::string REMOTE_QUERY_REPLY = "rq_reply";
+const std::string REMOTE_FETCH = "rf";
+const std::string REMOTE_GET = "rg";
+const std::string REMOTE_GET_REPLY = "rg_reply";
+const std::string REMOTE_PUT = "rp";
+const std::string REMOTE_PUT_REPLY = "rp_reply";
+const std::string LOCAL_GET = "lg";
+const std::string LOCAL_GET_REPLY = "lg_reply";
+const std::string LOCAL_PUT = "lp";
+const std::string LOCAL_PUT_REPLY = "lp_reply";
+
+const std::string REMOTE_RQTABLE = "rrqt";
+
 class RIManager
 {
   public:
@@ -189,6 +193,8 @@ class RIManager
               char* ib_laddr, std::list<std::string> wa_ib_lport_list);
     ~RIManager();
     std::string to_str();
+    
+    int bcast_rq_table();
     
     void handle_ri_req(char* ri_req);
     void handle_r_get(int app_id, std::map<std::string, std::string> r_get_map);
@@ -200,9 +206,10 @@ class RIManager
     void handle_r_query(std::map<std::string, std::string> r_query_map);
     void handle_rq_reply(std::map<std::string, std::string> rq_reply_map);
     void handle_r_fetch(std::map<std::string, std::string> r_fetch_map);
+    void handle_r_rqtable(std::map<std::string, std::string> r_rqtable_map);
     
     bool remote_fetch(char ds_id, std::map<std::string, std::string> r_fetch_map);
-    bool remote_query(std::string key);
+    bool remote_query(std::string key, unsigned int ver);
     int broadcast_msg(char msg_type, std::map<std::string, std::string> msg_map);
     int send_msg(char ds_id, char msg_type, std::map<std::string, std::string> msg_map);
   private:
@@ -222,4 +229,4 @@ class RIManager
     std::map<int, boost::shared_ptr<BCClient> > appid_bcclient_map; //TODO: prettify
 };
 
-#endif //end of _DSCLIENT_H_
+#endif //end of _DSCLIENT_H

@@ -42,12 +42,12 @@ DHTNode::DHTNode(char id, func_rimsg_recv_cb _rimsg_recv_cb,
   }
   else{
     join_channel.conn_to_peer();
-    boost::shared_ptr< Packet > p_ = msger.gen_join_req();
+    boost::shared_ptr<Packet> p_ = msger.gen_join_req();
     join_channel.send_to_peer( *p_ );
   }
   //
-  wait_for_flag();
-  close();
+  // wait_for_flag();
+  // close();
 }
 
 DHTNode::~DHTNode()

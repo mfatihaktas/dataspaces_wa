@@ -248,22 +248,23 @@ RQTable::~RQTable()
   LOG(INFO) << "RQTable:: deconstructed.";
 }
 
-bool RQTable::get_key(std::string key, char& ds_id,
-                      unsigned int* ver, int* size, int* ndim, 
-                      uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
+bool RQTable::get_key_ver(std::string key, unsigned int ver, 
+                          char& ds_id, int* size, int* ndim, 
+                          uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
 {
-  if (!key_dsid_map.count(key) ){
+  key_ver_pair kv = std::make_pair(key, ver);
+  
+  if (!key_ver__dsid_map.count(kv) ){
     return false;
   }
-  ds_id = key_dsid_map[key];
+  ds_id = key_ver__dsid_map[kv];
   
-  if (ver != NULL)
+  if (size != NULL)
   {
-    std::map<std::string, std::vector<uint64_t> > datainfo_map = key_datainfo_map[key];
-    *ver = (unsigned int)datainfo_map["ver"].back();
+    std::map<std::string, std::vector<uint64_t> > datainfo_map = key_ver__datainfo_map[kv];
     *size = (int)datainfo_map["size"].back();
     *ndim = (int)datainfo_map["ndim"].back();
-    for(int i=0; i<*ndim; i++){
+    for(int i = 0; i < *ndim; i++){
       gdim_[i] = datainfo_map["gdim"][i];
       lb_[i] = datainfo_map["lb"][i];
       ub_[i] = datainfo_map["ub"][i];
@@ -273,29 +274,29 @@ bool RQTable::get_key(std::string key, char& ds_id,
   return true;
 }
 
-int RQTable::put_key(std::string key, char ds_id, 
-                     unsigned int ver, int size, int ndim, 
-                     uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
+int RQTable::put_key_ver(std::string key, unsigned int ver, 
+                         char ds_id, int size, int ndim, 
+                         uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
 {
-  if (key_dsid_map.count(key) ){
-    return update_key(key, ds_id, ver, size, ndim, gdim_, lb_, ub_);
+  key_ver_pair kv = std::make_pair(key, ver);
+  
+  if (key_ver__dsid_map.count(kv) ){
+    return update_key_ver(key, ver, ds_id, size, ndim, gdim_, lb_, ub_);
   }
-  return add_key(key, ds_id, ver, size, ndim, gdim_, lb_, ub_);
+  return add_key_ver(key, ver, ds_id, size, ndim, gdim_, lb_, ub_);
 }
 
-int RQTable::add_key(std::string key, char ds_id, 
-                     unsigned int ver, int size, int ndim, 
-                     uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
+int RQTable::add_key_ver(std::string key, unsigned int ver, 
+                         char ds_id, int size, int ndim, 
+                         uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
 {
-  key_dsid_map[key] = ds_id;
+  key_ver_pair kv = std::make_pair(key, ver);
   
-  if (ver != 0)
+  key_ver__dsid_map[kv] = ds_id;
+  
+  if (size != 0)
   {
     std::map<std::string, std::vector<uint64_t> > datainfo_map;
-    
-    std::vector<uint64_t> ver_v;
-    ver_v.push_back(ver);
-    datainfo_map["ver"] = ver_v;
     
     std::vector<uint64_t> size_v;
     size_v.push_back((uint64_t)size);
@@ -317,50 +318,95 @@ int RQTable::add_key(std::string key, char ds_id,
     datainfo_map["lb"] = lb_v;
     datainfo_map["ub"] = ub_v;
     //
-    key_datainfo_map[key] = datainfo_map;
+    key_ver__datainfo_map[kv] = datainfo_map;
   }
   //
-  LOG(INFO) << "add_key:: added <" << key << ", " << ds_id << ">";
+  LOG(INFO) << "add_key_ver:: added <key= " << key << ", ver= " << ver << "> : ds_id= " << ds_id;
   return 0;
 }
 
-int RQTable::update_key(std::string key, char ds_id, 
-                        unsigned int ver, int size, int ndim, 
-                        uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
+int RQTable::update_key_ver(std::string key, unsigned int ver, 
+                            char ds_id, int size, int ndim, 
+                            uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
 {
-  del_key(key);
-  add_key(key, ds_id, ver, size, ndim, gdim_, lb_, ub_);
+  del_key_ver(key, ver);
+  add_key_ver(key, ver, ds_id, size, ndim, gdim_, lb_, ub_);
   //
-  LOG(INFO) << "update_key:: updated <" << key << ", " << ds_id << ">";
+  LOG(INFO) << "update_key_ver:: updated <key= " << key << ", ver= " << ver << "> : ds_id= " << ds_id;
   return 0;
 }
 
-int RQTable::del_key(std::string key)
+int RQTable::del_key_ver(std::string key, unsigned int ver)
 {
-  if (!key_dsid_map.count(key) ){
-    LOG(ERROR) << "del_key:: non-existing key=" << key;
+  key_ver_pair kv = std::make_pair(key, ver);
+  
+  if (!key_ver__dsid_map.count(kv) ){
+    LOG(ERROR) << "del_key:: non-existing kv= <" << key << ", " << ver << ">";
     return 1;
   }
-  key_dsid_map_it = key_dsid_map.find(key);
-  key_dsid_map.erase(key_dsid_map_it);
+  key_ver__dsid_map_it = key_ver__dsid_map.find(kv);
+  key_ver__dsid_map.erase(key_ver__dsid_map_it);
   
-  key_datainfo_map_it = key_datainfo_map.find(key);
-  key_datainfo_map.erase(key_datainfo_map_it);
+  key_ver__datainfo_map_it = key_ver__datainfo_map.find(kv);
+  key_ver__datainfo_map.erase(key_ver__datainfo_map_it);
   //
-  LOG(INFO) << "del_key:: deleted key=" << key;
+  LOG(INFO) << "del_key:: deleted kv= <" << key << ", " << ver << ">";
   return 0;
+}
+
+bool RQTable::is_feasible_to_get(std::string key, unsigned int ver, 
+                                 int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
+{
+  key_ver_pair kv = std::make_pair(key, ver);
+  
+  if (!key_ver__datainfo_map.count(kv) ){
+    return false;
+  }
+  
+  std::map<std::string, std::vector<uint64_t> > datainfo_map = key_ver__datainfo_map[kv];
+  int _ndim = (int)datainfo_map["ndim"].back();
+  int _size = (int)datainfo_map["size"].back();
+  if (ndim != _ndim || size != _size) {
+    return false;
+  }
+  
+  // uint64_t _gdim_[ndim];
+  // uint64_t _lb_[ndim];
+  // uint64_t _ub_[ndim];
+  // for(int i = 0; i < ndim; i++){
+  //   _gdim_[i] = datainfo_map["gdim"][i];
+  //   _lb_[i] = datainfo_map["lb"][i];
+  //   _ub_[i] = datainfo_map["ub"][i];
+  // }
+  std::vector<uint64_t> _gdim_ = datainfo_map["gdim"];
+  std::vector<uint64_t> _lb_ = datainfo_map["lb"];
+  std::vector<uint64_t> _ub_ = datainfo_map["ub"];
+  
+  for(int i = 0; i < ndim; i++) {
+    if (gdim_[i] != _gdim_[i]) {
+      return false;
+    }
+    if (lb_[i] < _lb_[i]) {
+      return false;
+    }
+    if (ub_[i] > _ub_[i]) {
+      return false;
+    }
+  }
+  
+  return true;
 }
 
 std::string RQTable::to_str()
 {
   std::stringstream ss;
-  for (key_dsid_map_it=key_dsid_map.begin(); key_dsid_map_it!=key_dsid_map.end(); ++key_dsid_map_it){
-    std::string key = key_dsid_map_it->first;
-    ss << "key=" << key << "\n";
-    ss << "\tds_id=" << key_dsid_map_it->second << "\n";
+  for (key_ver__dsid_map_it=key_ver__dsid_map.begin(); key_ver__dsid_map_it!=key_ver__dsid_map.end(); ++key_ver__dsid_map_it){
+    key_ver_pair kv = key_ver__dsid_map_it->first;
+    
+    ss << "<key= " << kv.first << ", ver= " << kv.second << ">\n";
+    ss << "\tds_id=" << key_ver__dsid_map_it->second << "\n";
 
-    std::map<std::string, std::vector<uint64_t> > datainfo_map = key_datainfo_map[key];
-    ss << "\tver=" << datainfo_map["ver"].back() << "\n";
+    std::map<std::string, std::vector<uint64_t> > datainfo_map = key_ver__datainfo_map[kv];
     ss << "\tsize=" << datainfo_map["size"].back() << "\n";
     int ndim = (int)datainfo_map["ndim"].back();
     std::string gdim = "";
@@ -384,6 +430,48 @@ std::string RQTable::to_str()
   }
   
   return ss.str();
+}
+
+std::map<std::string, std::string> RQTable::to_str_str_map()
+{
+  std::map<std::string, std::string> str_str_map;
+  
+  int counter = 0;
+  for (key_ver__dsid_map_it=key_ver__dsid_map.begin(); key_ver__dsid_map_it!=key_ver__dsid_map.end(); ++key_ver__dsid_map_it){
+    key_ver_pair kv = key_ver__dsid_map_it->first;
+    std::string key = kv.first;
+    unsigned int ver = kv.second;
+    char ds_id = key_ver__dsid_map_it->second;
+    
+    std::map<std::string, std::vector<uint64_t> > datainfo_map = key_ver__datainfo_map[kv];
+    uint64_t size = datainfo_map["size"].back();
+    int ndim = (int)datainfo_map["ndim"].back();
+    std::string gdim = "";
+    std::string lb = "";
+    std::string ub = "";
+    for(int i=0; i<ndim; i++){
+      gdim += boost::lexical_cast<std::string>(datainfo_map["gdim"][i]);
+      lb += boost::lexical_cast<std::string>(datainfo_map["lb"][i]);
+      ub += boost::lexical_cast<std::string>(datainfo_map["ub"][i]);
+      if (i < ndim-1){
+        gdim += ",";
+        lb += ",";
+        ub += ",";
+      }
+    }
+    //
+    std::string counter_str = boost::lexical_cast<std::string>(counter);
+    str_str_map["key_" + counter_str] = key;
+    str_str_map["ver_" + counter_str] = boost::lexical_cast<std::string>(ver);
+    str_str_map["ds_id_" + counter_str] = ds_id;
+    str_str_map["size_" + counter_str] = boost::lexical_cast<std::string>(size);
+    str_str_map["ndim_" + counter_str] = boost::lexical_cast<std::string>(ndim);
+    str_str_map["gdim_" + counter_str] = gdim;
+    str_str_map["lb_" + counter_str] = lb;
+    str_str_map["ub_" + counter_str] = ub;
+    
+    counter++;
+  }
 }
 //************************************   syncer  **********************************//
 syncer::syncer()
@@ -593,6 +681,8 @@ RIManager::RIManager(char id, int num_cnodes, int app_id,
   ri_bc_server_(new BCServer(app_id, num_cnodes, RI_MAX_MSG_SIZE, "ri_req_", 
                              boost::bind(&RIManager::handle_ri_req, this, _1),
                              ds_driver_) ),
+  dht_node_(new DHTNode(id, boost::bind(&RIManager::handle_wamsg, this, _1),
+                        lip, lport, ipeer_lip, ipeer_lport) ),
   rf_manager_(new RFManager(wa_ib_lport_list, ds_driver_) )
 {
   //usleep(WAIT_TIME_FOR_BCCLIENT_DSLOCK);
@@ -600,11 +690,11 @@ RIManager::RIManager(char id, int num_cnodes, int app_id,
   li_bc_server_->init_listen_all();
   ri_bc_server_->init_listen_all();
   //to avoid problem with bc_server and bc_client sync_with_time
-  boost::shared_ptr<DHTNode> t_sp_(
-    new DHTNode(id, boost::bind(&RIManager::handle_wamsg, this, _1),
-                lip, lport, ipeer_lip, ipeer_lport) 
-  );
-  this->dht_node_ = t_sp_;
+  // boost::shared_ptr<DHTNode> t_sp_(
+  //   new DHTNode(id, boost::bind(&RIManager::handle_wamsg, this, _1),
+  //               lip, lport, ipeer_lip, ipeer_lport) 
+  // );
+  // this->dht_node_ = t_sp_;
   //
   LOG(INFO) << "RIManager:: constructed.\n" << to_str();
 }
@@ -624,6 +714,15 @@ std::string RIManager::to_str()
   ss << "\t dht_node=\n" << dht_node_->to_str() << "\n";
   //
   return ss.str();
+}
+
+int RIManager::bcast_rq_table()
+{
+  std::map<std::string, std::string> rq_table_map = rq_table.to_str_str_map();
+  rq_table_map["type"] = REMOTE_RQTABLE;
+  rq_table_map["id"] = id;
+  
+  return broadcast_msg(RIMSG, rq_table_map);
 }
 /********* handle li_req *********/
 void RIManager::handle_li_req(char* li_req)
@@ -660,7 +759,7 @@ void RIManager::handle_l_put(std::map<std::string, std::string> l_put_map)
     return;
   }
   //debug_print(key, ver, size, ndim, gdim_, lb_, ub_, NULL);
-  rq_table.put_key(key, this->id, ver, size, ndim, gdim_, lb_, ub_);
+  rq_table.put_key_ver(key, ver, this->id, size, ndim, gdim_, lb_, ub_);
   //
   LOG(INFO) << "handle_l_put:: done.";
   LOG(INFO) << "handle_l_put:: rq_table=\n" << rq_table.to_str();
@@ -669,8 +768,8 @@ void RIManager::handle_l_put(std::map<std::string, std::string> l_put_map)
 void RIManager::handle_ri_req(char* ri_req)
 {
   std::map<std::string, std::string> ri_req_map = imsg_coder.decode(ri_req);
-  LOG(INFO) << "handle_ri_req:: ri_req_map=";
-  print_str_map(ri_req_map);
+  // LOG(INFO) << "handle_ri_req:: ri_req_map=";
+  // print_str_map(ri_req_map);
   //
   int app_id = boost::lexical_cast<int>(ri_req_map["app_id"]);
   ri_bc_server_->reinit_listen_client(app_id);
@@ -702,23 +801,25 @@ void RIManager::handle_r_get(int app_id, std::map<std::string, std::string> r_ge
   print_str_map(r_get_map);
   
   std::string key = r_get_map["key"];
+  unsigned int ver = boost::lexical_cast<unsigned int>(r_get_map["ver"]);
   
   std::map<std::string, std::string> msg_map;
   msg_map["type"] = REMOTE_GET_REPLY;
   msg_map["key"] = key;
+  msg_map["ver"] = r_get_map["ver"];
   
   char ds_id;
-  if (!rq_table.get_key(key, ds_id, NULL, NULL, NULL, NULL, NULL, NULL) ){
-    if (!remote_query(key) ){
+  if (!rq_table.get_key_ver(key, ver, ds_id, NULL, NULL, NULL, NULL, NULL) ){
+    if (!remote_query(key, ver) ){
       LOG(ERROR) << "handle_r_get:: remote_query failed!";
     }
-    if (!rq_table.get_key(key, ds_id, NULL, NULL, NULL, NULL, NULL, NULL) ){
+    if (!rq_table.get_key_ver(key, ver, ds_id, NULL, NULL, NULL, NULL, NULL) ){
       ds_id = '?';
     }
   }
   
   if(ds_id == '?'){
-    LOG(INFO) << "handle_r_get:: key= " << key << " does not exist.";
+    LOG(INFO) << "handle_r_get:: <key= " << key << ", ver= " << ver << "> does not exist.";
     msg_map["ds_id"] = '?';
     appid_bcclient_map[app_id]->send(msg_map);
     return;
@@ -736,6 +837,39 @@ void RIManager::handle_r_get(int app_id, std::map<std::string, std::string> r_ge
   appid_bcclient_map[app_id]->send(msg_map);
   //
   LOG(INFO) << "handle_r_get:: done.";
+}
+
+//PI: a key cannot be produced in multiple dataspaces
+bool RIManager::remote_query(std::string key, unsigned int ver)
+{
+  LOG(INFO) << "remote_query:: started;";
+  
+  std::map<std::string, std::string> r_q_map;
+  r_q_map["type"] = REMOTE_QUERY;
+  r_q_map["key"] = key;
+  r_q_map["ver"] = boost::lexical_cast<std::string>(ver);
+  
+  if (broadcast_msg(RIMSG, r_q_map) ){
+    LOG(ERROR) << "remote_query:: broadcast_msg failed!";
+    return false;
+  }
+  
+  rq_syncer.add_sync_point(key, dht_node_->get_num_peers() );
+  rq_syncer.wait(key);
+  rq_syncer.del_sync_point(key);
+  
+  LOG(INFO) << "remote_query:: done.";
+  return true;
+}
+
+int RIManager::broadcast_msg(char msg_type, std::map<std::string, std::string> msg_map)
+{
+  return dht_node_->broadcast_msg(msg_type, msg_map);
+}
+
+int RIManager::send_msg(char ds_id, char msg_type, std::map<std::string, std::string> msg_map)
+{
+  return dht_node_->send_msg(ds_id, msg_type, msg_map);
 }
 
 bool RIManager::remote_fetch(char ds_id, std::map<std::string, std::string> r_fetch_map)
@@ -782,38 +916,6 @@ bool RIManager::remote_fetch(char ds_id, std::map<std::string, std::string> r_fe
   return true;
 }
 
-
-//PI: a key cannot be produced in multiple dataspaces
-bool RIManager::remote_query(std::string key)
-{
-  LOG(INFO) << "remote_query:: started;";
-  
-  std::map<std::string, std::string> r_q_map;
-  r_q_map["type"] = REMOTE_QUERY;
-  r_q_map["key"] = key;
-  
-  if (broadcast_msg(RIMSG, r_q_map) ){
-    LOG(ERROR) << "remote_query:: broadcast_msg failed!";
-    return false;
-  }
-  
-  rq_syncer.add_sync_point(key, dht_node_->get_num_peers() );
-  rq_syncer.wait(key);
-  rq_syncer.del_sync_point(key);
-  
-  LOG(INFO) << "remote_query:: done.";
-  return true;
-}
-
-int RIManager::broadcast_msg(char msg_type, std::map<std::string, std::string> msg_map)
-{
-  return dht_node_->broadcast_msg(msg_type, msg_map);
-}
-
-int RIManager::send_msg(char ds_id, char msg_type, std::map<std::string, std::string> msg_map)
-{
-  return dht_node_->send_msg(ds_id, msg_type, msg_map);
-}
 /********* handle wamsg *********/
 void RIManager::handle_wamsg(std::map<std::string, std::string> wamsg_map)
 {
@@ -827,6 +929,9 @@ void RIManager::handle_wamsg(std::map<std::string, std::string> wamsg_map)
   }
   else if (type.compare(REMOTE_FETCH) == 0){
     handle_r_fetch(wamsg_map);
+  }
+  else if (type.compare(REMOTE_RQTABLE) == 0){
+    handle_r_rqtable(wamsg_map);
   }
   else{
     LOG(ERROR) << "handle_ri_req:: unknown type= " << type;
@@ -842,14 +947,16 @@ void RIManager::handle_r_query(std::map<std::string, std::string> r_query_map)
   print_str_map(r_query_map);
   
   std::string key = r_query_map["key"];
+  unsigned int ver = boost::lexical_cast<unsigned int>(r_query_map["ver"]);
   
   std::map<std::string, std::string> rq_reply_map;
   rq_reply_map["type"] = REMOTE_QUERY_REPLY;
   rq_reply_map["key"] = key;
+  rq_reply_map["ver"] = r_query_map["ver"];
   
   char to_id = r_query_map["id"].c_str()[0];
   char ds_id;
-  if(!rq_table.get_key(key, ds_id, NULL, NULL, NULL, NULL, NULL, NULL) ){
+  if(!rq_table.get_key_ver(key, ver, ds_id, NULL, NULL, NULL, NULL, NULL) ){
     //LOG(INFO) << "handle_r_query:: does not exist; key= " << key;
     rq_reply_map["ds_id"] = '?';
   }
@@ -876,9 +983,10 @@ void RIManager::handle_rq_reply(std::map<std::string, std::string> rq_reply_map)
   print_str_map(rq_reply_map);
   
   std::string key = rq_reply_map["key"];
+  unsigned int ver = boost::lexical_cast<unsigned int>(rq_reply_map["ver"]);
   char ds_id = rq_reply_map["ds_id"].c_str()[0];
   if (ds_id != '?'){
-    rq_table.put_key(key, ds_id, 0, 0, 0, NULL, NULL, NULL);
+    rq_table.put_key_ver(key, ver, ds_id, 0, 0, NULL, NULL, NULL);
   }
   
   rq_syncer.notify(key);
@@ -914,3 +1022,54 @@ void RIManager::handle_r_fetch(std::map<std::string, std::string> r_fetch_map)
   //
   LOG(INFO) << "handle_r_fetch:: done.";
 }
+
+void RIManager::handle_r_rqtable(std::map<std::string, std::string> r_rqtable_map)
+{
+  LOG(INFO) << "handle_r_rqtable:: r_rqtable_map=";
+  print_str_map(r_rqtable_map);
+  
+  int count = 0;
+  while(1)
+  {
+    std::string tail_str = boost::lexical_cast<std::string>(count);
+    std::string key_str = "key_" + tail_str;
+    if (!r_rqtable_map.count(key_str) ){
+      break;
+    }
+    
+    int ndim = boost::lexical_cast<int>(r_rqtable_map["ndim_"+tail_str]);
+    uint64_t* gdim_ = (uint64_t*)malloc(ndim*sizeof(uint64_t) );
+    uint64_t* lb_ = (uint64_t*)malloc(ndim*sizeof(uint64_t) );
+    uint64_t* ub_ = (uint64_t*)malloc(ndim*sizeof(uint64_t) );
+    
+    
+    boost::char_separator<char> sep(",");
+    boost::tokenizer<boost::char_separator<char> > gdim_tokens(r_rqtable_map["gdim_"+tail_str], sep);
+    boost::tokenizer<boost::char_separator<char> >::iterator gdim_tokens_it = gdim_tokens.begin();
+    boost::tokenizer<boost::char_separator<char> > lb_tokens(r_rqtable_map["lb_"+tail_str], sep);
+    boost::tokenizer<boost::char_separator<char> >::iterator lb_tokens_it = lb_tokens.begin();
+    boost::tokenizer<boost::char_separator<char> > ub_tokens(r_rqtable_map["ub_"+tail_str], sep);
+    boost::tokenizer<boost::char_separator<char> >::iterator ub_tokens_it = ub_tokens.begin();
+    for (int i = 0; i < ndim; i++){
+      gdim_[i] = boost::lexical_cast<uint64_t>(*gdim_tokens_it);
+      gdim_tokens_it++;
+      lb_[i] = boost::lexical_cast<uint64_t>(*lb_tokens_it);
+      lb_tokens_it++;
+      ub_[i] = boost::lexical_cast<uint64_t>(*ub_tokens_it);
+      ub_tokens_it++;
+    }
+    
+    rq_table.put_key_ver(r_rqtable_map[key_str], boost::lexical_cast<unsigned int>(r_rqtable_map["ver_"+tail_str]),
+                         r_rqtable_map["ds_id_"+tail_str].c_str()[0],
+                         boost::lexical_cast<int>(r_rqtable_map["size_"+tail_str]),
+                         ndim, gdim_, lb_, ub_ );
+    free(gdim_);
+    free(lb_);
+    free(ub_);
+    
+    count++;
+  }
+  //
+  LOG(INFO) << "handle_rq_reply:: done.";
+}
+
