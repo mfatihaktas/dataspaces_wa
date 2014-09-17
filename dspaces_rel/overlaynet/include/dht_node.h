@@ -132,6 +132,7 @@ struct peer_info{
 };
 
 struct peer_table{
+  boost::mutex mutex;
   std::vector<char> peer_id_vector;
   std::map<char, boost::shared_ptr<peer_info> > id_pinfo_map;
   std::map<char, boost::shared_ptr<comm_channel> > id_commchannel_map;
@@ -149,6 +150,8 @@ struct peer_table{
                char* peer_lip = NULL, int peer_lport = 0,
                char* peer_join_lip = NULL, int peer_join_lport = 0)
   {
+    boost::lock_guard<boost::mutex> guard(this->mutex);
+    
     if (id_pinfo_map.count(peer_id) ){
       LOG(ERROR) << "add_peer:: already added peer_id=" << peer_id;
       return 1;
@@ -166,6 +169,8 @@ struct peer_table{
   
   int del_peer(char peer_id)
   {
+    boost::lock_guard<boost::mutex> guard(this->mutex);
+    
     if (!id_pinfo_map.count(peer_id) ){
       LOG(ERROR) << "del_peer:: non-existing peer_id=" << peer_id;
       return 1;
@@ -273,10 +278,12 @@ struct prospective_peer_info
 
 struct prospective_peer_table
 {
+  boost::mutex mutex;
   std::vector< boost::shared_ptr<prospective_peer_info> > ppeer_vector;
   
   int push(char* join_lip, int join_lport)
   {
+    boost::lock_guard<boost::mutex> guard(this->mutex);
     // boost::shared_ptr<prospective_peer_info> ppinfo_ (
     //   new prospective_peer_info(join_lip, join_lport)
     // );
@@ -289,6 +296,8 @@ struct prospective_peer_table
   
   boost::shared_ptr<prospective_peer_info> pop()
   {
+    boost::lock_guard<boost::mutex> guard(this->mutex);
+    
     if (ppeer_vector.empty()){
       boost::shared_ptr<prospective_peer_info> ppinfo_;
       return ppinfo_;
@@ -439,6 +448,10 @@ class DHTNode{
     void close();
     std::string to_str();
   private:
+    //ImpRem: properties must be thread-safe
+    boost::mutex mutex;
+    // boost::lock_guard<boost::mutex> guard(this->mutex);
+    
     comm_channel join_channel;
     messenger msger;
     peer_table ptable;

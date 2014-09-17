@@ -42,9 +42,9 @@ void debug_print(std::string key, unsigned int ver, int size, int ndim,
 
 void print_str_map(std::map<std::string, std::string> str_map)
 {
-  for (std::map<std::string, std::string>::const_iterator it=str_map.begin(); 
-       it!=str_map.end(); ++it){
-    std::cout << "\t" << it->first << ":" << it->second << "\n";
+  for (std::map<std::string, std::string>::const_iterator it = str_map.begin(); 
+       it != str_map.end(); it++){
+    std::cout << "\t" << it->first << ": " << it->second << "\n";
   }
 }
 #endif
@@ -449,7 +449,9 @@ std::map<std::string, std::string> RQTable::to_str_str_map()
   boost::lock_guard<boost::mutex> guard(this->mutex);
   
   int counter = 0;
-  for (key_ver__dsid_map_it=key_ver__dsid_map.begin(); key_ver__dsid_map_it!=key_ver__dsid_map.end(); ++key_ver__dsid_map_it){
+  for (key_ver__dsid_map_it = key_ver__dsid_map.begin(); key_ver__dsid_map_it != key_ver__dsid_map.end(); 
+       key_ver__dsid_map_it++) 
+  {
     key_ver_pair kv = key_ver__dsid_map_it->first;
     std::string key = kv.first;
     unsigned int ver = kv.second;
@@ -461,11 +463,11 @@ std::map<std::string, std::string> RQTable::to_str_str_map()
     std::string gdim = "";
     std::string lb = "";
     std::string ub = "";
-    for(int i=0; i<ndim; i++){
+    for(int i = 0; i < ndim; i++) {
       gdim += boost::lexical_cast<std::string>(datainfo_map["gdim"][i]);
       lb += boost::lexical_cast<std::string>(datainfo_map["lb"][i]);
       ub += boost::lexical_cast<std::string>(datainfo_map["ub"][i]);
-      if (i < ndim-1){
+      if (i < ndim-1) {
         gdim += ",";
         lb += ",";
         ub += ",";
@@ -484,6 +486,8 @@ std::map<std::string, std::string> RQTable::to_str_str_map()
     
     counter++;
   }
+  
+  return str_str_map;
 }
 
 //************************************  RFManager  ********************************//
@@ -659,6 +663,7 @@ std::string RIManager::to_str()
 int RIManager::bcast_rq_table()
 {
   std::map<std::string, std::string> rq_table_map = rq_table.to_str_str_map();
+  
   rq_table_map["type"] = REMOTE_RQTABLE;
   rq_table_map["id"] = id;
   
@@ -700,6 +705,9 @@ void RIManager::handle_l_put(std::map<std::string, std::string> l_put_map)
   }
   //debug_print(key, ver, size, ndim, gdim_, lb_, ub_, NULL);
   rq_table.put_key_ver(key, ver, this->id, size, ndim, gdim_, lb_, ub_);
+  if (bcast_rq_table() ){
+    LOG(ERROR) << "handle_l_put:: bcast_rq_table failed!";
+  }
   //
   LOG(INFO) << "handle_l_put:: done.";
   LOG(INFO) << "handle_l_put:: rq_table=\n" << rq_table.to_str();
@@ -714,10 +722,13 @@ void RIManager::handle_ri_req(char* ri_req)
   int app_id = boost::lexical_cast<int>(ri_req_map["app_id"]);
   ri_bc_server_->reinit_listen_client(app_id);
   //
+  boost::lock_guard<boost::mutex> guard(this->mutex);
+  {
   boost::shared_ptr<BCClient> bc_client_(
     new BCClient(app_id, num_cnodes, RI_MAX_MSG_SIZE, "ri_reply_", ds_driver_)
   );
   appid_bcclient_map[app_id] = bc_client_;
+  }
   //
   std::string type = ri_req_map["type"];
   
@@ -794,9 +805,10 @@ bool RIManager::remote_query(std::string key, unsigned int ver)
     return false;
   }
   
-  rq_syncer.add_sync_point(std::make_pair(key, ver), dht_node_->get_num_peers() );
-  rq_syncer.wait(std::make_pair(key, ver) );
-  rq_syncer.del_sync_point(std::make_pair(key, ver) );
+  key_ver_pair kv = std::make_pair(key, ver);
+  rq_syncer.add_sync_point(kv, dht_node_->get_num_peers() );
+  rq_syncer.wait(kv);
+  rq_syncer.del_sync_point(kv);
   
   LOG(INFO) << "remote_query:: done.";
   return true;

@@ -110,12 +110,13 @@ int WADspacesDriver::remote_get(std::string data_type, std::string key, unsigned
   );
   bc_server_->init_listen_client(app_id);
   
-  rg_syncer.add_sync_point(key, 1);
-  rg_syncer.wait(key);
-  rg_syncer.del_sync_point(key);
+  key_ver_pair kv = std::make_pair(key, ver);
+  rg_syncer.add_sync_point(kv, 1);
+  rg_syncer.wait(kv);
+  rg_syncer.del_sync_point(kv);
   
-  if (key_dsid_map[key] == '?'){
-    LOG(INFO) << "remote_get:: key= " << key << " does not exist";
+  if (key_ver__dsid_map[kv] == '?'){
+    LOG(INFO) << "remote_get:: <key= " << key << ", ver= " << ver << "> does not exist";
     return 1;
   }
   
@@ -136,9 +137,12 @@ int WADspacesDriver::handle_ri_reply(char* ri_reply)
   print_str_map(ri_reply_map);
   
   std::string key = ri_reply_map["key"];
-  key_dsid_map[key] = ri_reply_map["ds_id"].c_str()[0];
+  unsigned int ver = boost::lexical_cast<unsigned int>(ri_reply_map["ver"]);
   
-  rg_syncer.notify(key);
+  key_ver_pair kv = std::make_pair(key, ver);
+  key_ver__dsid_map[kv] = ri_reply_map["ds_id"].c_str()[0];
+  
+  rg_syncer.notify(kv);
   //
   LOG(INFO) << "handle_ri_reply:: done.";
   return 0;

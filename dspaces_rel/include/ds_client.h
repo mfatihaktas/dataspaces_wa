@@ -127,8 +127,6 @@ class IMsgCoder
     int decode_i_msg(std::map<std::string, std::string> msg_map, 
                      std::string& key, unsigned int& ver, int& size, 
                      int& ndim, uint64_t* &gdim_, uint64_t* &lb_, uint64_t* &ub_);
-  
-  
 };
 
 //Server side of blocking communication channel over dataspaces
@@ -278,6 +276,9 @@ class RIManager
     int broadcast_msg(char msg_type, std::map<std::string, std::string> msg_map);
     int send_msg(char ds_id, char msg_type, std::map<std::string, std::string> msg_map);
   private:
+    //ImpRem: Since handle_ core functions are called by client threads properties must be thread-safe
+    boost::mutex mutex;
+    
     char id;
     int num_cnodes, app_id;
     RQTable rq_table;

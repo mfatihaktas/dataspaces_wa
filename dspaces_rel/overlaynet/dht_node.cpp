@@ -62,6 +62,8 @@ int DHTNode::get_num_peers()
 
 int DHTNode::get_next_lport()
 {
+  boost::lock_guard<boost::mutex> guard(this->mutex);
+  
   return ++next_lport;
 }
 
@@ -165,7 +167,7 @@ int DHTNode::broadcast_msg(char msg_type, std::map<std::string, std::string> msg
 {
   if (ptable.peer_id_vector.empty() ){
     LOG(INFO) << "broadcast_msg:: no peer to broadcast.";
-    return 2;
+    return 0;
   }
   msg_map["id"] = this->id;
   

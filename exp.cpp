@@ -299,6 +299,10 @@ int main(int argc , char **argv)
   
   if (strcmp(opt_map[(char*)"type"], (char*)"l_put") == 0){
     WADspacesDriver wads_driver(app_id, num_dscnodes-1);
+    
+    std::cout << "Enter for l_put_test\n";
+    getline(std::cin, temp);
+    
     l_put_test("dummy", wads_driver);
     //l_put_test("dummy2", wads_driver);
     
@@ -319,7 +323,9 @@ int main(int argc , char **argv)
   else if (strcmp(opt_map[(char*)"type"], (char*)"r_get") == 0){
     WADspacesDriver wads_driver(app_id, num_dscnodes-1);
     
-    //usleep(2*1000*1000);
+    std::cout << "Enter for r_get_test\n";
+    getline(std::cin, temp);
+    
     r_get_test(wads_driver);
     //std::cout << "main:: calling r_get_test again!\n";
     //r_get_test(wads_driver);
