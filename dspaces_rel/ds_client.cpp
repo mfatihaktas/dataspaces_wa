@@ -78,12 +78,13 @@ std::map<std::string, std::string> IMsgCoder::decode(char* msg)
 }
 
 int IMsgCoder::decode_i_msg(std::map<std::string, std::string> msg_map,
-                            std::string& key, unsigned int& ver, int& size,
-                            int& ndim, uint64_t* &gdim_, uint64_t* &lb_, uint64_t* &ub_)
+                            std::string& key, unsigned int& ver, std::string& data_type,
+                            int& size, int& ndim, uint64_t* &gdim_, uint64_t* &lb_, uint64_t* &ub_)
 {
   try
   {
     key = msg_map["key"];
+    data_type = msg_map["data_type"];
     ver = boost::lexical_cast<unsigned int>(msg_map["ver"]);
     size = boost::lexical_cast<int>(msg_map["size"]);
     ndim = boost::lexical_cast<int>(msg_map["ndim"]);
@@ -248,18 +249,17 @@ RQTable::~RQTable()
   LOG(INFO) << "RQTable:: deconstructed.";
 }
 
-bool RQTable::get_key_ver(std::string key, unsigned int ver, 
-                          char& ds_id, int* size, int* ndim, 
-                          uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
+int RQTable::get_key_ver(std::string key, unsigned int ver, 
+                         std::string& data_type, char& ds_id, int* size, int* ndim, 
+                         uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
 {
-  boost::lock_guard<boost::mutex> guard(this->mutex);
-  
   key_ver_pair kv = std::make_pair(key, ver);
   
-  if (!key_ver__dsid_map.count(kv) ){
-    return false;
+  if (!key_ver__dsid_map.contains(kv) ){
+    return 1;
   }
   ds_id = key_ver__dsid_map[kv];
+  data_type = key_ver__data_type_map[kv];
   
   if (size != NULL)
   {
@@ -273,30 +273,28 @@ bool RQTable::get_key_ver(std::string key, unsigned int ver,
     }
   }
   
-  return true;
+  return 0;
 }
 
 int RQTable::put_key_ver(std::string key, unsigned int ver, 
-                         char ds_id, int size, int ndim, 
+                         std::string data_type, char ds_id, int size, int ndim, 
                          uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
 {
   key_ver_pair kv = std::make_pair(key, ver);
   
-  if (key_ver__dsid_map.count(kv) ){
-    return update_key_ver(key, ver, ds_id, size, ndim, gdim_, lb_, ub_);
+  if (key_ver__dsid_map.contains(kv) ){
+    return update_key_ver(key, ver, data_type, ds_id, size, ndim, gdim_, lb_, ub_);
   }
-  return add_key_ver(key, ver, ds_id, size, ndim, gdim_, lb_, ub_);
+  return add_key_ver(key, ver, data_type, ds_id, size, ndim, gdim_, lb_, ub_);
 }
 
 int RQTable::add_key_ver(std::string key, unsigned int ver, 
-                         char ds_id, int size, int ndim, 
+                         std::string data_type, char ds_id, int size, int ndim, 
                          uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
 {
-  boost::lock_guard<boost::mutex> guard(this->mutex);
-  
   key_ver_pair kv = std::make_pair(key, ver);
-  
   key_ver__dsid_map[kv] = ds_id;
+  key_ver__data_type_map[kv] = data_type;
   
   if (size != 0)
   {
@@ -330,11 +328,11 @@ int RQTable::add_key_ver(std::string key, unsigned int ver,
 }
 
 int RQTable::update_key_ver(std::string key, unsigned int ver, 
-                            char ds_id, int size, int ndim, 
+                            std::string data_type, char ds_id, int size, int ndim, 
                             uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
 {
   del_key_ver(key, ver);
-  add_key_ver(key, ver, ds_id, size, ndim, gdim_, lb_, ub_);
+  add_key_ver(key, ver, data_type, ds_id, size, ndim, gdim_, lb_, ub_);
   //
   LOG(INFO) << "update_key_ver:: updated <key= " << key << ", ver= " << ver << "> : ds_id= " << ds_id;
   return 0;
@@ -344,17 +342,13 @@ int RQTable::del_key_ver(std::string key, unsigned int ver)
 {
   key_ver_pair kv = std::make_pair(key, ver);
   
-  boost::lock_guard<boost::mutex> guard(this->mutex);
-  
-  if (!key_ver__dsid_map.count(kv) ){
+  if (!key_ver__dsid_map.contains(kv) ){
     LOG(ERROR) << "del_key:: non-existing kv= <" << key << ", " << ver << ">";
     return 1;
   }
-  key_ver__dsid_map_it = key_ver__dsid_map.find(kv);
-  key_ver__dsid_map.erase(key_ver__dsid_map_it);
-  
-  key_ver__datainfo_map_it = key_ver__datainfo_map.find(kv);
-  key_ver__datainfo_map.erase(key_ver__datainfo_map_it);
+  key_ver__dsid_map.del(kv);
+  key_ver__data_type_map.del(kv);
+  key_ver__datainfo_map.del(kv);
   //
   LOG(INFO) << "del_key:: deleted kv= <" << key << ", " << ver << ">";
   return 0;
@@ -365,9 +359,7 @@ bool RQTable::is_feasible_to_get(std::string key, unsigned int ver,
 {
   key_ver_pair kv = std::make_pair(key, ver);
   
-  boost::lock_guard<boost::mutex> guard(this->mutex);
-  
-  if (!key_ver__datainfo_map.count(kv) ){
+  if (!key_ver__datainfo_map.contains(kv) ){
     return false;
   }
   
@@ -377,14 +369,7 @@ bool RQTable::is_feasible_to_get(std::string key, unsigned int ver,
   if (ndim != _ndim || size != _size) {
     return false;
   }
-  // uint64_t _gdim_[ndim];
-  // uint64_t _lb_[ndim];
-  // uint64_t _ub_[ndim];
-  // for(int i = 0; i < ndim; i++){
-  //   _gdim_[i] = datainfo_map["gdim"][i];
-  //   _lb_[i] = datainfo_map["lb"][i];
-  //   _ub_[i] = datainfo_map["ub"][i];
-  // }
+
   std::vector<uint64_t> _gdim_ = datainfo_map["gdim"];
   std::vector<uint64_t> _lb_ = datainfo_map["lb"];
   std::vector<uint64_t> _ub_ = datainfo_map["ub"];
@@ -408,13 +393,11 @@ std::string RQTable::to_str()
 {
   std::stringstream ss;
   
-  boost::lock_guard<boost::mutex> guard(this->mutex);
-  
-  for (key_ver__dsid_map_it=key_ver__dsid_map.begin(); key_ver__dsid_map_it!=key_ver__dsid_map.end(); ++key_ver__dsid_map_it){
-    key_ver_pair kv = key_ver__dsid_map_it->first;
+  for (std::map<key_ver_pair, char>::iterator it=key_ver__dsid_map.begin(); it!=key_ver__dsid_map.end(); it++){
+    key_ver_pair kv = it->first;
     
     ss << "<key= " << kv.first << ", ver= " << kv.second << ">\n";
-    ss << "\tds_id=" << key_ver__dsid_map_it->second << "\n";
+    ss << "\tds_id=" << it->second << "\n";
 
     std::map<std::string, std::vector<uint64_t> > datainfo_map = key_ver__datainfo_map[kv];
     ss << "\tsize=" << datainfo_map["size"].back() << "\n";
@@ -446,16 +429,13 @@ std::map<std::string, std::string> RQTable::to_str_str_map()
 {
   std::map<std::string, std::string> str_str_map;
   
-  boost::lock_guard<boost::mutex> guard(this->mutex);
-  
   int counter = 0;
-  for (key_ver__dsid_map_it = key_ver__dsid_map.begin(); key_ver__dsid_map_it != key_ver__dsid_map.end(); 
-       key_ver__dsid_map_it++) 
+  for (std::map<key_ver_pair, char>::iterator it = key_ver__dsid_map.begin(); it != key_ver__dsid_map.end(); it++) 
   {
-    key_ver_pair kv = key_ver__dsid_map_it->first;
+    key_ver_pair kv = it->first;
     std::string key = kv.first;
     unsigned int ver = kv.second;
-    char ds_id = key_ver__dsid_map_it->second;
+    char ds_id = it->second;
     
     std::map<std::string, std::vector<uint64_t> > datainfo_map = key_ver__datainfo_map[kv];
     uint64_t size = datainfo_map["size"].back();
@@ -490,80 +470,82 @@ std::map<std::string, std::string> RQTable::to_str_str_map()
   return str_str_map;
 }
 
-//************************************  RFManager  ********************************//
-RFManager::RFManager(std::list<std::string> wa_ib_lport_list, boost::shared_ptr<DSpacesDriver> ds_driver_)
+//************************************  RFPManager  ********************************//
+RFPManager::RFPManager(std::list<std::string> wa_ib_lport_list, boost::shared_ptr<DSpacesDriver> ds_driver_)
 : dd_manager_(new DDManager(wa_ib_lport_list) ),
   ds_driver_(ds_driver_)
 {
-  LOG(INFO) << "RFManager:: constructed.";
+  LOG(INFO) << "RFPManager:: constructed.";
 }
 
-RFManager::~RFManager()
+RFPManager::~RFPManager()
 {
-  LOG(INFO) << "RFManager:: destructed.";
+  LOG(INFO) << "RFPManager:: destructed.";
 }
 
 
-std::string RFManager::get_ib_lport()
+std::string RFPManager::get_ib_lport()
 {
   return dd_manager_->get_next_avail_ib_lport();
 }
 
-bool RFManager::receive_put(std::string ib_laddr, std::string ib_lport,
-                            std::string data_type, std::string key, unsigned int ver, int size,
-                            int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
+bool RFPManager::receive_put(std::string ib_laddr, std::string ib_lport,
+                            std::string key, unsigned int ver, std::string data_type, 
+                            int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
 {
-  LOG(INFO) << "receive_put:: started for key= " << key << ", ib_laddr= " << ib_laddr << ", ib_lport= " << ib_lport;
-  key_recvedsize_map[key] = 0;
-  key_data_map[key] = malloc(size*get_data_length(ndim, gdim_, lb_, ub_) );
+  LOG(INFO) << "receive_put:: started for <key= " << key << ", ver= " << ver << ">, ib_laddr= " << ib_laddr << ", ib_lport= " << ib_lport;
+  key_ver_pair kv = std::make_pair(key, ver);
+  key_ver__recvedsize_map[kv] = 0;
+  key_ver__data_map[kv] = malloc(size*get_data_length(ndim, gdim_, lb_, ub_) );
   
-  dd_manager_->init_ib_server(key, data_type, ib_lport.c_str(), 
-                              boost::bind(&RFManager::handle_ib_receive, this, _1, _2, _3) );
+  dd_manager_->init_ib_server(key, ver, data_type, ib_lport.c_str(), 
+                              boost::bind(&RFPManager::handle_ib_receive, this, _1, _2, _3, _4) );
   dd_manager_->give_ib_lport_back(ib_lport);
   
-  if (ds_driver_->sync_put(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, key_data_map[key]) ){
+  if (ds_driver_->sync_put(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, key_ver__data_map[kv]) ){
     LOG(ERROR) << "receive_put:: ds_driver_->sync_put failed!";
     return false;
   }
   
-  free(key_data_map[key]);
+  free(key_ver__data_map[kv]);
   
-  std::map<std::string, void*>::iterator key_data_map_itr = key_data_map.find(key);
-  key_data_map.erase(key_data_map_itr);
-  std::map<std::string, size_t>::iterator key_recvedsize_map_itr = key_recvedsize_map.find(key);
-  key_recvedsize_map.erase(key_recvedsize_map_itr);
+  std::map<key_ver_pair, void*>::iterator key_ver__data_map_itr = key_ver__data_map.find(kv);
+  key_ver__data_map.erase(key_ver__data_map_itr);
+  std::map<key_ver_pair, size_t>::iterator key_ver__recvedsize_map_itr = key_ver__recvedsize_map.find(kv);
+  key_ver__recvedsize_map.erase(key_ver__recvedsize_map_itr);
   //
   LOG(INFO) << "receive_put:: done.";
   return true;
 }
 
-void RFManager::handle_ib_receive(std::string key, size_t data_size, void* data_)
+void RFPManager::handle_ib_receive(std::string key, unsigned int ver, size_t data_size, void* data_)
 {
-  if (!key_recvedsize_map.count(key) ){
-    LOG(ERROR) << "handle_ib_receive:: data is received for an unexpected key= " << key;
+  key_ver_pair kv = std::make_pair(key, ver);
+  if (!key_ver__recvedsize_map.count(kv) ){
+    LOG(ERROR) << "handle_ib_receive:: data is received for an unexpected <key= " << key << ", ver= " << ver << ">";
     return;
   }
   
-  size_t recved_size = key_recvedsize_map[key];
-  LOG(INFO) << "handle_ib_receive:: for key= " << key << ", recved data_size= " << data_size << ", total_received_size= " << (float)(recved_size+data_size)/1024/1024 << "(MB)";
+  size_t recved_size = key_ver__recvedsize_map[kv];
+  LOG(INFO) << "handle_ib_receive:: for <key= " << key << ", ver= " << ver << ">, recved data_size= " << data_size << ", total_received_size= " << (float)(recved_size+data_size)/1024/1024 << "(MB)";
   
-  char* data_t_ = static_cast<char*>(key_data_map[key]);
+  char* data_t_ = static_cast<char*>(key_ver__data_map[kv]);
   memcpy(data_t_+recved_size, data_, data_size);
   
-  key_recvedsize_map[key] += data_size;
+  key_ver__recvedsize_map[kv] += data_size;
   
   //
-  // LOG(INFO) << "handle_ib_receive:: key_data_map[key]=";
+  // LOG(INFO) << "handle_ib_receive:: key_ver__data_map[key]=";
   // for(int i=0; i<(data_size/size); i++){
-  //     std::cout << static_cast<int*>(key_data_map[key])[i] << ", ";
+  //     std::cout << static_cast<int*>(key_ver__data_map[key])[i] << ", ";
   // }
   // std::cout << "\n";
   //
   free(data_);
 }
 
-bool RFManager::get_send(std::string data_type, std::string key, unsigned int ver, int size,
-                         int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_,
+bool RFPManager::get_send(std::string key, unsigned int ver, std::string data_type, 
+                         int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_,
                          const char* ib_laddr, const char* ib_lport)
 {
   size_t data_length = get_data_length(ndim, gdim_, lb_, ub_);
@@ -585,7 +567,7 @@ bool RFManager::get_send(std::string data_type, std::string key, unsigned int ve
   return true;
 }
 
-size_t RFManager::get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_)
+size_t RFPManager::get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_)
 {
   uint64_t dim_length[ndim];
   
@@ -627,7 +609,7 @@ RIManager::RIManager(char id, int num_cnodes, int app_id,
                              ds_driver_) ),
   dht_node_(new DHTNode(id, boost::bind(&RIManager::handle_wamsg, this, _1),
                         lip, lport, ipeer_lip, ipeer_lport) ),
-  rf_manager_(new RFManager(wa_ib_lport_list, ds_driver_) )
+  rfp_manager_(new RFPManager(wa_ib_lport_list, ds_driver_) )
 {
   //usleep(WAIT_TIME_FOR_BCCLIENT_DSLOCK);
   
@@ -699,16 +681,27 @@ void RIManager::handle_l_put(std::map<std::string, std::string> l_put_map)
   unsigned int ver;
   int size, ndim;
   uint64_t *gdim_, *lb_, *ub_;
-  if(imsg_coder.decode_i_msg(l_put_map, key, ver, size, ndim, gdim_, lb_, ub_) ){
+  std::string data_type;
+  if(imsg_coder.decode_i_msg(l_put_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_) ){
+    free(gdim_);
+    free(lb_);
+    free(ub_);
     LOG(ERROR) << "handle_l_put:: decode_i_msg failed!";
     return;
   }
   //debug_print(key, ver, size, ndim, gdim_, lb_, ub_, NULL);
-  rq_table.put_key_ver(key, ver, this->id, size, ndim, gdim_, lb_, ub_);
+  rq_table.put_key_ver(key, ver, data_type, this->id, size, ndim, gdim_, lb_, ub_);
   if (bcast_rq_table() ){
+    free(gdim_);
+    free(lb_);
+    free(ub_);
     LOG(ERROR) << "handle_l_put:: bcast_rq_table failed!";
+    return;
   }
   //
+  free(gdim_);
+  free(lb_);
+  free(ub_);
   LOG(INFO) << "handle_l_put:: done.";
   LOG(INFO) << "handle_l_put:: rq_table=\n" << rq_table.to_str();
 }
@@ -722,13 +715,10 @@ void RIManager::handle_ri_req(char* ri_req)
   int app_id = boost::lexical_cast<int>(ri_req_map["app_id"]);
   ri_bc_server_->reinit_listen_client(app_id);
   //
-  boost::lock_guard<boost::mutex> guard(this->mutex);
-  {
   boost::shared_ptr<BCClient> bc_client_(
     new BCClient(app_id, num_cnodes, RI_MAX_MSG_SIZE, "ri_reply_", ds_driver_)
   );
   appid_bcclient_map[app_id] = bc_client_;
-  }
   //
   std::string type = ri_req_map["type"];
   
@@ -759,12 +749,13 @@ void RIManager::handle_r_get(int app_id, std::map<std::string, std::string> r_ge
   msg_map["key"] = key;
   msg_map["ver"] = r_get_map["ver"];
   
+  std::string data_type;
   char ds_id;
-  if (!rq_table.get_key_ver(key, ver, ds_id, NULL, NULL, NULL, NULL, NULL) ){
-    if (!remote_query(key, ver) ){
+  if (rq_table.get_key_ver(key, ver, data_type, ds_id, NULL, NULL, NULL, NULL, NULL) ){
+    if (remote_query(key, ver) ){
       LOG(ERROR) << "handle_r_get:: remote_query failed!";
     }
-    if (!rq_table.get_key_ver(key, ver, ds_id, NULL, NULL, NULL, NULL, NULL) ){
+    if (rq_table.get_key_ver(key, ver, data_type, ds_id, NULL, NULL, NULL, NULL, NULL) ){
       ds_id = '?';
     }
   }
@@ -777,7 +768,7 @@ void RIManager::handle_r_get(int app_id, std::map<std::string, std::string> r_ge
   }
   
   LOG(INFO) << "handle_r_get:: key= " << key << " exists in ds_id= " << ds_id << ".";
-  if (!remote_fetch(ds_id, r_get_map) ){
+  if (remote_fetch(ds_id, r_get_map) ){
     LOG(INFO) << "handle_r_get:: remote_fetch failed!";
     msg_map["ds_id"] = '?';
     appid_bcclient_map[app_id]->send(msg_map);
@@ -791,7 +782,7 @@ void RIManager::handle_r_get(int app_id, std::map<std::string, std::string> r_ge
 }
 
 //PI: a key cannot be produced in multiple dataspaces
-bool RIManager::remote_query(std::string key, unsigned int ver)
+int RIManager::remote_query(std::string key, unsigned int ver)
 {
   LOG(INFO) << "remote_query:: started;";
   
@@ -802,7 +793,7 @@ bool RIManager::remote_query(std::string key, unsigned int ver)
   
   if (broadcast_msg(RIMSG, r_q_map) ){
     LOG(ERROR) << "remote_query:: broadcast_msg failed!";
-    return false;
+    return 1;
   }
   
   key_ver_pair kv = std::make_pair(key, ver);
@@ -811,7 +802,7 @@ bool RIManager::remote_query(std::string key, unsigned int ver)
   rq_syncer.del_sync_point(kv);
   
   LOG(INFO) << "remote_query:: done.";
-  return true;
+  return 0;
 }
 
 int RIManager::broadcast_msg(char msg_type, std::map<std::string, std::string> msg_map)
@@ -824,69 +815,139 @@ int RIManager::send_msg(char ds_id, char msg_type, std::map<std::string, std::st
   return dht_node_->send_msg(ds_id, msg_type, msg_map);
 }
 
-bool RIManager::remote_fetch(char ds_id, std::map<std::string, std::string> r_fetch_map)
+int RIManager::remote_subscribe(std::string key, unsigned int ver)
+{
+  LOG(INFO) << "remote_subscribe:: started for <key= " << key << ", ver= " << ver << ">";
+  
+  std::map<std::string, std::string> r_subs_map;
+  r_subs_map["id"] = id;
+  r_subs_map["key"] = key;
+  r_subs_map["ver"] = boost::lexical_cast<std::string>(ver);
+  
+  if (broadcast_msg(RIMSG, r_subs_map) ){
+    LOG(ERROR) << "remote_subscribe:: broadcast_msg failed!";
+  }
+  //
+  LOG(INFO) << "remote_subscribe:: done.";
+  return 0;
+}
+
+int RIManager::remote_fetch(char ds_id, std::map<std::string, std::string> r_fetch_map)
 {
   LOG(INFO) << "remote_fetch:: started;";
   
-  r_fetch_map["type"] = REMOTE_FETCH;
-  
-  std::string ib_lport = rf_manager_->get_ib_lport();
+  std::string ib_lport = rfp_manager_->get_ib_lport();
   std::string ib_laddr_str( (const char*) ib_laddr);
+  
   r_fetch_map["ib_laddr"] = ib_laddr_str;
   r_fetch_map["ib_lport"] = ib_lport;
-  if(send_msg(ds_id, RIMSG, r_fetch_map) ){
+  boost::thread t(&RIManager::handle_receive_put, this, r_fetch_map );
+  
+  key_ver_pair kv = std::make_pair(r_fetch_map["key"], boost::lexical_cast<unsigned int>(r_fetch_map["ver"]) );
+  rf_receive_put_syncer.add_sync_point(kv, 1);
+  
+  r_fetch_map["type"] = REMOTE_FETCH;
+  if (send_msg(ds_id, RIMSG, r_fetch_map) ) {
     LOG(ERROR) << "remote_fetch:: send_msg to to_id= " << ds_id << " failed!";
-    return false;
+    return 1;
   }
   
+  rf_receive_put_syncer.wait(kv);
+  rf_receive_put_syncer.del_sync_point(kv);
+  //
+  LOG(INFO) << "remote_fetch:: done.";
+  return 0;
+}
+
+int RIManager::remote_place(std::string key, unsigned int ver)
+{
+  LOG(INFO) << "remote_place:: started;";
+  
+  char ds_id;
+  int size, ndim;
+  uint64_t *gdim_, *lb_, *ub_;
+  std::string data_type;
+  if (rq_table.get_key_ver(key, ver, data_type, ds_id, &size, &ndim, gdim_, lb_, ub_) ) {
+    LOG(INFO) << "remote_place:: rq_table.get_key_ver failed!";
+  }
+  
+  std::map<std::string, std::string> r_place_map;
+  r_place_map["type"] = REMOTE_PLACE;
+  r_place_map["id"] = id;
+  r_place_map["key"] = key;
+  r_place_map["ver"] = boost::lexical_cast<std::string>(ver);;
+  if(send_msg(ds_id, RIMSG, r_place_map) ){
+    LOG(ERROR) << "remote_place:: send_msg to to_id= " << ds_id << " failed!";
+    return 1;
+  }
+  
+  key_ver_pair kv = std::make_pair(key, ver);
+  rp_syncer.add_sync_point(kv, 1 );
+  rp_syncer.wait(kv);
+  rp_syncer.del_sync_point(kv);
+  
+  laddr_lport_pair ll = key_ver__laddr_lport_map[kv];
+  
+  if (rfp_manager_->get_send(key, ver, data_type, size, ndim, gdim_, lb_, ub_, ll.first.c_str(), ll.second.c_str() ) ) {
+    LOG(ERROR) << "remote_place:: rfp_manager_->get_send failed!";
+  }
+  //
+  LOG(INFO) << "remote_place:: done,";
+  return 0;
+}
+
+void RIManager::handle_receive_put(std::map<std::string, std::string> str_str_map)
+{
   std::string key;
   unsigned int ver;
   int size, ndim;
   uint64_t *gdim_, *lb_, *ub_;
-  if(imsg_coder.decode_i_msg(r_fetch_map, key, ver, size, ndim, gdim_, lb_, ub_) ){
-    LOG(ERROR) << "remote_fetch:: decode_i_msg failed!";
+  std::string data_type;
+  if (imsg_coder.decode_i_msg(str_str_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_) ) {
     free(gdim_);
     free(lb_);
     free(ub_);
-    return false;
+    LOG(ERROR) << "handle_receive_put:: decode_i_msg failed!";
+    return;
   }
   
-  if (!rf_manager_->receive_put(ib_laddr_str, ib_lport, 
-                                r_fetch_map["data_type"], key, ver, size,
-                                ndim, gdim_, lb_, ub_) ){
-    LOG(ERROR) << "remote_fetch:: rf_manager_->receive_put failed!";
-    free(gdim_);
-    free(lb_);
-    free(ub_);
-    return false;
+  if (!rfp_manager_->receive_put(str_str_map["ib_laddr"], str_str_map["ib_lport"], 
+                                 key, ver, data_type, 
+                                 size, ndim, gdim_, lb_, ub_) ) {
+    LOG(ERROR) << "handle_receive_put:: rfp_manager_->receive_put failed!";
   }
+  
+  rf_receive_put_syncer.notify(std::make_pair(key, ver) );
+  
   free(gdim_);
   free(lb_);
   free(ub_);
-  //
-  LOG(INFO) << "remote_fetch:: done.";
-  return true;
 }
-
 /********* handle wamsg *********/
 void RIManager::handle_wamsg(std::map<std::string, std::string> wamsg_map)
 {
   std::string type = wamsg_map["type"];
   
-  if (type.compare(REMOTE_QUERY) == 0){
+  if (type.compare(REMOTE_QUERY) == 0) {
     handle_r_query(wamsg_map);
   }
-  else if (type.compare(REMOTE_QUERY_REPLY) == 0){
+  else if (type.compare(REMOTE_QUERY_REPLY) == 0) {
     handle_rq_reply(wamsg_map);
   }
-  else if (type.compare(REMOTE_FETCH) == 0){
+  else if (type.compare(REMOTE_FETCH) == 0) {
     handle_r_fetch(wamsg_map);
   }
-  else if (type.compare(REMOTE_RQTABLE) == 0){
+  else if (type.compare(REMOTE_RQTABLE) == 0) {
     handle_r_rqtable(wamsg_map);
   }
+  else if (type.compare(REMOTE_PLACE) == 0) {
+    handle_r_place(wamsg_map);
+  }
+  else if (type.compare(REMOTE_PLACE_REPLY) == 0) {
+    handle_rp_reply(wamsg_map);
+  }
   else{
-    LOG(ERROR) << "handle_ri_req:: unknown type= " << type;
+    LOG(ERROR) << "handle_wamsg:: unknown type= " << type;
   }
   
   //
@@ -908,7 +969,8 @@ void RIManager::handle_r_query(std::map<std::string, std::string> r_query_map)
   
   char to_id = r_query_map["id"].c_str()[0];
   char ds_id;
-  if(!rq_table.get_key_ver(key, ver, ds_id, NULL, NULL, NULL, NULL, NULL) ){
+  std::string data_type;
+  if(rq_table.get_key_ver(key, ver, data_type, ds_id, NULL, NULL, NULL, NULL, NULL) ){
     //LOG(INFO) << "handle_r_query:: does not exist; key= " << key;
     rq_reply_map["ds_id"] = '?';
   }
@@ -936,9 +998,10 @@ void RIManager::handle_rq_reply(std::map<std::string, std::string> rq_reply_map)
   
   std::string key = rq_reply_map["key"];
   unsigned int ver = boost::lexical_cast<unsigned int>(rq_reply_map["ver"]);
+  std::string data_type = rq_reply_map["data_type"];
   char ds_id = rq_reply_map["ds_id"].c_str()[0];
   if (ds_id != '?'){
-    rq_table.put_key_ver(key, ver, ds_id, 0, 0, NULL, NULL, NULL);
+    rq_table.put_key_ver(key, ver, data_type, ds_id, 0, 0, NULL, NULL, NULL);
   }
   
   rq_syncer.notify( std::make_pair(key, ver) );
@@ -955,23 +1018,24 @@ void RIManager::handle_r_fetch(std::map<std::string, std::string> r_fetch_map)
   unsigned int ver;
   int size, ndim;
   uint64_t *gdim_, *lb_, *ub_;
-  if(imsg_coder.decode_i_msg(r_fetch_map, key, ver, size, ndim, gdim_, lb_, ub_) ){
-    LOG(ERROR) << "handle_r_fetch:: decode_i_msg failed!";
+  std::string data_type;
+  if(imsg_coder.decode_i_msg(r_fetch_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_) ){
     free(gdim_);
     free(lb_);
     free(ub_);
+    LOG(ERROR) << "handle_r_fetch:: decode_i_msg failed!";
     return;
   }
   
-  if (!rf_manager_->get_send(r_fetch_map["data_type"], key, ver, size,
-                             ndim, gdim_, lb_, ub_,
+  if (!rfp_manager_->get_send(key, ver, r_fetch_map["data_type"],
+                             size, ndim, gdim_, lb_, ub_,
                              r_fetch_map["ib_laddr"].c_str(), r_fetch_map["ib_lport"].c_str() ) ){
-    LOG(ERROR) << "handle_r_fetch:: rf_manager_->get_send failed!";
+    LOG(ERROR) << "handle_r_fetch:: rfp_manager_->get_send failed!";
   }
+  //
   free(gdim_);
   free(lb_);
   free(ub_);
-  //
   LOG(INFO) << "handle_r_fetch:: done.";
 }
 
@@ -1012,7 +1076,7 @@ void RIManager::handle_r_rqtable(std::map<std::string, std::string> r_rqtable_ma
     }
     
     rq_table.put_key_ver(r_rqtable_map[key_str], boost::lexical_cast<unsigned int>(r_rqtable_map["ver_"+tail_str]),
-                         r_rqtable_map["ds_id_"+tail_str].c_str()[0],
+                         r_rqtable_map["data_type_"+tail_str], r_rqtable_map["ds_id_"+tail_str].c_str()[0],
                          boost::lexical_cast<int>(r_rqtable_map["size_"+tail_str]),
                          ndim, gdim_, lb_, ub_ );
     free(gdim_);
@@ -1023,5 +1087,63 @@ void RIManager::handle_r_rqtable(std::map<std::string, std::string> r_rqtable_ma
   }
   //
   LOG(INFO) << "handle_rq_reply:: done.";
+}
+
+void RIManager::handle_r_place(std::map<std::string, std::string> r_place_map)
+{
+  LOG(INFO) << "handle_r_place:: r_place_map=";
+  print_str_map(r_place_map);
+  
+  std::string ib_lport = rfp_manager_->get_ib_lport();
+  std::string ib_laddr_str( (const char*) ib_laddr);
+  
+  key_ver_pair kv = std::make_pair(r_place_map["key"], boost::lexical_cast<unsigned int>(r_place_map["ver"]) );
+  rp_receive_put_syncer.add_sync_point(kv, 1);
+  
+  r_place_map["ib_laddr"] = ib_laddr_str;
+  r_place_map["ib_lport"] = ib_lport;
+  boost::thread t(&RIManager::handle_receive_put, this, r_place_map);
+  
+  std::map<std::string, std::string> rp_reply_map;
+  rp_reply_map["type"] = REMOTE_PLACE_REPLY;
+  rp_reply_map["key"] = r_place_map["key"];
+  rp_reply_map["ver"] = r_place_map["ver"];
+  rp_reply_map["ib_laddr"] = ib_laddr_str;
+  rp_reply_map["ib_lport"] = ib_lport;
+  char to_id = r_place_map["id"].c_str()[0];
+  if(send_msg(to_id, RIMSG, rp_reply_map) ){
+    LOG(ERROR) << "handle_r_place:: send_msg to to_id= " << to_id << " failed!";
+    return;
+  }
+  
+  rp_receive_put_syncer.wait(kv);
+  rp_receive_put_syncer.del_sync_point(kv);
+  //
+  LOG(INFO) << "handle_r_place:: done.";
+}
+
+void RIManager::handle_rp_reply(std::map<std::string, std::string> rp_reply_map)
+{
+  LOG(INFO) << "handle_rp_reply:: rp_reply_map=";
+  print_str_map(rp_reply_map);
+  
+  key_ver_pair kv = std::make_pair(rp_reply_map["key"], boost::lexical_cast<unsigned int>(rp_reply_map["ver"]) );
+  key_ver__laddr_lport_map[kv] = std::make_pair(rp_reply_map["ib_laddr"], rp_reply_map["ib_lport"]);
+  
+  rp_syncer.notify(kv);
+  //
+  LOG(INFO) << "handle_rp_reply:: done.";
+}
+
+void RIManager::handle_r_subscribe(std::map<std::string, std::string> r_subs_map)
+{
+  LOG(INFO) << "handle_r_subscribe:: r_subs_map=";
+  print_str_map(r_subs_map);
+  
+  key_ver_pair kv = std::make_pair(r_subs_map["key"], boost::lexical_cast<unsigned int>(r_subs_map["ver"]) );
+  
+  key_ver__subsed_ds_id_map[kv] = boost::lexical_cast<char>(r_subs_map["id"]);
+  //
+  LOG(INFO) << "handle_r_subscribe:: done.";
 }
 

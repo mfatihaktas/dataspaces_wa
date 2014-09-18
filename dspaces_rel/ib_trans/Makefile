@@ -29,7 +29,7 @@ CPP = g++
 IDIR = include
 ODIR = obj
 
-.PHONY: clean
+.PHONY: lclean clean
 
 #CFLAGS	:= -Wall -Werror -g
 #LD			:= gcc
@@ -55,6 +55,9 @@ server: $(ODIR)/server.o $(ODIR)/common.o
 $(ODIR)/%.o: %.c
 	$(CC) -c -o $@ $< $(INC) $(LIB)
 endif
+
+lclean:
+	rm -f $(ODIR)/*.o ${APPS} 
 
 clean:
 	rm -f obj/*.o ${APPS}

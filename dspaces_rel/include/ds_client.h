@@ -34,8 +34,44 @@
 #define TEST_NZ(x) do { int r=x; if (r){ printf("error: " #x " failed (returned non-zero=%d).", r); } } while (0)
 #define TEST_Z(x)  do { if (!(x)) printf("error: " #x " failed (returned zero or null)."); } while (0)
 #endif
-
-
+//********************************   thread_safe_map  **********************************//
+template <typename Tk, typename Tv>
+struct thread_safe_map
+{
+  private:
+    boost::mutex mutex;
+    typename std::map<Tk, Tv> map;
+    typename std::map<Tk, Tv>::iterator map_it;
+  public:
+    thread_safe_map() {};
+    ~thread_safe_map() {};
+    
+    Tv& operator[](Tk k) {
+      boost::lock_guard<boost::mutex> guard(this->mutex);
+      return map[k];
+    };
+    
+    int del(Tk k)
+    {
+      map_it = map.find(k);
+      map.erase(map_it);
+    };
+    
+    bool contains(Tk k)
+    {
+      return !(map.count(k) == 0);
+    };
+    
+    typename std::map<Tk, Tv>::iterator begin()
+    {
+      return map.begin();
+    };
+    
+    typename std::map<Tk, Tv>::iterator end()
+    {
+      return map.end();
+    };
+};
 //************************************   syncer  **********************************//
 template <typename T>
 struct syncer{
@@ -125,8 +161,8 @@ class IMsgCoder
     std::map<std::string, std::string> decode(char* msg);
     std::string encode(std::map<std::string, std::string> msg_map);
     int decode_i_msg(std::map<std::string, std::string> msg_map, 
-                     std::string& key, unsigned int& ver, int& size, 
-                     int& ndim, uint64_t* &gdim_, uint64_t* &lb_, uint64_t* &ub_);
+                     std::string& key, unsigned int& ver, std::string& data_type,
+                     int& size, int& ndim, uint64_t* &gdim_, uint64_t* &lb_, uint64_t* &ub_);
 };
 
 //Server side of blocking communication channel over dataspaces
@@ -176,18 +212,18 @@ struct RQTable
   public:
     RQTable();
     ~RQTable();
-    bool get_key_ver(std::string key, unsigned int ver, 
-                     char& ds_id, int* size, int* ndim, 
+    int get_key_ver(std::string key, unsigned int ver, 
+                     std::string& data_type, char& ds_id, int* size, int* ndim, 
                      uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
     int put_from_map(std::map<std::string, std::string> map);
     int put_key_ver(std::string key, unsigned int ver, 
-                    char ds_id, int size, int ndim, 
+                    std::string data_type, char ds_id, int size, int ndim, 
                     uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
     int add_key_ver(std::string key, unsigned int ver, 
-                    char ds_id, int size, int ndim, 
+                    std::string data_type, char ds_id, int size, int ndim, 
                     uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
     int update_key_ver(std::string key, unsigned int ver, 
-                       char ds_id, int size, int ndim, 
+                       std::string data_type, char ds_id, int size, int ndim, 
                        uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
     int del_key_ver(std::string key, unsigned int ver);
     bool is_feasible_to_get(std::string key, unsigned int ver, 
@@ -195,36 +231,33 @@ struct RQTable
     std::string to_str();
     std::map<std::string, std::string> to_str_str_map();
   private:
-    boost::mutex mutex;
-  
-    std::map<key_ver_pair, char> key_ver__dsid_map;
-    std::map<key_ver_pair, char>::iterator key_ver__dsid_map_it;
-    std::map<key_ver_pair, std::map<std::string, std::vector<uint64_t> > > key_ver__datainfo_map;
-    std::map<key_ver_pair, std::map<std::string, std::vector<uint64_t> > >::iterator key_ver__datainfo_map_it;
+    thread_safe_map<key_ver_pair, char> key_ver__dsid_map;
+    thread_safe_map<key_ver_pair, std::string> key_ver__data_type_map;
+    thread_safe_map<key_ver_pair, std::map<std::string, std::vector<uint64_t> > > key_ver__datainfo_map;
 };
 
-class RFManager
+class RFPManager //Remote Fetch / Place Manager
 {
   public:
-    RFManager(std::list<std::string> wa_ib_lport_list, boost::shared_ptr<DSpacesDriver> ds_driver_);
-    ~RFManager();
+    RFPManager(std::list<std::string> wa_ib_lport_list, boost::shared_ptr<DSpacesDriver> ds_driver_);
+    ~RFPManager();
     std::string get_ib_lport();
     
     bool receive_put(std::string ib_laddr, std::string ib_lport,
-                     std::string data_type, std::string key, unsigned int ver, int size,
-                     int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
-    void handle_ib_receive(std::string key, size_t data_size, void* data_);
+                     std::string key, unsigned int ver, std::string data_type,
+                     int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
+    void handle_ib_receive(std::string key, unsigned int ver, size_t data_size, void* data_);
     
-    bool get_send(std::string data_type, std::string key, unsigned int ver, int size,
-                  int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_,
+    bool get_send(std::string key, unsigned int ver, std::string data_type, 
+                  int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_,
                   const char* ib_laddr, const char* ib_lport);
     size_t get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_);
   private:
     boost::shared_ptr<DSpacesDriver> ds_driver_;
     boost::shared_ptr<DDManager> dd_manager_;
     
-    std::map<std::string, size_t> key_recvedsize_map;
-    std::map<std::string, void*> key_data_map;
+    std::map<key_ver_pair, size_t> key_ver__recvedsize_map;
+    std::map<key_ver_pair, void*> key_ver__data_map;
 };
 
 //Remote Interaction Manager
@@ -247,6 +280,10 @@ const std::string LOCAL_PUT = "lp";
 const std::string LOCAL_PUT_REPLY = "lp_reply";
 
 const std::string REMOTE_RQTABLE = "rrqt";
+const std::string REMOTE_PLACE = "rp";
+const std::string REMOTE_PLACE_REPLY = "rp_reply";
+
+typedef std::pair<std::string, std::string> laddr_lport_pair;
 
 class RIManager
 {
@@ -256,8 +293,6 @@ class RIManager
               char* ib_laddr, std::list<std::string> wa_ib_lport_list);
     ~RIManager();
     std::string to_str();
-    
-    int bcast_rq_table();
     
     void handle_ri_req(char* ri_req);
     void handle_r_get(int app_id, std::map<std::string, std::string> r_get_map);
@@ -270,29 +305,42 @@ class RIManager
     void handle_rq_reply(std::map<std::string, std::string> rq_reply_map);
     void handle_r_fetch(std::map<std::string, std::string> r_fetch_map);
     void handle_r_rqtable(std::map<std::string, std::string> r_rqtable_map);
+    void handle_r_place(std::map<std::string, std::string> r_place_map);
+    void handle_rp_reply(std::map<std::string, std::string> rp_reply_map);
+    void handle_r_subscribe(std::map<std::string, std::string> r_subs_map);
     
-    bool remote_fetch(char ds_id, std::map<std::string, std::string> r_fetch_map);
-    bool remote_query(std::string key, unsigned int ver);
+    int remote_subscribe(std::string key, unsigned int ver);
+    int remote_fetch(char ds_id, std::map<std::string, std::string> r_fetch_map);
+    void handle_receive_put(std::map<std::string, std::string> str_str_map);
+    int bcast_rq_table();
+    int remote_query(std::string key, unsigned int ver);
     int broadcast_msg(char msg_type, std::map<std::string, std::string> msg_map);
     int send_msg(char ds_id, char msg_type, std::map<std::string, std::string> msg_map);
+    int remote_place(std::string key, unsigned int ver);
   private:
     //ImpRem: Since handle_ core functions are called by client threads properties must be thread-safe
-    boost::mutex mutex;
-    
     char id;
     int num_cnodes, app_id;
-    RQTable rq_table;
-    IMsgCoder imsg_coder;
-    syncer<key_ver_pair> rq_syncer;
     char* ib_laddr;
+    IMsgCoder imsg_coder;
     
     boost::shared_ptr<DSpacesDriver> ds_driver_;
     boost::shared_ptr<BCServer> li_bc_server_;
     boost::shared_ptr<BCServer> ri_bc_server_;
     boost::shared_ptr<DHTNode> dht_node_;
-    boost::shared_ptr<RFManager> rf_manager_;
+    boost::shared_ptr<RFPManager> rfp_manager_;
+    thread_safe_map<int, boost::shared_ptr<BCClient> > appid_bcclient_map; //TODO: prettify
     
-    std::map<int, boost::shared_ptr<BCClient> > appid_bcclient_map; //TODO: prettify
+    RQTable rq_table;
+    syncer<key_ver_pair> rq_syncer;
+    
+    thread_safe_map<key_ver_pair, laddr_lport_pair> key_ver__laddr_lport_map;
+    syncer<key_ver_pair> rp_syncer;
+    
+    thread_safe_map<key_ver_pair, char> key_ver__subsed_ds_id_map;
+    
+    syncer<key_ver_pair> rf_receive_put_syncer;
+    syncer<key_ver_pair> rp_receive_put_syncer;
 };
 
 #endif //end of _DSCLIENT_H

@@ -27,6 +27,8 @@ ODIR = obj
 
 #exp_put exp_get
 
+.PHONY: lclean clean
+
 APPS := exp
 
 all: ${APPS}
@@ -74,6 +76,9 @@ $(ODIR)/common.o: common.c
 #%.o: %.c $(SFS)
 #	$(MPICPP) -c -o $@ $< $(DATASPACES_INC) $(DATASPACES_LIB)
 endif
+
+lclean:
+	rm -f $(ODIR)/*.o ${APPS} 
 
 clean:
 	rm -f $(ODIR)/*.o ${APPS}

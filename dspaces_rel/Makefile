@@ -34,7 +34,7 @@ OVERLAYNET_ODIR = $(OVERLAYNET_DIR)/obj
 IBTRANS_DIR = ib_trans
 IBTRANS_ODIR = $(IBTRANS_DIR)/obj
 
-.PHONY: all clean submake_ibtrans_dir submake_overlaynet_dir
+.PHONY: all lclean clean submake_ibtrans_dir submake_overlaynet_dir
 
 APPS := exp
 
@@ -65,6 +65,9 @@ $(ODIR)/%.o: %.c
 	$(CC) -c -o $@ $< $(INC) $(LIB)
 
 endif
+
+lclean:
+	rm -f $(ODIR)/*.o ${APPS} 
 
 clean:
 	make -C $(OVERLAYNET_DIR) clean

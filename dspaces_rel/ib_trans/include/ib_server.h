@@ -4,7 +4,7 @@
 #include "messages.h"
 #include "common.h"
 
-typedef boost::function<void(std::string, size_t, void*)> data_recv_cb;
+typedef boost::function<void(std::string, unsigned int, size_t, void*)> data_recv_cb;
 
 template <class data_type>
 class IBServer{
@@ -19,15 +19,17 @@ class IBServer{
   };
   private:
     std::string key;
+    unsigned int ver;
     const char* lport;
     data_recv_cb dr_cb;
     //
     Connector connector;
   public:
-    IBServer(std::string key, const char* lport, data_recv_cb dr_cb)
+    IBServer(std::string key, unsigned int ver, const char* lport, data_recv_cb dr_cb)
     : lport(lport),
       dr_cb(dr_cb),
-      key(key)
+      key(key),
+      ver(ver)
     {
       //
       LOG(INFO) << "IBServer constructed: lport= " << lport;
@@ -154,7 +156,7 @@ class IBServer{
           }
           data_type* data_ = (data_type*)malloc(size);
           memcpy(data_, ctx->buffer, size);
-          dr_cb(key, size, data_);
+          dr_cb(key, ver, size, data_);
           
           post_receive(id);
         }

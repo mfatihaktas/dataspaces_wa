@@ -37,7 +37,7 @@ OVERLAYNET_ODIR = $(OVERLAYNET_DIR)/obj
 IBTRANS_DIR = dspaces_rel/ib_trans
 IBTRANS_ODIR = $(IBTRANS_DIR)/obj
 
-.PHONY: all clean submake_dspaces_rel
+.PHONY: all lclean clean submake_dspaces_rel
 
 all: submake_dspaces_rel exp
 
@@ -54,6 +54,9 @@ ifeq ("x","y")
 $(ODIR)/%.o: %.c
 	$(CC) -c -o $@ $< $(INC) $(LIB)
 endif
+
+lclean:
+	rm -f $(ODIR)/*.o
 
 clean:
 	make -C $(DSPACES_REL_DIR) clean

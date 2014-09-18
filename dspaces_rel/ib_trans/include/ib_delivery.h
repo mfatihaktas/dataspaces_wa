@@ -67,7 +67,7 @@ class DDManager //Data Delivery
     DDManager(std::list<std::string> ib_lport_list);
     ~DDManager();
     std::string to_str();
-    void init_ib_server(std::string key, std::string data_type, const char* lport, data_recv_cb dr_cb);
+    void init_ib_server(std::string key, unsigned int ver, std::string data_type, const char* lport, data_recv_cb dr_cb);
     void init_ib_client(const char* s_laddr, const char* s_lport,
                         std::string data_type, size_t data_length, void* data_);
     

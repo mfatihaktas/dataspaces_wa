@@ -25,22 +25,22 @@ std::string DDManager::to_str()
   return ss.str();
 }
 
-void DDManager::init_ib_server(std::string key, std::string data_type, const char* lport, data_recv_cb dr_cb)
+void DDManager::init_ib_server(std::string key, unsigned int ver, std::string data_type, const char* lport, data_recv_cb dr_cb)
 {
   if (str_equals(data_type, "int") ){
-    IBServer<int> ib_server(key, lport, dr_cb);
+    IBServer<int> ib_server(key, ver, lport, dr_cb);
     ib_server.init();
   }
   else if (str_equals(data_type, "char") ){
-    IBServer<char> ib_server(key, lport, dr_cb);
+    IBServer<char> ib_server(key, ver, lport, dr_cb);
     ib_server.init();
   }
   else if (str_equals(data_type, "double") ){
-    IBServer<double> ib_server(key, lport, dr_cb);
+    IBServer<double> ib_server(key, ver, lport, dr_cb);
     ib_server.init();
   }
   else if (str_equals(data_type, "float") ){
-    IBServer<float> ib_server(key, lport, dr_cb);
+    IBServer<float> ib_server(key, ver, lport, dr_cb);
     ib_server.init();
   }
 }
