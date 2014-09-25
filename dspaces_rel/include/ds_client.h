@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #include <string>
+#include <cstdarg> //for variable argument lists
 
 #include <glog/logging.h>
 #include <boost/shared_ptr.hpp>
@@ -34,70 +35,77 @@
 #define TEST_NZ(x) do { int r=x; if (r){ printf("error: " #x " failed (returned non-zero=%d).", r); } } while (0)
 #define TEST_Z(x)  do { if (!(x)) printf("error: " #x " failed (returned zero or null)."); } while (0)
 #endif
-//********************************   thread_safe_map  **********************************//
-template <typename Tk, typename Tv>
-struct thread_safe_map
+
+template <typename T>
+void free_all(int num, ...)
 {
-  private:
-    boost::mutex mutex;
-    typename std::map<Tk, Tv> map;
-    typename std::map<Tk, Tv>::iterator map_it;
-  public:
-    thread_safe_map() {};
-    ~thread_safe_map() {};
+  va_list arguments;                     // A place to store the list of arguments
+
+  va_start ( arguments, num );           // Initializing arguments to store all values after num
+  
+  for ( int x = 0; x < num; x++ )        // Loop until all numbers are added
+    va_arg ( arguments, T* );
+  
+  va_end ( arguments );                  // Cleans up the list
+}
+
+// //********************************   thread_safe_map  **********************************//
+// template <typename Tk, typename Tv>
+// struct thread_safe_map
+// {
+//   private:
+//     boost::mutex mutex;
+//     typename std::map<Tk, Tv> map;
+//     typename std::map<Tk, Tv>::iterator map_it;
+//   public:
+//     thread_safe_map() {};
+//     ~thread_safe_map() {};
     
-    Tv& operator[](Tk k) {
-      boost::lock_guard<boost::mutex> guard(this->mutex);
-      return map[k];
-    };
+//     Tv& operator[](Tk k) {
+//       boost::lock_guard<boost::mutex> guard(this->mutex);
+//       return map[k];
+//     };
     
-    int del(Tk k)
-    {
-      map_it = map.find(k);
-      map.erase(map_it);
-    };
+//     int del(Tk k)
+//     {
+//       map_it = map.find(k);
+//       map.erase(map_it);
+//     };
     
-    bool contains(Tk k)
-    {
-      return !(map.count(k) == 0);
-    };
+//     bool contains(Tk k)
+//     {
+//       return !(map.count(k) == 0);
+//     };
     
-    typename std::map<Tk, Tv>::iterator begin()
-    {
-      return map.begin();
-    };
+//     typename std::map<Tk, Tv>::iterator begin()
+//     {
+//       return map.begin();
+//     };
     
-    typename std::map<Tk, Tv>::iterator end()
-    {
-      return map.end();
-    };
-};
+//     typename std::map<Tk, Tv>::iterator end()
+//     {
+//       return map.end();
+//     };
+// };
 //************************************   syncer  **********************************//
 template <typename T>
 struct syncer{
   private:
-    boost::mutex mutex;
-  
-    typename std::map<T, boost::shared_ptr<boost::condition_variable> > point_cv_map;
-    typename std::map<T, boost::shared_ptr<boost::condition_variable> >::iterator point_cv_map_it;
-    typename std::map<T, boost::shared_ptr<boost::mutex> > point_m_map;
-    typename std::map<T, boost::shared_ptr<boost::mutex> >::iterator point_m_map_it;
-    typename std::map<T, int> point_numpeers_map;
-    typename std::map<T, int>::iterator point_numpeers_map_it;
+    thread_safe_map<T, boost::shared_ptr<boost::condition_variable> > point_cv_map;
+    thread_safe_map<T, boost::shared_ptr<boost::mutex> > point_m_map;
+    thread_safe_map<T, int> point_numpeers_map;
   public:
-    syncer()
+    syncer() 
     {
-      LOG(INFO) << "syncer:: constructed.";
+      // LOG(INFO) << "syncer:: constructed.";
     };
     ~syncer()
     {
-      LOG(INFO) << "syncer:: destructed.";
+      // LOG(INFO) << "syncer:: destructed.";
     };
     int add_sync_point(T point, int num_peers)
     {
-      boost::lock_guard<boost::mutex> guard(this->mutex);
-      
-      if (point_cv_map.count(point) ){
+      if (point_cv_map.contains(point) ) {
         LOG(ERROR) << "add_sync_point:: already added point.";
         return 1;
       }
@@ -112,20 +120,13 @@ struct syncer{
     };
     int del_sync_point(T point)
     {
-      boost::lock_guard<boost::mutex> guard(this->mutex);
-      
-      if (!point_cv_map.count(point) ){
+      if (!point_cv_map.contains(point) ) {
         LOG(ERROR) << "del_sync_point:: non-existing point.";
         return 1;
       }
-      point_cv_map_it = point_cv_map.find(point);
-      point_cv_map.erase(point_cv_map_it);
-      
-      point_m_map_it = point_m_map.find(point);
-      point_m_map.erase(point_m_map_it);
-      
-      point_numpeers_map_it = point_numpeers_map.find(point);
-      point_numpeers_map.erase(point_numpeers_map_it);
+      point_cv_map.del(point);
+      point_m_map.del(point);
+      point_numpeers_map.del(point);
       
       return 0;
     };
@@ -138,12 +139,15 @@ struct syncer{
     };
     int notify(T point)
     {
-      boost::lock_guard<boost::mutex> guard(this->mutex);
+      if (!point_cv_map.contains(point) ) {
+        LOG(ERROR) << "notify:: non-existing point.";
+        return 1;
+      }
       
       int num_peers_to_wait = point_numpeers_map[point];
       --num_peers_to_wait;
       
-      if (num_peers_to_wait == 0){
+      if (num_peers_to_wait == 0) {
         point_cv_map[point]->notify_one();
         return 0;
       }
@@ -160,9 +164,13 @@ class IMsgCoder
     ~IMsgCoder();
     std::map<std::string, std::string> decode(char* msg);
     std::string encode(std::map<std::string, std::string> msg_map);
-    int decode_i_msg(std::map<std::string, std::string> msg_map, 
-                     std::string& key, unsigned int& ver, std::string& data_type,
-                     int& size, int& ndim, uint64_t* &gdim_, uint64_t* &lb_, uint64_t* &ub_);
+    int decode_msg_map(std::map<std::string, std::string> msg_map, 
+                       std::string& key, unsigned int& ver, std::string& data_type,
+                       int& size, int& ndim, uint64_t* &gdim_, uint64_t* &lb_, uint64_t* &ub_);
+
+    int encode_msg_map(std::map<std::string, std::string> &msg_map, 
+                       std::string key, unsigned int ver, std::string data_type,
+                       int size, int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_);
 };
 
 //Server side of blocking communication channel over dataspaces
@@ -213,8 +221,8 @@ struct RQTable
     RQTable();
     ~RQTable();
     int get_key_ver(std::string key, unsigned int ver, 
-                     std::string& data_type, char& ds_id, int* size, int* ndim, 
-                     uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
+                    std::string &data_type, char &ds_id, int &size, int &ndim, 
+                    uint64_t* &gdim_, uint64_t* &lb_, uint64_t* &ub_);
     int put_from_map(std::map<std::string, std::string> map);
     int put_key_ver(std::string key, unsigned int ver, 
                     std::string data_type, char ds_id, int size, int ndim, 
@@ -234,6 +242,17 @@ struct RQTable
     thread_safe_map<key_ver_pair, char> key_ver__dsid_map;
     thread_safe_map<key_ver_pair, std::string> key_ver__data_type_map;
     thread_safe_map<key_ver_pair, std::map<std::string, std::vector<uint64_t> > > key_ver__datainfo_map;
+};
+
+struct RSTable //Remote Subscription Table
+{
+  public:
+    RSTable();
+    ~RSTable();
+    int push_subscriber(std::string key, unsigned int ver, char ds_id);
+    int pop_subscriber(std::string key, unsigned int ver, char& ds_id);
+  private:
+    thread_safe_map<key_ver_pair, std::vector<char> > key_ver__ds_id_vector_map;
 };
 
 class RFPManager //Remote Fetch / Place Manager
@@ -267,17 +286,26 @@ class RFPManager //Remote Fetch / Place Manager
 const size_t RI_MAX_MSG_SIZE = 1000;
 const size_t LI_MAX_MSG_SIZE = 1000;
 
-const std::string REMOTE_QUERY = "rq";
-const std::string REMOTE_QUERY_REPLY = "rq_reply";
-const std::string REMOTE_FETCH = "rf";
+const std::string GLOBAL_GET = "gg";
+const std::string GLOBAL_GET_REPLY = "gg_reply";
+const std::string BLOCKING_GLOBAL_GET = "bgg";
+const std::string BLOCKING_GLOBAL_GET_REPLY = "bgg_reply";
 const std::string REMOTE_GET = "rg";
 const std::string REMOTE_GET_REPLY = "rg_reply";
+const std::string BLOCKING_REMOTE_GET = "brg";
+const std::string BLOCKING_REMOTE_GET_REPLY = "brg_reply";
 const std::string REMOTE_PUT = "rp";
 const std::string REMOTE_PUT_REPLY = "rp_reply";
 const std::string LOCAL_GET = "lg";
 const std::string LOCAL_GET_REPLY = "lg_reply";
 const std::string LOCAL_PUT = "lp";
 const std::string LOCAL_PUT_REPLY = "lp_reply";
+
+const std::string REMOTE_QUERY = "rq";
+const std::string REMOTE_QUERY_REPLY = "rq_reply";
+const std::string REMOTE_BLOCKING_QUERY = "rbq";
+const std::string REMOTE_BLOCKING_QUERY_REPLY = "rbq_reply";
+const std::string REMOTE_FETCH = "rf";
 
 const std::string REMOTE_RQTABLE = "rrqt";
 const std::string REMOTE_PLACE = "rp";
@@ -295,13 +323,15 @@ class RIManager
     std::string to_str();
     
     void handle_ri_req(char* ri_req);
-    void handle_r_get(int app_id, std::map<std::string, std::string> r_get_map);
+    void handle_g_get(bool blocking, int app_id, std::map<std::string, std::string> g_get_map);
+    void handle_r_get(bool blocking, int app_id, std::map<std::string, std::string> r_get_map);
     
     void handle_li_req(char* li_req);
     void handle_l_put(std::map<std::string, std::string> l_put_map);
+    void handle_possible_remote_places(std::string key, unsigned int ver);
     
     void handle_wamsg(std::map<std::string, std::string> wamsg_map);
-    void handle_r_query(std::map<std::string, std::string> r_query_map);
+    void handle_r_query(bool subscribe, std::map<std::string, std::string> r_query_map);
     void handle_rq_reply(std::map<std::string, std::string> rq_reply_map);
     void handle_r_fetch(std::map<std::string, std::string> r_fetch_map);
     void handle_r_rqtable(std::map<std::string, std::string> r_rqtable_map);
@@ -310,15 +340,15 @@ class RIManager
     void handle_r_subscribe(std::map<std::string, std::string> r_subs_map);
     
     int remote_subscribe(std::string key, unsigned int ver);
+    int remote_place(std::string key, unsigned int ver, char to_id);
     int remote_fetch(char ds_id, std::map<std::string, std::string> r_fetch_map);
-    void handle_receive_put(std::map<std::string, std::string> str_str_map);
+    void handle_receive_put(std::string called_from, std::map<std::string, std::string> str_str_map);
     int bcast_rq_table();
-    int remote_query(std::string key, unsigned int ver);
+    int remote_query(bool subscribe, std::string key, unsigned int ver);
     int broadcast_msg(char msg_type, std::map<std::string, std::string> msg_map);
     int send_msg(char ds_id, char msg_type, std::map<std::string, std::string> msg_map);
-    int remote_place(std::string key, unsigned int ver);
   private:
-    //ImpRem: Since handle_ core functions are called by client threads properties must be thread-safe
+    //ImpRem: Since handle_ core functions are called by client threads, properties must be thread-safe
     char id;
     int num_cnodes, app_id;
     char* ib_laddr;
@@ -337,7 +367,10 @@ class RIManager
     thread_safe_map<key_ver_pair, laddr_lport_pair> key_ver__laddr_lport_map;
     syncer<key_ver_pair> rp_syncer;
     
-    thread_safe_map<key_ver_pair, char> key_ver__subsed_ds_id_map;
+    RSTable rs_table;
+    syncer<key_ver_pair> handle_rp_syncer;
+    
+    syncer<key_ver_pair> b_r_get_syncer;
     
     syncer<key_ver_pair> rf_receive_put_syncer;
     syncer<key_ver_pair> rp_receive_put_syncer;

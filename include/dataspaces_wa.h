@@ -33,8 +33,12 @@ class WADspacesDriver
                   int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
     int local_get(std::string key, unsigned int ver, int size,
                   int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
-    int remote_get(std::string data_type, std::string key, unsigned int ver, int size,
-                   int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
+    int global_get(bool blocking, std::string data_type, std::string key, unsigned int ver, 
+                   int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
+    int remote_get(bool blocking, std::string data_type, std::string key, unsigned int ver, 
+                   int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
+    int remote_put(std::string data_type, std::string key, unsigned int ver, 
+                   int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
     int handle_ri_reply(char* ri_reply);
   private:
     int app_id, num_local_peers;

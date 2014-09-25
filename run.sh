@@ -13,6 +13,8 @@ elif [ $1  = 'lp1' ]; then
   GLOG_logtostderr=1 ./exp --type="l_put" --num_dscnodes=$NUM_DSCNODES --app_id=1
 elif [ $1  = 'rp1' ]; then
   GLOG_logtostderr=1 ./exp --type="r_put" --num_dscnodes=$NUM_DSCNODES --app_id=1
+elif [ $1  = 'gg1' ]; then
+  GLOG_logtostderr=1 ./exp --type="g_get" --num_dscnodes=$NUM_DSCNODES --app_id=1
 elif [ $1  = 'rg1' ]; then
   GLOG_logtostderr=1 ./exp --type="r_get" --num_dscnodes=$NUM_DSCNODES --app_id=1
   #--type=get --num_DScnodes=2 --app_id=3

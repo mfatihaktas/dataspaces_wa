@@ -6,13 +6,30 @@
 DHTServer::DHTServer(char* host_name, char* host, int port, 
                      function_recv_callback recv_callback)
 : io_service_(new boost::asio::io_service),
-	acceptor_(new boost::asio::ip::tcp::acceptor( *io_service_ )),
-	socket_(new boost::asio::ip::tcp::socket( *io_service_ )),
+// 	acceptor_(new boost::asio::ip::tcp::acceptor( *io_service_ ) ),
+// 	socket_(new boost::asio::ip::tcp::socket( *io_service_ ) ),
 // : io_service_(boost::make_shared<boost::asio::io_service>() ),
 //   acceptor_(boost::make_shared<boost::asio::ip::tcp::acceptor>(*io_service_) ),
 //   socket_(boost::make_shared<boost::asio::ip::tcp::socket>(*io_service_)),
 	stop_flag(0)
 {
+  //to make sure socket is created after io_service
+  // acceptor_ = boost::make_shared<boost::asio::ip::tcp::acceptor>(*io_service_);
+  // socket_ = boost::make_shared<boost::asio::ip::tcp::socket>(*io_service_);
+  
+  // acceptor_ = new boost::asio::ip::tcp::acceptor( *io_service_ );
+  // socket_ = new boost::asio::ip::tcp::socket( *io_service_ );
+  
+  boost::shared_ptr< boost::asio::ip::tcp::acceptor > t_acceptor_ (
+    new boost::asio::ip::tcp::acceptor( *io_service_ )
+  );
+  acceptor_ = t_acceptor_;
+  
+  boost::shared_ptr< boost::asio::ip::tcp::socket > t_socket_ (
+    new boost::asio::ip::tcp::socket( *io_service_ )
+  );
+  socket_ = t_socket_;
+  // 
   this->host_name = host_name;
   this->host = host;
   this->port = port;
@@ -29,7 +46,7 @@ DHTServer::DHTServer(char* host_name, char* host, int port,
 
 DHTServer::~DHTServer()
 {
-  if (!stop_flag){
+  if (!stop_flag) {
     close();
   }
   //
@@ -47,7 +64,7 @@ void DHTServer::set_recv_callback(function_recv_callback recv_callback)
 }
 
 int DHTServer::close(){
-  if (!is_alive()){
+  if (!is_alive() ) {
     LOG(ERROR) << "close:: server:" << host_name << " is already closed!";
     return 2;
   }
@@ -56,8 +73,8 @@ int DHTServer::close(){
     stop_flag = 1;
     //
     boost::system::error_code ec;
-    //socket_->shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
-    socket_->shutdown(boost::asio::ip::tcp::socket::shutdown_receive, ec);
+    socket_->shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
+    // socket_->shutdown(boost::asio::ip::tcp::socket::shutdown_receive, ec);
     socket_->close(ec);
     if (ec){
       LOG(ERROR) << "close:: ec=" << ec;

@@ -5,9 +5,14 @@ using boost::asio::ip::tcp;
 
 DHTClient::DHTClient(char* client_name, char* host_ip, int port)
 : io_service_(new boost::asio::io_service),
-	socket_(new boost::asio::ip::tcp::socket( *io_service_ )),
+// 	socket_(new boost::asio::ip::tcp::socket( *io_service_ ) ),
 	stop_flag(0)
 {
+  boost::shared_ptr< boost::asio::ip::tcp::socket > t_socket_ (
+    new boost::asio::ip::tcp::socket( *io_service_ )
+  );
+  socket_ = t_socket_;
+  //
   this->client_name = client_name;
   this->host_ip = host_ip;
   this->port = port;

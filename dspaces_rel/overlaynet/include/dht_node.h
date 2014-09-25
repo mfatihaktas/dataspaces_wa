@@ -20,8 +20,46 @@
 #include "dht_client.h"
 #include "packet.h"
 
-//forward declerations
+//********************************   thread_safe_map  **********************************//
+template <typename Tk, typename Tv>
+struct thread_safe_map
+{
+  private:
+    boost::mutex mutex;
+    typename std::map<Tk, Tv> map;
+    typename std::map<Tk, Tv>::iterator map_it;
+  public:
+    thread_safe_map() {};
+    ~thread_safe_map() {};
+    
+    Tv& operator[](Tk k) {
+      boost::lock_guard<boost::mutex> guard(this->mutex);
+      return map[k];
+    };
+    
+    int del(Tk k)
+    {
+      map_it = map.find(k);
+      map.erase(map_it);
+    };
+    
+    bool contains(Tk k)
+    {
+      return !(map.count(k) == 0);
+    };
+    
+    typename std::map<Tk, Tv>::iterator begin()
+    {
+      return map.begin();
+    };
+    
+    typename std::map<Tk, Tv>::iterator end()
+    {
+      return map.end();
+    };
+};
 
+//********************************  comm_channel  **********************************//
 struct comm_channel {
   char *lip, *peer_lip, *channel_name;
   int lport, peer_lport;
@@ -49,12 +87,10 @@ struct comm_channel {
     client_.reset();
     server_.reset();
     
-    // boost::shared_ptr< DHTServer > temp_server_( new DHTServer(channel_name, lip, lport) );
     boost::shared_ptr<DHTServer> temp_server_ = boost::make_shared<DHTServer>(channel_name, lip, lport);
     server_ = temp_server_;
     
     //to make sure if first node gets closed by ctrl+c shared_ptr client_ will exist to get closed
-    // boost::shared_ptr< DHTClient > temp_client_( new DHTClient(channel_name, NULL, 0) );
     boost::shared_ptr<DHTClient> temp_client_ = boost::make_shared<DHTClient>(channel_name, (char*)"", 0);
     client_ = temp_client_;
     
@@ -66,9 +102,8 @@ struct comm_channel {
     this->peer_lip = peer_lip;
     this->peer_lport = peer_lport;
     client_.reset();
-    // boost::shared_ptr< DHTClient > temp_client_( new DHTClient(channel_name, peer_lip, peer_lport) );
-    boost::shared_ptr<DHTClient> temp_client_ = boost::make_shared<DHTClient>(channel_name, peer_lip, peer_lport);
-    client_ = temp_client_;
+    
+    client_ = boost::make_shared<DHTClient>(channel_name, peer_lip, peer_lport);
   }
   
   void conn_to_peer()
@@ -102,6 +137,7 @@ struct comm_channel {
   }
 };
 
+//********************************  peer_info  **********************************//
 struct peer_info{
   char id;
   char *lip, *peer_name, *peer_lip, *peer_join_lip;
@@ -130,17 +166,18 @@ struct peer_info{
     return ss.str();
   }
 };
-
+//********************************  peer_table  **********************************//
 struct peer_table{
   boost::mutex mutex;
   std::vector<char> peer_id_vector;
-  std::map<char, boost::shared_ptr<peer_info> > id_pinfo_map;
-  std::map<char, boost::shared_ptr<comm_channel> > id_commchannel_map;
+  thread_safe_map<char, boost::shared_ptr<peer_info> > id_pinfo_map;
+  thread_safe_map<char, boost::shared_ptr<comm_channel> > id_commchannel_map;
   //
   bool is_peer(char id)
   {
-    if (std::find(peer_id_vector.begin(), peer_id_vector.end(), id) != peer_id_vector.end() )
+    if (std::find(peer_id_vector.begin(), peer_id_vector.end(), id) != peer_id_vector.end() ) {
       return true;
+    }
     
     return false;
   }
@@ -150,15 +187,10 @@ struct peer_table{
                char* peer_lip = NULL, int peer_lport = 0,
                char* peer_join_lip = NULL, int peer_join_lport = 0)
   {
-    boost::lock_guard<boost::mutex> guard(this->mutex);
-    
-    if (id_pinfo_map.count(peer_id) ){
+    if (id_pinfo_map.contains(peer_id) ) {
       LOG(ERROR) << "add_peer:: already added peer_id=" << peer_id;
       return 1;
     }
-    // boost::shared_ptr<peer_info> temp_( 
-    //   new peer_info(peer_id, peer_name, lip, lport, peer_lip, peer_lport, peer_join_lip, peer_join_lport)
-    // );
     boost::shared_ptr<peer_info> temp_ = boost::make_shared<peer_info>(peer_id, peer_name, lip, lport, peer_lip, peer_lport, peer_join_lip, peer_join_lport);
     id_pinfo_map[peer_id] = temp_;
     //
@@ -169,24 +201,16 @@ struct peer_table{
   
   int del_peer(char peer_id)
   {
-    boost::lock_guard<boost::mutex> guard(this->mutex);
-    
-    if (!id_pinfo_map.count(peer_id) ){
+    if (!id_pinfo_map.contains(peer_id) ) {
       LOG(ERROR) << "del_peer:: non-existing peer_id=" << peer_id;
       return 1;
     }
     
-    std::map<char, boost::shared_ptr<peer_info> >::iterator it;
-    it=id_pinfo_map.find(peer_id);
-    id_pinfo_map.erase (it);
-    
-    std::map<char, boost::shared_ptr<comm_channel> >::iterator it2;
-    it2=id_commchannel_map.find(peer_id);
-    id_commchannel_map.erase (it2);
-    
+    id_pinfo_map.del(peer_id);
+    id_commchannel_map.del(peer_id);
     //
     LOG(INFO) << "del_peer:: deleted peer_id=" << peer_id;
-    peer_id_vector.erase(std::remove(peer_id_vector.begin(), peer_id_vector.end(), peer_id), peer_id_vector.end());
+    peer_id_vector.erase(std::remove(peer_id_vector.begin(), peer_id_vector.end(), peer_id), peer_id_vector.end() );
     return 0;
   }
   
@@ -194,7 +218,6 @@ struct peer_table{
   {
     boost::shared_ptr<peer_info> pinfo_ = id_pinfo_map[peer_id];
     
-    // boost::shared_ptr<comm_channel> cc_(new comm_channel(pinfo_->peer_name, pinfo_->lip, pinfo_->lport, pinfo_->peer_lip, pinfo_->peer_lport) );
     boost::shared_ptr<comm_channel> cc_ = boost::make_shared<comm_channel>(pinfo_->peer_name, pinfo_->lip, pinfo_->lport, pinfo_->peer_lip, pinfo_->peer_lport);
     id_commchannel_map[peer_id] = cc_;
     //
@@ -230,10 +253,11 @@ struct peer_table{
     return 0;
   }
   
-  std::string to_str() const
+  std::string to_str()
   {
     std::stringstream ss;
-    for (std::map<char, boost::shared_ptr<peer_info> >::const_iterator it=id_pinfo_map.begin(); it!=id_pinfo_map.end(); ++it){
+    for (std::map<char, boost::shared_ptr<peer_info> >::iterator it = id_pinfo_map.begin(); 
+         it != id_pinfo_map.end(); it++) {
       ss << "\t peer_id=" << it->first << "\n";
       ss << "\t peer_info=\n" << (it->second)->to_str() << "\n";
       ss << "\n";
@@ -245,9 +269,8 @@ struct peer_table{
   {
     LOG(INFO) << "close_all_peers:: started...";
     
-    for (std::map<char, boost::shared_ptr<comm_channel> >::const_iterator it=id_commchannel_map.begin(); 
-         it!=id_commchannel_map.end(); ++it)
-    {
+    for (std::map<char, boost::shared_ptr<comm_channel> >::iterator it = id_commchannel_map.begin(); 
+         it != id_commchannel_map.end(); it++) {
       (it->second)->close();
     }
     //
@@ -255,6 +278,7 @@ struct peer_table{
   }
 };
 
+//********************************  prospective_peer_info  **********************************//
 struct prospective_peer_info
 {
   char* join_lip;
@@ -276,6 +300,7 @@ struct prospective_peer_info
   }
 };
 
+//********************************  prospective_peer_table  **********************************//
 struct prospective_peer_table
 {
   boost::mutex mutex;
@@ -311,6 +336,7 @@ struct prospective_peer_table
   }
 };
 
+//********************************  DHTNode  **********************************//
 typedef boost::function<void(std::map<std::string, std::string>)> func_rimsg_recv_cb;
 
 class DHTNode{

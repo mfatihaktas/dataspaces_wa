@@ -93,12 +93,65 @@ int WADspacesDriver::local_get(std::string key, unsigned int ver, int size,
   return ds_driver_->get(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_);
 }
 
-int WADspacesDriver::remote_get(std::string data_type, std::string key, unsigned int ver, int size,
-                                int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
+//TODO: For now same with remote_get
+int WADspacesDriver::global_get(bool blocking, std::string data_type, std::string key, unsigned int ver, 
+                                int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
 {
-  std::map<std::string, std::string> msg_map = rmessenger.gen_i_msg(REMOTE_GET, app_id, data_type, 
+  std::string msg_type;
+  if (blocking) {
+    msg_type = BLOCKING_GLOBAL_GET;
+  }
+  else {
+    msg_type = GLOBAL_GET;
+  }
+  std::map<std::string, std::string> msg_map = rmessenger.gen_i_msg(msg_type, app_id, data_type, 
                                                                     key, ver, size, ndim, gdim_, lb_, ub_);
-  if (ri_bc_client_->send(msg_map)){
+  
+  if (ri_bc_client_->send(msg_map) ) {
+    LOG(ERROR) << "global_get:: ri_bc_client_->send failed!";
+    return 1;
+  }
+  //
+  boost::shared_ptr<BCServer> bc_server_( 
+    new BCServer(app_id, 0, RI_MAX_MSG_SIZE, "ri_reply_", 
+                 boost::bind(&WADspacesDriver::handle_ri_reply, this, _1),
+                 ds_driver_)
+  );
+  bc_server_->init_listen_client(app_id);
+  
+  key_ver_pair kv = std::make_pair(key, ver);
+  rg_syncer.add_sync_point(kv, 1);
+  rg_syncer.wait(kv);
+  rg_syncer.del_sync_point(kv);
+  
+  if (key_ver__dsid_map[kv] == '?'){
+    LOG(INFO) << "global_get:: <key= " << key << ", ver= " << ver << "> does not exist";
+    return 1;
+  }
+  
+  if (ds_driver_->get(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_) ){
+    LOG(ERROR) << "global_get:: ds_driver_->get failed!";
+    return 1;
+  }
+  //
+  LOG(INFO) << "global_get:: done.";
+  return 0;
+}
+
+int WADspacesDriver::remote_get(bool blocking, std::string data_type, std::string key, unsigned int ver, 
+                                int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
+{
+  std::string msg_type;
+  if (blocking) {
+    msg_type = BLOCKING_REMOTE_GET;
+  }
+  else {
+    msg_type = REMOTE_GET;
+  }
+  std::map<std::string, std::string> msg_map = rmessenger.gen_i_msg(msg_type, app_id, data_type, 
+                                                                    key, ver, size, ndim, gdim_, lb_, ub_);
+  
+  if (ri_bc_client_->send(msg_map) ) {
     LOG(ERROR) << "remote_get:: ri_bc_client_->send failed!";
     return 1;
   }
