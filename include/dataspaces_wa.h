@@ -29,27 +29,20 @@ class WADspacesDriver
     ~WADspacesDriver();
     void print_str_map(std::map<std::string, std::string> str_map);
     
-    int local_put(std::string data_type, std::string key, unsigned int ver, int size,
-                  int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
-    int local_get(std::string key, unsigned int ver, int size,
-                  int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
-    int global_get(bool blocking, std::string data_type, std::string key, unsigned int ver, 
-                   int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
-    int remote_get(bool blocking, std::string data_type, std::string key, unsigned int ver, 
-                   int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
-    int remote_put(std::string data_type, std::string key, unsigned int ver, 
-                   int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
+    int put(std::string data_type, std::string key, unsigned int ver, int size,
+            int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
+    int get(bool blocking, std::string data_type, std::string key, unsigned int ver, int size,
+            int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
     int handle_ri_reply(char* ri_reply);
   private:
     int app_id, num_local_peers;
     boost::shared_ptr<DSpacesDriver> ds_driver_;
-    boost::shared_ptr<BCClient> li_bc_client_;
-    boost::shared_ptr<BCClient> ri_bc_client_;
+    boost::shared_ptr<BCClient> bc_client_;
     RMessenger rmessenger;
     IMsgCoder imsg_coder;
     syncer<key_ver_pair> rg_syncer; //remote_get_syncer
     
-    std::map<key_ver_pair, char> key_ver__dsid_map; //for getting rq_reply
+    thread_safe_map<key_ver_pair, char> key_ver__dsid_map; //for getting rq_reply
 };
 
 #endif //end of _DSWA_H_

@@ -52,10 +52,8 @@ WADspacesDriver::WADspacesDriver(int app_id, int num_local_peers)
 : app_id(app_id),
   num_local_peers(num_local_peers),
   ds_driver_ ( new DSpacesDriver(num_local_peers, app_id) ),
-  li_bc_client_( new BCClient(app_id, num_local_peers, RI_MSG_SIZE, "li_req_", ds_driver_) ),
-  ri_bc_client_( new BCClient(app_id, num_local_peers, RI_MSG_SIZE, "ri_req_", ds_driver_) )
+  bc_client_( new BCClient(app_id, num_local_peers, RI_MSG_SIZE, "req_app_", ds_driver_) )
 {
-  //usleep(WAIT_TIME_FOR_BCSERVER_DSLOCK);
   //
   LOG(INFO) << "WADspacesDriver:: constructed.";
 }
@@ -74,46 +72,40 @@ void WADspacesDriver::print_str_map(std::map<std::string, std::string> str_map)
   }
 }
 
-int WADspacesDriver::local_put(std::string data_type, std::string key, unsigned int ver, int size,
-                               int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
+int WADspacesDriver::put(std::string data_type, std::string key, unsigned int ver, int size,
+                         int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
 {
-  std::map<std::string, std::string> msg_map = rmessenger.gen_i_msg(LOCAL_PUT, app_id, data_type,
+  std::map<std::string, std::string> msg_map = rmessenger.gen_i_msg(PUT, app_id, data_type,
                                                                     key, ver, size, ndim, gdim_, lb_, ub_);
-  if (li_bc_client_->send(msg_map) ){
-    LOG(ERROR) << "local_put:: li_bc_client_->send failed!";
+  if (bc_client_->send(msg_map) ){
+    LOG(ERROR) << "put:: bc_client_->send failed!";
     return 1;
   }
   
   return ds_driver_->sync_put(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_);
 }
 
-int WADspacesDriver::local_get(std::string key, unsigned int ver, int size,
-                               int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
+int WADspacesDriver::get(bool blocking, std::string data_type, std::string key, unsigned int ver, 
+                         int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
 {
-  return ds_driver_->get(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_);
-}
-
-//TODO: For now same with remote_get
-int WADspacesDriver::global_get(bool blocking, std::string data_type, std::string key, unsigned int ver, 
-                                int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
-{
+  LOG(INFO) << "get:: started for <key= " << key << ", ver= " << ver << ">.";
   std::string msg_type;
   if (blocking) {
-    msg_type = BLOCKING_GLOBAL_GET;
+    msg_type = BLOCKING_GET;
   }
   else {
-    msg_type = GLOBAL_GET;
+    msg_type = GET;
   }
   std::map<std::string, std::string> msg_map = rmessenger.gen_i_msg(msg_type, app_id, data_type, 
                                                                     key, ver, size, ndim, gdim_, lb_, ub_);
   
-  if (ri_bc_client_->send(msg_map) ) {
-    LOG(ERROR) << "global_get:: ri_bc_client_->send failed!";
+  if (bc_client_->send(msg_map) ) {
+    LOG(ERROR) << "get:: bc_client_->send failed!";
     return 1;
   }
   //
   boost::shared_ptr<BCServer> bc_server_( 
-    new BCServer(app_id, 0, RI_MAX_MSG_SIZE, "ri_reply_", 
+    new BCServer(app_id, 0, RI_MAX_MSG_SIZE, "reply_app_", 
                  boost::bind(&WADspacesDriver::handle_ri_reply, this, _1),
                  ds_driver_)
   );
@@ -125,60 +117,18 @@ int WADspacesDriver::global_get(bool blocking, std::string data_type, std::strin
   rg_syncer.del_sync_point(kv);
   
   if (key_ver__dsid_map[kv] == '?'){
-    LOG(INFO) << "global_get:: <key= " << key << ", ver= " << ver << "> does not exist";
+    LOG(INFO) << "get:: <key= " << key << ", ver= " << ver << "> does not exist";
+    key_ver__dsid_map.del(kv);
     return 1;
   }
   
   if (ds_driver_->get(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_) ){
-    LOG(ERROR) << "global_get:: ds_driver_->get failed!";
+    LOG(ERROR) << "get:: ds_driver_->get failed!";
     return 1;
   }
+  key_ver__dsid_map.del(kv);
   //
-  LOG(INFO) << "global_get:: done.";
-  return 0;
-}
-
-int WADspacesDriver::remote_get(bool blocking, std::string data_type, std::string key, unsigned int ver, 
-                                int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
-{
-  std::string msg_type;
-  if (blocking) {
-    msg_type = BLOCKING_REMOTE_GET;
-  }
-  else {
-    msg_type = REMOTE_GET;
-  }
-  std::map<std::string, std::string> msg_map = rmessenger.gen_i_msg(msg_type, app_id, data_type, 
-                                                                    key, ver, size, ndim, gdim_, lb_, ub_);
-  
-  if (ri_bc_client_->send(msg_map) ) {
-    LOG(ERROR) << "remote_get:: ri_bc_client_->send failed!";
-    return 1;
-  }
-  //
-  boost::shared_ptr<BCServer> bc_server_( 
-    new BCServer(app_id, 0, RI_MAX_MSG_SIZE, "ri_reply_", 
-                 boost::bind(&WADspacesDriver::handle_ri_reply, this, _1),
-                 ds_driver_)
-  );
-  bc_server_->init_listen_client(app_id);
-  
-  key_ver_pair kv = std::make_pair(key, ver);
-  rg_syncer.add_sync_point(kv, 1);
-  rg_syncer.wait(kv);
-  rg_syncer.del_sync_point(kv);
-  
-  if (key_ver__dsid_map[kv] == '?'){
-    LOG(INFO) << "remote_get:: <key= " << key << ", ver= " << ver << "> does not exist";
-    return 1;
-  }
-  
-  if (ds_driver_->get(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_) ){
-    LOG(ERROR) << "remote_get:: ds_driver_->get failed!";
-    return 1;
-  }
-  //
-  LOG(INFO) << "remote_get:: done.";
+  LOG(INFO) << "get:: done for <key= " << key << ", ver= " << ver << ">.";
   return 0;
 }
 

@@ -189,7 +189,37 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
 #define TEST_VER 1
 #define TEST_SGDIM 1024*1024*257
 
-void l_put_test(std::string var_name, WADspacesDriver& wads_driver)
+void get_test(WADspacesDriver& wads_driver)
+{
+  std::string var_name = "dummy";
+  uint64_t* gdim = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t));
+  for (int i=0; i<TEST_NDIM; i++){
+    gdim[i] = TEST_SGDIM;
+  }
+  //specifics
+  int *data = (int*)malloc(TEST_DATASIZE*sizeof(int));
+  uint64_t *lb = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t));
+  uint64_t *ub = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t));
+  for (int i=0; i<TEST_NDIM; i++){
+    lb[i] = 0;
+    ub[i] = TEST_SIZE-1;
+  }
+  
+  // exp_debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, NULL);
+  if (wads_driver.get(true, "int", var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim, lb, ub, data) ) {
+  // if (wads_driver.remote_get(true, "int", var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim, lb, ub, data) ){
+    LOG(ERROR) << "get_test:: wads_driver.get failed!";
+  }
+  // size_t data_length = get_data_length(TEST_NDIM, gdim, lb, ub);
+  // exp_debug_print(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim, lb, ub, data, data_length);
+  //
+  free(gdim);
+  free(lb);
+  free(ub);
+  free(data);
+}
+
+void put_test(std::string var_name, WADspacesDriver& wads_driver)
 {
   uint64_t* gdim = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t));
   for (int i=0; i<TEST_NDIM; i++){
@@ -210,102 +240,11 @@ void l_put_test(std::string var_name, WADspacesDriver& wads_driver)
   
   size_t data_length = get_data_length(TEST_NDIM, gdim, lb, ub);
   
-  if (wads_driver.local_put("int", var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim, lb, ub, data) ){
-    LOG(ERROR) << "l_put_test:: wads_driver.local_put failed!";
+  if (wads_driver.put("int", var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim, lb, ub, data) ) {
+    LOG(ERROR) << "put_test:: wads_driver.local_put failed!";
     return;
   }
   //exp_debug_print(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim, lb, ub, data, data_length);
-  
-  free(gdim);
-  free(lb);
-  free(ub);
-  free(data);
-}
-
-void g_get_test(WADspacesDriver& wads_driver)
-{
-  std::string var_name = "dummy";
-  uint64_t* gdim = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t));
-  for (int i=0; i<TEST_NDIM; i++){
-    gdim[i] = TEST_SGDIM;
-  }
-  //specifics
-  int *data = (int*)malloc(TEST_DATASIZE*sizeof(int));
-  uint64_t *lb = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t));
-  uint64_t *ub = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t));
-  for (int i=0; i<TEST_NDIM; i++){
-    lb[i] = 0;
-    ub[i] = TEST_SIZE-1;
-  }
-  
-  // exp_debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, NULL);
-  if (wads_driver.global_get(true, "int", var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim, lb, ub, data) ) {
-  // if (wads_driver.remote_get(true, "int", var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim, lb, ub, data) ){
-    LOG(ERROR) << "g_get_test:: wads_driver.remote_get failed!";
-  }
-  // size_t data_length = get_data_length(TEST_NDIM, gdim, lb, ub);
-  // exp_debug_print(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim, lb, ub, data, data_length);
-  //
-  free(gdim);
-  free(lb);
-  free(ub);
-  free(data);
-}
-
-void r_get_test(WADspacesDriver& wads_driver)
-{
-  std::string var_name = "dummy";
-  uint64_t* gdim = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t));
-  for (int i=0; i<TEST_NDIM; i++){
-    gdim[i] = TEST_SGDIM;
-  }
-  //specifics
-  int *data = (int*)malloc(TEST_DATASIZE*sizeof(int));
-  uint64_t *lb = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t));
-  uint64_t *ub = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t));
-  for (int i=0; i<TEST_NDIM; i++){
-    lb[i] = 0;
-    ub[i] = TEST_SIZE-1;
-  }
-  
-  // exp_debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, NULL);
-  if (wads_driver.remote_get(true, "int", var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim, lb, ub, data) ){
-  // if (wads_driver.remote_get(true, "int", var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim, lb, ub, data) ){
-    LOG(ERROR) << "r_get_test:: wads_driver.remote_get failed!";
-  }
-  // size_t data_length = get_data_length(TEST_NDIM, gdim, lb, ub);
-  // exp_debug_print(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim, lb, ub, data, data_length);
-  //
-  free(gdim);
-  free(lb);
-  free(ub);
-  free(data);
-}
-
-void l_get_test(std::string var_name, WADspacesDriver& wads_driver)
-{
-  uint64_t* gdim = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t));
-  for (int i=0; i<TEST_NDIM; i++){
-    gdim[i] = TEST_SGDIM;
-  }
-  //specifics
-  //int *data = (int*)malloc(TEST_DATASIZE*sizeof(int));
-  void* data = malloc(TEST_DATASIZE*sizeof(int));
-  
-  uint64_t *lb = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t));
-  uint64_t *ub = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t));
-  for (int i=0; i<TEST_NDIM; i++){
-    lb[i] = 0;
-    ub[i] = TEST_SIZE-1;
-  }
-  
-  // size_t data_length = get_data_length(TEST_NDIM, gdim, lb, ub);
-  // LOG(INFO) << "l_get_test:: data_length= " << data_length;
-  
-  //exp_debug_print(var_name, TEST_VER, TEST_DATASIZE, TEST_NDIM, gdim, lb, ub, NULL);
-  int result = wads_driver.local_get(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim, lb, ub, data);
-  LOG(INFO) << "l_get_test:: after local_get;";
-  // exp_debug_print(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim, lb, ub, static_cast<int*>(data), TEST_DATASIZE);
   
   free(gdim);
   free(lb);
@@ -328,54 +267,42 @@ int main(int argc , char **argv)
   char lip[100];
   char ib_lip[100];
   
-  if (strcmp(opt_map[(char*)"type"], (char*)"l_put") == 0){
+  if (strcmp(opt_map[(char*)"type"], (char*)"put") == 0) {
     WADspacesDriver wads_driver(app_id, num_dscnodes-1);
     
-    std::cout << "Enter for l_put_test\n";
+    std::cout << "Enter for put_test\n";
     getline(std::cin, temp);
     
-    l_put_test("dummy", wads_driver);
-    //l_put_test("dummy2", wads_driver);
+    put_test("dummy", wads_driver);
+    //put_test("dummy2", wads_driver);
     
     std::cout << "Enter\n";
     getline(std::cin, temp);
   }
-  else if (strcmp(opt_map[(char*)"type"], (char*)"l_get") == 0){
-    WADspacesDriver wads_driver(app_id, num_dscnodes-1);
-    // usleep(5*1000*1000);
-    l_get_test("dummy", wads_driver);
-    //
-    std::cout << "Enter\n";
-    getline(std::cin, temp);
-  }
-  else if (strcmp(opt_map[(char*)"type"], (char*)"r_put") == 0){
-    //
-  }
-  else if (strcmp(opt_map[(char*)"type"], (char*)"g_get") == 0){
+  else if (strcmp(opt_map[(char*)"type"], (char*)"put_2") == 0) {
     WADspacesDriver wads_driver(app_id, num_dscnodes-1);
     
-    std::cout << "Enter for g_get_test\n";
+    std::cout << "Enter for put_test\n";
     getline(std::cin, temp);
     
-    g_get_test(wads_driver);
+    put_test("dummy_2", wads_driver);
+    //put_test("dummy2", wads_driver);
     
     std::cout << "Enter\n";
     getline(std::cin, temp);
   }
-  else if (strcmp(opt_map[(char*)"type"], (char*)"r_get") == 0){
+  else if (strcmp(opt_map[(char*)"type"], (char*)"get") == 0) {
     WADspacesDriver wads_driver(app_id, num_dscnodes-1);
     
-    std::cout << "Enter for r_get_test\n";
+    std::cout << "Enter for get_test\n";
     getline(std::cin, temp);
     
-    r_get_test(wads_driver);
-    //std::cout << "main:: calling r_get_test again!\n";
-    //r_get_test(wads_driver);
+    get_test(wads_driver);
     
     std::cout << "Enter\n";
     getline(std::cin, temp);
   }
-  else if (strcmp(opt_map[(char*)"type"], (char*)"ri_t") == 0){
+  else if (strcmp(opt_map[(char*)"type"], (char*)"ri_t") == 0) {
     char* lip_t = intf_to_ip(opt_map[(char*)"lintf"]);
     strcpy(lip, lip_t);
     std::cout << "main:: lip= " << lip << "\n";
@@ -416,7 +343,7 @@ int main(int argc , char **argv)
     RIManager ri_manager(opt_map[(char*)"dht_id"][0], num_dscnodes-1, app_id, 
                          lip, atoi(opt_map[(char*)"lport"]),
                          opt_map[(char*)"ipeer_lip"], atoi(opt_map[(char*)"ipeer_lport"]),
-                         opt_map[(char*)"ib_lintf"], wa_ib_lport_list);
+                         ib_lip, wa_ib_lport_list);
     std::cout << "Enter\n";
     getline(std::cin, temp);
   }

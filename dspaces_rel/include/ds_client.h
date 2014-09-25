@@ -15,6 +15,7 @@
 #include <boost/thread.hpp>
 #include <boost/function.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/make_shared.hpp>
 //for boost serialization
 #include <fstream>
 #include <sstream>
@@ -286,27 +287,20 @@ class RFPManager //Remote Fetch / Place Manager
 const size_t RI_MAX_MSG_SIZE = 1000;
 const size_t LI_MAX_MSG_SIZE = 1000;
 
-const std::string GLOBAL_GET = "gg";
-const std::string GLOBAL_GET_REPLY = "gg_reply";
-const std::string BLOCKING_GLOBAL_GET = "bgg";
-const std::string BLOCKING_GLOBAL_GET_REPLY = "bgg_reply";
-const std::string REMOTE_GET = "rg";
-const std::string REMOTE_GET_REPLY = "rg_reply";
-const std::string BLOCKING_REMOTE_GET = "brg";
-const std::string BLOCKING_REMOTE_GET_REPLY = "brg_reply";
-const std::string REMOTE_PUT = "rp";
-const std::string REMOTE_PUT_REPLY = "rp_reply";
-const std::string LOCAL_GET = "lg";
-const std::string LOCAL_GET_REPLY = "lg_reply";
-const std::string LOCAL_PUT = "lp";
-const std::string LOCAL_PUT_REPLY = "lp_reply";
+const size_t APP_RIMANAGER_MAX_MSG_SIZE = 1000;
+
+const std::string GET = "g";
+const std::string GET_REPLY = "g_reply";
+const std::string BLOCKING_GET = "bg";
+const std::string BLOCKING_GET_REPLY = "bg_reply";
+const std::string PUT = "p";
+const std::string PUT_REPLY = "p_reply";
 
 const std::string REMOTE_QUERY = "rq";
 const std::string REMOTE_QUERY_REPLY = "rq_reply";
 const std::string REMOTE_BLOCKING_QUERY = "rbq";
 const std::string REMOTE_BLOCKING_QUERY_REPLY = "rbq_reply";
 const std::string REMOTE_FETCH = "rf";
-
 const std::string REMOTE_RQTABLE = "rrqt";
 const std::string REMOTE_PLACE = "rp";
 const std::string REMOTE_PLACE_REPLY = "rp_reply";
@@ -322,12 +316,11 @@ class RIManager
     ~RIManager();
     std::string to_str();
     
-    void handle_ri_req(char* ri_req);
-    void handle_g_get(bool blocking, int app_id, std::map<std::string, std::string> g_get_map);
-    void handle_r_get(bool blocking, int app_id, std::map<std::string, std::string> r_get_map);
-    
-    void handle_li_req(char* li_req);
-    void handle_l_put(std::map<std::string, std::string> l_put_map);
+    void handle_app_req(char* app_req);
+    void handle_get(bool blocking, int app_id, std::map<std::string, std::string> get_map);
+    void handle_r_get(bool blocking, int app_id, std::map<std::string, std::string> r_get_map,
+                      std::map<std::string, std::string> reply_msg_map);
+    void handle_put(std::map<std::string, std::string> put_map);
     void handle_possible_remote_places(std::string key, unsigned int ver);
     
     void handle_wamsg(std::map<std::string, std::string> wamsg_map);
@@ -355,8 +348,7 @@ class RIManager
     IMsgCoder imsg_coder;
     
     boost::shared_ptr<DSpacesDriver> ds_driver_;
-    boost::shared_ptr<BCServer> li_bc_server_;
-    boost::shared_ptr<BCServer> ri_bc_server_;
+    boost::shared_ptr<BCServer> bc_server_;
     boost::shared_ptr<DHTNode> dht_node_;
     boost::shared_ptr<RFPManager> rfp_manager_;
     thread_safe_map<int, boost::shared_ptr<BCClient> > appid_bcclient_map; //TODO: prettify
