@@ -20,6 +20,17 @@ DSpacesDriver::DSpacesDriver(int num_peers, int appid)
   LOG(INFO) << "DSpacesDriver:: constructed.";
 }
 
+DSpacesDriver::DSpacesDriver(MPI_Comm mpi_comm, int num_peers, int appid)
+: finalized(false),
+  num_peers(num_peers),
+  appid(appid),
+  mpi_comm(mpi_comm)
+{
+  init(num_peers, appid);
+  //
+  LOG(INFO) << "DSpacesDriver:: constructed.";
+}
+
 DSpacesDriver::~DSpacesDriver()
 {
   /*

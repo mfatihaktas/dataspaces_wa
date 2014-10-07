@@ -58,6 +58,16 @@ WADspacesDriver::WADspacesDriver(int app_id, int num_local_peers)
   LOG(INFO) << "WADspacesDriver:: constructed.";
 }
 
+WADspacesDriver::WADspacesDriver(MPI_Comm mpi_comm, int app_id, int num_local_peers)
+: app_id(app_id),
+  num_local_peers(num_local_peers),
+  ds_driver_ ( new DSpacesDriver(mpi_comm, num_local_peers, app_id) ),
+  bc_client_( new BCClient(app_id, num_local_peers, RI_MSG_SIZE, "req_app_", ds_driver_) )
+{
+  //
+  LOG(INFO) << "WADspacesDriver:: constructed.";
+}
+
 WADspacesDriver::~WADspacesDriver()
 {
   //

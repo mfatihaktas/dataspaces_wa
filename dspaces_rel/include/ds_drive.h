@@ -24,6 +24,7 @@ class DSpacesDriver
 {
   public:
     DSpacesDriver(int num_peers, int appid);
+    DSpacesDriver(MPI_Comm mpi_comm, int num_peers, int appid);
     ~DSpacesDriver();
     int finalize();
     int init(int num_peers, int appid);

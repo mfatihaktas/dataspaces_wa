@@ -1,0 +1,5 @@
+# unset LD_LIBRARY_PATH
+LD_LIBRARY_PATH=/cac/u01/mfa51/Desktop/boost_1_56_0/install/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH
+echo LD_LIBRARY_PATH
+echo $LD_LIBRARY_PATH

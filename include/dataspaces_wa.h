@@ -26,6 +26,7 @@ class WADspacesDriver
 {
   public:
     WADspacesDriver(int app_id, int num_local_peers);
+    WADspacesDriver(MPI_Comm mpi_comm, int app_id, int num_local_peers);
     ~WADspacesDriver();
     void print_str_map(std::map<std::string, std::string> str_map);
     

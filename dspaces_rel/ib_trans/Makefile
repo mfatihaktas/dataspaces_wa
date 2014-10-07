@@ -1,28 +1,25 @@
-DATASPACES_DIR = /cac/u01/mfa51/Desktop/dataspaces_wa/dataspaces/dataspaces-1.4.0
-DATASPACES_INC = -I$(DATASPACES_DIR)/install/include
-DATASPACES_LIB = -L$(DATASPACES_DIR)/install/lib -ldspaces -ldscommon -ldart -lrdmacm
-
-BOOST_LIB = -lboost_system -lpthread -lboost_thread-mt -lboost_serialization
-
-BOOSTASIO_INC = #-I/opt/boost_1_55_0
 BOOSTASIO_LIB = -L/opt/matlab/R2013a/bin/glnxa64
 
-GLOG_INC = -I/cac/u01/mfa51/Desktop/dataspaces_wa/glog-0.3.3/install/include
-GLOG_LIB = -L/cac/u01/mfa51/Desktop/dataspaces_wa/glog-0.3.3/install/lib -l:libglog.a
+BOOST_DIR ?= /cac/u01/mfa51/Desktop/boost_1_56_0/install
+BOOST_INC = -I$(BOOST_DIR)/include
+BOOST_LIB = -L$(BOOST_DIR)/lib -lboost_system -lpthread -lboost_thread -lboost_serialization
+# BOOST_LIB = -lboost_system -lpthread -lboost_thread-mt -lboost_serialization
+
+GLOG_DIR ?= /cac/u01/mfa51/Desktop/dataspaces_wa/glog-0.3.3/install
+GLOG_INC = -I$(GLOG_DIR)/include
+GLOG_LIB = -L$(GLOG_DIR)/lib -l:libglog.a
 
 GFTP_INC = -I/usr/include/globus -I/usr/lib64/globus/include
 GFTP_LIB = -L/usr/lib64/ -l:libglobus_ftp_client.so
 
-SUB_INC = -I/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/ib_trans/include
+IBTRANS_DIR ?= /cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/ib_trans
+IBTRANS_INC = -I$(IBTRANS_DIR)/include
 
 IB_LIB = -lrdmacm -libverbs -lpthread
 #
-INC = $(SUB_INC) $(GLOG_INC) #$(DATASPACES_INC)
-LIB = $(IB_LIB) $(GLOG_LIB) $(BOOST_LIB) #$(DATASPACES_LIB) 
+INC = $(GLOG_INC) $(BOOST_INC) $(IBTRANS_INC)
+LIB = $(GLOG_LIB) $(BOOST_LIB) $(IB_LIB)
 
-MPICC = mpicc
-MPICPP = mpic++
-MPICPPOPTS = 
 CC = gcc
 CPP = g++
 
@@ -30,10 +27,6 @@ IDIR = include
 ODIR = obj
 
 .PHONY: lclean clean
-
-#CFLAGS	:= -Wall -Werror -g
-#LD			:= gcc
-#LDFLAGS := ${LDFLAGS} -lrdmacm -libverbs -lpthread
 
 APPS := exp
 
