@@ -17,9 +17,6 @@ struct RMessenger
   
 };
 
-//TODO: a better way for syncing client and server of bccomm
-#define WAIT_TIME_FOR_BCSERVER_DSLOCK 200*1000
-
 #define RI_MSG_SIZE 1000
 
 class WADspacesDriver

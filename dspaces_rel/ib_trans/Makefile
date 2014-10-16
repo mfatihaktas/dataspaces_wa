@@ -15,10 +15,12 @@ GFTP_LIB = -L/usr/lib64/ -l:libglobus_ftp_client.so
 IBTRANS_DIR ?= /cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/ib_trans
 IBTRANS_INC = -I$(IBTRANS_DIR)/include
 
-IB_LIB = -lrdmacm -libverbs -lpthread
+IBVERBS_LIB = -L/usr/lib64 -libverbs
+
+IB_LIB = -lrdmacm -libverbs -lpthread 
 #
 INC = $(GLOG_INC) $(BOOST_INC) $(IBTRANS_INC)
-LIB = $(GLOG_LIB) $(BOOST_LIB) $(IB_LIB)
+LIB = $(GLOG_LIB) $(BOOST_LIB) $(IB_LIB) $(IBVERBS_LIB)
 
 CC = gcc
 CPP = g++

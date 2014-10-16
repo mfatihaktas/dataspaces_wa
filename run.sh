@@ -49,6 +49,16 @@ elif [ $1  = 'g2' ]; then
     ./exp --type="get" --num_dscnodes=$NUM_DSCNODES --app_id=1
 elif [ $1  = 'show' ]; then
   netstat -antu
+elif [ $1  = 'init' ]; then
+  # source /opt/rh/devtoolset-2/enable
+  
+  unset LD_LIBRARY_PATH
+  LD_LIBRARY_PATH=/cac/u01/mfa51/Desktop/mpich-3.1.2/install/lib:$LD_LIBRARY_PATH
+  LD_LIBRARY_PATH=/cac/u01/mfa51/Desktop/boost_1_56_0/install/lib:$LD_LIBRARY_PATH
+  LD_LIBRARY_PATH=/opt/gcc-4.8.2/lib64:$LD_LIBRARY_PATH
+  export LD_LIBRARY_PATH
+  echo LD_LIBRARY_PATH
+  echo $LD_LIBRARY_PATH
 else
   echo "Argument did not match !"
 fi

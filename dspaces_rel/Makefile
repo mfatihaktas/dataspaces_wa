@@ -15,6 +15,11 @@ GLOG_LIB = -L/cac/u01/mfa51/Desktop/dataspaces_wa/glog-0.3.3/install/lib -l:libg
 
 GFTP_INC = -I/usr/include/globus -I/usr/lib64/globus/include
 GFTP_LIB = -L/usr/lib64/ -l:libglobus_ftp_client.so
+
+IBVERBS_LIB = -L/usr/lib64 -libverbs
+
+MPI_DIR ?= /cac/u01/mfa51/Desktop/mpich-3.1.2/install
+MPI_LIB = -L$(MPI_DIR)/lib -lmpi -lmpicxx -lmpichf90
 # 
 OVERLAYNET_DIR = overlaynet
 OVERLAYNET_ODIR = $(OVERLAYNET_DIR)/obj
@@ -23,14 +28,14 @@ IBTRANS_DIR = ib_trans
 IBTRANS_ODIR = $(IBTRANS_DIR)/obj
 
 DSPACES_REL_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel
-
 DSPACES_REL_INC = -I$(DSPACES_REL_DIR)/include -I$(DSPACES_REL_DIR)/$(OVERLAYNET_DIR)/include -I$(DSPACES_REL_DIR)/$(IBTRANS_DIR)/include
 # 
 INC = $(DATASPACES_INC) $(GLOG_INC) $(BOOST_INC) $(DSPACES_REL_INC)
-LIB = $(DATASPACES_LIB) $(GLOG_LIB) $(BOOST_LIB)
+LIB = $(DATASPACES_LIB) $(GLOG_LIB) $(BOOST_LIB) $(IBVERBS_LIB) $(MPI_LIB)
 
 MPICC = mpicc
-MPICPP = mpic++
+# MPICPP = mpic++
+MPICPP = /cac/u01/mfa51/Desktop/mpich-3.1.2/install/bin/mpicxx
 MPICPPOPTS = 
 CC = gcc
 CPP = g++

@@ -26,12 +26,19 @@ IBTRANS_ODIR = $(IBTRANS_DIR)/obj
 
 DATASPACESWA_DIR = /cac/u01/mfa51/Desktop/dataspaces_wa
 DATASPACESWA_INC = -I$(DATASPACESWA_DIR)/include -I$(DATASPACESWA_DIR)/$(DSPACES_REL_DIR)/include -I$(DATASPACESWA_DIR)/$(OVERLAYNET_DIR)/include -I$(DATASPACESWA_DIR)/$(IBTRANS_DIR)/include
+DATASPACESWA_LIB = $(DATASPACESWA_DIR)/lib
+
+IBVERBS_LIB = -L/usr/lib64 -libverbs
+
+MPI_DIR ?= /cac/u01/mfa51/Desktop/mpich-3.1.2/install
+MPI_LIB = -L$(MPI_DIR)/lib -lmpi -lmpicxx -lmpichf90
 # 
 INC = $(DATASPACES_INC) $(GLOG_INC) $(BOOST_INC) $(DATASPACESWA_INC)
-LIB = $(DATASPACES_LIB) $(GLOG_LIB) $(BOOST_LIB)
+LIB = $(DATASPACES_LIB) $(GLOG_LIB) $(BOOST_LIB) $(IBVERBS_LIB) $(MPI_LIB)
 
 MPICC = mpicc
-MPICPP = mpic++
+# MPICPP = mpic++
+MPICPP = /cac/u01/mfa51/Desktop/mpich-3.1.2/install/bin/mpicxx
 MPICPPOPTS = 
 CC = gcc
 CPP = g++
@@ -39,7 +46,7 @@ CPP = g++
 IDIR = include
 ODIR = obj
 
-.PHONY: all lclean clean submake_dspaces_rel
+.PHONY: lib all lclean clean submake_dspaces_rel
 
 all: submake_dspaces_rel exp
 
@@ -56,6 +63,9 @@ ifeq ("x","y")
 $(ODIR)/%.o: %.c
 	$(CC) -c -o $@ $< $(INC) $(LIB)
 endif
+
+lib: 
+	ar -cvq $(DATASPACESWA_LIB)/libdspaces_wa.a $(ODIR)/dataspaces_wa.o $(DSPACES_REL_ODIR)/ds_client.o $(DSPACES_REL_ODIR)/ds_drive.o $(OVERLAYNET_ODIR)/dht_node.o $(OVERLAYNET_ODIR)/dht_server.o $(OVERLAYNET_ODIR)/dht_client.o $(OVERLAYNET_ODIR)/packet.o $(IBTRANS_ODIR)/ib_delivery.o $(IBTRANS_ODIR)/common.o
 
 lclean:
 	rm -f $(ODIR)/*.o
