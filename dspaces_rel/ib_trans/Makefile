@@ -2,7 +2,7 @@ BOOSTASIO_LIB = -L/opt/matlab/R2013a/bin/glnxa64
 
 BOOST_DIR ?= /cac/u01/mfa51/Desktop/boost_1_56_0/install
 BOOST_INC = -I$(BOOST_DIR)/include
-BOOST_LIB = -L$(BOOST_DIR)/lib -lboost_system -lpthread -lboost_thread -lboost_serialization
+BOOST_LIB = -L$(BOOST_DIR)/lib -lboost_system -lboost_thread -lboost_serialization
 # BOOST_LIB = -lboost_system -lpthread -lboost_thread-mt -lboost_serialization
 
 GLOG_DIR ?= /cac/u01/mfa51/Desktop/dataspaces_wa/glog-0.3.3/install
@@ -15,15 +15,18 @@ GFTP_LIB = -L/usr/lib64/ -l:libglobus_ftp_client.so
 IBTRANS_DIR ?= /cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/ib_trans
 IBTRANS_INC = -I$(IBTRANS_DIR)/include
 
-IBVERBS_LIB = -L/usr/lib64 -libverbs
+IBVERBS_LIB = -L/usr/lib64 -libverbs -lrdmacm
 
-IB_LIB = -lrdmacm -libverbs -lpthread 
+# IB_LIB = -lrdmacm -libverbs -lpthread 
 #
 INC = $(GLOG_INC) $(BOOST_INC) $(IBTRANS_INC)
-LIB = $(GLOG_LIB) $(BOOST_LIB) $(IB_LIB) $(IBVERBS_LIB)
+LIB = $(GLOG_LIB) $(BOOST_LIB) $(IBVERBS_LIB) 
+# $(IB_LIB)
 
-CC = gcc
-CPP = g++
+MPICPP = /cac/u01/mfa51/Desktop/mpich-3.1.2/install/bin/mpicxx
+CC = /opt/gcc-4.8.2/bin/gcc
+CPP = /opt/gcc-4.8.2/bin/g++
+CPP_OPTS = #-pthread
 
 IDIR = include
 ODIR = obj
@@ -35,10 +38,10 @@ APPS := exp
 all: ${APPS}
 
 exp: $(ODIR)/exp.o $(ODIR)/common.o $(ODIR)/ib_delivery.o
-	${CPP} -o $@ $^ $(INC) $(LIB)
+	${CPP} $(CPP_OPTS)  -o $@ $^ $(INC) $(LIB)
 
 $(ODIR)/%.o: %.cpp
-	$(CPP) -c -o $@ $< $(INC) $(LIB)
+	$(CPP) $(CPP_OPTS) -c -o $@ $< $(INC) $(LIB)
 
 ifeq ("x","y")
 client: $(ODIR)/client.o $(ODIR)/common.o

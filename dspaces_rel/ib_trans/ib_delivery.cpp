@@ -43,26 +43,32 @@ void DDManager::init_ib_server(std::string key, unsigned int ver, std::string da
     IBServer<float> ib_server(key, ver, lport, dr_cb);
     ib_server.init();
   }
+  else {
+    LOG(ERROR) << "init_ib_server:: unknown data_type= " << data_type;
+  }
 }
 
 void DDManager::init_ib_client(const char* s_laddr, const char* s_lport,
                                std::string data_type, size_t data_length, void* data_)
 {
-  if (str_equals(data_type, "int") ){
+  if (str_equals(data_type, "int") ) {
     IBClient<int> ib_client(s_laddr, s_lport, data_length, static_cast<int*>(data_) );
     ib_client.init();
   }
-  else if (str_equals(data_type, "char") ){
+  else if (str_equals(data_type, "char") ) {
     IBClient<char> ib_client(s_laddr, s_lport, data_length, static_cast<char*>(data_) );
     ib_client.init();
   }
-  else if (str_equals(data_type, "double") ){
+  else if (str_equals(data_type, "double") ) {
     IBClient<double> ib_client(s_laddr, s_lport, data_length, static_cast<double*>(data_) );
     ib_client.init();
   }
-  else if (str_equals(data_type, "float") ){
+  else if (str_equals(data_type, "float") ) {
     IBClient<float> ib_client(s_laddr, s_lport, data_length, static_cast<float*>(data_) );
     ib_client.init();
+  }
+  else {
+    LOG(ERROR) << "init_ib_server:: unknown data_type= " << data_type;
   }
 }
 

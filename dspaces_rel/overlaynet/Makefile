@@ -18,7 +18,8 @@ LIB = $(BOOSTASIO_LIB) $(GLOG_LIB) $(BOOST_LIB)
 MPICC = mpicc
 MPICPP = mpic++
 MPICPPOPTS = 
-CPP = g++
+CC = /opt/gcc-4.8.2/bin/gcc
+CPP = /opt/gcc-4.8.2/bin/g++
 
 IDIR = include
 ODIR = obj

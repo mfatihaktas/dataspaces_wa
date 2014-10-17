@@ -602,7 +602,7 @@ bool RFPManager::receive_put(std::string ib_laddr, std::string ib_lport,
 void RFPManager::handle_ib_receive(std::string key, unsigned int ver, size_t data_size, void* data_)
 {
   key_ver_pair kv = std::make_pair(key, ver);
-  if (!key_ver__recvedsize_map.count(kv) ){
+  if (!key_ver__recvedsize_map.count(kv) ) {
     LOG(ERROR) << "handle_ib_receive:: data is received for an unexpected <key= " << key << ", ver= " << ver << ">";
     return;
   }
@@ -630,15 +630,15 @@ bool RFPManager::get_send(std::string key, unsigned int ver, std::string data_ty
                          const char* ib_laddr, const char* ib_lport)
 {
   size_t data_length = get_data_length(ndim, gdim_, lb_, ub_);
-  if (!data_length){
+  if (!data_length) {
     LOG(ERROR) << "get_send:: data_length=0!";
     return false;
   }
   void* data_ = malloc(size*data_length);
   
   // debug_print(key, ver, size, ndim, gdim_, lb_, ub_, NULL, 0);
-  if (ds_driver_->get(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_) ){
-    LOG(ERROR) << "get_send:: ds_driver_->get for key= " << key << " failed!";
+  if (ds_driver_->get(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_) ) {
+    LOG(ERROR) << "get_send:: ds_driver_->get for <key= " << key << ", ver= " << ver <<"> failed!";
     return false;
   }
   
@@ -652,14 +652,14 @@ size_t RFPManager::get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uin
 {
   uint64_t dim_length[ndim];
   
-  for(int i=0; i<ndim; i++){
+  for(int i = 0; i < ndim; i++) {
     uint64_t lb = lb_[i];
-    if (lb < 0 || lb > gdim_[i]){
+    if (lb < 0 || lb > gdim_[i]) {
       LOG(ERROR) << "get_data_length:: lb= " << lb << " is not feasible!";
       return 0;
     }
     uint64_t ub = ub_[i];
-    if (ub < 0 || ub > gdim_[i] || ub < lb){
+    if (ub < 0 || ub > gdim_[i] || ub < lb) {
       LOG(ERROR) << "get_data_length:: ub= " << ub << " is not feasible!";
       return 0;
     }
@@ -667,7 +667,7 @@ size_t RFPManager::get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uin
   }
   
   size_t volume = 1;
-  for(int i=0; i<ndim; i++){
+  for(int i = 0; i < ndim; i++) {
     volume *= (size_t)dim_length[i];
   }
   

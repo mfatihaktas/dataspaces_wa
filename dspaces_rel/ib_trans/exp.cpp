@@ -104,8 +104,6 @@ void recv_handler(std::string key, unsigned int ver, size_t data_size, void* dat
   //   std::cout << static_cast<data_type*>(data_)[i] << ",";
   // }
   // std::cout << "\n";
-  
-  free(data_);
 }
 
 int main(int argc , char **argv)
@@ -120,18 +118,17 @@ int main(int argc , char **argv)
   
   DDManager dd_manager(ib_lport_list);
   if (strcmp(opt_map[(char*)"type"], (char*)"server") == 0){
-    // boost::shared_ptr<IBServer<data_type> > ib_server_{
-    //   new IBServer<data_type>(opt_map[(char*)"port"], boost::bind(&recv_handler, _1, _2) );
-    // };
-    // IBServer<data_type> *ib_server_ = new IBServer<data_type>(opt_map[(char*)"port"], boost::bind(&recv_handler, _1, _2) );
-    // ib_server_->init();
+    dd_manager.init_ib_server("dummy", 0, data_type_str, dd_manager.get_next_avail_ib_lport().c_str(), 
+                              boost::bind(&recv_handler, _1, _2, _3, _4) );
     
-    // IBServer<data_type> ib_server(opt_map[(char*)"port"], boost::bind(&recv_handler, _1, _2) );
-    // ib_server.init();
-    
-    dd_manager.init_ib_server("dummy", 0, data_type_str, opt_map[(char*)"port"], boost::bind(&recv_handler, _1, _2, _3, _4) );
-    
-    std::cout << "main:: deneme...\n";
+    dd_manager.init_ib_server("dummy2", 0, data_type_str, dd_manager.get_next_avail_ib_lport().c_str(), 
+                              boost::bind(&recv_handler, _1, _2, _3, _4) );
+  
+    dd_manager.init_ib_server("dummy2", 0, data_type_str, dd_manager.get_next_avail_ib_lport().c_str(), 
+                              boost::bind(&recv_handler, _1, _2, _3, _4) );
+  
+    dd_manager.init_ib_server("dummy2", 0, data_type_str, dd_manager.get_next_avail_ib_lport().c_str(), 
+                              boost::bind(&recv_handler, _1, _2, _3, _4) );
   }
   else if (strcmp(opt_map[(char*)"type"], (char*)"client") == 0){
     size_t data_length = 1024*1024*256;
@@ -141,11 +138,23 @@ int main(int argc , char **argv)
       static_cast<data_type*>(data_)[i] = (data_type)i*1.2;
     }
     
-    // IBClient<data_type> ib_client(opt_map[(char*)"s_addr"], opt_map[(char*)"port"],
-    //                               data_length, data_);
-    // ib_client.init();
-    
+    std::string port = opt_map[(char*)"port"];
     dd_manager.init_ib_client(opt_map[(char*)"s_addr"], opt_map[(char*)"port"],
+                              data_type_str, data_length, data_);
+    
+    port = boost::lexical_cast<std::string>(1 + boost::lexical_cast<int>(port) );
+    
+    dd_manager.init_ib_client(opt_map[(char*)"s_addr"], port.c_str(),
+                              data_type_str, data_length, data_);
+    
+    port = boost::lexical_cast<std::string>(1 + boost::lexical_cast<int>(port) );
+    
+    dd_manager.init_ib_client(opt_map[(char*)"s_addr"], port.c_str(),
+                              data_type_str, data_length, data_);
+                              
+    port = boost::lexical_cast<std::string>(1 + boost::lexical_cast<int>(port) );
+    
+    dd_manager.init_ib_client(opt_map[(char*)"s_addr"], port.c_str(),
                               data_type_str, data_length, data_);
     
     free(data_);

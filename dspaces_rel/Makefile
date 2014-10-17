@@ -37,8 +37,8 @@ MPICC = mpicc
 # MPICPP = mpic++
 MPICPP = /cac/u01/mfa51/Desktop/mpich-3.1.2/install/bin/mpicxx
 MPICPPOPTS = 
-CC = gcc
-CPP = g++
+CC = /opt/gcc-4.8.2/bin/gcc
+CPP = /opt/gcc-4.8.2/bin/g++
 
 IDIR = include
 ODIR = obj

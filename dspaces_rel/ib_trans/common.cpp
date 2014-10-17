@@ -8,15 +8,11 @@ void rc_die(const char *reason)
   exit(EXIT_FAILURE);
 }
 
-struct context* Connector::s_ctx = NULL;
-
-Connector::Connector()
+Connector::Connector(pre_conn_cb_fn pc, connect_cb_fn conn, completion_cb_fn comp, disconnect_cb_fn disc)
 {
-  s_on_pre_conn_cb = NULL;
-  s_on_connect_cb = NULL;
-  s_on_completion_cb = NULL;
-  s_on_disconnect_cb = NULL;
-  //
+  rc_init(pc, conn, comp, disc);
+  s_ctx = NULL;
+  // 
   LOG(INFO) << "Connector:: constructed.";
 }
 
@@ -54,13 +50,7 @@ void Connector::build_context(struct ibv_context *verbs)
   TEST_Z(s_ctx->cq = ibv_create_cq(s_ctx->ctx, MAX_QP__CQ_LENGTH, NULL, s_ctx->comp_channel, 0));
   TEST_NZ(ibv_req_notify_cq(s_ctx->cq, 0));
 
-  //TEST_NZ(pthread_create(&s_ctx->cq_poller_thread, NULL, &Connector::poll_cq, NULL) );
-  TEST_NZ(pthread_create(&s_ctx->cq_poller_thread, NULL, &Connector::poll_cq_helper, this) );
-  
-  // boost::shared_ptr<boost::thread> t_(
-  //   new boost::thread(&Connector::poll_cq, this, s_ctx)
-  // );
-  // s_ctx->cq_poller_thread_ = t_;
+  boost::thread t(boost::bind(&Connector::poll_cq, this, s_ctx) );
 }
 
 void Connector::build_params(struct rdma_conn_param *params)
@@ -138,11 +128,6 @@ void Connector::event_loop(struct rdma_event_channel *ec, int exit_on_disconnect
   }
 }
 
-void* Connector::poll_cq_helper(void* context)
-{
-  return ( (Connector*)context)->poll_cq(s_ctx);
-}
-
 void* Connector::poll_cq(void *ctx)
 {
   //struct ibv_cq *cq = ((struct context*)ctx)->cq;
@@ -150,16 +135,25 @@ void* Connector::poll_cq(void *ctx)
   struct ibv_wc wc;
 
   while (1) {
-    // LOG(INFO) << "poll_cq:: before ibv_get_cq_event.";
-    TEST_NZ(ibv_get_cq_event(s_ctx->comp_channel, &cq, &ctx));
+    LOG(INFO) << "poll_cq:: before ibv_get_cq_event.";
+    TEST_NZ(ibv_get_cq_event(s_ctx->comp_channel, &cq, &ctx) );
     ibv_ack_cq_events(cq, 1);
-    TEST_NZ(ibv_req_notify_cq(cq, 0));
-    // LOG(INFO) << "poll_cq:: before ibv_poll_cq.";
-    while (ibv_poll_cq(cq, 1, &wc)) {
-      if (wc.status == IBV_WC_SUCCESS)
-        s_on_completion_cb(&wc);
-      else
+    TEST_NZ(ibv_req_notify_cq(cq, 0) );
+    LOG(INFO) << "poll_cq:: before ibv_poll_cq.";
+    while (ibv_poll_cq(cq, 1, &wc) ) {
+      if (wc.status == IBV_WC_SUCCESS) {
+        LOG(INFO) << "poll_cq:: calling s_on_completion_cb...";
+        try {
+          s_on_completion_cb(&wc);
+        }
+        catch(boost::bad_function_call) {
+          LOG(ERROR) << "poll_cq:: how the HELL can s_on_completion_cb be empty!!!";
+          rc_die("poll_cq: status is not IBV_WC_SUCCESS");
+        }
+      }
+      else {
         rc_die("poll_cq: status is not IBV_WC_SUCCESS");
+      }
     }
   }
 

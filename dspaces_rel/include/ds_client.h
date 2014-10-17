@@ -256,7 +256,7 @@ struct RSTable //Remote Subscription Table
     thread_safe_map<key_ver_pair, std::vector<char> > key_ver__ds_id_vector_map;
 };
 
-class RFPManager //Remote Fetch / Place Manager
+class RFPManager //Remote Fetch & Place Manager
 {
   public:
     RFPManager(std::list<std::string> wa_ib_lport_list, boost::shared_ptr<DSpacesDriver> ds_driver_);

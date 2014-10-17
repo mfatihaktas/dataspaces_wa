@@ -23,21 +23,39 @@ class IBServer{
     const char* lport;
     data_recv_cb dr_cb;
     //
-    Connector connector;
+    boost::shared_ptr<Connector> connector_;
   public:
     IBServer(std::string key, unsigned int ver, const char* lport, data_recv_cb dr_cb)
     : lport(lport),
       dr_cb(dr_cb),
       key(key),
-      ver(ver)
+      ver(ver),
+      connector_( new Connector(
+          boost::bind(&IBServer::on_pre_conn, this, _1),
+          boost::bind(&IBServer::on_connection, this, _1),
+          boost::bind(&IBServer::on_completion, this, _1),
+          boost::bind(&IBServer::on_disconnect, this, _1)
+        )
+      )
     {
       //
-      LOG(INFO) << "IBServer constructed: lport= " << lport;
+      LOG(INFO) << "IBServer constructed:\n" << to_str();
     };
     ~IBServer()
     {
       //
       LOG(INFO) << "IBServer destructed.";
+    };
+    
+    std::string to_str()
+    {
+      std::stringstream ss;
+      ss << "\t key= " << key << "\n";
+      ss << "\t ver= " << boost::lexical_cast<std::string>(ver) << "\n";
+      ss << "\t lport= " << boost::lexical_cast<std::string>(lport) << "\n";
+      ss << "\n";
+      
+      return ss.str();
     };
     
     void post_receive(struct rdma_cm_id *id)
@@ -50,7 +68,7 @@ class IBServer{
       wr.sg_list = NULL;
       wr.num_sge = 0;
     
-      TEST_NZ(ibv_post_recv(id->qp, &wr, &bad_wr));
+      TEST_NZ(ibv_post_recv(id->qp, &wr, &bad_wr) );
     };
     
     void send_message(struct rdma_cm_id *id)
@@ -72,20 +90,20 @@ class IBServer{
       sge.length = sizeof(*ctx->msg);
       sge.lkey = ctx->msg_mr->lkey;
     
-      TEST_NZ(ibv_post_send(id->qp, &wr, &bad_wr));
+      TEST_NZ(ibv_post_send(id->qp, &wr, &bad_wr) );
     };
     //state handlers
     void on_pre_conn(struct rdma_cm_id *id)
     {
-      struct conn_context *ctx = (struct conn_context *)malloc(sizeof(struct conn_context));
+      struct conn_context *ctx = (struct conn_context *)malloc(sizeof(struct conn_context) );
     
       id->context = ctx;
     
       posix_memalign((void **)&ctx->buffer, sysconf(_SC_PAGESIZE), BUFFER_LENGTH*sizeof(data_type) );
-      TEST_Z(ctx->buffer_mr = ibv_reg_mr(connector.rc_get_pd(), ctx->buffer, BUFFER_LENGTH*sizeof(data_type), IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE));
+      TEST_Z(ctx->buffer_mr = ibv_reg_mr(connector_->rc_get_pd(), ctx->buffer, BUFFER_LENGTH*sizeof(data_type), IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE));
     
       posix_memalign((void **)&ctx->msg, sysconf(_SC_PAGESIZE), sizeof(*ctx->msg));
-      TEST_Z(ctx->msg_mr = ibv_reg_mr(connector.rc_get_pd(), ctx->msg, sizeof(*ctx->msg), IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE));
+      TEST_Z(ctx->msg_mr = ibv_reg_mr(connector_->rc_get_pd(), ctx->msg, sizeof(*ctx->msg), IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE));
     
       post_receive(id);
     };
@@ -149,7 +167,7 @@ class IBServer{
               ctx->msg->id = MSG_DONE;
               send_message(id);
               
-              connector.rc_disconnect(id);
+              connector_->rc_disconnect(id);
               
               return;
             }
@@ -165,15 +183,15 @@ class IBServer{
     
     void init()
     { 
-      connector.rc_init(
-        boost::bind(&IBServer::on_pre_conn, this, _1),
-        boost::bind(&IBServer::on_connection, this, _1),
-        boost::bind(&IBServer::on_completion, this, _1),
-        boost::bind(&IBServer::on_disconnect, this, _1) );
+      // connector.rc_init(
+      //   boost::bind(&IBServer::on_pre_conn, this, _1),
+      //   boost::bind(&IBServer::on_connection, this, _1),
+      //   boost::bind(&IBServer::on_completion, this, _1),
+      //   boost::bind(&IBServer::on_disconnect, this, _1) );
         
         LOG(INFO) << "init:: waiting for connections. interrupt (^C) to exit.";
         
-      connector.rc_server_loop(lport);
+      connector_->rc_server_loop(lport);
     };
 };
 

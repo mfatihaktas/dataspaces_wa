@@ -20,6 +20,14 @@ class IBClient{
     uint64_t peer_addr;
     uint32_t peer_rkey;
   };
+  private:
+    const char *s_laddr, *s_lport;
+    size_t data_length;
+    data_type* data_;
+    
+    int num_srs;
+    //
+    boost::shared_ptr<Connector> connector_;
   public:
     IBClient(const char* s_laddr, const char* s_lport, 
              size_t data_length, data_type* data_)
@@ -27,7 +35,13 @@ class IBClient{
       s_lport(s_lport),
       data_length(data_length),
       data_(data_),
-      num_srs(0)
+      num_srs(0),
+      connector_( new Connector(
+        boost::bind(&IBClient::on_pre_conn, this, _1),
+        NULL,
+        boost::bind(&IBClient::on_completion, this, _1),
+        NULL )
+      )
     {
       //
       LOG(INFO) << "IBClient:: constructed:\n" << to_str();
@@ -37,6 +51,19 @@ class IBClient{
       //
       LOG(INFO) << "IBClient:: destructed.";
     };
+    
+    std::string to_str()
+    {
+      std::stringstream ss;
+    
+      ss << "s_laddr= " << s_laddr << "\n";
+      ss << "s_lport= " << s_lport << "\n";
+      ss << "data_length= " << boost::lexical_cast<std::string>(data_length) << "\n";
+      ss << "\n";
+      
+      return ss.str();
+    };
+    
     void write_remote(struct rdma_cm_id *id, uint32_t size)
     {
       struct client_context *ctx = (struct client_context *)id->context;
@@ -146,16 +173,18 @@ class IBClient{
       struct client_context *ctx = (struct client_context *)id->context;
     
       posix_memalign((void **)&ctx->buffer, sysconf(_SC_PAGESIZE), BUFFER_LENGTH*sizeof(data_type) );
-      TEST_Z(ctx->buffer_mr = ibv_reg_mr(connector.rc_get_pd(), ctx->buffer, BUFFER_LENGTH*sizeof(data_type), IBV_ACCESS_LOCAL_WRITE));
+      TEST_Z(ctx->buffer_mr = ibv_reg_mr(connector_->rc_get_pd(), ctx->buffer, BUFFER_LENGTH*sizeof(data_type), IBV_ACCESS_LOCAL_WRITE));
     
       posix_memalign((void **)&ctx->msg, sysconf(_SC_PAGESIZE), sizeof(*ctx->msg));
-      TEST_Z(ctx->msg_mr = ibv_reg_mr(connector.rc_get_pd(), ctx->msg, sizeof(*ctx->msg), IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE));
+      TEST_Z(ctx->msg_mr = ibv_reg_mr(connector_->rc_get_pd(), ctx->msg, sizeof(*ctx->msg), IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE));
     
       post_receive(id);
     };
     
     void on_completion(struct ibv_wc *wc)
     {
+      LOG(INFO) << "on_completion:: started...";
+      
       struct rdma_cm_id *id = (struct rdma_cm_id *)(uintptr_t)(wc->wr_id);
       struct client_context *ctx = (struct client_context *)id->context;
     
@@ -168,7 +197,7 @@ class IBClient{
         }
         else if (ctx->msg->id == MSG_DONE) {
           LOG(INFO) << "on_completion:: received DONE, disconnecting.";
-          connector.rc_disconnect(id);
+          connector_->rc_disconnect(id);
           return;
         }
     
@@ -180,35 +209,14 @@ class IBClient{
     {
       struct client_context ctx;
       
-      connector.rc_init(
-        boost::bind(&IBClient::on_pre_conn, this, _1),
-        NULL, // on connect
-        boost::bind(&IBClient::on_completion, this, _1),
-        NULL); // on disconnect
+      // connector.rc_init(
+      //   boost::bind(&IBClient::on_pre_conn, this, _1),
+      //   NULL, // on connect
+      //   boost::bind(&IBClient::on_completion, this, _1),
+      //   NULL); // on disconnect
     
-      connector.rc_client_loop(s_laddr, s_lport, &ctx);
+      connector_->rc_client_loop(s_laddr, s_lport, &ctx);
     };
-    
-    std::string to_str()
-    {
-      std::stringstream ss;
-    
-      ss << "s_laddr= " << s_laddr << "\n";
-      ss << "s_lport= " << s_lport << "\n";
-      ss << "data_length= " << boost::lexical_cast<std::string>(data_length) << "\n";
-      ss << "\n";
-      
-      return ss.str();
-    };
-    
-  private:
-    const char *s_laddr, *s_lport;
-    size_t data_length;
-    data_type* data_;
-    
-    int num_srs;
-    //
-    Connector connector;
 };
 
 #endif
