@@ -6,7 +6,7 @@
 #include <string.h>
 #include "globus_ftp_client.h"
 
-int gridftp_put_file(char* src_url, char* dst_url);
-int gridftp_fancy_put_file(char* src_url, char* dst_url, int num_streams);
+int gridftp_put_file(const char* src_url, const char* dst_url);
+int gridftp_fancy_put_file(const char* src_url, const char* dst_url, int num_streams);
 
 #endif //end of _GRIDFTP_DRIVE_H_

@@ -49,7 +49,9 @@ LIBDIR = lib
 
 .PHONY: lib all lclean clean submake_dspaces_rel
 
-all: submake_dspaces_rel exp
+APPS := exp
+
+all: submake_dspaces_rel ${APPS}
 
 submake_dspaces_rel:
 	make -C $(DSPACES_REL_DIR)
@@ -73,4 +75,4 @@ lclean:
 
 clean:
 	make -C $(DSPACES_REL_DIR) clean
-	rm -f $(ODIR)/*.o $(LIBDIR)/*
+	rm -f $(ODIR)/*.o $(LIBDIR)/* ${APPS}

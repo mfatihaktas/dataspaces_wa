@@ -322,6 +322,7 @@ class RIManager
                       std::map<std::string, std::string> reply_msg_map);
     void handle_put(std::map<std::string, std::string> put_map);
     void handle_possible_remote_places(std::string key, unsigned int ver);
+    void handle_early_subscribe(int app_id, std::map<std::string, std::string> early_subs_map);
     
     void handle_wamsg(std::map<std::string, std::string> wamsg_map);
     void handle_r_query(bool subscribe, std::map<std::string, std::string> r_query_map);

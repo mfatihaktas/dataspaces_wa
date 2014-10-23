@@ -884,6 +884,12 @@ void RIManager::handle_put(std::map<std::string, std::string> put_map)
   // LOG(INFO) << "handle_put:: rq_table=\n" << rq_table.to_str();
 }
 
+void handle_early_subscribe(int app_id, std::map<std::string, std::string> early_subs_map)
+{
+  
+}
+
+/*************************************************************************/
 void RIManager::handle_possible_remote_places(std::string key, unsigned int ver)
 {
   LOG(INFO) << "handle_possible_remote_places:: started for <key= " << key << ", ver= " << ver << ">.";
@@ -904,8 +910,8 @@ void RIManager::handle_possible_remote_places(std::string key, unsigned int ver)
   //
   LOG(INFO) << "handle_possible_remote_places:: done for <key= " << key << ", ver= " << ver << ">.";
 }
-/*************************************************************************/
-//PI: a key cannot be produced in multiple dataspaces
+
+//PI: a <key, ver> pair cannot be produced in multiple dataspaces
 int RIManager::remote_query(bool subscribe, std::string key, unsigned int ver)
 {
   LOG(INFO) << "remote_query:: started;";
@@ -1224,9 +1230,6 @@ void RIManager::handle_r_rqtable(std::map<std::string, std::string> r_rqtable_ma
                          boost::lexical_cast<int>(r_rqtable_map["size_"+tail_str]),
                          ndim, gdim_, lb_, ub_ );
     free_all<uint64_t*>(3, gdim_, lb_, ub_);
-    // free(gdim_);
-    // free(lb_);
-    // free(ub_);
     
     count++;
   }
@@ -1303,8 +1306,7 @@ void RIManager::handle_r_subscribe(std::map<std::string, std::string> r_subs_map
   print_str_map(r_subs_map);
   
   rs_table.push_subscriber(r_subs_map["key"], boost::lexical_cast<unsigned int>(r_subs_map["ver"]), 
-                          boost::lexical_cast<char>(r_subs_map["id"]) );
+                           boost::lexical_cast<char>(r_subs_map["id"]) );
   //
   LOG(INFO) << "handle_r_subscribe:: done.";
 }
-

@@ -13,11 +13,13 @@ GLOG_LIB = -L/cac/u01/mfa51/Desktop/dataspaces_wa/glog-0.3.3/install/lib -l:libg
 GFTP_INC = -I/usr/include/globus -I/usr/lib64/globus/include
 GFTP_LIB = -L/usr/lib64/ -l:libglobus_ftp_client.so
 #
-#INC = $(BOOSTASIO_INC) $(GLOG_INC) -I/cac/u01/mfa51/Desktop/dataspaces_wa/overlaynet/include
-#LIB = $(BOOSTASIO_LIB) $(BOOST_LIB) $(GLOG_LIB)
+GFTPTRANS_INC = -I/cac/u01/mfa51/Desktop/dataspaces_wa/gftp_trans/include
 
-INC = $(GFTP_INC) $(GLOG_INC) -I/cac/u01/mfa51/Desktop/dataspaces_wa/transfer/include
+INC = $(GFTPTRANS_INC) $(GFTP_INC) $(GLOG_INC)
 LIB = $(GFTP_LIB) $(GLOG_LIB) $(BOOST_LIB)
+# 
+IDIR = include
+ODIR = obj
 
 MPICC = mpicc
 MPICPP = mpic++
@@ -25,12 +27,11 @@ MPICPPOPTS =
 CC = gcc
 CPP = g++
 
-IDIR = include
-ODIR = obj
+APPS := exp
 
-all: exp
+all: ${APPS}
 
-exp: $(ODIR)/exp.o $(ODIR)/gftp_drive.o $(ODIR)/gridftp_api_drive.o
+exp: $(ODIR)/exp.o $(ODIR)/gftp_drive.o $(ODIR)/gridftp_api_drive.o $(ODIR)/io_drive.o
 	$(CPP) -o $@ $^ $(INC) $(LIB)
 
 $(ODIR)/%.o: %.c
@@ -50,4 +51,4 @@ ctos: $(ODIR)/client_to_server.o
 endif
 
 clean:
-	rm -f $(ODIR)/*.o
+	rm -f $(ODIR)/*.o ${APPS}

@@ -10,9 +10,8 @@ void load_gftp_modules();
 void unload_gftp_modules();
 void _wait();
 void _continue();
-int gridftp_put_file(char* src_url, char* dst_url);
-int gridftp_fancy_put_file(char* src_url, char* dst_url, int num_streams);
-
+// int gridftp_put_file(char* src_url, char* dst_url);
+// int gridftp_fancy_put_file(char* src_url, char* dst_url, int num_streams);
 //
 unsigned long int  global_offset = 0;
 
@@ -23,7 +22,7 @@ static globus_bool_t done;
 static void done_cb(void *user_arg, globus_ftp_client_handle_t *handle, globus_object_t *err)
 {
   //DSClient* ds_client_ = (DSClient*) user_arg;
-  if ( err ){
+  if ( err ) {
     printf("done_cb:: \n");
     printf("\t Status= File Transferred Failed \n");
     printf("\t ERROR=%s \n", globus_object_printable_to_string(err) );
@@ -43,7 +42,7 @@ static void data_write_cb(void *user_arg, globus_ftp_client_handle_t *handle, gl
     printf("data_write_cb::\n\t ERROR= %s \n", globus_object_printable_to_string(err) );
   }
   else {
-    if (!eof){
+    if (!eof) {
       FILE *fd = (FILE *) user_arg;
       
       unsigned long int rc, curr_offset;
@@ -58,8 +57,8 @@ static void data_write_cb(void *user_arg, globus_ftp_client_handle_t *handle, gl
       }
       globus_ftp_client_register_write(handle, buffer, rc, offset+length, feof(fd) != 0, data_write_cb, (void*) fd);
     }
-    else{
-      globus_libc_free(buffer);
+    else {
+      // globus_libc_free(buffer);
     }
   }
 }
@@ -67,8 +66,8 @@ static void data_write_cb(void *user_arg, globus_ftp_client_handle_t *handle, gl
 void load_gftp_modules()
 {
   globus_result_t status = (globus_result_t)globus_module_activate(GLOBUS_FTP_CLIENT_MODULE);
-  if (status != GLOBUS_SUCCESS){
-    char* tmpstr = globus_object_printable_to_string(globus_error_get(status));
+  if (status != GLOBUS_SUCCESS) {
+    char* tmpstr = globus_object_printable_to_string(globus_error_get(status) );
     printf("Failed to load GLOBUS_FTP_CLIENT_MODULE. Error Code=%s - %s \n", status, tmpstr);
     exit(1);
   }
@@ -88,7 +87,7 @@ void unload_gftp_modules()
 void _wait()
 {
   globus_mutex_lock(&lock);
-  while(!done) {
+  while (!done) {
     globus_cond_wait(&cond, &lock);
   }
   globus_mutex_unlock(&lock);
@@ -102,7 +101,7 @@ void _continue()
   globus_mutex_unlock(&lock);
 }
 
-int gridftp_put_file(char* src_url, char* dst_url)
+int gridftp_put_file(const char* src_url, const char* dst_url)
 {
   load_gftp_modules();
   
@@ -164,7 +163,7 @@ int gridftp_put_file(char* src_url, char* dst_url)
   return 0;
 }
 
-int gridftp_fancy_put_file(char* src_url, char* dst_url, int num_streams)
+int gridftp_fancy_put_file(const char* src_url, const char* dst_url, int num_streams)
 {
   globus_ftp_client_handle_t handle;
   globus_ftp_client_operationattr_t attr;
