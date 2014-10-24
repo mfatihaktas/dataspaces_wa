@@ -60,7 +60,12 @@ void GFTPDriver::read_print_stream(std::string name, FILE* fp)
     LOG(WARNING) << name << " >>> " << line << std::endl;
 }
 
-int GFTPDriver::init_file_transfer(std::string src_url, std::string dst_url)
+int GFTPDriver::put_file(std::string src_url, std::string dst_url)
 {
   return gridftp_put_file(src_url.c_str(), dst_url.c_str() );
+}
+
+int GFTPDriver::get_file(std::string src_url, std::string dst_url)
+{
+  return gridftp_get_file(src_url.c_str(), dst_url.c_str() );
 }

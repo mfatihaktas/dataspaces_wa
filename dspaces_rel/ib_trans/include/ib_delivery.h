@@ -61,11 +61,11 @@ class BQueue //Blocking Queue
     std::deque<T> d_queue;
 };
 
-class DDManager //Data Delivery
+class IBDDManager //Data Delivery
 {
   public:
-    DDManager(std::list<std::string> ib_lport_list);
-    ~DDManager();
+    IBDDManager(std::list<std::string> ib_lport_list);
+    ~IBDDManager();
     std::string to_str();
     void init_ib_server(std::string key, unsigned int ver, std::string data_type, const char* lport, data_recv_cb dr_cb);
     void init_ib_client(const char* s_laddr, const char* s_lport,

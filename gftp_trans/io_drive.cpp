@@ -1,29 +1,29 @@
 #include "io_drive.h"
 
-IODrive::IODrive(std::string working_dir)
+IODriver::IODriver(std::string working_dir)
 {
   this->working_dir = working_dir;
   //
-  LOG(INFO) << "IODrive:: constructed;\n" << to_str();
+  LOG(INFO) << "IODriver:: constructed;\n" << to_str();
 }
 
-IODrive::~IODrive()
+IODriver::~IODriver()
 {
   //
-  LOG(INFO) << "IODrive:: destructed.";
+  LOG(INFO) << "IODriver:: destructed.";
 }
 
-std::string IODrive::to_str()
+std::string IODriver::to_str()
 {
   std::stringstream ss;
 
-  ss << "working_dir= " << working_dir << "\n";
+  ss << "\tworking_dir= " << working_dir << "\n";
   ss << "\n";
   
   return ss.str();
 }
 
-int IODrive::write_file(std::string another_working_dir, std::string file_name, int datasize_inB, void* data_)
+int IODriver::write_file(std::string another_working_dir, std::string file_name, size_t datasize_inB, void* data_)
 {
   std::string working_dir_;
   if (another_working_dir.empty() ) {
@@ -47,7 +47,7 @@ int IODrive::write_file(std::string another_working_dir, std::string file_name, 
   return 0;
 }
 
-int IODrive::read_file(std::string another_working_dir, std::string file_name, void* &data_)
+size_t IODriver::read_file(std::string another_working_dir, std::string file_name, void* &data_)
 {
   std::string working_dir_;
   if (another_working_dir.empty() ) {
@@ -61,7 +61,7 @@ int IODrive::read_file(std::string another_working_dir, std::string file_name, v
   std::ifstream fin (file_dir_name.c_str(), std::ifstream::binary);
   
   fin.seekg (0, fin.end);
-  int datasize_inB = fin.tellg();
+  size_t datasize_inB = fin.tellg();
   fin.seekg (0, fin.beg);
   
   char* buffer_ = new char[datasize_inB];

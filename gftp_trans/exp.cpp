@@ -7,14 +7,15 @@
 
 #include <glog/logging.h>
 
-#include "gftp_drive.h"
+#include "gftp_delivery.h"
+// #include "gftp_drive.h"
 /*
 #include "gridftp_binary_drive.h"
 extern "C" {
   #include "gridftp_api_drive.h"
 }
 */
-#include "io_drive.h"
+// #include "io_drive.h"
 
 std::map<std::string, std::string> parse_opts(int argc, char** argv)
 {
@@ -24,9 +25,10 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
   
   static struct option long_options[] =
   {
-    {"src_url", optional_argument, NULL, 0},
-    {"dst_url", optional_argument, NULL, 1},
-    {"port", optional_argument, NULL, 2},
+    {"type", optional_argument, NULL, 0},
+    {"src_url", optional_argument, NULL, 1},
+    {"dst_url", optional_argument, NULL, 2},
+    {"port", optional_argument, NULL, 3},
     {0, 0, 0, 0}
   };
   
@@ -42,12 +44,15 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
     switch (c)
     {
       case 0:
-        opt_map["src_url"] = optarg;
+        opt_map["type"] = optarg;
         break;
       case 1:
-        opt_map["dst_url"] = optarg;
+        opt_map["src_url"] = optarg;
         break;
       case 2:
+        opt_map["dst_url"] = optarg;
+        break;
+      case 3:
         opt_map["port"] = optarg;
         break;
       case 's':
@@ -73,6 +78,30 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
   return opt_map;
 }
 
+int test_io_driver(IODriver& io_driver)
+{
+  int datasize = 100;
+  int datasize_inB = datasize*sizeof(int);
+  int* data_ = (int*)malloc(datasize_inB);
+  for (int i = 0; i < datasize; i++) {
+    data_[i] = i + 1;
+  }
+  
+  if (io_driver.write_file("", "deneme.dat", datasize_inB, data_) ) {
+    LOG(ERROR) << "main:: io_driver.write_file failed!";
+  }
+  
+  void* _data_;
+  int _datasize_inB = io_driver.read_file("", "deneme.dat", _data_);
+  int* int_data_ = static_cast<int*>(_data_);
+  int _datasize = _datasize_inB / sizeof(int);
+  LOG(INFO) << "main:: _data=";
+  for (int i = 0; i < _datasize; i++) {
+    std::cout << int_data_[i] << " ";
+  }
+  std::cout << "\n";
+}
+
 int main(int argc , char **argv)
 {
   std::string temp;
@@ -80,34 +109,56 @@ int main(int argc , char **argv)
   //
   std::map<std::string, std::string> opt_map = parse_opts(argc, argv);
   
-  GFTPDriver gftp_driver;
-  if (opt_map.count("s") ) {
-    gftp_driver.init_server(5000);
+  // GFTPDriver gftp_driver;
+  std::string file_dir = "/cac/u01/mfa51/Desktop/dataspaces_wa/gftp_trans/dummy/";
+  // std::string file_dir = "/dev/sh/";
+  
+  size_t datasize = 1*1000*1000;
+  
+  GFTPDDManager gftpdd_manager(file_dir);
+  if (opt_map["type"].compare("s") == 0) {
+    // gftp_driver.init_server(5000);
+    gftpdd_manager.init_gftp_server(boost::lexical_cast<int>(opt_map["port"]) );
   }
-  else {
+  else if (opt_map["type"].compare("c") == 0) {
     // gftp_driver.init_file_transfer(opt_map["src_url"], opt_map["dst_url"]);
     // gridftp_put_file(opt_map["src_url"].c_str(), opt_map["dst_url"].c_str() );
-    IODrive io_drive("/cac/u01/mfa51/Desktop/dataspaces_wa/gftp_trans/dummy/");
-    int datasize = 100;
-    int datasize_inB = datasize*sizeof(int);
+    
+    // IODriver io_driver("/cac/u01/mfa51/Desktop/dataspaces_wa/gftp_trans/dummy/");
+    // test_io_driver(io_driver);
+    
+    size_t datasize_inB = datasize*sizeof(int);
     int* data_ = (int*)malloc(datasize_inB);
     for (int i = 0; i < datasize; i++) {
       data_[i] = i + 1;
     }
+    LOG(INFO) << "main:: datasize_inB= " << datasize_inB;
+    gftpdd_manager.put_over_gftp("127.0.0.1", "5000", file_dir + "server",
+                                 "dummy", 0, datasize_inB, data_);
+    // gftpdd_manager.put_over_gftp("127.0.0.1", "5000", "/dev/shm/",
+    //                             "dummy", 0, datasize_inB, data_);
     
-    if (io_drive.write_file("", "deneme.dat", datasize_inB, data_) ) {
-      LOG(ERROR) << "main:: io_drive.write_file failed!";
+    // size_t datasize_inB;
+    // void* data_;
+    // gftpdd_manager.get_over_gftp("192.168.2.152", "5000", "/dev/shm/",
+    //                             "dummy", 0, datasize_inB, data_);
+    // int* int_data_ = static_cast<int*>(data_);
+    // int datasize = datasize_inB / sizeof(int);
+    // LOG(INFO) << "main:: data=";
+    // for (int i = 0; i < datasize; i++) {
+    //   std::cout << int_data_[i] << " ";
+    // }
+    // std::cout << "\n";
+  }
+  else if (opt_map["type"].compare("c2") == 0) {
+    size_t datasize_inB = datasize*sizeof(int);
+    int* data_ = (int*)malloc(datasize_inB);
+    for (int i = 0; i < datasize; i++) {
+      data_[i] = i + 1;
     }
-    
-    void* _data_;
-    int _datasize_inB = io_drive.read_file("", "deneme.dat", _data_);
-    int* int_data_ = static_cast<int*>(_data_);
-    int _datasize = _datasize_inB / sizeof(int);
-    LOG(INFO) << "main:: _data=";
-    for (int i = 0; i < _datasize; i++) {
-      std::cout << int_data_[i];
-    }
-    std::cout << "\n";
+    LOG(INFO) << "main:: datasize_inB= " << datasize_inB;
+    gftpdd_manager.put_over_gftp("127.0.0.1", "5000", file_dir + "server",
+                                "dummy", 1, datasize_inB, data_);
   }
   
   std::cout << "Enter\n";

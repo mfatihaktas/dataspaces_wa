@@ -23,7 +23,8 @@ class GFTPDriver
     
     int init_server(int port);
     void read_print_stream(std::string name, FILE* fp);
-    int init_file_transfer(std::string src_url, std::string dst_url);
+    int put_file(std::string src_url, std::string dst_url);
+    int get_file(std::string src_url, std::string dst_url);
     void close();
   private:
     std::vector<boost::shared_ptr<boost::thread> > read_print_stream_thread_v;

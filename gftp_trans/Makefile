@@ -31,7 +31,7 @@ APPS := exp
 
 all: ${APPS}
 
-exp: $(ODIR)/exp.o $(ODIR)/gftp_drive.o $(ODIR)/gridftp_api_drive.o $(ODIR)/io_drive.o
+exp: $(ODIR)/exp.o $(ODIR)/gftp_delivery.o $(ODIR)/gftp_drive.o $(ODIR)/gridftp_api_drive.o $(ODIR)/io_drive.o
 	$(CPP) -o $@ $^ $(INC) $(LIB)
 
 $(ODIR)/%.o: %.c

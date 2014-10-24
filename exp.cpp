@@ -327,7 +327,7 @@ int main(int argc , char **argv)
     std::cout << "Enter\n";
     getline(std::cin, temp);
   }
-  else if (strcmp(opt_map[(char*)"type"], (char*)"ri") == 0){
+  else if (strcmp(opt_map[(char*)"type"], (char*)"ri") == 0) {
     char* lip_t = intf_to_ip(opt_map[(char*)"lintf"]);
     strcpy(lip, lip_t);
     std::cout << "main:: lip= " << lip << "\n";

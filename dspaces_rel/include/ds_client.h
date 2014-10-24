@@ -274,7 +274,7 @@ class RFPManager //Remote Fetch & Place Manager
     size_t get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_);
   private:
     boost::shared_ptr<DSpacesDriver> ds_driver_;
-    boost::shared_ptr<DDManager> dd_manager_;
+    boost::shared_ptr<IBDDManager> dd_manager_;
     
     std::map<key_ver_pair, size_t> key_ver__recvedsize_map;
     std::map<key_ver_pair, void*> key_ver__data_map;

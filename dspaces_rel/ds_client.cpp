@@ -553,7 +553,7 @@ int RSTable::pop_subscriber(std::string key, unsigned int ver, char& ds_id)
 
 //************************************  RFPManager  ********************************//
 RFPManager::RFPManager(std::list<std::string> wa_ib_lport_list, boost::shared_ptr<DSpacesDriver> ds_driver_)
-: dd_manager_(new DDManager(wa_ib_lport_list) ),
+: dd_manager_(new IBDDManager(wa_ib_lport_list) ),
   ds_driver_(ds_driver_)
 {
   LOG(INFO) << "RFPManager:: constructed.";
