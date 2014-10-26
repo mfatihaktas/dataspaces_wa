@@ -116,7 +116,7 @@ int main(int argc , char **argv)
   std::string ib_lports[] = {"1234","1235","1236","1237"};
   std::list<std::string> ib_lport_list(ib_lports, ib_lports + sizeof(ib_lports) / sizeof(std::string) );
   
-  DDManager dd_manager(ib_lport_list);
+  IBDDManager dd_manager(ib_lport_list);
   if (strcmp(opt_map[(char*)"type"], (char*)"server") == 0){
     dd_manager.init_ib_server("dummy", 0, data_type_str, dd_manager.get_next_avail_ib_lport().c_str(), 
                               boost::bind(&recv_handler, _1, _2, _3, _4) );

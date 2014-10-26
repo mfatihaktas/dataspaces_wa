@@ -50,15 +50,31 @@ elif [ $1  = 'g2' ]; then
 elif [ $1  = 'show' ]; then
   netstat -antu
 elif [ $1  = 'init' ]; then
-  # source /opt/rh/devtoolset-2/enable
+  if [ $2  = 'd' ]; then
+    # ENV VARIABLES FOR MAKE
+    export CC=/opt/gcc-4.8.2/bin/gcc
+    export CPP=/opt/gcc-4.8.2/bin/g++
+    export MPICPP=/cac/u01/mfa51/Desktop/mpich-3.1.2/install/bin/mpicxx
+    export GLOG_DIR=/cac/u01/mfa51/Desktop/glog-0.3.3/install
+    export BOOST_DIR=/cac/u01/mfa51/Desktop/boost_1_56_0/install
+    export BOOSTASIO_DIR=/opt/matlab/R2013a/bin/glnxa64
+    export DATASPACES_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.4.0/install
+    export DSPACES_WA_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa
   
-  unset LD_LIBRARY_PATH
-  LD_LIBRARY_PATH=/cac/u01/mfa51/Desktop/mpich-3.1.2/install/lib:$LD_LIBRARY_PATH
-  LD_LIBRARY_PATH=/cac/u01/mfa51/Desktop/boost_1_56_0/install/lib:$LD_LIBRARY_PATH
-  LD_LIBRARY_PATH=/opt/gcc-4.8.2/lib64:$LD_LIBRARY_PATH
-  export LD_LIBRARY_PATH
-  echo LD_LIBRARY_PATH
-  echo $LD_LIBRARY_PATH
+    # source /opt/rh/devtoolset-2/enable
+    unset LD_LIBRARY_PATH
+    LD_LIBRARY_PATH=/cac/u01/mfa51/Desktop/mpich-3.1.2/install/lib:$LD_LIBRARY_PATH
+    LD_LIBRARY_PATH=/cac/u01/mfa51/Desktop/boost_1_56_0/install/lib:$LD_LIBRARY_PATH
+    LD_LIBRARY_PATH=/opt/gcc-4.8.2/lib64:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH
+    echo LD_LIBRARY_PATH
+    echo $LD_LIBRARY_PATH
+  elif [ $1  = 'u' ]; then
+    LD_LIBRARY_PATH=/home/sc14demo/common-apps/boost_1_56_0/install/lib:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH
+    echo LD_LIBRARY_PATH
+    echo $LD_LIBRARY_PATH
+  fi
 else
   echo "Argument did not match !"
 fi
