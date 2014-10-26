@@ -1,9 +1,9 @@
 #ifndef _DSCLIENT_H_
 #define _DSCLIENT_H_
 
+#include "mpi.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include "mpi.h"
 #include <map>
 #include <unistd.h>
 

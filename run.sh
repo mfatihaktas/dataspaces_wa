@@ -1,7 +1,9 @@
 #!/bin/bash
 echo $1
+echo $2
 
-DSPACES_BIN=/cac/u01/mfa51/Desktop/dataspaces_wa/dataspaces/dataspaces-1.4.0/install/bin
+# DSPACES_BIN=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.4.0/install/bin
+DSPACES_BIN=$DSPACES_DIR/bin
 
 BOOST_LIB=/cac/u01/mfa51/Desktop/boost_1_56_0/install/lib
 
@@ -55,22 +57,34 @@ elif [ $1  = 'init' ]; then
     export CC=/opt/gcc-4.8.2/bin/gcc
     export CPP=/opt/gcc-4.8.2/bin/g++
     export MPICPP=/cac/u01/mfa51/Desktop/mpich-3.1.2/install/bin/mpicxx
+    export MPI_DIR=/cac/u01/mfa51/Desktop/mpich-3.1.2/install
     export GLOG_DIR=/cac/u01/mfa51/Desktop/glog-0.3.3/install
     export BOOST_DIR=/cac/u01/mfa51/Desktop/boost_1_56_0/install
-    export BOOSTASIO_DIR=/opt/matlab/R2013a/bin/glnxa64
-    export DATASPACES_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.4.0/install
-    export DSPACES_WA_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa
+    export DSPACES_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.4.0/install
+    export DSPACESWA_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa
   
     # source /opt/rh/devtoolset-2/enable
     unset LD_LIBRARY_PATH
     LD_LIBRARY_PATH=/cac/u01/mfa51/Desktop/mpich-3.1.2/install/lib:$LD_LIBRARY_PATH
     LD_LIBRARY_PATH=/cac/u01/mfa51/Desktop/boost_1_56_0/install/lib:$LD_LIBRARY_PATH
     LD_LIBRARY_PATH=/opt/gcc-4.8.2/lib64:$LD_LIBRARY_PATH
+    LD_LIBRARY_PATH=/cac/u01/mfa51/Desktop/glog-0.3.3/install/lib:$LD_LIBRARY_PATH
     export LD_LIBRARY_PATH
     echo LD_LIBRARY_PATH
     echo $LD_LIBRARY_PATH
-  elif [ $1  = 'u' ]; then
+  elif [ $2  = 'u' ]; then
+    export CC=gcc
+    export CPP=g++
+    export MPICPP=mpicxx
+    export MPICPP_OPTS='-DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX'
+    export MPI_DIR=/opt/intel/impi/4.1.3.048/intel64
+    export GLOG_DIR=/home/sc14demo/common-apps/glog-0.3.3/install
+    export BOOST_DIR=/home/sc14demo/common-apps/boost_1_56_0/install
+    export DSPACES_DIR=/home/sc14demo/common-apps/dataspaces-1.4.0/install
+    export DSPACESWA_DIR=/home/sc14demo/common-apps/dataspaces_wa
+    
     LD_LIBRARY_PATH=/home/sc14demo/common-apps/boost_1_56_0/install/lib:$LD_LIBRARY_PATH
+    LD_LIBRARY_PATH=/home/sc14demo/common-apps/glog-0.3.3/install/lib:$LD_LIBRARY_PATH
     export LD_LIBRARY_PATH
     echo LD_LIBRARY_PATH
     echo $LD_LIBRARY_PATH

@@ -1,3 +1,5 @@
+#include "ds_client.h"
+
 //for intf_to_ip
 #include <cstring>
 #include <sys/types.h>
@@ -18,7 +20,6 @@
 #include <boost/lexical_cast.hpp>
 #include <glog/logging.h>
 
-#include "ds_client.h"
 
 char* intf_to_ip(const char* intf)
 {

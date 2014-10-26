@@ -1,9 +1,9 @@
 #ifndef _DS_DRIVE_H_
 #define _DS_DRIVE_H_
 
+#include "mpi.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include "mpi.h"
 #include <map>
 #include <unistd.h>
 #include <string>

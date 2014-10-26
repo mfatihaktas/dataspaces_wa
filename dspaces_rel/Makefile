@@ -1,26 +1,26 @@
-# DATASPACES_DIR = /cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.4.0/install
+# DSPACES_DIR = /cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.4.0/install
 # CC = /opt/gcc-4.8.2/bin/gcc
 # CPP = /opt/gcc-4.8.2/bin/g++
 # MPICPP = /cac/u01/mfa51/Desktop/mpich-3.1.2/install/bin/mpicxx
 # GLOG_DIR ?= /cac/u01/mfa51/Desktop/glog-0.3.3/install
 # BOOST_DIR ?= /cac/u01/mfa51/Desktop/boost_1_56_0/install
-# BOOSTASIO_DIR = /opt/matlab/R2013a/bin/glnxa64
-# DSPACES_WA_DIR ?= /cac/u01/mfa51/Desktop/dataspaces_wa
+# DSPACESWA_DIR ?= /cac/u01/mfa51/Desktop/dataspaces_wa
 # ##################################################################################################
-DATASPACES_INC = -I$(DATASPACES_DIR)/include
-DATASPACES_LIB = -L$(DATASPACES_DIR)/lib -ldspaces -ldscommon -ldart -lrdmacm
-
-BOOSTASIO_LIB = -L$(BOOSTASIO_DIR)
+DSPACES_INC = -I$(DSPACES_DIR)/include
+DSPACES_LIB = -L$(DSPACES_DIR)/lib -ldspaces -ldscommon -ldart -lrdmacm
 
 BOOST_INC = -I$(BOOST_DIR)/include
 BOOST_LIB = -L$(BOOST_DIR)/lib -lboost_system -lpthread -lboost_thread -lboost_serialization
 # BOOST_LIB = -lboost_system -lpthread -lboost_thread-mt -lboost_serialization
 
 GLOG_INC = -I$(GLOG_DIR)/include
-GLOG_LIB = -L$(GLOG_DIR)/lib -l:libglog.a
+GLOG_LIB = -L$(GLOG_DIR)/lib -lglog
 
 # GFTP_INC = -I/usr/include/globus -I/usr/lib64/globus/include
 # GFTP_LIB = -L/usr/lib64/ -l:libglobus_ftp_client.so
+
+MPI_LIB = -L$(MPI_DIR)/lib
+# MPI_LIB = -L$(MPI_DIR)/lib -lmpich -lmpichcxx
 
 IBVERBS_LIB = -L/usr/lib64 -libverbs
 # 
@@ -30,11 +30,11 @@ OVERLAYNET_ODIR = $(OVERLAYNET_DIR)/obj
 IBTRANS_DIR = ib_trans
 IBTRANS_ODIR = $(IBTRANS_DIR)/obj
 
-DSPACES_REL_DIR=$(DSPACES_WA_DIR)/dspaces_rel
-DSPACES_REL_INC = -I$(DSPACES_REL_DIR)/include -I$(DSPACES_REL_DIR)/$(OVERLAYNET_DIR)/include -I$(DSPACES_REL_DIR)/$(IBTRANS_DIR)/include
+DSPACESREL_DIR=$(DSPACESWA_DIR)/dspaces_rel
+DSPACESREL_INC = -I$(DSPACESREL_DIR)/include -I$(DSPACESREL_DIR)/$(OVERLAYNET_DIR)/include -I$(DSPACESREL_DIR)/$(IBTRANS_DIR)/include
 # 
-INC = $(DATASPACES_INC) $(GLOG_INC) $(BOOST_INC) $(DSPACES_REL_INC)
-LIB = $(DATASPACES_LIB) $(GLOG_LIB) $(BOOST_LIB) $(IBVERBS_LIB)
+INC = $(DSPACES_INC) $(GLOG_INC) $(BOOST_INC) $(DSPACESREL_INC)
+LIB = $(DSPACES_LIB) $(GLOG_LIB) $(BOOST_LIB) $(IBVERBS_LIB) $(MPI_LIB)
 
 IDIR = include
 ODIR = obj

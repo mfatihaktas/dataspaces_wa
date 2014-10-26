@@ -4,26 +4,23 @@
 # MPICPP = /cac/u01/mfa51/Desktop/mpich-3.1.2/install/bin/mpicxx
 # GLOG_DIR ?= /cac/u01/mfa51/Desktop/glog-0.3.3/install
 # BOOST_DIR ?= /cac/u01/mfa51/Desktop/boost_1_56_0/install
-# BOOSTASIO_DIR = /opt/matlab/R2013a/bin/glnxa64
-# DSPACES_WA_DIR ?= /cac/u01/mfa51/Desktop/dataspaces_wa
+# DSPACESWA_DIR ?= /cac/u01/mfa51/Desktop/dataspaces_wa
 # ##################################################################################################
 DATASPACES_INC = -I$(DATASPACES_DIR)/include
 DATASPACES_LIB = -L$(DATASPACES_DIR)/lib -ldspaces -ldscommon -ldart -lrdmacm
-
-BOOSTASIO_LIB = -L$(BOOSTASIO_DIR)
 
 BOOST_INC = -I$(BOOST_DIR)/include
 BOOST_LIB = -L$(BOOST_DIR)/lib -lboost_system -lpthread -lboost_thread -lboost_serialization
 # BOOST_LIB = -lboost_system -lpthread -lboost_thread-mt -lboost_serialization
 
 GLOG_INC = -I$(GLOG_DIR)/include
-GLOG_LIB = -L$(GLOG_DIR)/lib -l:libglog.a
+GLOG_LIB = -L$(GLOG_DIR)/lib -lglog
 
 # GFTP_INC = -I/usr/include/globus -I/usr/lib64/globus/include
 # GFTP_LIB = -L/usr/lib64/ -l:libglobus_ftp_client.so
 # 
-DSPACES_REL_DIR = dspaces_rel
-DSPACES_REL_ODIR = $(DSPACES_REL_DIR)/obj
+DSPACESREL_DIR = dspaces_rel
+DSPACESREL_ODIR = $(DSPACESREL_DIR)/obj
 
 OVERLAYNET_DIR = dspaces_rel/overlaynet
 OVERLAYNET_ODIR = $(OVERLAYNET_DIR)/obj
@@ -31,17 +28,17 @@ OVERLAYNET_ODIR = $(OVERLAYNET_DIR)/obj
 IBTRANS_DIR = dspaces_rel/ib_trans
 IBTRANS_ODIR = $(IBTRANS_DIR)/obj
 
-DATASPACESWA_DIR = /cac/u01/mfa51/Desktop/dataspaces_wa
-DATASPACESWA_INC = -I$(DATASPACESWA_DIR)/include -I$(DATASPACESWA_DIR)/$(DSPACES_REL_DIR)/include -I$(DATASPACESWA_DIR)/$(OVERLAYNET_DIR)/include -I$(DATASPACESWA_DIR)/$(IBTRANS_DIR)/include
-DATASPACESWA_LIB = $(DATASPACESWA_DIR)/lib
+DSPACESWA_INC = -I$(DSPACESWA_DIR)/include -I$(DSPACESWA_DIR)/$(DSPACESREL_DIR)/include -I$(DSPACESWA_DIR)/$(OVERLAYNET_DIR)/include -I$(DSPACESWA_DIR)/$(IBTRANS_DIR)/include
+DSPACESWA_LIB = $(DSPACESWA_DIR)/lib
 
 IBVERBS_LIB = -L/usr/lib64 -libverbs
 
 # MPI_DIR ?= /cac/u01/mfa51/Desktop/mpich-3.1.2/install
-# MPI_LIB = -L$(MPI_DIR)/lib -lmpi -lmpicxx -lmpichf90
+MPI_LIB = -L$(MPI_DIR)/lib
+# MPI_LIB = -L$(MPI_DIR)/lib -lmpich -lmpichcxx
 # 
-INC = $(DATASPACES_INC) $(GLOG_INC) $(BOOST_INC) $(DATASPACESWA_INC)
-LIB = $(DATASPACES_LIB) $(GLOG_LIB) $(BOOST_LIB) $(IBVERBS_LIB)
+INC = $(DATASPACES_INC) $(GLOG_INC) $(BOOST_INC) $(DSPACESWA_INC)
+LIB = $(DATASPACES_LIB) $(GLOG_LIB) $(BOOST_LIB) $(IBVERBS_LIB) $(MPI_LIB)
 
 IDIR = include
 ODIR = obj
@@ -54,13 +51,13 @@ APPS := exp
 all: submake_dspaces_rel ${APPS}
 
 submake_dspaces_rel:
-	make -C $(DSPACES_REL_DIR)
+	make -C $(DSPACESREL_DIR)
 
-exp: $(ODIR)/exp.o $(ODIR)/dataspaces_wa.o $(DSPACES_REL_ODIR)/ds_client.o $(DSPACES_REL_ODIR)/ds_drive.o $(OVERLAYNET_ODIR)/dht_node.o $(OVERLAYNET_ODIR)/dht_server.o $(OVERLAYNET_ODIR)/dht_client.o $(OVERLAYNET_ODIR)/packet.o $(IBTRANS_ODIR)/ib_delivery.o $(IBTRANS_ODIR)/common.o
-	$(MPICPP) -g -o $@ $^ $(INC) $(LIB)
+exp: $(ODIR)/exp.o $(ODIR)/dataspaces_wa.o $(DSPACESREL_ODIR)/ds_client.o $(DSPACESREL_ODIR)/ds_drive.o $(OVERLAYNET_ODIR)/dht_node.o $(OVERLAYNET_ODIR)/dht_server.o $(OVERLAYNET_ODIR)/dht_client.o $(OVERLAYNET_ODIR)/packet.o $(IBTRANS_ODIR)/ib_delivery.o $(IBTRANS_ODIR)/common.o
+	$(MPICPP) $(MPICPP_OPTS) -g -o $@ $^ $(INC) $(LIB)
 
 $(ODIR)/%.o: %.cpp
-	$(MPICPP) -g -c -o $@ $< $(INC) $(LIB)
+	$(MPICPP) $(MPICPP_OPTS) -g -c -o $@ $< $(INC) $(LIB)
 
 ifeq ("x","y")
 $(ODIR)/%.o: %.c
@@ -68,11 +65,11 @@ $(ODIR)/%.o: %.c
 endif
 
 lib: 
-	ar -cvq $(DATASPACESWA_LIB)/libdspaces_wa.a $(ODIR)/dataspaces_wa.o $(DSPACES_REL_ODIR)/ds_client.o $(DSPACES_REL_ODIR)/ds_drive.o $(OVERLAYNET_ODIR)/dht_node.o $(OVERLAYNET_ODIR)/dht_server.o $(OVERLAYNET_ODIR)/dht_client.o $(OVERLAYNET_ODIR)/packet.o $(IBTRANS_ODIR)/ib_delivery.o $(IBTRANS_ODIR)/common.o
+	ar -cvq $(DSPACESWA_LIB)/libdspaces_wa.a $(ODIR)/dataspaces_wa.o $(DSPACESREL_ODIR)/ds_client.o $(DSPACESREL_ODIR)/ds_drive.o $(OVERLAYNET_ODIR)/dht_node.o $(OVERLAYNET_ODIR)/dht_server.o $(OVERLAYNET_ODIR)/dht_client.o $(OVERLAYNET_ODIR)/packet.o $(IBTRANS_ODIR)/ib_delivery.o $(IBTRANS_ODIR)/common.o
 
 lclean:
 	rm -f $(ODIR)/*.o
 
 clean:
-	make -C $(DSPACES_REL_DIR) clean
+	make -C $(DSPACESREL_DIR) clean
 	rm -f $(ODIR)/*.o $(LIBDIR)/* ${APPS}
