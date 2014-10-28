@@ -17,7 +17,7 @@ elif [ $1  = 'c2' ]; then
   GLOG_logtostderr=1 ./exp --type="c2" --src_url="$TRANS_DIR/$S_FNAME" --dst_url="ftp://$S_IP:$PORT$TRANS_DIR/$C2_FNAME"
 elif [ $1  = 'dc' ]; then  
   export GLOG_logtostderr=1
-  gdb --args ./exp --src_url="$TRANS_DIR/$S_FNAME" --dst_url="ftp://127.0.0.1:5000$TRANS_DIR/$C_FNAME"
+  gdb --args ./exp --type="c" --src_url="$TRANS_DIR/$S_FNAME" --dst_url="ftp://$S_IP:$PORT$TRANS_DIR/$C_FNAME"
 elif [ $1  = 's' ]; then
   GLOG_logtostderr=1 ./exp --type="s" --port=5000
 elif [ $1  = 'ds' ]; then

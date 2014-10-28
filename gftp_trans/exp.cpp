@@ -113,7 +113,7 @@ int main(int argc , char **argv)
   std::string file_dir = "/cac/u01/mfa51/Desktop/dataspaces_wa/gftp_trans/dummy/";
   // std::string file_dir = "/dev/sh/";
   
-  size_t datasize = 1*1000*1000;
+  size_t datasize = 1*1*1000;
   
   GFTPDDManager gftpdd_manager(file_dir);
   if (opt_map["type"].compare("s") == 0) {

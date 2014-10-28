@@ -10,10 +10,12 @@ struct trans_context {
   FILE *fd;
   unsigned long int global_offset;
   globus_bool_t done;
+  globus_mutex_t lock;
+  globus_cond_t cond;
 };
 
 int gridftp_get_file(const char* src_url, const char* dst_url);
 int gridftp_put_file(const char* src_url, const char* dst_url);
-int gridftp_fancy_put_file(const char* src_url, const char* dst_url, int num_streams);
+// int gridftp_fancy_put_file(const char* src_url, const char* dst_url, int num_streams);
 
 #endif //end of _GRIDFTP_DRIVE_H_
