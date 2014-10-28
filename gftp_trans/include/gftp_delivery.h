@@ -20,9 +20,9 @@ class GFTPDDManager
     int put_over_gftp(std::string s_laddr, std::string s_lport, std::string s_tmpfs_dir,
                       std::string key, unsigned int ver,
                       size_t datasize_inB, void* data_);
-    size_t get_over_gftp(std::string s_laddr, std::string s_lport, std::string s_tmpfs_dir,
-                         std::string key, unsigned int ver, 
-                         size_t &datasize_inB, void* data_); //returns datasize_inB
+    int get_over_gftp(std::string s_laddr, std::string s_lport, std::string s_tmpfs_dir,
+                      std::string key, unsigned int ver, 
+                      size_t &datasize_inB, void* data_); //returns datasize_inB
 };
 
 #endif //end of _GFTP_DELIVERY_H_

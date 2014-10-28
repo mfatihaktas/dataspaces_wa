@@ -8,7 +8,6 @@
 
 struct trans_context {
   FILE *fd;
-  unsigned long int global_offset;
   globus_bool_t done;
   globus_mutex_t lock;
   globus_cond_t cond;

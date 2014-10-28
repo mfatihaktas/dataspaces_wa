@@ -109,7 +109,6 @@ int main(int argc , char **argv)
   //
   std::map<std::string, std::string> opt_map = parse_opts(argc, argv);
   
-  // GFTPDriver gftp_driver;
   std::string file_dir = "/cac/u01/mfa51/Desktop/dataspaces_wa/gftp_trans/dummy/";
   // std::string file_dir = "/dev/sh/";
   
@@ -120,8 +119,26 @@ int main(int argc , char **argv)
     // gftp_driver.init_server(5000);
     gftpdd_manager.init_gftp_server(boost::lexical_cast<int>(opt_map["port"]) );
   }
-  else if (opt_map["type"].compare("c") == 0) {
-    // gftp_driver.init_file_transfer(opt_map["src_url"], opt_map["dst_url"]);
+  else if (opt_map["type"].compare("g") == 0) {
+    // gridftp_get_file(opt_map["src_url"].c_str(), opt_map["dst_url"].c_str() );
+
+    // gftpdd_manager.get_over_gftp("127.0.0.1", "5000", file_dir + "server",
+    //                               "dummy", 0, datasize_inB, data_);
+    
+    size_t datasize_inB;
+    void* data_;
+    // "192.168.2.152"
+    gftpdd_manager.get_over_gftp("127.0.0.1", "5000", "/dev/shm/",
+                                "dummy", 0, datasize_inB, data_);
+    int* int_data_ = static_cast<int*>(data_);
+    int datasize = datasize_inB / sizeof(int);
+    LOG(INFO) << "main:: data_=";
+    for (int i = 0; i < datasize; i++) {
+      std::cout << int_data_[i] << " ";
+    }
+    std::cout << "\n";
+  }
+  else if (opt_map["type"].compare("p") == 0) {
     // gridftp_put_file(opt_map["src_url"].c_str(), opt_map["dst_url"].c_str() );
     
     // IODriver io_driver("/cac/u01/mfa51/Desktop/dataspaces_wa/gftp_trans/dummy/");
@@ -137,20 +154,8 @@ int main(int argc , char **argv)
                                  "dummy", 0, datasize_inB, data_);
     // gftpdd_manager.put_over_gftp("127.0.0.1", "5000", "/dev/shm/",
     //                             "dummy", 0, datasize_inB, data_);
-    
-    // size_t datasize_inB;
-    // void* data_;
-    // gftpdd_manager.get_over_gftp("192.168.2.152", "5000", "/dev/shm/",
-    //                             "dummy", 0, datasize_inB, data_);
-    // int* int_data_ = static_cast<int*>(data_);
-    // int datasize = datasize_inB / sizeof(int);
-    // LOG(INFO) << "main:: data=";
-    // for (int i = 0; i < datasize; i++) {
-    //   std::cout << int_data_[i] << " ";
-    // }
-    // std::cout << "\n";
   }
-  else if (opt_map["type"].compare("c2") == 0) {
+  else if (opt_map["type"].compare("p2") == 0) {
     size_t datasize_inB = datasize*sizeof(int);
     int* data_ = (int*)malloc(datasize_inB);
     for (int i = 0; i < datasize; i++) {
