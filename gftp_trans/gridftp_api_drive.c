@@ -13,7 +13,7 @@ void _continue();
 // int gridftp_put_file(char* src_url, char* dst_url);
 // int gridftp_fancy_put_file(char* src_url, char* dst_url, int num_streams);
 //
-unsigned long int  global_offset = 0;
+unsigned long int global_offset = 0;
 
 globus_mutex_t lock;
 globus_cond_t cond;
@@ -66,7 +66,7 @@ void done_cb(void *user_arg, globus_ftp_client_handle_t *handle, globus_object_t
 void data_write_cb(void *user_arg, globus_ftp_client_handle_t *handle, globus_object_t * err, 
                    globus_byte_t *buffer, globus_size_t length, globus_off_t offset, globus_bool_t eof)
 {
-  if (err){
+  if (err) {
     printf("data_write_cb::\n\t ERROR= %s \n", globus_object_printable_to_string(err) );
   }
   else {
@@ -191,8 +191,8 @@ int gridftp_put_file(const char* src_url, const char* dst_url)
   return 0;
 }
 
-// int gridftp_get_file(const char* src_url, const char* dst_url)
-// {
+int gridftp_get_file(const char* src_url, const char* dst_url)
+{
 //   load_gftp_modules();
   
 //   globus_ftp_client_handleattr_t            hattr;
@@ -251,7 +251,7 @@ int gridftp_put_file(const char* src_url, const char* dst_url)
   
 //   //
 //   return 0;
-// }
+}
 
 int gridftp_fancy_put_file(const char* src_url, const char* dst_url, int num_streams)
 {

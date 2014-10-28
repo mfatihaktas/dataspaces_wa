@@ -1,13 +1,14 @@
-# DATASPACES_DIR = /cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.4.0/install
+# DSPACES_DIR = /cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.4.0/install
 # CC = /opt/gcc-4.8.2/bin/gcc
 # CPP = /opt/gcc-4.8.2/bin/g++
 # MPICPP = /cac/u01/mfa51/Desktop/mpich-3.1.2/install/bin/mpicxx
 # GLOG_DIR ?= /cac/u01/mfa51/Desktop/glog-0.3.3/install
 # BOOST_DIR ?= /cac/u01/mfa51/Desktop/boost_1_56_0/install
 # DSPACESWA_DIR ?= /cac/u01/mfa51/Desktop/dataspaces_wa
+# MPI_DIR ?= /cac/u01/mfa51/Desktop/mpich-3.1.2/install
 # ##################################################################################################
-DATASPACES_INC = -I$(DATASPACES_DIR)/include
-DATASPACES_LIB = -L$(DATASPACES_DIR)/lib -ldspaces -ldscommon -ldart -lrdmacm
+DSPACES_INC = -I$(DSPACES_DIR)/include
+DSPACES_LIB = -L$(DSPACES_DIR)/lib -ldspaces -ldscommon -ldart -lrdmacm
 
 BOOST_INC = -I$(BOOST_DIR)/include
 BOOST_LIB = -L$(BOOST_DIR)/lib -lboost_system -lpthread -lboost_thread -lboost_serialization
@@ -33,12 +34,16 @@ DSPACESWA_LIB = $(DSPACESWA_DIR)/lib
 
 IBVERBS_LIB = -L/usr/lib64 -libverbs
 
-# MPI_DIR ?= /cac/u01/mfa51/Desktop/mpich-3.1.2/install
-MPI_LIB = -L$(MPI_DIR)/lib
+ifndef MPI_DIR
+	MPI_LIB = 
+	# $(error MPI_DIR is undefined)
+else
+	MPI_LIB = -L$(MPI_DIR)/lib
+endif
 # MPI_LIB = -L$(MPI_DIR)/lib -lmpich -lmpichcxx
 # 
-INC = $(DATASPACES_INC) $(GLOG_INC) $(BOOST_INC) $(DSPACESWA_INC)
-LIB = $(DATASPACES_LIB) $(GLOG_LIB) $(BOOST_LIB) $(IBVERBS_LIB) $(MPI_LIB)
+INC = $(DSPACES_INC) $(GLOG_INC) $(BOOST_INC) $(DSPACESWA_INC)
+LIB = $(DSPACES_LIB) $(GLOG_LIB) $(BOOST_LIB) $(IBVERBS_LIB) $(MPI_LIB)
 
 IDIR = include
 ODIR = obj

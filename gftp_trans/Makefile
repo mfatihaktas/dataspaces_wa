@@ -1,29 +1,38 @@
-BOOST_LIB = -lboost_system -lpthread -lboost_thread-mt -lboost_serialization
+# DIR inits for dell cluster
+ifndef CC
+	CC ?= /opt/gcc-4.8.2/bin/gcc
+endif
+ifndef CPP
+	CPP ?= /opt/gcc-4.8.2/bin/g++
+endif
+ifndef DSPACESWA_DIR
+	DSPACESWA_DIR ?= /cac/u01/mfa51/Desktop/dataspaces_wa
+endif
+ifndef BOOST_DIR
+	BOOST_DIR ?= /cac/u01/mfa51/Desktop/boost_1_56_0/install
+endif
+ifndef GLOG_DIR
+	GLOG_DIR ?= /cac/u01/mfa51/Desktop/glog-0.3.3/install
+endif
+# ###
+BOOST_INC = -I$(BOOST_DIR)/include
+BOOST_LIB = -L$(BOOST_DIR)/lib -lboost_system -lpthread -lboost_thread -lboost_serialization
 
-BOOSTASIO_INC = #-I/opt/boost_1_55_0
-BOOSTASIO_LIB = -L/opt/matlab/R2013a/bin/glnxa64
-
-# GLOG_DIR ?= /cac/u01/mfa51/Desktop/dataspaces_wa/glog-0.3.3/install
-GLOG_DIR ?= glog-0.3.3/install
 GLOG_INC = -I$(GLOG_DIR)/include
-GLOG_LIB = -L(GLOG_DIR)/lib -lglog
+GLOG_LIB = -L$(GLOG_DIR)/lib -lglog
 
 GFTP_INC = -I/usr/include/globus -I/usr/lib64/globus/include
 GFTP_LIB = -L/usr/lib64/ -l:libglobus_ftp_client.so
-#
-GFTPTRANS_INC = -I/cac/u01/mfa51/Desktop/dataspaces_wa/gftp_trans/include
+# 
+GFTPTRANS_INC = -I$(DSPACESWA_DIR)/gftp_trans/include
 
-INC = $(GFTPTRANS_INC) $(GFTP_INC) $(GLOG_INC)
+INC = $(GFTPTRANS_INC) $(GFTP_INC) $(GLOG_INC) $(BOOST_INC)
 LIB = $(GFTP_LIB) $(GLOG_LIB) $(BOOST_LIB)
 # 
 IDIR = include
 ODIR = obj
 
-MPICC = mpicc
-MPICPP = mpic++
-MPICPPOPTS = 
-CC = gcc
-CPP = g++
+.PHONY: clean
 
 APPS := exp
 

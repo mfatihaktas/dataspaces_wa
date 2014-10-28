@@ -27,6 +27,8 @@ DSpacesDriver::DSpacesDriver(MPI_Comm mpi_comm, int num_peers, int appid)
   mpi_comm(mpi_comm)
 {
   init(num_peers, appid);
+  
+  refresh_last_lock_time();
   //
   LOG(INFO) << "DSpacesDriver:: constructed.";
 }

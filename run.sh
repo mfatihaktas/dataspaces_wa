@@ -1,6 +1,5 @@
 #!/bin/bash
-echo $1
-echo $2
+echo $1 $2
 
 # DSPACES_BIN=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.4.0/install/bin
 DSPACES_BIN=$DSPACES_DIR/bin
@@ -32,7 +31,7 @@ elif [ $1  = 'drm1' ]; then
 elif [ $1  = 'rm2' ]; then
   GLOG_logtostderr=1 LD_LIBRARY_PATH=$BOOST_LIB:$LD_LIBRARY_PATH \
     ./exp --type="ri" --dht_id='2' --num_dscnodes=$NUM_DSCNODES --app_id=10 \
-                      --lintf="em2" --lport=7000 \
+                      --lintf="eth0" --lport=7000 \
                       --ib_lintf="ib0"
 elif [ $1  = 'drm2' ]; then
   export GLOG_logtostderr=1 
@@ -85,6 +84,21 @@ elif [ $1  = 'init' ]; then
     
     LD_LIBRARY_PATH=/home/sc14demo/common-apps/boost_1_56_0/install/lib:$LD_LIBRARY_PATH
     LD_LIBRARY_PATH=/home/sc14demo/common-apps/glog-0.3.3/install/lib:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH
+    echo LD_LIBRARY_PATH
+    echo $LD_LIBRARY_PATH
+  elif [ $2  = 'm' ]; then
+    export CC=gcc
+    export CPP=g++
+    export MPICPP=mpicxx
+    export MPICPP_OPTS='-DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX'
+    export GLOG_DIR=/net/hp101/ihpcsc/maktas7/glog-0.3.3/install
+    export BOOST_DIR=/net/hp101/ihpcsc/maktas7/boost_1_56_0/install
+    export DSPACES_DIR=/net/hp101/ihpcsc/maktas7/dataspaces-1.4.0/install
+    export DSPACESWA_DIR=/net/hp101/ihpcsc/maktas7/dataspaces_wa
+    
+    LD_LIBRARY_PATH=/net/hp101/ihpcsc/maktas7/boost_1_56_0/install/lib:$LD_LIBRARY_PATH
+    LD_LIBRARY_PATH=/net/hp101/ihpcsc/maktas7/glog-0.3.3/install/lib:$LD_LIBRARY_PATH
     export LD_LIBRARY_PATH
     echo LD_LIBRARY_PATH
     echo $LD_LIBRARY_PATH

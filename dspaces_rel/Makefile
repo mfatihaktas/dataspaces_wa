@@ -19,7 +19,12 @@ GLOG_LIB = -L$(GLOG_DIR)/lib -lglog
 # GFTP_INC = -I/usr/include/globus -I/usr/lib64/globus/include
 # GFTP_LIB = -L/usr/lib64/ -l:libglobus_ftp_client.so
 
-MPI_LIB = -L$(MPI_DIR)/lib
+ifndef MPI_DIR
+	MPI_LIB = 
+	# $(error MPI_DIR is undefined)
+else
+	MPI_LIB = -L$(MPI_DIR)/lib
+endif
 # MPI_LIB = -L$(MPI_DIR)/lib -lmpich -lmpichcxx
 
 IBVERBS_LIB = -L/usr/lib64 -libverbs

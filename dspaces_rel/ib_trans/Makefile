@@ -2,7 +2,7 @@
 # CPP = /opt/gcc-4.8.2/bin/g++
 # GLOG_DIR ?= /cac/u01/mfa51/Desktop/glog-0.3.3/install
 # BOOST_DIR ?= /cac/u01/mfa51/Desktop/boost_1_56_0/install
-# DSPACES_WA_DIR ?= /cac/u01/mfa51/Desktop/dataspaces_wa
+# DSPACESWA_DIR ?= /cac/u01/mfa51/Desktop/dataspaces_wa
 # ##################################################################################################
 BOOSTASIO_LIB = -L$(BOOSTASIO_DIR)
 
@@ -13,7 +13,7 @@ BOOST_LIB = -L$(BOOST_DIR)/lib -lboost_system -lboost_thread -lboost_serializati
 GLOG_INC = -I$(GLOG_DIR)/include
 GLOG_LIB = -L$(GLOG_DIR)/lib -lglog
 
-IBTRANS_DIR ?= $(DSPACES_WA_DIR)/dspaces_rel/ib_trans
+IBTRANS_DIR ?= $(DSPACESWA_DIR)/dspaces_rel/ib_trans
 IBTRANS_INC = -I$(IBTRANS_DIR)/include
 
 IBVERBS_LIB = -L/usr/lib64 -libverbs -lrdmacm

@@ -6,6 +6,12 @@
 #include <string.h>
 #include "globus_ftp_client.h"
 
+struct trans_context {
+  FILE *fd;
+  unsigned long int global_offset;
+  globus_bool_t done;
+};
+
 int gridftp_get_file(const char* src_url, const char* dst_url);
 int gridftp_put_file(const char* src_url, const char* dst_url);
 int gridftp_fancy_put_file(const char* src_url, const char* dst_url, int num_streams);

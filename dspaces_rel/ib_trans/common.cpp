@@ -135,14 +135,14 @@ void* Connector::poll_cq(void *ctx)
   struct ibv_wc wc;
 
   while (1) {
-    LOG(INFO) << "poll_cq:: before ibv_get_cq_event.";
+    // LOG(INFO) << "poll_cq:: before ibv_get_cq_event.";
     TEST_NZ(ibv_get_cq_event(s_ctx->comp_channel, &cq, &ctx) );
     ibv_ack_cq_events(cq, 1);
     TEST_NZ(ibv_req_notify_cq(cq, 0) );
-    LOG(INFO) << "poll_cq:: before ibv_poll_cq.";
+    // LOG(INFO) << "poll_cq:: before ibv_poll_cq.";
     while (ibv_poll_cq(cq, 1, &wc) ) {
       if (wc.status == IBV_WC_SUCCESS) {
-        LOG(INFO) << "poll_cq:: calling s_on_completion_cb...";
+        // LOG(INFO) << "poll_cq:: calling s_on_completion_cb...";
         try {
           s_on_completion_cb(&wc);
         }

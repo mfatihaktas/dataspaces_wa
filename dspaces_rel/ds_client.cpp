@@ -874,9 +874,9 @@ void RIManager::handle_put(std::map<std::string, std::string> put_map)
     
     //debug_print(key, ver, size, ndim, gdim_, lb_, ub_, NULL);
     rq_table.put_key_ver(key, ver, data_type, this->id, size, ndim, gdim_, lb_, ub_);
-    if (bcast_rq_table() ) {
-      LOG(ERROR) << "handle_l_put:: bcast_rq_table failed!";
-    }
+    // if (bcast_rq_table() ) {
+    //   LOG(ERROR) << "handle_l_put:: bcast_rq_table failed!";
+    // }
   }
   //
   free_all<uint64_t*>(3, gdim_, lb_, ub_);

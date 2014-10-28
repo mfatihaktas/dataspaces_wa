@@ -1,12 +1,15 @@
 #!/bin/bash
-echo $1
-echo $2
+echo $1 $2 $3
 
-TMAQUIS_DIR=/cac/u01/mfa51/Desktop/nstx-sc14-demo_on_dell_cluster
-MAQUIS_DIR=/home/sc14demo/common-apps
+DELL_NAMES=( dell01 dell02 )
 
-ULAM_DIR=/home/sc14demo/common-apps
+# TMAQUIS_DIR=/cac/u01/mfa51/Desktop/nstx-sc14-demo_on_dell_cluster
+# TMAQUIS_DIR=/cac/u01/mfa51/Desktop/boost_1_56_0
+TMAQUIS_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa
+MAQUIS_DIR=/net/hp101/ihpcsc/maktas7
+
 # ULAM_DIR=~
+ULAM_DIR=/home/sc14demo/common-apps
 # TULAM_DIR=/cac/u01/mfa51/Desktop/boost_1_56_0
 TULAM_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa
 
@@ -18,15 +21,29 @@ if [ $1  = 'initssh' ]; then
     ssh -p 2222 maktas@202.83.248.123
   fi
 elif [ $1  = 'ssh' ]; then
-  if [ $2 = 'm' ]; then
-    ssh maktas7@maquis$3.cc.gatech.edu
+  if [ $2 = 'd' ]; then
+    echo "sshing to dell$3"
+    ssh -A -t mfa51@spring.rutgers.edu ssh ${DELL_NAMES[$3]}
+  elif [ $2 = 'm' ]; then
+    if [ -z "$3" ]; then
+      echo "which Maquis node? 1-16"
+    else
+      echo "sshing to maquis$3"
+      ssh maktas7@maquis$3.cc.gatech.edu
+    fi
   elif [ $2 = 'u' ]; then
-    ssh maktas@202.83.248.123
+    if [ -z "$3" ]; then
+      echo "sshing to ulam$3"
+      ssh -A -t maktas@202.83.248.123 ssh -A ulam$3
+    else
+      echo "sshing to ulam$3"
+      ssh maktas@202.83.248.123
+    fi
   fi
 elif [ $1  = 'tr' ]; then #scp only source code
   if [ $2 = 'm' ]; then
     # scp -r $TMAQUIS_DIR maktas7@maquis$3.cc.gatech.edu:$MAQUIS_DIR
-    rsync -avz $TULAM_DIR maktas7@maquis$3.cc.gatech.edu:$MAQUIS_DIR
+    rsync -avz $TMAQUIS_DIR maktas7@maquis$3.cc.gatech.edu:$MAQUIS_DIR
   elif [ $2 = 'u' ]; then
     # scp -r $TULAM_DIR maktas@202.83.248.123:$ULAM_DIR
     rsync -avz $TULAM_DIR maktas@202.83.248.123:$ULAM_DIR
