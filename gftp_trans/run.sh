@@ -2,7 +2,7 @@
 echo $1 $2 $3
 
 TRANS_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa/gftp_trans/dummy
-PORT=5000
+PORT=7000
 # S_IP=192.168.2.152
 S_IP=127.0.0.1
 # S_FNAME=dummy.dat
@@ -13,6 +13,9 @@ C2_FNAME=recved2_tx.dat
 
 if [ $1  = 'g' ]; then  
   GLOG_logtostderr=1 ./exp --type="g" --src_url="ftp://$S_IP:$PORT$TRANS_DIR/$S_FNAME" --dst_url="$TRANS_DIR/$C_FNAME"
+elif [ $1  = 'dg' ]; then  
+  export GLOG_logtostderr=1
+  gdb --args ./exp --type="g" --src_url="ftp://$S_IP:$PORT$TRANS_DIR/$S_FNAME" --dst_url="$TRANS_DIR/$C_FNAME"
 elif [ $1  = 'p' ]; then  
   GLOG_logtostderr=1 ./exp --type="p" --src_url="$TRANS_DIR/$S_FNAME" --dst_url="ftp://$S_IP:$PORT$TRANS_DIR/$C_FNAME"
 elif [ $1  = 'dp' ]; then  
@@ -21,10 +24,10 @@ elif [ $1  = 'dp' ]; then
 elif [ $1  = 'p2' ]; then  
   GLOG_logtostderr=1 ./exp --type="p2" --src_url="$TRANS_DIR/$S_FNAME" --dst_url="ftp://$S_IP:$PORT$TRANS_DIR/$C2_FNAME"
 elif [ $1  = 's' ]; then
-  GLOG_logtostderr=1 ./exp --type="s" --port=5000
+  GLOG_logtostderr=1 ./exp --type="s" --port=$PORT
 elif [ $1  = 'ds' ]; then
   export GLOG_logtostderr=1
-  gdb --args ./exp -s --port=5000
+  gdb --args ./exp -s --port=$PORT
 elif [ $1  = 'show' ]; then
   netstat -antu
 elif [ $1  = 'ts' ]; then
@@ -42,7 +45,10 @@ elif [ $1  = 'tc2' ]; then
 elif [ $1  = 'gf' ]; then
   dd if=/dev/urandom of="$TRANS_DIR/$S_FNAME" bs=1024 count=1000 #outputs bs x count Bs
 elif [ $1  = 'cf' ]; then
-  rm /dummy; 
+  rm ./dummy/*
+  rm ./dummy/server/*
+  rm ./dummy/put/*
+  rm ./dummy/get/*
 elif [ $1  = 'init' ]; then
   if [ $2  = 'd' ]; then
     # ENV VARIABLES FOR MAKE

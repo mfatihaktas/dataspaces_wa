@@ -26,13 +26,13 @@ int GFTPDDManager::put_over_gftp(std::string s_laddr, std::string s_lport, std::
                                  std::string key, unsigned int ver,
                                  size_t datasize_inB, void* data_)
 {
-  std::string fname = "ds_" + key + "_" + boost::lexical_cast<std::string>(ver) + ".dat";
+  std::string fname = "/ds_" + key + "_" + boost::lexical_cast<std::string>(ver) + ".dat";
   if (io_driver_->write_file("", fname, datasize_inB, data_) ) {
     LOG(ERROR) << "put_over_gftp:: io_driver_->write_file failed!";
     return 1;
   }
-  std::string src_url = tmpfs_dir + "/" + fname;
-  std::string dst_url = "ftp://" + s_laddr + ":" + s_lport + s_tmpfs_dir + "/" + fname;
+  std::string src_url = tmpfs_dir + fname;
+  std::string dst_url = "ftp://" + s_laddr + ":" + s_lport + s_tmpfs_dir + fname;
   
   if (gftp_driver_->put_file(src_url, dst_url) ) {
     LOG(ERROR) << "put_over_gftp:: gftp_driver_->put_file failed!";
@@ -43,13 +43,13 @@ int GFTPDDManager::put_over_gftp(std::string s_laddr, std::string s_lport, std::
   return 0;
 }
 
-INT GFTPDDManager::get_over_gftp(std::string s_laddr, std::string s_lport, std::string s_tmpfs_dir,
+int GFTPDDManager::get_over_gftp(std::string s_laddr, std::string s_lport, std::string s_tmpfs_dir,
                                  std::string key, unsigned int ver, 
-                                 size_t &datasize_inB, void* data_) //returns datasize_inB
+                                 size_t &datasize_inB, void* &data_) //returns datasize_inB
 {
-  std::string fname = "ds_" + key + "_" + boost::lexical_cast<std::string>(ver) + ".dat";
-  std::string src_url = "ftp://" + s_laddr + ":" + s_lport + s_tmpfs_dir + "/" + fname;
-  std::string dst_url = tmpfs_dir + "/" + fname;
+  std::string fname = "/ds_" + key + "_" + boost::lexical_cast<std::string>(ver) + ".dat";
+  std::string src_url = "ftp://" + s_laddr + ":" + s_lport + s_tmpfs_dir + fname;
+  std::string dst_url = tmpfs_dir + fname;
   
   if (gftp_driver_->get_file(src_url, dst_url) ) {
     LOG(ERROR) << "get_over_gftp:: gftp_driver_->get_file failed!";

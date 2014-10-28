@@ -109,34 +109,54 @@ int main(int argc , char **argv)
   //
   std::map<std::string, std::string> opt_map = parse_opts(argc, argv);
   
-  std::string file_dir = "/cac/u01/mfa51/Desktop/dataspaces_wa/gftp_trans/dummy/";
+  std::string file_dir = "/cac/u01/mfa51/Desktop/dataspaces_wa/gftp_trans/dummy";
   // std::string file_dir = "/dev/sh/";
   
   size_t datasize = 1*1*1000;
   
-  GFTPDDManager gftpdd_manager(file_dir);
+  // GFTPDDManager gftpdd_manager(file_dir);
   if (opt_map["type"].compare("s") == 0) {
     // gftp_driver.init_server(5000);
+    GFTPDDManager gftpdd_manager(file_dir);
     gftpdd_manager.init_gftp_server(boost::lexical_cast<int>(opt_map["port"]) );
+    
+    std::cout << "Enter\n";
+    getline(std::cin, temp);
   }
   else if (opt_map["type"].compare("g") == 0) {
     // gridftp_get_file(opt_map["src_url"].c_str(), opt_map["dst_url"].c_str() );
 
+    // IODriver io_driver(file_dir + "/server");
+    // void* data_;
+    // size_t datasize_inB = io_driver.read_file("", "/ds_dummy_0.dat", data_);
+    // LOG(INFO) << "main:: datasize_inB= " << datasize_inB;
+    // int* int_data_ = static_cast<int*>(data_);
+    // int datasize = datasize_inB / sizeof(int);
+    // LOG(INFO) << "main:: datasize=" << datasize << ", data_=";
+    // for (int i = 0; i < datasize; i++) {
+    //   std::cout << int_data_[i] << " ";
+    // }
+    // std::cout << "\n";
+    
     // gftpdd_manager.get_over_gftp("127.0.0.1", "5000", file_dir + "server",
     //                               "dummy", 0, datasize_inB, data_);
     
     size_t datasize_inB;
     void* data_;
     // "192.168.2.152"
-    gftpdd_manager.get_over_gftp("127.0.0.1", "5000", "/dev/shm/",
+    GFTPDDManager gftpdd_manager(file_dir + "/get");
+    gftpdd_manager.get_over_gftp("127.0.0.1", "5000", file_dir + "/server",
                                 "dummy", 0, datasize_inB, data_);
     int* int_data_ = static_cast<int*>(data_);
     int datasize = datasize_inB / sizeof(int);
-    LOG(INFO) << "main:: data_=";
+    LOG(INFO) << "main:: datasize=" << datasize << ", data_=";
     for (int i = 0; i < datasize; i++) {
       std::cout << int_data_[i] << " ";
     }
     std::cout << "\n";
+    
+    std::cout << "Enter\n";
+    getline(std::cin, temp);
   }
   else if (opt_map["type"].compare("p") == 0) {
     // gridftp_put_file(opt_map["src_url"].c_str(), opt_map["dst_url"].c_str() );
@@ -150,10 +170,14 @@ int main(int argc , char **argv)
       data_[i] = i + 1;
     }
     LOG(INFO) << "main:: datasize_inB= " << datasize_inB;
-    gftpdd_manager.put_over_gftp("127.0.0.1", "5000", file_dir + "server",
+    GFTPDDManager gftpdd_manager(file_dir + "/put");
+    gftpdd_manager.put_over_gftp("127.0.0.1", "5000", file_dir + "/server",
                                  "dummy", 0, datasize_inB, data_);
     // gftpdd_manager.put_over_gftp("127.0.0.1", "5000", "/dev/shm/",
     //                             "dummy", 0, datasize_inB, data_);
+    
+    std::cout << "Enter\n";
+    getline(std::cin, temp);
   }
   else if (opt_map["type"].compare("p2") == 0) {
     size_t datasize_inB = datasize*sizeof(int);
@@ -162,12 +186,15 @@ int main(int argc , char **argv)
       data_[i] = i + 1;
     }
     LOG(INFO) << "main:: datasize_inB= " << datasize_inB;
+    GFTPDDManager gftpdd_manager(file_dir + "/put");
     gftpdd_manager.put_over_gftp("127.0.0.1", "5000", file_dir + "server",
                                 "dummy", 1, datasize_inB, data_);
+  
+    
+    std::cout << "Enter\n";
+    getline(std::cin, temp);
   }
   
-  std::cout << "Enter\n";
-  getline(std::cin, temp);
   /*
   */
   //gridftp_put_file( (char*)(opt_map["src_url"].c_str()), (char*)(opt_map["dst_url"].c_str()) );
