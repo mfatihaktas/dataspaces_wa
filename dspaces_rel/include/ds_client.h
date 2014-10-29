@@ -30,6 +30,7 @@
 #include "packet.h"
 
 #include "ib_delivery.h"
+#include "gftp_delivery.h"
 
 #ifndef _TEST_MACROS_
 #define _TEST_MACROS_
@@ -256,36 +257,50 @@ struct RSTable //Remote Subscription Table
     thread_safe_map<key_ver_pair, std::vector<char> > key_ver__ds_id_vector_map;
 };
 
+const std::string INFINIBAND = "i"
+const std::string GRIDFTP = "g"
 class RFPManager //Remote Fetch & Place Manager
 {
   public:
-    RFPManager(std::list<std::string> wa_ib_lport_list, boost::shared_ptr<DSpacesDriver> ds_driver_);
+    RFPManager(std::string trans_protocol, boost::shared_ptr<DSpacesDriver> ds_driver_
+               std::list<std::string> wa_ib_lport_list, std::string wa_gftp_lport);
     ~RFPManager();
+    
+    int wa_get(std::string ib_laddr, std::string ib_lport,
+               std::string gftps_laddr, std::string gftps_lport, std::string gftps_tmpfs_dir
+               std::string key, unsigned int ver, std::string data_type,
+               int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
+    
+    int wa_put(std::string key, unsigned int ver, std::string data_type,
+               int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_
+               std::string ib_laddr, std::string ib_lport,
+               std::string gftps_laddr, std::string gftps_lport, std::string gftps_tmpfs_dir);
+    
+    int gftp_get__ds_put(std::string gftps_laddr, std::string gftps_lport, std::string gftps_tmpfs_dir,
+                         std::string key, unsigned int ver,
+                         int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
+    int ds_get__gftp_put(std::string key, unsigned int ver,
+                         int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_,
+                         std::string gftps_laddr, std::string gftps_lport, std::string gftps_tmpfs_dir);
+    
     std::string get_ib_lport();
-    
-    bool receive_put(std::string ib_laddr, std::string ib_lport,
-                     std::string key, unsigned int ver, std::string data_type,
-                     int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
+    int ib_receive__ds_put(std::string ib_laddr, std::string ib_lport,
+                           std::string key, unsigned int ver, std::string data_type,
+                           int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
     void handle_ib_receive(std::string key, unsigned int ver, size_t data_size, void* data_);
-    
-    bool get_send(std::string key, unsigned int ver, std::string data_type, 
-                  int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_,
-                  const char* ib_laddr, const char* ib_lport);
+    int ds_get__ib_send(std::string key, unsigned int ver, std::string data_type, 
+                        int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_,
+                        const char* ib_laddr, const char* ib_lport);
     size_t get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_);
   private:
+    std::string trans_protocol;
     boost::shared_ptr<DSpacesDriver> ds_driver_;
-    boost::shared_ptr<IBDDManager> dd_manager_;
+    boost::shared_ptr<IBDDManager> ibdd_manager_;
+    boost::shared_ptr<GFTPDDManager> gftpdd_manager_;
     
     std::map<key_ver_pair, size_t> key_ver__recvedsize_map;
     std::map<key_ver_pair, void*> key_ver__data_map;
 };
-
-//Remote Interaction Manager
-//TODO: a better way for syncing client and server of bccomm
-#define WAIT_TIME_FOR_BCCLIENT_DSLOCK 100*1000
-
-const size_t RI_MAX_MSG_SIZE = 1000;
-const size_t LI_MAX_MSG_SIZE = 1000;
 
 const size_t APP_RIMANAGER_MAX_MSG_SIZE = 1000;
 
@@ -336,9 +351,9 @@ class RIManager
     int remote_subscribe(std::string key, unsigned int ver);
     int remote_place(std::string key, unsigned int ver, char to_id);
     int remote_fetch(char ds_id, std::map<std::string, std::string> r_fetch_map);
-    void handle_receive_put(std::string called_from, std::map<std::string, std::string> str_str_map);
-    int bcast_rq_table();
-    int remote_query(bool subscribe, std::string key, unsigned int ver);
+    void handle_ib_receive__ds_put(std::string called_from, std::map<std::string, std::string> str_str_map);
+    int bcast_rq_table;
+    int remote_query(bol subscribe, std::string key, unsigned int ver);
     int broadcast_msg(char msg_type, std::map<std::string, std::string> msg_map);
     int send_msg(char ds_id, char msg_type, std::map<std::string, std::string> msg_map);
   private:
@@ -365,8 +380,7 @@ class RIManager
     
     syncer<key_ver_pair> b_r_get_syncer;
     
-    syncer<key_ver_pair> rf_receive_put_syncer;
-    syncer<key_ver_pair> rp_receive_put_syncer;
+    syncer<key_ver_pair> rf_ib_receive__ds_put_syncer;
+    syncer<key_ver_pair> rp_ib_receive__ds_put_syncer;
 };
-
 #endif //end of _DSCLIENT_H

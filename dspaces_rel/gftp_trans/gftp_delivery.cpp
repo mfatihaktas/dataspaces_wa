@@ -1,11 +1,10 @@
 #include "gftp_delivery.h"
 
-GFTPDDManager::GFTPDDManager(std::string tmpfs_dir)
-: tmpfs_dir( tmpfs_dir ),
+GFTPDDManager::GFTPDDManager(int server_lport, std::string tmpfs_dir)
+: server_lport(server_lport),
+  tmpfs_dir( tmpfs_dir ),
   io_driver_( boost::make_shared<IODriver>(tmpfs_dir) ),
   gftp_driver_( boost::make_shared<GFTPDriver>() )
-  // io_driver_( new IODriver(tmpfs_dir) ),
-  // gftp_driver_ ( new GFTPDriver() )
 {
   //
   LOG(INFO) << "GFTPDDManager:: constructed.";
@@ -17,9 +16,9 @@ GFTPDDManager::~GFTPDDManager()
   LOG(INFO) << "GFTPDDManager:: destructed.";
 }
 
-int GFTPDDManager::init_gftp_server(int port)
+int GFTPDDManager::init_gftp_server()
 {
-  return gftp_driver_->init_server(port);
+  return gftp_driver_->init_server(server_lport);
 }
 
 int GFTPDDManager::put_over_gftp(std::string s_laddr, std::string s_lport, std::string s_tmpfs_dir,
