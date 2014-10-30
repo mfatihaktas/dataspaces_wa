@@ -514,6 +514,7 @@ std::map<std::string, std::string> RQTable::to_str_str_map()
   
   return str_str_map;
 }
+
 //*************************************  RSTable  ********************************//
 RSTable::RSTable() { }
 RSTable::~RSTable() { }
@@ -551,11 +552,59 @@ int RSTable::pop_subscriber(std::string key, unsigned int ver, char& ds_id)
   return 0;
 }
 
+//*************************************  GFTPBTable  ********************************//
+GFTPBTable::GFTPBTable() { }
+GFTPBTable::~GFTPBTable() { }
+
+int GFTPBTable::add(char ds_id, std::string laddr, std::string lport, std::string tmpfs_dir)
+{
+  if (dsid_laddr_map.contains(ds_id) ) {
+    LOG(INFO) << "add:: already in, won't over-write; ds_id= " << ds_id;
+    return 0;
+  }
+  dsid_laddr_map[ds_id] = laddr;
+  dsid_lport_map[ds_id] = lport;
+  dsid_tmpfsdir_map[ds_id] = tmpfs_dir;
+  // 
+  LOG(INFO) << "add:: done for <ds_id= " << ds_id << ", (laddr= " << laddr << ", lport= " << lport << ", tmpfs_dir= " << tmpfs_dir << ")>";
+  return 0;
+}
+
+int GFTPBTable::del(char ds_id) {
+  if (!dsid_laddr_map.contains(ds_id) ) {
+    LOG(ERROR) << "del:: does not exist!; ds_id= " << ds_id;
+    return 1;
+  }
+  dsid_laddr_map.del(ds_id);
+  dsid_lport_map.del(ds_id);
+  dsid_tmpfsdir_map.del(ds_id);
+  // 
+  LOG(INFO) << "del:: done; ds_id= " << ds_id;
+  return 0;
+}
+
+int GFTPBTable::get(char ds_id, std::string &laddr, std::string &lport, std::string &tmpfs_dir)
+{
+  if (!dsid_laddr_map.contains(ds_id) ) {
+    LOG(ERROR) << "get:: does not exist!; ds_id= " << ds_id;
+    return 1;
+  }
+  laddr = dsid_laddr_map[ds_id];
+  lport = dsid_lport_map[ds_id];
+  tmpfs_dir = dsid_tmpfsdir_map[ds_id];
+  return 0;
+}
+
+bool GFTPBTable::contains(char ds_id)
+{
+  return dsid_laddr_map.contains(ds_id);
+}
+
 //************************************  RFPManager  ********************************//
 RFPManager::RFPManager(std::string trans_protocol, boost::shared_ptr<DSpacesDriver> ds_driver_,
                        std::list<std::string> wa_ib_lport_list, std::string wa_gftp_lport)
 : trans_protocol(trans_protocol),
-  ds_driver_(ds_driver_)
+  ds_driver_(ds_driver_),
   ibdd_manager_( boost::make_shared<IBDDManager>(wa_ib_lport_list) ),
   gftpdd_manager_( boost::make_shared<GFTPDDManager>(boost::lexical_cast<int>(wa_gftp_lport), "") )
 {
@@ -575,27 +624,26 @@ RFPManager::~RFPManager()
   LOG(INFO) << "RFPManager:: destructed.";
 }
 
-int RFPManager::wa_get(std::string ib_laddr, std::string ib_lport,
-                       std::string gftps_laddr, std::string gftps_lport, std::string gftps_tmpfs_dir
+int RFPManager::wa_get(std::string laddr, std::string lport, std::string tmpfs_dir,
                        std::string key, unsigned int ver, std::string data_type,
                        int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_) {
   if (trans_protocol.compare(INFINIBAND) == 0) {
-    return ib_receive__ds_put(ib_laddr, ib_lport, key, ver, data_type, size, ndim, gdim_, lb_, ub_);
+    return ib_receive__ds_put(laddr, lport, key, ver, data_type, size, ndim, gdim_, lb_, ub_);
   }
   else if (trans_protocol.compare(GRIDFTP) == 0) {
-    return gftp_get__ds_put(gftps_laddr, gftps_lport, gftps_tmpfs_dir, key, ver, size, ndim, gdim_, lb_, ub_);
+    return 0;
+    // return gftp_get__ds_put(laddr, lport, tmpfs_dir, key, ver, size, ndim, gdim_, lb_, ub_);
   }
 }
 
 int RFPManager::wa_put(std::string key, unsigned int ver, std::string data_type,
-                       int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_
-                       std::string ib_laddr, std::string ib_lport,
-                       std::string gftps_laddr, std::string gftps_lport, std::string gftps_tmpfs_dir) {
+                       int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_,
+                       std::string laddr, std::string lport, std::string tmpfs_dir) {
   if (trans_protocol.compare(INFINIBAND) == 0) {
-    return ds_get__ib_send(key, ver, data_type, size, ndim, gdim_, lb_, ub_, ib_laddr, ib_lport );
+    return ds_get__ib_send(key, ver, data_type, size, ndim, gdim_, lb_, ub_, laddr.c_str(), lport.c_str() );
   }
   else if (trans_protocol.compare(GRIDFTP) == 0) {
-    return ds_get__gftp_put(key, ver, size, ndim, gdim_, lb_, ub_, gftps_laddr, gftps_lport, gftps_tmpfs_dir);
+    return ds_get__gftp_put(key, ver, size, ndim, gdim_, lb_, ub_, laddr, lport, tmpfs_dir);
   }
 }
 
@@ -621,7 +669,7 @@ int RFPManager::gftp_get__ds_put(std::string gftps_laddr, std::string gftps_lpor
   LOG(INFO) << "gftp_get__ds_put:: done.";
   return 0;
 }
-  
+
 int RFPManager::ds_get__gftp_put(std::string key, unsigned int ver,
                                  int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_,
                                  std::string gftps_laddr, std::string gftps_lport, std::string gftps_tmpfs_dir)
@@ -632,7 +680,7 @@ int RFPManager::ds_get__gftp_put(std::string key, unsigned int ver,
     LOG(ERROR) << "ds_get__gftp_put:: data_length=0!";
     return 1;
   }
-  size_t datasize_inB = size*data_length
+  size_t datasize_inB = size*data_length;
   void* data_ = malloc(datasize_inB);
   // debug_print(key, ver, size, ndim, gdim_, lb_, ub_, NULL, 0);
   if (ds_driver_->get(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_) ) {
@@ -651,9 +699,34 @@ int RFPManager::ds_get__gftp_put(std::string key, unsigned int ver,
   return 0;
 }
 
-std::string RFPManager::get_ib_lport()
+int RFPManager::gftpfile_read__ds_put(std::string key, unsigned int ver,
+                                      int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
 {
-  return ibdd_manager_->get_next_avail_ib_lport();
+  size_t datasize_inB;
+  void* data_;
+  if (gftpdd_manager_->read_del_datafile(key, ver, datasize_inB, data_) ) {
+    LOG(ERROR) << "gftpfile_read__ds_put:: gftpdd_manager_->read_del_datafile failed!";
+    return 1;
+  }
+  if (ds_driver_->sync_put(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_) ) {
+    free(data_);
+    free_all<uint64_t*>(3, gdim_, lb_, ub_);
+    LOG(ERROR) << "gftpfile_read__ds_put:: ds_driver_->sync_put failed!";
+    return 1;
+  }
+  free_all<uint64_t*>(3, gdim_, lb_, ub_);
+  free(data_);
+}
+
+std::string RFPManager::get_lport()
+{
+  if (trans_protocol.compare(INFINIBAND) == 0) {
+    return ibdd_manager_->get_next_avail_ib_lport();
+  }
+  else if (trans_protocol.compare(GRIDFTP) == 0) {
+    return boost::lexical_cast<std::string>(gftpdd_manager_->get_gftps_port() );
+  }
+  
 }
 
 int RFPManager::ib_receive__ds_put(std::string ib_laddr, std::string ib_lport,
@@ -731,7 +804,7 @@ int RFPManager::ds_get__ib_send(std::string key, unsigned int ver, std::string d
   ibdd_manager_->init_ib_client(ib_laddr, ib_lport, data_type, data_length, data_);
   free(data_);
   // 
-  LOG(INFO) << "ds_get__ib_send:: done."
+  LOG(INFO) << "ds_get__ib_send:: done.";
   return 0;
 }
 
@@ -762,19 +835,23 @@ size_t RFPManager::get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uin
 }
 //******************************************  RIManager ******************************************//
 RIManager::RIManager(char id, int num_cnodes, int app_id,
-                     char* lip, int lport, char* ipeer_lip, int ipeer_lport,
-                     char* ib_laddr, std::list<std::string> wa_ib_lport_list)
+                     char* dht_lip, int dht_lport, char* ipeer_dht_lip, int ipeer_dht_lport,
+                     std::string trans_protocol, std::string wa_laddr, std::string wa_gftp_lport, 
+                     std::string tmpfs_dir, std::list<std::string> wa_ib_lport_list)
 : id(id),
   num_cnodes(num_cnodes),
   app_id(app_id),
-  ib_laddr(ib_laddr),
+  trans_protocol(trans_protocol),
+  wa_laddr(wa_laddr),
+  wa_gftp_lport(wa_gftp_lport),
+  tmpfs_dir(tmpfs_dir),
   dht_node_(new DHTNode(id, boost::bind(&RIManager::handle_wamsg, this, _1),
-                        lip, lport, ipeer_lip, ipeer_lport) ),
+                        dht_lip, dht_lport, ipeer_dht_lip, ipeer_dht_lport) ),
   ds_driver_ ( new DSpacesDriver(num_cnodes, app_id) ),
   bc_server_(new BCServer(app_id, num_cnodes, APP_RIMANAGER_MAX_MSG_SIZE, "req_app_", 
                           boost::bind(&RIManager::handle_app_req, this, _1),
                           ds_driver_) ),
-  rfp_manager_(new RFPManager(wa_ib_lport_list, ds_driver_) )
+  rfp_manager_(new RFPManager(trans_protocol, ds_driver_, wa_ib_lport_list, wa_gftp_lport) )
 {
   bc_server_->init_listen_all();
   //
@@ -794,7 +871,9 @@ std::string RIManager::to_str()
   ss << "\t id= " << id << "\n";
   ss << "\t num_cnodes= " << num_cnodes << "\n";
   ss << "\t app_id= " << app_id << "\n";
-  ss << "\t ib_laddr= " << ib_laddr << "\n";
+  ss << "\t trans_protocol= " << trans_protocol << "\n";
+  ss << "\t wa_laddr= " << wa_laddr << "\n";
+  ss << "\t wa_gftp_lport= " << wa_gftp_lport << "\n";
   ss << "\t dht_node=\n" << dht_node_->to_str() << "\n";
   //
   return ss.str();
@@ -1058,25 +1137,41 @@ int RIManager::remote_fetch(char ds_id, std::map<std::string, std::string> r_fet
 {
   LOG(INFO) << "remote_fetch:: started;";
   
-  std::string ib_lport = rfp_manager_->get_ib_lport();
-  std::string ib_laddr_str( (const char*) ib_laddr);
+  std::string lport = rfp_manager_->get_lport();
   
-  r_fetch_map["ib_laddr"] = ib_laddr_str;
-  r_fetch_map["ib_lport"] = ib_lport;
-  boost::thread t(&RIManager::handle_ib_receive__ds_put, this, "remote_fetch", r_fetch_map );
-  
-  key_ver_pair kv = std::make_pair(r_fetch_map["key"], boost::lexical_cast<unsigned int>(r_fetch_map["ver"]) );
-  rf_ib_receive__ds_put_syncer.add_sync_point(kv, 1);
+  if (this->trans_protocol.compare(INFINIBAND) == 0) {
+    r_fetch_map["laddr"] = wa_laddr;
+    r_fetch_map["lport"] = lport;
+    boost::thread t(&RIManager::handle_wa_get, this, "remote_fetch", r_fetch_map );
+  }
   
   r_fetch_map["type"] = REMOTE_FETCH;
   if (send_msg(ds_id, RIMSG, r_fetch_map) ) {
     LOG(ERROR) << "remote_fetch:: send_msg to to_id= " << ds_id << " failed!";
     return 1;
   }
+  // TODO: sync will not have any affect for gridftp case since wa_get will return immediately
+  std::string key = r_fetch_map["key"];
+  unsigned int ver = boost::lexical_cast<unsigned int>(r_fetch_map["ver"]);
+  key_ver_pair kv = std::make_pair(key, ver);
+  rf_wa_get_syncer.add_sync_point(kv, 1);
+  rf_wa_get_syncer.wait(kv);
+  rf_wa_get_syncer.del_sync_point(kv);
   
-  rf_ib_receive__ds_put_syncer.wait(kv);
-  rf_ib_receive__ds_put_syncer.del_sync_point(kv);
-  //
+  if (this->trans_protocol.compare(GRIDFTP) == 0) {
+    int size, ndim;
+    uint64_t *gdim_, *lb_, *ub_;
+    std::string data_type;
+    if (imsg_coder.decode_msg_map(r_fetch_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_) ) {
+      free_all<uint64_t*>(3, gdim_, lb_, ub_);
+      LOG(ERROR) << "remote_fetch:: imsg_coder.decode_msg_map failed!";
+      return 1;
+    }
+    if (rfp_manager_->gftpfile_read__ds_put(key, ver, size, ndim, gdim_, lb_, ub_) ) {
+      LOG(ERROR) << "remote_fetch:: rfp_manager_->gftpfile_read__ds_put failed!";
+    }
+  }
+  // 
   LOG(INFO) << "remote_fetch:: done.";
   return 0;
 }
@@ -1094,46 +1189,55 @@ int RIManager::remote_place(std::string key, unsigned int ver, char to_id)
     free_all<uint64_t*>(3, gdim_, lb_, ub_);
   }
   
-  // LOG(INFO) << "remote_place:: ";
-  // debug_print(key, ver, size, ndim, gdim_, lb_, ub_, NULL, 0);
-  
-  std::map<std::string, std::string> r_place_map;
-  r_place_map["type"] = REMOTE_PLACE;
-  r_place_map["id"] = id;
-  if (imsg_coder.encode_msg_map(r_place_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_) ) {
-    LOG(ERROR) << "remote_place:: encode_msg_map failed!";
-    return 1;
+  if (this->trans_protocol.compare(INFINIBAND) == 0) {
+    // debug_print(key, ver, size, ndim, gdim_, lb_, ub_, NULL, 0);
+    std::map<std::string, std::string> r_place_map;
+    r_place_map["type"] = REMOTE_PLACE;
+    r_place_map["id"] = id;
+    if (imsg_coder.encode_msg_map(r_place_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_) ) {
+      LOG(ERROR) << "remote_place:: encode_msg_map failed!";
+      return 1;
+    }
+    if (send_msg(to_id, RIMSG, r_place_map) ) {
+      LOG(ERROR) << "remote_place:: send_msg to to_id= " << to_id << " failed!";
+      free_all<uint64_t*>(3, gdim_, lb_, ub_);
+      return 1;
+    }
+    
+    key_ver_pair kv = std::make_pair(key, ver);
+    rp_syncer.add_sync_point(kv, 1 );
+    rp_syncer.wait(kv);
+    rp_syncer.del_sync_point(kv);
+    
+    laddr_lport__tmpfsdir_pair ll_t = key_ver___laddr_lport__tmpfsdir_map[kv];
+    if (rfp_manager_->wa_put(key, ver, data_type, size, ndim, gdim_, lb_, ub_, ll_t.first.first, ll_t.first.second, ll_t.second) ) {
+      LOG(ERROR) << "remote_place:: rfp_manager_->wa_put failed!";
+      free_all<uint64_t*>(3, gdim_, lb_, ub_);
+    }
+    handle_rp_syncer.notify(kv);
   }
-  
-  LOG(INFO) << "remote_place:: r_place_map= ";
-  print_str_map(r_place_map);
-  
-  if(send_msg(to_id, RIMSG, r_place_map) ){
-    LOG(ERROR) << "remote_place:: send_msg to to_id= " << to_id << " failed!";
-    free_all<uint64_t*>(3, gdim_, lb_, ub_);
-    return 1;
+  else if (this->trans_protocol.compare(GRIDFTP) == 0) {
+    if (!gftpb_table.contains(to_id) ) {
+      gftpb_ping(to_id);
+    }
+    std::string laddr, lport, tmpfs_dir;
+    if (gftpb_table.get(to_id, laddr, lport, tmpfs_dir) ) {
+      LOG(ERROR) << "remote_place:: gftpb_table.get failed!";
+      return 1;
+    }
+    if (rfp_manager_->wa_put(key, ver, "", size, ndim, gdim_, lb_, ub_, laddr, lport, tmpfs_dir) ) {
+      LOG(ERROR) << "remote_place:: rfp_manager_->wa_put failed!";
+      free_all<uint64_t*>(3, gdim_, lb_, ub_);
+      return 1;
+    }
   }
-  
-  key_ver_pair kv = std::make_pair(key, ver);
-  rp_syncer.add_sync_point(kv, 1 );
-  rp_syncer.wait(kv);
-  rp_syncer.del_sync_point(kv);
-  
-  laddr_lport_pair ll = key_ver__laddr_lport_map[kv];
-  
-  if (!rfp_manager_->ds_get__ib_send(key, ver, data_type, size, ndim, gdim_, lb_, ub_, ll.first.c_str(), ll.second.c_str() ) ) {
-    LOG(ERROR) << "remote_place:: rfp_manager_->ds_get__ib_send failed!";
-    free_all<uint64_t*>(3, gdim_, lb_, ub_);
-  }
-  
-  handle_rp_syncer.notify(kv);
   //
   free_all<uint64_t*>(3, gdim_, lb_, ub_);
   LOG(INFO) << "remote_place:: done,";
   return 0;
 }
 
-void RIManager::handle_ib_receive__ds_put(std::string called_from, std::map<std::string, std::string> str_str_map)
+void RIManager::handle_wa_get(std::string called_from, std::map<std::string, std::string> str_str_map)
 {
   std::string key;
   unsigned int ver;
@@ -1142,24 +1246,43 @@ void RIManager::handle_ib_receive__ds_put(std::string called_from, std::map<std:
   std::string data_type;
   if (imsg_coder.decode_msg_map(str_str_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_) ) {
     free_all<uint64_t*>(3, gdim_, lb_, ub_);
-    LOG(ERROR) << "handle_ib_receive__ds_put:: decode_msg_map failed!";
+    LOG(ERROR) << "handle_wa_get:: decode_msg_map failed!";
     return;
   }
   
-  if (!rfp_manager_->ib_receive__ds_put(str_str_map["ib_laddr"], str_str_map["ib_lport"], 
-                                        key, ver, data_type, 
-                                        size, ndim, gdim_, lb_, ub_) ) {
-    LOG(ERROR) << "handle_ib_receive__ds_put:: rfp_manager_->ib_receive__ds_put failed!";
+  if (rfp_manager_->wa_get(str_str_map["laddr"], str_str_map["lport"], str_str_map["tmpfs_dir"],
+                           key, ver, data_type, 
+                           size, ndim, gdim_, lb_, ub_) ) {
+    LOG(ERROR) << "handle_wa_get:: rfp_manager_->ib_receive__ds_put failed!";
   }
   
   if (called_from.compare("remote_fetch") == 0) {
-    rf_ib_receive__ds_put_syncer.notify(std::make_pair(key, ver) );
+    rf_wa_get_syncer.notify(std::make_pair(key, ver) );
   }
   else if (called_from.compare("handle_r_place") == 0) {
-    rp_ib_receive__ds_put_syncer.notify(std::make_pair(key, ver) );
+    rp_wa_get_syncer.notify(std::make_pair(key, ver) );
   }
   
   free_all<uint64_t*>(3, gdim_, lb_, ub_);
+}
+
+int RIManager::gftpb_ping(char to_id)
+{
+  LOG(INFO) << "gftpb_ping:: started for to_id= " << to_id;
+  
+  std::map<std::string, std::string> gftpb_ping_map;
+  gftpb_ping_map["id"] = this->id;
+  
+  if (send_msg(to_id, RIMSG, gftpb_ping_map) ) {
+    LOG(ERROR) << "gftpb_ping:: send_msg to to_id= " << to_id << " failed!";
+    return 1;
+  }
+  gftpb_ping_syncer.add_sync_point(to_id, 1 );
+  gftpb_ping_syncer.wait(to_id);
+  gftpb_ping_syncer.del_sync_point(to_id);
+  //
+  LOG(INFO) << "gftpb_ping:: done.";
+  return 0;
 }
 /********* handle wamsg *********/
 void RIManager::handle_wamsg(std::map<std::string, std::string> wamsg_map)
@@ -1187,6 +1310,12 @@ void RIManager::handle_wamsg(std::map<std::string, std::string> wamsg_map)
   else if (type.compare(REMOTE_PLACE_REPLY) == 0) {
     handle_rp_reply(wamsg_map);
   }
+  else if (type.compare(GFTPB_PING) == 0) {
+    handle_gftpb_ping(wamsg_map);
+  }
+  else if (type.compare(GFTPB_PONG) == 0) {
+    handle_gftpb_pong(wamsg_map);
+  }
   else{
     LOG(ERROR) << "handle_wamsg:: unknown type= " << type;
   }
@@ -1212,7 +1341,7 @@ void RIManager::handle_r_query(bool subscribe, std::map<std::string, std::string
   char ds_id;
   int dummy = -1;
   uint64_t* dummy_;
-  if(rq_table.get_key_ver(key, ver, data_type, ds_id, dummy, dummy, dummy_, dummy_, dummy_) ){
+  if (rq_table.get_key_ver(key, ver, data_type, ds_id, dummy, dummy, dummy_, dummy_, dummy_) ) {
     //LOG(INFO) << "handle_r_query:: does not exist; key= " << key;
     rq_reply_map["ds_id"] = '?';
     
@@ -1225,7 +1354,7 @@ void RIManager::handle_r_query(bool subscribe, std::map<std::string, std::string
     rq_reply_map["ds_id"] = ds_id;
   }
   
-  if(send_msg(to_id, RIMSG, rq_reply_map) ){
+  if(send_msg(to_id, RIMSG, rq_reply_map) ) {
     LOG(ERROR) << "handle_r_query:: send_msg to to_id= " << to_id << " failed!";
   }
   //
@@ -1260,16 +1389,27 @@ void RIManager::handle_r_fetch(std::map<std::string, std::string> r_fetch_map)
   int size, ndim;
   uint64_t *gdim_, *lb_, *ub_;
   std::string data_type;
-  if(imsg_coder.decode_msg_map(r_fetch_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_) ){
+  if (imsg_coder.decode_msg_map(r_fetch_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_) ) {
     free_all<uint64_t*>(3, gdim_, lb_, ub_);
     LOG(ERROR) << "handle_r_fetch:: decode_msg_map failed!";
     return;
   }
   
-  if (!rfp_manager_->ds_get__ib_send(key, ver, r_fetch_map["data_type"],
-                             size, ndim, gdim_, lb_, ub_,
-                             r_fetch_map["ib_laddr"].c_str(), r_fetch_map["ib_lport"].c_str() ) ){
-    LOG(ERROR) << "handle_r_fetch:: rfp_manager_->ds_get__ib_send failed!";
+  if (!rfp_manager_->wa_put(key, ver, data_type, size, ndim, gdim_, lb_, ub_,
+                            r_fetch_map["laddr"], r_fetch_map["lport"], r_fetch_map["tmpfs_dir"] ) ) {
+    LOG(ERROR) << "handle_r_fetch:: rfp_manager_->wa_put failed!";
+  }
+  // 
+  if (trans_protocol.compare(GRIDFTP) == 0) {
+    char to_id = r_fetch_map["id"].c_str()[0];
+    std::map<std::string, std::string> gftp_put_done_map;
+    gftp_put_done_map["type"] = GFTPPUT_DONE;
+    gftp_put_done_map["id"] = to_id;
+    if (send_msg(to_id, RIMSG, gftp_put_done_map) ) {
+      LOG(ERROR) << "handle_r_fetch:: send_msg to to_id= " << to_id << " failed!";
+      free_all<uint64_t*>(3, gdim_, lb_, ub_);
+      return;
+    }
   }
   //
   free_all<uint64_t*>(3, gdim_, lb_, ub_);
@@ -1286,7 +1426,7 @@ void RIManager::handle_r_rqtable(std::map<std::string, std::string> r_rqtable_ma
   {
     std::string tail_str = boost::lexical_cast<std::string>(count);
     std::string key_str = "key_" + tail_str;
-    if (!r_rqtable_map.count(key_str) ){
+    if (!r_rqtable_map.count(key_str) ) {
       break;
     }
     
@@ -1303,7 +1443,7 @@ void RIManager::handle_r_rqtable(std::map<std::string, std::string> r_rqtable_ma
     boost::tokenizer<boost::char_separator<char> >::iterator lb_tokens_it = lb_tokens.begin();
     boost::tokenizer<boost::char_separator<char> > ub_tokens(r_rqtable_map["ub_"+tail_str], sep);
     boost::tokenizer<boost::char_separator<char> >::iterator ub_tokens_it = ub_tokens.begin();
-    for (int i = 0; i < ndim; i++){
+    for (int i = 0; i < ndim; i++) {
       gdim_[i] = boost::lexical_cast<uint64_t>(*gdim_tokens_it);
       gdim_tokens_it++;
       lb_[i] = boost::lexical_cast<uint64_t>(*lb_tokens_it);
@@ -1329,42 +1469,41 @@ void RIManager::handle_r_place(std::map<std::string, std::string> r_place_map)
   LOG(INFO) << "handle_r_place:: r_place_map=";
   print_str_map(r_place_map);
   
-  std::string ib_lport = rfp_manager_->get_ib_lport();
-  std::string ib_laddr_str( (const char*) ib_laddr);
+  std::string lport = rfp_manager_->get_lport();
   
   std::string key;
   unsigned int ver;
   int size, ndim;
   uint64_t *gdim_, *lb_, *ub_;
   std::string data_type;
-  if(imsg_coder.decode_msg_map(r_place_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_) ){
+  if (imsg_coder.decode_msg_map(r_place_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_) ) {
     free_all<uint64_t*>(3, gdim_, lb_, ub_);
     LOG(ERROR) << "handle_r_place:: decode_msg_map failed!";
     return;
   }
   
   key_ver_pair kv = std::make_pair(key, ver);
-  rp_ib_receive__ds_put_syncer.add_sync_point(kv, 1);
+  rp_wa_get_syncer.add_sync_point(kv, 1);
   
-  r_place_map["ib_laddr"] = ib_laddr_str;
-  r_place_map["ib_lport"] = ib_lport;
-  boost::thread t(&RIManager::handle_ib_receive__ds_put, this, "handle_r_place", r_place_map);
+  r_place_map["laddr"] = wa_laddr;
+  r_place_map["lport"] = lport;
+  boost::thread t(&RIManager::handle_wa_get, this, "handle_r_place", r_place_map);
   
   std::map<std::string, std::string> rp_reply_map;
   rp_reply_map["type"] = REMOTE_PLACE_REPLY;
   rp_reply_map["key"] = key;
   rp_reply_map["ver"] = r_place_map["ver"];
-  rp_reply_map["ib_laddr"] = ib_laddr_str;
-  rp_reply_map["ib_lport"] = ib_lport;
+  rp_reply_map["laddr"] = wa_laddr;
+  rp_reply_map["lport"] = lport;
   char to_id = r_place_map["id"].c_str()[0];
-  if(send_msg(to_id, RIMSG, rp_reply_map) ){
+  if (send_msg(to_id, RIMSG, rp_reply_map) ) {
     free_all<uint64_t*>(3, gdim_, lb_, ub_);
     LOG(ERROR) << "handle_r_place:: send_msg to to_id= " << to_id << " failed!";
     return;
   }
   
-  rp_ib_receive__ds_put_syncer.wait(kv);
-  rp_ib_receive__ds_put_syncer.del_sync_point(kv);
+  rp_wa_get_syncer.wait(kv);
+  rp_wa_get_syncer.del_sync_point(kv);
   
   rq_table.add_key_ver(key, ver, data_type, this->id, size, ndim, gdim_, lb_, ub_);
   
@@ -1380,7 +1519,7 @@ void RIManager::handle_rp_reply(std::map<std::string, std::string> rp_reply_map)
   print_str_map(rp_reply_map);
   
   key_ver_pair kv = std::make_pair(rp_reply_map["key"], boost::lexical_cast<unsigned int>(rp_reply_map["ver"]) );
-  key_ver__laddr_lport_map[kv] = std::make_pair(rp_reply_map["ib_laddr"], rp_reply_map["ib_lport"]);
+  key_ver___laddr_lport__tmpfsdir_map[kv] = std::make_pair(std::make_pair(rp_reply_map["laddr"], rp_reply_map["lport"]), rp_reply_map["tmpfs_dir"]);
   
   rp_syncer.notify(kv);
   //
@@ -1396,4 +1535,46 @@ void RIManager::handle_r_subscribe(std::map<std::string, std::string> r_subs_map
                            boost::lexical_cast<char>(r_subs_map["id"]) );
   //
   LOG(INFO) << "handle_r_subscribe:: done.";
+}
+
+void RIManager::handle_gftpput_done(std::map<std::string, std::string> gftpput_done_map)
+{
+  LOG(INFO) << "handle_gftpput_done:: gftpput_done_map=";
+  print_str_map(gftpput_done_map);
+  
+  rf_wa_get_syncer.notify(std::make_pair(gftpput_done_map["key"], boost::lexical_cast<unsigned int>(gftpput_done_map["ver"]) ) );
+  //
+  LOG(INFO) << "handle_gftpput_done:: done.";
+}
+
+void RIManager::handle_gftpb_ping(std::map<std::string, std::string> gftpb_ping_map)
+{
+  LOG(INFO) << "handle_gftpb_ping:: gftpb_ping_map=";
+  print_str_map(gftpb_ping_map);
+  
+  std::map<std::string, std::string> gftpb_pong_map;
+  gftpb_pong_map["type"] = GFTPB_PONG;
+  gftpb_pong_map["id"] = this->id;
+  gftpb_pong_map["laddr"] = this->wa_laddr;
+  gftpb_pong_map["tmpfs_dir"] = this->tmpfs_dir;
+  
+  char to_id = gftpb_ping_map["id"].c_str()[0];
+  if (send_msg(to_id, RIMSG, gftpb_pong_map) ) {
+    LOG(ERROR) << "handle_gftpb_ping:: send_msg to to_id= " << to_id << " failed!";
+    return;
+  }
+  //
+  LOG(INFO) << "handle_gftpb_ping:: done.";
+}
+
+void RIManager::handle_gftpb_pong(std::map<std::string, std::string> gftpb_pong_map)
+{
+  LOG(INFO) << "handle_gftpb_pong:: gftpb_pong_map=";
+  print_str_map(gftpb_pong_map);
+  
+  char ds_id = gftpb_pong_map["id"].c_str()[0];
+  gftpb_table.add(ds_id, gftpb_pong_map["laddr"], gftpb_pong_map["lport"], gftpb_pong_map["tmpfs_dir"] );
+  gftpb_ping_syncer.notify(ds_id);
+  // 
+  LOG(INFO) << "handle_gftpb_pong:: done.";
 }

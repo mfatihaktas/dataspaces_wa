@@ -257,24 +257,36 @@ struct RSTable //Remote Subscription Table
     thread_safe_map<key_ver_pair, std::vector<char> > key_ver__ds_id_vector_map;
 };
 
-const std::string INFINIBAND = "i"
-const std::string GRIDFTP = "g"
+struct GFTPBTable //Gridftp Bootstrap Table
+{
+  public:
+    GFTPBTable();
+    ~GFTPBTable();
+    int add(char ds_id, std::string laddr, std::string lport, std::string tmpfs_dir);
+    int del(char ds_id);
+    int get(char ds_id, std::string &laddr, std::string &lport, std::string &tmpfs_dir);
+    bool contains(char ds_id);
+  private:
+    thread_safe_map<char, std::string> dsid_laddr_map;
+    thread_safe_map<char, std::string> dsid_lport_map;
+    thread_safe_map<char, std::string> dsid_tmpfsdir_map;
+};
+
+const std::string INFINIBAND = "i";
+const std::string GRIDFTP = "g";
 class RFPManager //Remote Fetch & Place Manager
 {
   public:
-    RFPManager(std::string trans_protocol, boost::shared_ptr<DSpacesDriver> ds_driver_
+    RFPManager(std::string trans_protocol, boost::shared_ptr<DSpacesDriver> ds_driver_,
                std::list<std::string> wa_ib_lport_list, std::string wa_gftp_lport);
     ~RFPManager();
     
-    int wa_get(std::string ib_laddr, std::string ib_lport,
-               std::string gftps_laddr, std::string gftps_lport, std::string gftps_tmpfs_dir
+    int wa_get(std::string laddr, std::string lport, std::string tmpfs_dir,
                std::string key, unsigned int ver, std::string data_type,
                int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
-    
     int wa_put(std::string key, unsigned int ver, std::string data_type,
-               int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_
-               std::string ib_laddr, std::string ib_lport,
-               std::string gftps_laddr, std::string gftps_lport, std::string gftps_tmpfs_dir);
+               int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_,
+               std::string laddr, std::string lport, std::string tmpfs_dir);
     
     int gftp_get__ds_put(std::string gftps_laddr, std::string gftps_lport, std::string gftps_tmpfs_dir,
                          std::string key, unsigned int ver,
@@ -282,8 +294,9 @@ class RFPManager //Remote Fetch & Place Manager
     int ds_get__gftp_put(std::string key, unsigned int ver,
                          int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_,
                          std::string gftps_laddr, std::string gftps_lport, std::string gftps_tmpfs_dir);
-    
-    std::string get_ib_lport();
+    int gftpfile_read__ds_put(std::string key, unsigned int ver,
+                              int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
+    std::string get_lport();
     int ib_receive__ds_put(std::string ib_laddr, std::string ib_lport,
                            std::string key, unsigned int ver, std::string data_type,
                            int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
@@ -320,14 +333,19 @@ const std::string REMOTE_RQTABLE = "rrqt";
 const std::string REMOTE_PLACE = "rp";
 const std::string REMOTE_PLACE_REPLY = "rp_reply";
 
-typedef std::pair<std::string, std::string> laddr_lport_pair;
+const std::string GFTPPUT_DONE = "gp_done";
+const std::string GFTPB_PING = "gb_ping";
+const std::string GFTPB_PONG = "gb_pong";
 
+typedef std::pair<std::string, std::string> laddr_lport_pair;
+typedef std::pair<laddr_lport_pair, std::string> laddr_lport__tmpfsdir_pair;
 class RIManager
 {
   public:
     RIManager(char id, int num_cnodes, int app_id, 
-              char* lip, int lport, char* ipeer_lip, int ipeer_lport, 
-              char* ib_laddr, std::list<std::string> wa_ib_lport_list);
+              char* dht_lip, int dht_lport, char* ipeer_dht_lip, int ipeer_dht_lport, 
+              std::string trans_protocol, std::string wa_laddr, std::string wa_gftp_lport, 
+              std::string tmpfs_dir, std::list<std::string> wa_ib_lport_list);
     ~RIManager();
     std::string to_str();
     
@@ -347,20 +365,24 @@ class RIManager
     void handle_r_place(std::map<std::string, std::string> r_place_map);
     void handle_rp_reply(std::map<std::string, std::string> rp_reply_map);
     void handle_r_subscribe(std::map<std::string, std::string> r_subs_map);
+    void handle_gftpput_done(std::map<std::string, std::string> gftpput_done_map);
+    void handle_gftpb_ping(std::map<std::string, std::string> gftpb_ping_map);
+    void handle_gftpb_pong(std::map<std::string, std::string> gftpb_pong_map);
     
-    int remote_subscribe(std::string key, unsigned int ver);
-    int remote_place(std::string key, unsigned int ver, char to_id);
-    int remote_fetch(char ds_id, std::map<std::string, std::string> r_fetch_map);
-    void handle_ib_receive__ds_put(std::string called_from, std::map<std::string, std::string> str_str_map);
-    int bcast_rq_table;
-    int remote_query(bol subscribe, std::string key, unsigned int ver);
-    int broadcast_msg(char msg_type, std::map<std::string, std::string> msg_map);
     int send_msg(char ds_id, char msg_type, std::map<std::string, std::string> msg_map);
+    int broadcast_msg(char msg_type, std::map<std::string, std::string> msg_map);
+    int bcast_rq_table();
+    int remote_query(bool subscribe, std::string key, unsigned int ver);
+    int remote_fetch(char ds_id, std::map<std::string, std::string> r_fetch_map);
+    void handle_wa_get(std::string called_from, std::map<std::string, std::string> str_str_map);
+    int remote_place(std::string key, unsigned int ver, char to_id);
+    int remote_subscribe(std::string key, unsigned int ver);
+    int gftpb_ping(char to_id); //blocks until pong is received
   private:
     //ImpRem: Since handle_ core functions are called by client threads, properties must be thread-safe
     char id;
     int num_cnodes, app_id;
-    char* ib_laddr;
+    std::string trans_protocol, wa_laddr, wa_gftp_lport, tmpfs_dir; //RIManager needs these for gftpb process
     IMsgCoder imsg_coder;
     
     boost::shared_ptr<DSpacesDriver> ds_driver_;
@@ -372,7 +394,7 @@ class RIManager
     RQTable rq_table;
     syncer<key_ver_pair> rq_syncer;
     
-    thread_safe_map<key_ver_pair, laddr_lport_pair> key_ver__laddr_lport_map;
+    thread_safe_map<key_ver_pair, laddr_lport__tmpfsdir_pair> key_ver___laddr_lport__tmpfsdir_map;
     syncer<key_ver_pair> rp_syncer;
     
     RSTable rs_table;
@@ -380,7 +402,10 @@ class RIManager
     
     syncer<key_ver_pair> b_r_get_syncer;
     
-    syncer<key_ver_pair> rf_ib_receive__ds_put_syncer;
-    syncer<key_ver_pair> rp_ib_receive__ds_put_syncer;
+    syncer<key_ver_pair> rf_wa_get_syncer;
+    syncer<key_ver_pair> rp_wa_get_syncer;
+    // 
+    GFTPBTable gftpb_table;
+    syncer<char> gftpb_ping_syncer;
 };
 #endif //end of _DSCLIENT_H

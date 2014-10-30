@@ -1,7 +1,7 @@
 #include "gftp_delivery.h"
 
-GFTPDDManager::GFTPDDManager(int server_lport, std::string tmpfs_dir)
-: server_lport(server_lport),
+GFTPDDManager::GFTPDDManager(int gftps_lport, std::string tmpfs_dir)
+: gftps_lport(gftps_lport),
   tmpfs_dir( tmpfs_dir ),
   io_driver_( boost::make_shared<IODriver>(tmpfs_dir) ),
   gftp_driver_( boost::make_shared<GFTPDriver>() )
@@ -16,9 +16,14 @@ GFTPDDManager::~GFTPDDManager()
   LOG(INFO) << "GFTPDDManager:: destructed.";
 }
 
+int GFTPDDManager::get_gftps_port()
+{
+  return gftps_lport;
+}
+
 int GFTPDDManager::init_gftp_server()
 {
-  return gftp_driver_->init_server(server_lport);
+  return gftp_driver_->init_server(gftps_lport);
 }
 
 int GFTPDDManager::put_over_gftp(std::string s_laddr, std::string s_lport, std::string s_tmpfs_dir,
@@ -58,5 +63,18 @@ int GFTPDDManager::get_over_gftp(std::string s_laddr, std::string s_lport, std::
   datasize_inB = io_driver_->read_file("", fname, data_);
   // 
   LOG(INFO) << "get_over_gftp:: done for <key= " << key << ", ver= " << ver << "> from src_url= " << src_url;
+  return 0;
+}
+
+int GFTPDDManager::read_del_datafile(std::string key, unsigned int ver, size_t &datasize_inB, void* &data_)
+{
+  std::string fname = "/ds_" + key + "_" + boost::lexical_cast<std::string>(ver) + ".dat";
+  
+  datasize_inB = io_driver_->read_file("", fname, data_);
+  
+  // del fname
+  
+  // 
+  LOG(INFO) << "read_del_datafile:: done for <key= " << key << ", ver= " << ver << ">";
   return 0;
 }

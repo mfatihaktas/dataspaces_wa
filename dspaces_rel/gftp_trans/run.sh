@@ -1,8 +1,8 @@
 #!/bin/bash
 echo $1 $2 $3
 
-TRANS_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa/gftp_trans/dummy
-PORT=7000
+TRANS_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/gftp_trans/dummy
+PORT=11000
 # S_IP=192.168.2.152
 S_IP=127.0.0.1
 # S_FNAME=dummy.dat
@@ -58,6 +58,8 @@ elif [ $1  = 'init' ]; then
     export MPI_DIR=/cac/u01/mfa51/Desktop/mpich-3.1.2/install
     export GLOG_DIR=/cac/u01/mfa51/Desktop/glog-0.3.3/install
     export BOOST_DIR=/cac/u01/mfa51/Desktop/boost_1_56_0/install
+    export GFTPINC_DIR=/usr/include/globus
+    export GFTPLIB_DIR=/usr/lib64
     export DSPACES_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.4.0/install
     export DSPACESWA_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa
   

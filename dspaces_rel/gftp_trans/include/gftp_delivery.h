@@ -9,13 +9,14 @@
 class GFTPDDManager
 {
   private:
-    int server_lport;
+    int gftps_lport;
     std::string tmpfs_dir;
     boost::shared_ptr<IODriver> io_driver_;
     boost::shared_ptr<GFTPDriver> gftp_driver_;
   public:
-    GFTPDDManager(int server_lport, std::string tmpfs_dir);
+    GFTPDDManager(int gftps_lport, std::string tmpfs_dir);
     ~GFTPDDManager();
+    int get_gftps_port();
     
     int init_gftp_server();
     int put_over_gftp(std::string s_laddr, std::string s_lport, std::string s_tmpfs_dir,
@@ -24,6 +25,8 @@ class GFTPDDManager
     int get_over_gftp(std::string s_laddr, std::string s_lport, std::string s_tmpfs_dir,
                       std::string key, unsigned int ver, 
                       size_t &datasize_inB, void* &data_); //returns datasize_inB
+    
+    int read_del_datafile(std::string key, unsigned int ver, size_t &datasize_inB, void* &data_);
 };
 
 #endif //end of _GFTP_DELIVERY_H_

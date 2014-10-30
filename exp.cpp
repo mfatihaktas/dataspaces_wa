@@ -115,11 +115,14 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
     {"dht_id", optional_argument, NULL, 1},
     {"num_dscnodes", optional_argument, NULL, 2},
     {"app_id", optional_argument, NULL, 3},
-    {"lintf", optional_argument, NULL, 4},
-    {"lport", optional_argument, NULL, 5},
-    {"ipeer_lip", optional_argument, NULL, 6},
-    {"ipeer_lport", optional_argument, NULL, 7},
-    {"ib_lintf", optional_argument, NULL, 8},
+    {"dht_lintf", optional_argument, NULL, 4},
+    {"dht_lport", optional_argument, NULL, 5},
+    {"ipeer_dht_lip", optional_argument, NULL, 6},
+    {"ipeer_dht_lport", optional_argument, NULL, 7},
+    {"trans_protocol", optional_argument, NULL, 8},
+    {"ib_lintf", optional_argument, NULL, 9},
+    {"gftp_lport", optional_argument, NULL, 10},
+    {"tmpfs_dir", optional_argument, NULL, 11},
     {0, 0, 0, 0}
   };
   
@@ -147,19 +150,29 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
         opt_map[(char*)"app_id"] = optarg;
         break;
       case 4:
-        opt_map[(char*)"lintf"] = optarg;
+        opt_map[(char*)"dht_lintf"] = optarg;
         break;
       case 5:
-        opt_map[(char*)"lport"] = optarg;
+        opt_map[(char*)"dht_lport"] = optarg;
         break;
       case 6:
-        opt_map[(char*)"ipeer_lip"] = optarg;
+        opt_map[(char*)"ipeer_dht_lip"] = optarg;
         break;
       case 7:
         opt_map[(char*)"ipeer_lport"] = optarg;
         break;
       case 8:
+        opt_map[(char*)"trans_protocol"] = optarg;
+        break;
+      case 9:
         opt_map[(char*)"ib_lintf"] = optarg;
+        break;
+      case 10:
+        opt_map[(char*)"gftp_lport"] = optarg;
+        break;
+      case 11:
+        opt_map[(char*)"tmpfs_dir"] = optarg;
+        break;
         break;
       case 's':
         break;
@@ -264,7 +277,7 @@ int main(int argc , char **argv)
   
   int num_dscnodes = boost::lexical_cast<int>(opt_map[(char*)"num_dscnodes"]);
   int app_id = boost::lexical_cast<int>(opt_map[(char*)"app_id"]);
-  char lip[100];
+  char dht_lip[100];
   char ib_lip[100];
   
   if (strcmp(opt_map[(char*)"type"], (char*)"put") == 0) {
@@ -303,23 +316,28 @@ int main(int argc , char **argv)
     getline(std::cin, temp);
   }
   else if (strcmp(opt_map[(char*)"type"], (char*)"ri_t") == 0) {
-    char* lip_t = intf_to_ip(opt_map[(char*)"lintf"]);
-    strcpy(lip, lip_t);
-    std::cout << "main:: lip= " << lip << "\n";
+    char* dht_lip_t = intf_to_ip(opt_map[(char*)"dht_lintf"]);
+    strcpy(dht_lip, dht_lip_t);
+    std::cout << "main:: dht_lip= " << dht_lip << "\n";
     
     char* ib_lip_t = intf_to_ip(opt_map[(char*)"ib_lintf"]);
     strcpy(ib_lip, ib_lip_t);
     std::cout << "main:: ib_lip= " << ib_lip << "\n";
     //
-    if (!opt_map.count((char*)"ipeer_lip")){
-      opt_map[(char*)"ipeer_lip"] = NULL;
-      opt_map[(char*)"ipeer_lport"] = (char*)"0";
+    if (!opt_map.count((char*)"ipeer_dht_lip") ) {
+      opt_map[(char*)"ipeer_dht_lip"] = NULL;
+      opt_map[(char*)"ipeer_dht_lport"] = (char*)"0";
     }
     
+    std::string trans_protocol(opt_map[(char*)"trans_protocol"] );
+    std::string wa_laddr(intf_to_ip(opt_map[(char*)"ib_lintf"] ) );
+    std::string wa_gftp_lport(opt_map[(char*)"gftp_lport"] );
+    std::string tmpfs_dir(opt_map[(char*)"tmpfs_dir"] );
     RIManager ri_manager(opt_map[(char*)"dht_id"][0], num_dscnodes-1, app_id, 
-                         lip, atoi(opt_map[(char*)"lport"]),
-                         opt_map[(char*)"ipeer_lip"], atoi(opt_map[(char*)"ipeer_lport"]),
-                         ib_lip, wa_ib_lport_list);
+                         dht_lip, atoi(opt_map[(char*)"dht_lport"]),
+                         opt_map[(char*)"ipeer_dht_lip"], atoi(opt_map[(char*)"ipeer_dht_lport"]),
+                         trans_protocol, wa_laddr, wa_gftp_lport, tmpfs_dir,
+                         wa_ib_lport_list);
 
     //usleep(5*1000*1000);
     //ri_manager.remote_query("dummy");
@@ -328,22 +346,29 @@ int main(int argc , char **argv)
     getline(std::cin, temp);
   }
   else if (strcmp(opt_map[(char*)"type"], (char*)"ri") == 0) {
-    char* lip_t = intf_to_ip(opt_map[(char*)"lintf"]);
-    strcpy(lip, lip_t);
-    std::cout << "main:: lip= " << lip << "\n";
+    char* dht_lip_t = intf_to_ip(opt_map[(char*)"dht_lintf"]);
+    strcpy(dht_lip, dht_lip_t);
+    std::cout << "main:: dht_lip= " << dht_lip << "\n";
     
     char* ib_lip_t = intf_to_ip(opt_map[(char*)"ib_lintf"]);
     strcpy(ib_lip, ib_lip_t);
     std::cout << "main:: ib_lip= " << ib_lip << "\n";
     //
-    if (!opt_map.count((char*)"ipeer_lip")){
-      opt_map[(char*)"ipeer_lip"] = NULL;
-      opt_map[(char*)"ipeer_lport"] = (char*)"0";
+    if (!opt_map.count((char*)"ipeer_dht_lip") ) {
+      opt_map[(char*)"ipeer_dht_lip"] = NULL;
+      opt_map[(char*)"ipeer_dht_lport"] = (char*)"0";
     }
+    
+    std::string trans_protocol(opt_map[(char*)"trans_protocol"] );
+    std::string wa_laddr(intf_to_ip(opt_map[(char*)"ib_lintf"] ) );
+    std::string wa_gftp_lport(opt_map[(char*)"gftp_lport"] );
+    std::string tmpfs_dir(opt_map[(char*)"tmpfs_dir"] );
     RIManager ri_manager(opt_map[(char*)"dht_id"][0], num_dscnodes-1, app_id, 
-                         lip, atoi(opt_map[(char*)"lport"]),
-                         opt_map[(char*)"ipeer_lip"], atoi(opt_map[(char*)"ipeer_lport"]),
-                         ib_lip, wa_ib_lport_list);
+                         dht_lip, atoi(opt_map[(char*)"dht_lport"]),
+                         opt_map[(char*)"ipeer_dht_lip"], atoi(opt_map[(char*)"ipeer_dht_lport"]),
+                         trans_protocol, wa_laddr, wa_gftp_lport, tmpfs_dir,
+                         wa_ib_lport_list);
+    
     std::cout << "Enter\n";
     getline(std::cin, temp);
   }

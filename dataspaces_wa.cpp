@@ -115,7 +115,7 @@ int WADspacesDriver::get(bool blocking, std::string data_type, std::string key, 
   }
   //
   boost::shared_ptr<BCServer> bc_server_( 
-    new BCServer(app_id, 0, RI_MAX_MSG_SIZE, "reply_app_", 
+    new BCServer(app_id, 0, APP_RIMANAGER_MAX_MSG_SIZE, "reply_app_", 
                  boost::bind(&WADspacesDriver::handle_ri_reply, this, _1),
                  ds_driver_)
   );

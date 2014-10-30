@@ -14,6 +14,12 @@ endif
 ifndef GLOG_DIR
 	GLOG_DIR ?= /cac/u01/mfa51/Desktop/glog-0.3.3/install
 endif
+ifndef GFTPINC_DIR
+	GFTPINC_DIR ?= /usr/include/globus
+endif
+ifndef GFTPLIB_DIR
+	GFTPLIB_DIR ?= /usr/lib64
+endif
 # ###
 BOOST_INC = -I$(BOOST_DIR)/include
 BOOST_LIB = -L$(BOOST_DIR)/lib -lboost_system -lpthread -lboost_thread -lboost_serialization
@@ -21,10 +27,10 @@ BOOST_LIB = -L$(BOOST_DIR)/lib -lboost_system -lpthread -lboost_thread -lboost_s
 GLOG_INC = -I$(GLOG_DIR)/include
 GLOG_LIB = -L$(GLOG_DIR)/lib -lglog
 
-GFTP_INC = -I/usr/include/globus -I/usr/lib64/globus/include
-GFTP_LIB = -L/usr/lib64/ -l:libglobus_ftp_client.so
+GFTP_INC = -I$(GFTPINC_DIR) #-I/usr/lib64/globus/include
+GFTP_LIB = -L$(GFTPLIB_DIR) -lglobus_ftp_client
 # 
-GFTPTRANS_INC = -I$(DSPACESWA_DIR)/gftp_trans/include
+GFTPTRANS_INC = -I$(DSPACESWA_DIR)/dspaces_rel/gftp_trans/include
 
 INC = $(GFTPTRANS_INC) $(GFTP_INC) $(GLOG_INC) $(BOOST_INC)
 LIB = $(GFTP_LIB) $(GLOG_LIB) $(BOOST_LIB)

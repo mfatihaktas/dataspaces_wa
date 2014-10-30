@@ -1,10 +1,18 @@
 #!/bin/bash
-echo $1 $2
+echo $1 $2 $3
+
+DHT_LINTF="em2"
+IB_INTF="ib0"
+
+RM1_DHT_LPORT=8000
+RM2_DHT_LPORT=7000
+RM2_DHT_LIP="192.168.2.152"
+
+GFTP_LPORT=10000
+TMPFS_DIR="/dev/shm"
 
 # DSPACES_BIN=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.4.0/install/bin
 DSPACES_BIN=$DSPACES_DIR/bin
-
-BOOST_LIB=/cac/u01/mfa51/Desktop/boost_1_56_0/install/lib
 
 NUM_SNODES=1
 NUM_DSCNODES=$((1+1)) #+1: RIManager
@@ -12,42 +20,44 @@ NUM_DSCNODES=$((1+1)) #+1: RIManager
 if [ $1  = 's' ]; then
   $DSPACES_BIN/./dataspaces_server --server $NUM_SNODES --cnodes $NUM_DSCNODES
   #$DSPACES_BIN/./dataspaces_server -s $NUM_SNODES -c $NUM_DSCNODES
-elif [ $1  = 'p1' ]; then
-  GLOG_logtostderr=1 LD_LIBRARY_PATH=$BOOST_LIB:$LD_LIBRARY_PATH \ 
-    ./exp --type="put" --num_dscnodes=$NUM_DSCNODES --app_id=1
-elif [ $1  = 'g1' ]; then
-  GLOG_logtostderr=1 LD_LIBRARY_PATH=$BOOST_LIB:$LD_LIBRARY_PATH \ 
-    ./exp --type="get" --num_dscnodes=$NUM_DSCNODES --app_id=1
-elif [ $1  = 'rm1' ]; then
-  GLOG_logtostderr=1 ./exp --type="ri" --dht_id='1' --num_dscnodes=$NUM_DSCNODES --app_id=10 \
-                           --lintf="em2" --lport=8000 --ipeer_lip="192.168.2.152" --ipeer_lport=7000 \
-                           --ib_lintf="ib0"
-elif [ $1  = 'drm1' ]; then
-  export GLOG_logtostderr=1
-  export LD_LIBRARY_PATH=$BOOST_LIB:$LD_LIBRARY_PATH
-  gdb --args ./exp --type="ri" --dht_id='1' --num_dscnodes=$NUM_DSCNODES --app_id=10 \
-                   --lintf="em2" --lport=8000 --ipeer_lip="192.168.2.152" --ipeer_lport=7000 \
-                   --ib_lintf="ib0"
-elif [ $1  = 'rm2' ]; then
-  GLOG_logtostderr=1 LD_LIBRARY_PATH=$BOOST_LIB:$LD_LIBRARY_PATH \
-    ./exp --type="ri" --dht_id='2' --num_dscnodes=$NUM_DSCNODES --app_id=10 \
-                      --lintf="eth0" --lport=7000 \
-                      --ib_lintf="ib0"
-elif [ $1  = 'drm2' ]; then
-  export GLOG_logtostderr=1 
-  export LD_LIBRARY_PATH=$BOOST_LIB:$LD_LIBRARY_PATH
-  gdb --args ./exp --type="ri" --dht_id='2' --num_dscnodes=$NUM_DSCNODES --app_id=10 \
-                   --lintf="em2" --lport=7000 \
-                   --ib_lintf="ib0"
-elif [ $1  = 'p2' ]; then
-  GLOG_logtostderr=1 LD_LIBRARY_PATH=$BOOST_LIB:$LD_LIBRARY_PATH \
-    ./exp --type="put" --num_dscnodes=$NUM_DSCNODES --app_id=1
-elif [ $1  = 'p22' ]; then
-  GLOG_logtostderr=1 LD_LIBRARY_PATH=$BOOST_LIB:$LD_LIBRARY_PATH \ 
-    ./exp --type="put_2" --num_dscnodes=$NUM_DSCNODES --app_id=1
-elif [ $1  = 'g2' ]; then
-  GLOG_logtostderr=1 LD_LIBRARY_PATH=$BOOST_LIB:$LD_LIBRARY_PATH \
-    ./exp --type="get" --num_dscnodes=$NUM_DSCNODES --app_id=1
+elif [ $1  = 'p' ]; then
+  if [ $2  = '1' ]; then
+    GLOG_logtostderr=1 ./exp --type="put" --num_dscnodes=$NUM_DSCNODES --app_id=1
+  elif [ $2  = '2' ]; then
+    GLOG_logtostderr=1 ./exp --type="put" --num_dscnodes=$NUM_DSCNODES --app_id=1
+  elif [ $2  = '22' ]; then
+    GLOG_logtostderr=1 ./exp --type="put_2" --num_dscnodes=$NUM_DSCNODES --app_id=1
+  fi
+elif [ $1  = 'g' ]; then
+  if [ $2  = '1' ]; then
+    GLOG_logtostderr=1 ./exp --type="get" --num_dscnodes=$NUM_DSCNODES --app_id=1
+  elif [ $2  = '2' ]; then
+    GLOG_logtostderr=1 ./exp --type="get" --num_dscnodes=$NUM_DSCNODES --app_id=1
+  fi
+elif [ $1  = 'rm' ]; then
+  if [ $2  = '1' ]; then
+    GLOG_logtostderr=1 ./exp --type="ri" --dht_id=$2 --num_dscnodes=$NUM_DSCNODES --app_id=10 \
+                             --dht_lintf=$DHT_LINTF --dht_lport=$RM1_DHT_LPORT --ipeer_dht_lip=$RM2_DHT_LIP --ipeer_dht_lport=$RM2_DHT_LPORT \
+                             --trans_protocol="i" --ib_lintf=$IB_INTF \
+                             --gftp_lport=$GFTP_LPORT --tmpfs_dir=$TMPFS_DIR
+  elif [ $2  = '2' ]; then
+    GLOG_logtostderr=  ./exp --type="ri" --dht_id=$2 --num_dscnodes=$NUM_DSCNODES --app_id=10 \
+                             --dht_lintf=$DHT_LINTF --dht_lport=$RM2_DHT_LPORT \
+                             --trans_protocol="i" --ib_lintf=$IB_INTF \
+                             --gftp_lport=$GFTP_LPORT --tmpfs_dir=$TMPFS_DIR
+  fi
+elif [ $1  = 'drm' ]; then
+  if [ $2  = '1' ]; then
+    export GLOG_logtostderr=1
+    gdb --args ./exp --type="ri" --dht_id=$2 --num_dscnodes=$NUM_DSCNODES --app_id=10 \
+                     --lintf=$DHT_LINTF --dht_lport=$RM1_DHT_LPORT --ipeer_dht_lip=$RM2_DHT_LIP --ipeer_dht_lport=$RM2_DHT_LPORT \
+                     --ib_lintf=$IB_INTF
+  elif [ $2  = '2' ]; then
+    export GLOG_logtostderr=1 
+    gdb --args ./exp --type="ri" --dht_id=$2 --num_dscnodes=$NUM_DSCNODES --app_id=10 \
+                     --lintf=$DHT_LINTF --dht_lport=$RM2_DHT_LPORT \
+                     --ib_lintf=$IB_INTF
+  fi
 elif [ $1  = 'show' ]; then
   netstat -antu
 elif [ $1  = 'init' ]; then
@@ -59,6 +69,8 @@ elif [ $1  = 'init' ]; then
     export MPI_DIR=/cac/u01/mfa51/Desktop/mpich-3.1.2/install
     export GLOG_DIR=/cac/u01/mfa51/Desktop/glog-0.3.3/install
     export BOOST_DIR=/cac/u01/mfa51/Desktop/boost_1_56_0/install
+    export GFTPINC_DIR=/usr/include/globus
+    export GFTPLIB_DIR=/usr/lib64
     export DSPACES_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.4.0/install
     export DSPACESWA_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa
   
@@ -79,6 +91,8 @@ elif [ $1  = 'init' ]; then
     export MPI_DIR=/opt/intel/impi/4.1.3.048/intel64
     export GLOG_DIR=/home/sc14demo/common-apps/glog-0.3.3/install
     export BOOST_DIR=/home/sc14demo/common-apps/boost_1_56_0/install
+    export GFTPINC_DIR=/usr/include/globus
+    export GFTPLIB_DIR=/usr/lib64
     export DSPACES_DIR=/home/sc14demo/common-apps/dataspaces-1.4.0/install
     export DSPACESWA_DIR=/home/sc14demo/common-apps/dataspaces_wa
     
@@ -94,6 +108,8 @@ elif [ $1  = 'init' ]; then
     export MPICPP_OPTS='-DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX'
     export GLOG_DIR=/net/hp101/ihpcsc/maktas7/glog-0.3.3/install
     export BOOST_DIR=/net/hp101/ihpcsc/maktas7/boost_1_56_0/install
+    export GFTPINC_DIR=/usr/include/globus
+    export GFTPLIB_DIR=/usr/lib64
     export DSPACES_DIR=/net/hp101/ihpcsc/maktas7/dataspaces-1.4.0/install
     export DSPACESWA_DIR=/net/hp101/ihpcsc/maktas7/dataspaces_wa
     

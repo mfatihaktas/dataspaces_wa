@@ -4,6 +4,8 @@
 # MPICPP = /cac/u01/mfa51/Desktop/mpich-3.1.2/install/bin/mpicxx
 # GLOG_DIR ?= /cac/u01/mfa51/Desktop/glog-0.3.3/install
 # BOOST_DIR ?= /cac/u01/mfa51/Desktop/boost_1_56_0/install
+# GFTPINC_DIR ?= 
+# GFTPLIB_DIR ?= 
 # DSPACESWA_DIR ?= /cac/u01/mfa51/Desktop/dataspaces_wa
 # ##################################################################################################
 DSPACES_INC = -I$(DSPACES_DIR)/include
@@ -16,8 +18,8 @@ BOOST_LIB = -L$(BOOST_DIR)/lib -lboost_system -lpthread -lboost_thread -lboost_s
 GLOG_INC = -I$(GLOG_DIR)/include
 GLOG_LIB = -L$(GLOG_DIR)/lib -lglog
 
-# GFTP_INC = -I/usr/include/globus -I/usr/lib64/globus/include
-# GFTP_LIB = -L/usr/lib64/ -l:libglobus_ftp_client.so
+GFTP_INC = -I$(GFTPINC_DIR)
+GFTP_LIB = -L$(GFTPLIB_DIR) -lglobus_ftp_client
 
 ifndef MPI_DIR
 	MPI_LIB = 
@@ -29,17 +31,21 @@ endif
 
 IBVERBS_LIB = -L/usr/lib64 -libverbs
 # 
-OVERLAYNET_DIR = overlaynet
+DSPACESREL_DIR=$(DSPACESWA_DIR)/dspaces_rel
+
+OVERLAYNET_DIR = $(DSPACESREL_DIR)/overlaynet
 OVERLAYNET_ODIR = $(OVERLAYNET_DIR)/obj
 
-IBTRANS_DIR = ib_trans
+IBTRANS_DIR = $(DSPACESREL_DIR)/ib_trans
 IBTRANS_ODIR = $(IBTRANS_DIR)/obj
 
-DSPACESREL_DIR=$(DSPACESWA_DIR)/dspaces_rel
-DSPACESREL_INC = -I$(DSPACESREL_DIR)/include -I$(DSPACESREL_DIR)/$(OVERLAYNET_DIR)/include -I$(DSPACESREL_DIR)/$(IBTRANS_DIR)/include
+GFTPTRANS_DIR = $(DSPACESREL_DIR)/gftp_trans
+GFTPTRANS_ODIR = $(GFTPTRANS_DIR)/obj
+
+DSPACESREL_INC = -I$(DSPACESREL_DIR)/include -I$(OVERLAYNET_DIR)/include -I$(IBTRANS_DIR)/include -I$(GFTPTRANS_DIR)/include
 # 
-INC = $(DSPACES_INC) $(GLOG_INC) $(BOOST_INC) $(DSPACESREL_INC)
-LIB = $(DSPACES_LIB) $(GLOG_LIB) $(BOOST_LIB) $(IBVERBS_LIB) $(MPI_LIB)
+INC = $(DSPACES_INC) $(GLOG_INC) $(BOOST_INC) $(DSPACESREL_INC) $(GFTP_INC)
+LIB = $(DSPACES_LIB) $(GLOG_LIB) $(BOOST_LIB) $(IBVERBS_LIB) $(MPI_LIB) $(GFTP_LIB)
 
 IDIR = include
 ODIR = obj
@@ -56,7 +62,10 @@ submake_overlaynet_dir:
 submake_ibtrans_dir:
 	make -C $(IBTRANS_DIR)
 
-exp: $(ODIR)/exp.o $(ODIR)/ds_client.o $(ODIR)/ds_drive.o $(OVERLAYNET_ODIR)/dht_node.o $(OVERLAYNET_ODIR)/dht_server.o $(OVERLAYNET_ODIR)/dht_client.o $(OVERLAYNET_ODIR)/packet.o $(IBTRANS_ODIR)/ib_delivery.o $(IBTRANS_ODIR)/common.o
+submake_gftptrans_dir:
+	make -C $(GFTPTRANS_DIR)
+
+exp: $(ODIR)/exp.o $(ODIR)/ds_client.o $(ODIR)/ds_drive.o $(OVERLAYNET_ODIR)/dht_node.o $(OVERLAYNET_ODIR)/dht_server.o $(OVERLAYNET_ODIR)/dht_client.o $(OVERLAYNET_ODIR)/packet.o $(IBTRANS_ODIR)/ib_delivery.o $(IBTRANS_ODIR)/common.o $(GFTPTRANS_ODIR)/gftp_delivery.o $(GFTPTRANS_ODIR)/gftp_drive.o $(GFTPTRANS_ODIR)/gridftp_api_drive.o $(GFTPTRANS_ODIR)/io_drive.o
 	$(MPICPP) -g -o $@ $^ $(INC) $(LIB)
 
 $(ODIR)/%.o: %.cpp
