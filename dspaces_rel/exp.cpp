@@ -55,8 +55,9 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
     {"ipeer_dht_lport", optional_argument, NULL, 7},
     {"trans_protocol", optional_argument, NULL, 8},
     {"ib_lintf", optional_argument, NULL, 9},
-    {"gftp_lport", optional_argument, NULL, 10},
-    {"tmpfs_dir", optional_argument, NULL, 11},
+    {"gftp_lintf", optional_argument, NULL, 10},
+    {"gftp_lport", optional_argument, NULL, 11},
+    {"tmpfs_dir", optional_argument, NULL, 12},
     {0, 0, 0, 0}
   };
   
@@ -102,9 +103,12 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
         opt_map[(char*)"ib_lintf"] = optarg;
         break;
       case 10:
-        opt_map[(char*)"gftp_lport"] = optarg;
+        opt_map[(char*)"gftp_lintf"] = optarg;
         break;
       case 11:
+        opt_map[(char*)"gftp_lport"] = optarg;
+        break;
+      case 12:
         opt_map[(char*)"tmpfs_dir"] = optarg;
         break;
       case 's':
@@ -156,13 +160,14 @@ int main(int argc , char **argv)
     
     std::string trans_protocol(opt_map[(char*)"trans_protocol"] );
     std::string wa_laddr(intf_to_ip(opt_map[(char*)"ib_lintf"] ) );
+    std::string wa_gftp_lintf(opt_map[(char*)"gftp_lintf"] );
     std::string wa_gftp_lport(opt_map[(char*)"gftp_lport"] );
     std::string tmpfs_dir(opt_map[(char*)"tmpfs_dir"] );
     
     RIManager ri_manager(opt_map[(char*)"dht_id"][0], num_dscnodes-1, app_id, 
                          intf_to_ip(opt_map[(char*)"dht_lintf"]), atoi(opt_map[(char*)"dht_lport"]),
                          opt_map[(char*)"ipeer_dht_lip"], atoi(opt_map[(char*)"ipeer_dht_lport"]),
-                         trans_protocol, wa_laddr, wa_gftp_lport, tmpfs_dir,
+                         trans_protocol, wa_laddr, wa_gftp_lintf, wa_gftp_lport, tmpfs_dir,
                          wa_ib_lport_list);
     //usleep(1*1000*1000);
     

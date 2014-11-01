@@ -277,9 +277,11 @@ const std::string GRIDFTP = "g";
 class RFPManager //Remote Fetch & Place Manager
 {
   public:
-    RFPManager(std::string trans_protocol, boost::shared_ptr<DSpacesDriver> ds_driver_,
-               std::list<std::string> wa_ib_lport_list, std::string wa_gftp_lport);
+    RFPManager(std::string wa_trans_protocol, boost::shared_ptr<DSpacesDriver> ds_driver_,
+               std::list<std::string> wa_ib_lport_list, std::string wa_gftp_lintf, 
+               std::string wa_gftp_lport, std::string tmpfs_dir);
     ~RFPManager();
+    void init_gftp_server();
     
     int wa_get(std::string laddr, std::string lport, std::string tmpfs_dir,
                std::string key, unsigned int ver, std::string data_type,
@@ -306,7 +308,7 @@ class RFPManager //Remote Fetch & Place Manager
                         const char* ib_laddr, const char* ib_lport);
     size_t get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_);
   private:
-    std::string trans_protocol;
+    std::string wa_trans_protocol;
     boost::shared_ptr<DSpacesDriver> ds_driver_;
     boost::shared_ptr<IBDDManager> ibdd_manager_;
     boost::shared_ptr<GFTPDDManager> gftpdd_manager_;
@@ -344,7 +346,7 @@ class RIManager
   public:
     RIManager(char id, int num_cnodes, int app_id, 
               char* dht_lip, int dht_lport, char* ipeer_dht_lip, int ipeer_dht_lport, 
-              std::string trans_protocol, std::string wa_laddr, std::string wa_gftp_lport, 
+              std::string wa_trans_protocol, std::string wa_laddr, std::string wa_gftp_lintf, std::string wa_gftp_lport, 
               std::string tmpfs_dir, std::list<std::string> wa_ib_lport_list);
     ~RIManager();
     std::string to_str();
@@ -382,7 +384,7 @@ class RIManager
     //ImpRem: Since handle_ core functions are called by client threads, properties must be thread-safe
     char id;
     int num_cnodes, app_id;
-    std::string trans_protocol, wa_laddr, wa_gftp_lport, tmpfs_dir; //RIManager needs these for gftpb process
+    std::string wa_trans_protocol, wa_gftp_lintf, wa_laddr, wa_gftp_lport, tmpfs_dir; //RIManager needs these for gftpb process
     IMsgCoder imsg_coder;
     
     boost::shared_ptr<DSpacesDriver> ds_driver_;

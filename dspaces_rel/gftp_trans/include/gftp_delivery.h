@@ -9,12 +9,13 @@
 class GFTPDDManager
 {
   private:
+    std::string gftps_data_intf;
     int gftps_lport;
     std::string tmpfs_dir;
     boost::shared_ptr<IODriver> io_driver_;
     boost::shared_ptr<GFTPDriver> gftp_driver_;
   public:
-    GFTPDDManager(int gftps_lport, std::string tmpfs_dir);
+    GFTPDDManager(std::string gftps_data_intf, int gftps_lport, std::string tmpfs_dir);
     ~GFTPDDManager();
     int get_gftps_port();
     

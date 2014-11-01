@@ -18,21 +18,26 @@ BOOST_LIB = -L$(BOOST_DIR)/lib -lboost_system -lpthread -lboost_thread -lboost_s
 
 GLOG_INC = -I$(GLOG_DIR)/include
 GLOG_LIB = -L$(GLOG_DIR)/lib -lglog
-
-GFTP_INC = -I$(GFTPINC_DIR)
-GFTP_LIB = -L$(GFTPLIB_DIR) -lglobus_ftp_client
 # 
 DSPACESREL_DIR = $(DSPACESWA_DIR)/dspaces_rel
 DSPACESREL_ODIR = $(DSPACESREL_DIR)/obj
+DSPACESREL_OBJS = $(DSPACESREL_ODIR)/ds_client.o $(DSPACESREL_ODIR)/ds_drive.o
 
 OVERLAYNET_DIR = $(DSPACESREL_DIR)/overlaynet
 OVERLAYNET_ODIR = $(OVERLAYNET_DIR)/obj
+OVERLAYNET_OBJS = $(OVERLAYNET_ODIR)/dht_node.o $(OVERLAYNET_ODIR)/dht_server.o $(OVERLAYNET_ODIR)/dht_client.o $(OVERLAYNET_ODIR)/packet.o
 
 IBTRANS_DIR = $(DSPACESREL_DIR)/ib_trans
 IBTRANS_ODIR = $(IBTRANS_DIR)/obj
+IBTRANS_OBJS = $(IBTRANS_ODIR)/ib_delivery.o $(IBTRANS_ODIR)/common.o
 
+# ifndef ULAM
+GFTP_INC = -I$(GFTPINC_DIR)
+GFTP_LIB = -L$(GFTPLIB_DIR) -lglobus_ftp_client
 GFTPTRANS_DIR = $(DSPACESREL_DIR)/gftp_trans
 GFTPTRANS_ODIR = $(GFTPTRANS_DIR)/obj
+GFTPTRANS_OBJS = $(GFTPTRANS_ODIR)/gftp_delivery.o $(GFTPTRANS_ODIR)/gftp_drive.o $(GFTPTRANS_ODIR)/gridftp_api_drive.o $(GFTPTRANS_ODIR)/io_drive.o
+# endif
 
 DSPACESWA_INC = -I$(DSPACESWA_DIR)/include -I$(DSPACESREL_DIR)/include -I$(OVERLAYNET_DIR)/include -I$(IBTRANS_DIR)/include -I$(GFTPTRANS_DIR)/include
 DSPACESWA_LIB = $(DSPACESWA_DIR)/lib
@@ -63,7 +68,7 @@ all: submake_dspaces_rel ${APPS}
 submake_dspaces_rel:
 	make -C $(DSPACESREL_DIR)
 
-exp: $(ODIR)/exp.o $(ODIR)/dataspaces_wa.o $(DSPACESREL_ODIR)/ds_client.o $(DSPACESREL_ODIR)/ds_drive.o $(OVERLAYNET_ODIR)/dht_node.o $(OVERLAYNET_ODIR)/dht_server.o $(OVERLAYNET_ODIR)/dht_client.o $(OVERLAYNET_ODIR)/packet.o $(IBTRANS_ODIR)/ib_delivery.o $(IBTRANS_ODIR)/common.o $(GFTPTRANS_ODIR)/gftp_delivery.o $(GFTPTRANS_ODIR)/gftp_drive.o $(GFTPTRANS_ODIR)/gridftp_api_drive.o $(GFTPTRANS_ODIR)/io_drive.o
+exp: $(ODIR)/exp.o $(ODIR)/dataspaces_wa.o $(DSPACESREL_OBJS) $(OVERLAYNET_OBJS) $(IBTRANS_OBJS) $(GFTPTRANS_OBJS)
 	$(MPICPP) $(MPICPP_OPTS) -g -o $@ $^ $(INC) $(LIB)
 
 $(ODIR)/%.o: %.cpp

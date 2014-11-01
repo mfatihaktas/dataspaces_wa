@@ -1,15 +1,17 @@
 #!/bin/bash
 echo $1 $2 $3
 
-DHT_LINTF="em2"
-IB_INTF="ib0"
+DHT_LINTF="em2" #"eth0"
+WA_LINTF="em2" #"ib0"
 
-RM1_DHT_LPORT=8000
-RM2_DHT_LPORT=7000
-RM2_DHT_LIP="192.168.2.152"
+RM1_DHT_LPORT="60000"
+RM2_DHT_LPORT="65000"
+RM2_DHT_LIP="192.168.2.152" #"192.168.100.120" "192.168.2.152" #
 
-GFTP_LPORT=10000
+GFTP_LPORT="62002"
 TMPFS_DIR="/dev/shm"
+
+TRANS_PROTOCOL="g" #"i"
 
 # DSPACES_BIN=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.4.0/install/bin
 DSPACES_BIN=$DSPACES_DIR/bin
@@ -35,29 +37,51 @@ elif [ $1  = 'g' ]; then
     GLOG_logtostderr=1 ./exp --type="get" --num_dscnodes=$NUM_DSCNODES --app_id=1
   fi
 elif [ $1  = 'rm' ]; then
+  if [ $TRANS_PROTOCOL  = 'g' ]; then
+    echo "Starting Gftps..."
+    globus-gridftp-server -aa -password-file pwfile -c None \
+                          -port $GFTP_LPORT \
+                          -d error,warn,info,dump,all &
+                          # -data-interface $WA_LINTF \
+  fi
   if [ $2  = '1' ]; then
     GLOG_logtostderr=1 ./exp --type="ri" --dht_id=$2 --num_dscnodes=$NUM_DSCNODES --app_id=10 \
-                             --dht_lintf=$DHT_LINTF --dht_lport=$RM1_DHT_LPORT --ipeer_dht_lip=$RM2_DHT_LIP --ipeer_dht_lport=$RM2_DHT_LPORT \
-                             --trans_protocol="i" --ib_lintf=$IB_INTF \
+                             --dht_lintf=$DHT_LINTF --dht_lport=$RM1_DHT_LPORT --ipeer_dht_laddr=$RM2_DHT_LIP --ipeer_dht_lport=$RM2_DHT_LPORT \
+                             --trans_protocol=$TRANS_PROTOCOL --wa_lintf=$WA_LINTF \
                              --gftp_lport=$GFTP_LPORT --tmpfs_dir=$TMPFS_DIR
   elif [ $2  = '2' ]; then
     GLOG_logtostderr=  ./exp --type="ri" --dht_id=$2 --num_dscnodes=$NUM_DSCNODES --app_id=10 \
                              --dht_lintf=$DHT_LINTF --dht_lport=$RM2_DHT_LPORT \
-                             --trans_protocol="i" --ib_lintf=$IB_INTF \
+                             --trans_protocol=$TRANS_PROTOCOL --wa_lintf=$WA_LINTF \
                              --gftp_lport=$GFTP_LPORT --tmpfs_dir=$TMPFS_DIR
   fi
+  read -p "[Enter]"
+  echo "killing Gftps..."
+  fuser -k -n tcp $GFTP_LPORT
+  # rm nohup.out
 elif [ $1  = 'drm' ]; then
   if [ $2  = '1' ]; then
     export GLOG_logtostderr=1
     gdb --args ./exp --type="ri" --dht_id=$2 --num_dscnodes=$NUM_DSCNODES --app_id=10 \
-                     --lintf=$DHT_LINTF --dht_lport=$RM1_DHT_LPORT --ipeer_dht_lip=$RM2_DHT_LIP --ipeer_dht_lport=$RM2_DHT_LPORT \
-                     --ib_lintf=$IB_INTF
+                     --dht_lintf=$DHT_LINTF --dht_lport=$RM1_DHT_LPORT --ipeer_dht_laddr=$RM2_DHT_LIP --ipeer_dht_lport=$RM2_DHT_LPORT \
+                     --trans_protocol=$TRANS_PROTOCOL --wa_lintf=$WA_LINTF \
+                     --gftp_lport=$GFTP_LPORT --tmpfs_dir=$TMPFS_DIR
   elif [ $2  = '2' ]; then
     export GLOG_logtostderr=1 
     gdb --args ./exp --type="ri" --dht_id=$2 --num_dscnodes=$NUM_DSCNODES --app_id=10 \
-                     --lintf=$DHT_LINTF --dht_lport=$RM2_DHT_LPORT \
-                     --ib_lintf=$IB_INTF
+                     --dht_lintf=$DHT_LINTF --dht_lport=$RM2_DHT_LPORT \
+                     --trans_protocol=$TRANS_PROTOCOL --wa_lintf=$WA_LINTF \
+                     --gftp_lport=$GFTP_LPORT --tmpfs_dir=$TMPFS_DIR
   fi
+elif [ $1  = 'gc' ]; then
+  TRANS_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/gftp_trans/dummy
+  # S_IP=192.168.2.152
+  S_IP=127.0.0.1
+  # S_FNAME=dummy.dat
+  S_FNAME=tx.dat
+  C_FNAME=recved_tx.dat
+  globus-url-copy -vb \
+                  ftp://"$S_IP:$GFTP_LPORT$TRANS_DIR/$S_FNAME" file://"$TRANS_DIR/$C_FNAME"
 elif [ $1  = 'show' ]; then
   netstat -antu
 elif [ $1  = 'init' ]; then
@@ -84,6 +108,7 @@ elif [ $1  = 'init' ]; then
     echo LD_LIBRARY_PATH
     echo $LD_LIBRARY_PATH
   elif [ $2  = 'u' ]; then
+    # export ULAM=ULAM
     export CC=gcc
     export CPP=g++
     export MPICPP=mpicxx
@@ -102,6 +127,7 @@ elif [ $1  = 'init' ]; then
     echo LD_LIBRARY_PATH
     echo $LD_LIBRARY_PATH
   elif [ $2  = 'm' ]; then
+    # export MAQUIS=MAQUIS
     export CC=gcc
     export CPP=g++
     export MPICPP=mpicxx

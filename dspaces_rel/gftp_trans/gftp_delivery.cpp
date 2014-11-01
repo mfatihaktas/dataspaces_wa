@@ -1,7 +1,8 @@
 #include "gftp_delivery.h"
 
-GFTPDDManager::GFTPDDManager(int gftps_lport, std::string tmpfs_dir)
-: gftps_lport(gftps_lport),
+GFTPDDManager::GFTPDDManager(std::string gftps_data_intf, int gftps_lport, std::string tmpfs_dir)
+: gftps_data_intf(gftps_data_intf),
+  gftps_lport(gftps_lport),
   tmpfs_dir( tmpfs_dir ),
   io_driver_( boost::make_shared<IODriver>(tmpfs_dir) ),
   gftp_driver_( boost::make_shared<GFTPDriver>() )
@@ -23,7 +24,7 @@ int GFTPDDManager::get_gftps_port()
 
 int GFTPDDManager::init_gftp_server()
 {
-  return gftp_driver_->init_server(gftps_lport);
+  return gftp_driver_->init_server(gftps_data_intf, gftps_lport);
 }
 
 int GFTPDDManager::put_over_gftp(std::string s_laddr, std::string s_lport, std::string s_tmpfs_dir,

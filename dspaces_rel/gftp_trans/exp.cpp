@@ -28,7 +28,8 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
     {"type", optional_argument, NULL, 0},
     {"src_url", optional_argument, NULL, 1},
     {"dst_url", optional_argument, NULL, 2},
-    {"port", optional_argument, NULL, 3},
+    {"data_intf", optional_argument, NULL, 3},
+    {"port", optional_argument, NULL, 4},
     {0, 0, 0, 0}
   };
   
@@ -53,6 +54,9 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
         opt_map["dst_url"] = optarg;
         break;
       case 3:
+        opt_map["data_intf"] = optarg;
+        break;
+      case 4:
         opt_map["port"] = optarg;
         break;
       case 's':
@@ -116,8 +120,7 @@ int main(int argc , char **argv)
   
   // GFTPDDManager gftpdd_manager(file_dir);
   if (opt_map["type"].compare("s") == 0) {
-    // gftp_driver.init_server(5000);
-    GFTPDDManager gftpdd_manager(boost::lexical_cast<int>(opt_map["port"]), file_dir);
+    GFTPDDManager gftpdd_manager(opt_map["data_intf"], boost::lexical_cast<int>(opt_map["port"]), file_dir);
     gftpdd_manager.init_gftp_server();
     
     std::cout << "Enter\n";
@@ -144,7 +147,7 @@ int main(int argc , char **argv)
     size_t datasize_inB;
     void* data_;
     // "192.168.2.152"
-    GFTPDDManager gftpdd_manager(0, file_dir + "/get");
+    GFTPDDManager gftpdd_manager("", 0, file_dir + "/get");
     gftpdd_manager.get_over_gftp("127.0.0.1", "5000", file_dir + "/server",
                                 "dummy", 0, datasize_inB, data_);
     int* int_data_ = static_cast<int*>(data_);
@@ -170,7 +173,7 @@ int main(int argc , char **argv)
       data_[i] = i + 1;
     }
     LOG(INFO) << "main:: datasize_inB= " << datasize_inB;
-    GFTPDDManager gftpdd_manager(0, file_dir + "/put");
+    GFTPDDManager gftpdd_manager("", 0, file_dir + "/put");
     gftpdd_manager.put_over_gftp("127.0.0.1", "5000", file_dir + "/server",
                                  "dummy", 0, datasize_inB, data_);
     // gftpdd_manager.put_over_gftp("127.0.0.1", "5000", "/dev/shm/",
@@ -186,7 +189,7 @@ int main(int argc , char **argv)
       data_[i] = i + 1;
     }
     LOG(INFO) << "main:: datasize_inB= " << datasize_inB;
-    GFTPDDManager gftpdd_manager(0, file_dir + "/put");
+    GFTPDDManager gftpdd_manager("", 0, file_dir + "/put");
     gftpdd_manager.put_over_gftp("127.0.0.1", "5000", file_dir + "server",
                                 "dummy", 1, datasize_inB, data_);
   

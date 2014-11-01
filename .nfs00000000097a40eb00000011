@@ -1,0 +1,45 @@
+[12567] Sat Nov  1 07:26:04 2014 :: GFork functionality not enabled.:
+globus_gfork: GFork error: Env not set
+
+[12567] Sat Nov  1 07:26:04 2014 :: No configuration file found.
+[12567] Sat Nov  1 07:26:04 2014 :: Server started in daemon mode.
+[1336] Sat Nov  1 07:28:55 2014 :: GFork functionality not enabled.:
+globus_gfork: GFork error: Env not set
+
+[1336] Sat Nov  1 07:28:55 2014 :: No configuration file found.
+[1336] Sat Nov  1 07:28:55 2014 :: Server started in daemon mode.
+[1336] Sat Nov  1 07:31:35 2014 :: Server is shutting down...
+[12567] Sat Nov  1 07:31:42 2014 :: Server is shutting down...
+[1634] Sat Nov  1 07:34:58 2014 :: GFork functionality not enabled.:
+globus_gfork: GFork error: Env not set
+
+[1634] Sat Nov  1 07:34:58 2014 :: No configuration file found.
+[1634] Sat Nov  1 07:34:58 2014 :: Server started in daemon mode.
+e.
+[1634] Sat Nov  1 07:36:12 2014 :: Server is shutting down...
+[13231] Sat Nov  1 07:38:24 2014 :: GFork functionality not enabled.:
+globus_gfork: GFork error: Env not set
+
+[13231] Sat Nov  1 07:38:24 2014 :: No configuration file found.
+[13231] Sat Nov  1 07:38:24 2014 :: Could not start server:
+globus_xio: globus_l_xio_tcp_create_listener failed.
+globus_xio: globus_l_xio_tcp_bind failed.
+globus_xio: System error in bind: Address already in use
+globus_xio: A system call failed: Address already in use
+
+[1816] Sat Nov  1 07:38:40 2014 :: GFork functionality not enabled.:
+globus_gfork: GFork error: Env not set
+
+[1816] Sat Nov  1 07:38:40 2014 :: No configuration file found.
+[1816] Sat Nov  1 07:38:40 2014 :: Server started in daemon mode.
+[1816] Sat Nov  1 07:46:19 2014 :: Child process 2586 ended with rc = 0
+[14016] Sat Nov  1 07:47:48 2014 :: GFork functionality not enabled.:
+globus_gfork: GFork error: Env not set
+
+[14016] Sat Nov  1 07:47:48 2014 :: No configuration file found.
+[14016] Sat Nov  1 07:47:48 2014 :: Could not start server:
+globus_xio: globus_l_xio_tcp_create_listener failed.
+globus_xio: globus_l_xio_tcp_bind failed.
+globus_xio: System error in bind: Address already in use
+globus_xio: A system call failed: Address already in use
+

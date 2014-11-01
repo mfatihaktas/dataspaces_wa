@@ -2,9 +2,10 @@
 echo $1 $2 $3
 
 TRANS_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/gftp_trans/dummy
+DATA_INTF="em2"
 PORT=11000
-# S_IP=192.168.2.152
-S_IP=127.0.0.1
+S_IP=192.168.2.152
+# S_IP=127.0.0.1
 # S_FNAME=dummy.dat
 S_FNAME=tx.dat
 C_FNAME=recved_tx.dat
@@ -24,7 +25,7 @@ elif [ $1  = 'dp' ]; then
 elif [ $1  = 'p2' ]; then  
   GLOG_logtostderr=1 ./exp --type="p2" --src_url="$TRANS_DIR/$S_FNAME" --dst_url="ftp://$S_IP:$PORT$TRANS_DIR/$C2_FNAME"
 elif [ $1  = 's' ]; then
-  GLOG_logtostderr=1 ./exp --type="s" --port=$PORT
+  GLOG_logtostderr=1 ./exp --type="s" --data_intf=$DATA_INTF --port=$PORT
 elif [ $1  = 'ds' ]; then
   export GLOG_logtostderr=1
   gdb --args ./exp -s --port=$PORT

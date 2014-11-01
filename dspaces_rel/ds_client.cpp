@@ -601,22 +601,30 @@ bool GFTPBTable::contains(char ds_id)
 }
 
 //************************************  RFPManager  ********************************//
-RFPManager::RFPManager(std::string trans_protocol, boost::shared_ptr<DSpacesDriver> ds_driver_,
-                       std::list<std::string> wa_ib_lport_list, std::string wa_gftp_lport)
-: trans_protocol(trans_protocol),
+RFPManager::RFPManager(std::string wa_trans_protocol, boost::shared_ptr<DSpacesDriver> ds_driver_,
+                       std::list<std::string> wa_ib_lport_list, std::string wa_gftp_lintf, 
+                       std::string wa_gftp_lport, std::string tmpfs_dir)
+: wa_trans_protocol(wa_trans_protocol),
   ds_driver_(ds_driver_),
   ibdd_manager_( boost::make_shared<IBDDManager>(wa_ib_lport_list) ),
-  gftpdd_manager_( boost::make_shared<GFTPDDManager>(boost::lexical_cast<int>(wa_gftp_lport), "") )
+  gftpdd_manager_( boost::make_shared<GFTPDDManager>(wa_gftp_lintf, boost::lexical_cast<int>(wa_gftp_lport), tmpfs_dir) )
 {
-  if ( !(trans_protocol.compare(INFINIBAND) == 0 || trans_protocol.compare(GRIDFTP) == 0) ) {
-    LOG(ERROR) << "RFPManager:: unknown trans_protocol= " << trans_protocol;
+  if ( !(wa_trans_protocol.compare(INFINIBAND) == 0 || wa_trans_protocol.compare(GRIDFTP) == 0) ) {
+    LOG(ERROR) << "RFPManager:: unknown wa_trans_protocol= " << wa_trans_protocol;
     exit(1);
   }
-  if (trans_protocol.compare(GRIDFTP) == 0) {
-    gftpdd_manager_->init_gftp_server();
+  if (wa_trans_protocol.compare(GRIDFTP) == 0) {
+    // boost::make_shared<boost::thread>(&RFPManager::init_gftp_server, this);
+    // boost::thread(&RFPManager::init_gftp_server, this);
   }
-  // 
   LOG(INFO) << "RFPManager:: constructed.";
+}
+
+void RFPManager::init_gftp_server()
+{
+  if (gftpdd_manager_->init_gftp_server() ) {
+    LOG(ERROR) << "RFPManager:: gftpdd_manager_->init_gftp_server failed!";
+  }
 }
 
 RFPManager::~RFPManager()
@@ -627,10 +635,10 @@ RFPManager::~RFPManager()
 int RFPManager::wa_get(std::string laddr, std::string lport, std::string tmpfs_dir,
                        std::string key, unsigned int ver, std::string data_type,
                        int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_) {
-  if (trans_protocol.compare(INFINIBAND) == 0) {
+  if (wa_trans_protocol.compare(INFINIBAND) == 0) {
     return ib_receive__ds_put(laddr, lport, key, ver, data_type, size, ndim, gdim_, lb_, ub_);
   }
-  else if (trans_protocol.compare(GRIDFTP) == 0) {
+  else if (wa_trans_protocol.compare(GRIDFTP) == 0) {
     return 0;
     // return gftp_get__ds_put(laddr, lport, tmpfs_dir, key, ver, size, ndim, gdim_, lb_, ub_);
   }
@@ -639,10 +647,10 @@ int RFPManager::wa_get(std::string laddr, std::string lport, std::string tmpfs_d
 int RFPManager::wa_put(std::string key, unsigned int ver, std::string data_type,
                        int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_,
                        std::string laddr, std::string lport, std::string tmpfs_dir) {
-  if (trans_protocol.compare(INFINIBAND) == 0) {
+  if (wa_trans_protocol.compare(INFINIBAND) == 0) {
     return ds_get__ib_send(key, ver, data_type, size, ndim, gdim_, lb_, ub_, laddr.c_str(), lport.c_str() );
   }
-  else if (trans_protocol.compare(GRIDFTP) == 0) {
+  else if (wa_trans_protocol.compare(GRIDFTP) == 0) {
     return ds_get__gftp_put(key, ver, size, ndim, gdim_, lb_, ub_, laddr, lport, tmpfs_dir);
   }
 }
@@ -651,11 +659,11 @@ int RFPManager::gftp_get__ds_put(std::string gftps_laddr, std::string gftps_lpor
                                  std::string key, unsigned int ver,
                                  int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_) 
 {
-  LOG(INFO) << "gftp_get__ds_put:: started for <key= " << key << ", ver= " << ver << ">, gftps_laddr= " << gftps_laddr << ", gftps_lport= " << gftps_lport;
+  LOG(INFO) << "gftp_get__ds_put:: started for <key= " << key << ", ver= " << ver << ">, gftps_laddr= " << gftps_laddr << ", gftps_lport= " << gftps_lport << ", gftps_tmpfs_dir= " << gftps_tmpfs_dir;
   size_t datasize_inB;
   void* data_;
-  if (!gftpdd_manager_->get_over_gftp(gftps_laddr, gftps_lport, gftps_tmpfs_dir,
-                                      key, ver, datasize_inB, data_) ) {
+  if (gftpdd_manager_->get_over_gftp(gftps_laddr, gftps_lport, gftps_tmpfs_dir,
+                                     key, ver, datasize_inB, data_) ) {
     LOG(ERROR) << "gftp_get__ds_put:: gftpdd_manager_->get_over_gftp failed!";
     return 1;
   }
@@ -688,8 +696,8 @@ int RFPManager::ds_get__gftp_put(std::string key, unsigned int ver,
     return 1;
   }
   
-  if (!gftpdd_manager_->put_over_gftp(gftps_laddr, gftps_lport, gftps_tmpfs_dir, 
-                                      key, ver, datasize_inB, data_) ) {
+  if (gftpdd_manager_->put_over_gftp(gftps_laddr, gftps_lport, gftps_tmpfs_dir, 
+                                     key, ver, datasize_inB, data_) ) {
     LOG(ERROR) << "ds_get__gftp_put:: gftpdd_manager_->put_over_gftp for <key= " << key << ", ver= " << ver <<"> failed!";
     return 1;
   }
@@ -720,10 +728,10 @@ int RFPManager::gftpfile_read__ds_put(std::string key, unsigned int ver,
 
 std::string RFPManager::get_lport()
 {
-  if (trans_protocol.compare(INFINIBAND) == 0) {
+  if (wa_trans_protocol.compare(INFINIBAND) == 0) {
     return ibdd_manager_->get_next_avail_ib_lport();
   }
-  else if (trans_protocol.compare(GRIDFTP) == 0) {
+  else if (wa_trans_protocol.compare(GRIDFTP) == 0) {
     return boost::lexical_cast<std::string>(gftpdd_manager_->get_gftps_port() );
   }
   
@@ -836,12 +844,13 @@ size_t RFPManager::get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uin
 //******************************************  RIManager ******************************************//
 RIManager::RIManager(char id, int num_cnodes, int app_id,
                      char* dht_lip, int dht_lport, char* ipeer_dht_lip, int ipeer_dht_lport,
-                     std::string trans_protocol, std::string wa_laddr, std::string wa_gftp_lport, 
+                     std::string wa_trans_protocol, std::string wa_laddr, std::string wa_gftp_lintf, std::string wa_gftp_lport, 
                      std::string tmpfs_dir, std::list<std::string> wa_ib_lport_list)
 : id(id),
   num_cnodes(num_cnodes),
   app_id(app_id),
-  trans_protocol(trans_protocol),
+  wa_trans_protocol(wa_trans_protocol),
+  wa_gftp_lintf(wa_gftp_lintf),
   wa_laddr(wa_laddr),
   wa_gftp_lport(wa_gftp_lport),
   tmpfs_dir(tmpfs_dir),
@@ -851,7 +860,7 @@ RIManager::RIManager(char id, int num_cnodes, int app_id,
   bc_server_(new BCServer(app_id, num_cnodes, APP_RIMANAGER_MAX_MSG_SIZE, "req_app_", 
                           boost::bind(&RIManager::handle_app_req, this, _1),
                           ds_driver_) ),
-  rfp_manager_(new RFPManager(trans_protocol, ds_driver_, wa_ib_lport_list, wa_gftp_lport) )
+  rfp_manager_(new RFPManager(wa_trans_protocol, ds_driver_, wa_ib_lport_list, wa_gftp_lintf, wa_gftp_lport, tmpfs_dir) )
 {
   bc_server_->init_listen_all();
   //
@@ -871,7 +880,7 @@ std::string RIManager::to_str()
   ss << "\t id= " << id << "\n";
   ss << "\t num_cnodes= " << num_cnodes << "\n";
   ss << "\t app_id= " << app_id << "\n";
-  ss << "\t trans_protocol= " << trans_protocol << "\n";
+  ss << "\t wa_trans_protocol= " << wa_trans_protocol << "\n";
   ss << "\t wa_laddr= " << wa_laddr << "\n";
   ss << "\t wa_gftp_lport= " << wa_gftp_lport << "\n";
   ss << "\t dht_node=\n" << dht_node_->to_str() << "\n";
@@ -1137,11 +1146,12 @@ int RIManager::remote_fetch(char ds_id, std::map<std::string, std::string> r_fet
 {
   LOG(INFO) << "remote_fetch:: started;";
   
-  std::string lport = rfp_manager_->get_lport();
+  std::string lport = rfp_manager_->get_lport(); //Returns either next avail ib_lport or constant gftps_lport
+  r_fetch_map["laddr"] = this->wa_laddr;
+  r_fetch_map["lport"] = lport;
+  r_fetch_map["tmpfs_dir"] = this->tmpfs_dir;
   
-  if (this->trans_protocol.compare(INFINIBAND) == 0) {
-    r_fetch_map["laddr"] = wa_laddr;
-    r_fetch_map["lport"] = lport;
+  if (this->wa_trans_protocol.compare(INFINIBAND) == 0) {
     boost::thread t(&RIManager::handle_wa_get, this, "remote_fetch", r_fetch_map );
   }
   
@@ -1158,7 +1168,7 @@ int RIManager::remote_fetch(char ds_id, std::map<std::string, std::string> r_fet
   rf_wa_get_syncer.wait(kv);
   rf_wa_get_syncer.del_sync_point(kv);
   
-  if (this->trans_protocol.compare(GRIDFTP) == 0) {
+  if (this->wa_trans_protocol.compare(GRIDFTP) == 0) {
     int size, ndim;
     uint64_t *gdim_, *lb_, *ub_;
     std::string data_type;
@@ -1189,7 +1199,7 @@ int RIManager::remote_place(std::string key, unsigned int ver, char to_id)
     free_all<uint64_t*>(3, gdim_, lb_, ub_);
   }
   
-  if (this->trans_protocol.compare(INFINIBAND) == 0) {
+  if (this->wa_trans_protocol.compare(INFINIBAND) == 0) {
     // debug_print(key, ver, size, ndim, gdim_, lb_, ub_, NULL, 0);
     std::map<std::string, std::string> r_place_map;
     r_place_map["type"] = REMOTE_PLACE;
@@ -1213,10 +1223,11 @@ int RIManager::remote_place(std::string key, unsigned int ver, char to_id)
     if (rfp_manager_->wa_put(key, ver, data_type, size, ndim, gdim_, lb_, ub_, ll_t.first.first, ll_t.first.second, ll_t.second) ) {
       LOG(ERROR) << "remote_place:: rfp_manager_->wa_put failed!";
       free_all<uint64_t*>(3, gdim_, lb_, ub_);
+      return 1;
     }
     handle_rp_syncer.notify(kv);
   }
-  else if (this->trans_protocol.compare(GRIDFTP) == 0) {
+  else if (this->wa_trans_protocol.compare(GRIDFTP) == 0) {
     if (!gftpb_table.contains(to_id) ) {
       gftpb_ping(to_id);
     }
@@ -1310,6 +1321,9 @@ void RIManager::handle_wamsg(std::map<std::string, std::string> wamsg_map)
   else if (type.compare(REMOTE_PLACE_REPLY) == 0) {
     handle_rp_reply(wamsg_map);
   }
+  else if (type.compare(GFTPPUT_DONE) == 0) {
+    handle_gftpput_done(wamsg_map);
+  }
   else if (type.compare(GFTPB_PING) == 0) {
     handle_gftpb_ping(wamsg_map);
   }
@@ -1395,16 +1409,18 @@ void RIManager::handle_r_fetch(std::map<std::string, std::string> r_fetch_map)
     return;
   }
   
-  if (!rfp_manager_->wa_put(key, ver, data_type, size, ndim, gdim_, lb_, ub_,
+  if (rfp_manager_->wa_put(key, ver, data_type, size, ndim, gdim_, lb_, ub_,
                             r_fetch_map["laddr"], r_fetch_map["lport"], r_fetch_map["tmpfs_dir"] ) ) {
     LOG(ERROR) << "handle_r_fetch:: rfp_manager_->wa_put failed!";
   }
   // 
-  if (trans_protocol.compare(GRIDFTP) == 0) {
+  if (wa_trans_protocol.compare(GRIDFTP) == 0) {
     char to_id = r_fetch_map["id"].c_str()[0];
     std::map<std::string, std::string> gftp_put_done_map;
     gftp_put_done_map["type"] = GFTPPUT_DONE;
     gftp_put_done_map["id"] = to_id;
+    gftp_put_done_map["key"] = key;
+    gftp_put_done_map["ver"] = boost::lexical_cast<std::string>(ver);
     if (send_msg(to_id, RIMSG, gftp_put_done_map) ) {
       LOG(ERROR) << "handle_r_fetch:: send_msg to to_id= " << to_id << " failed!";
       free_all<uint64_t*>(3, gdim_, lb_, ub_);

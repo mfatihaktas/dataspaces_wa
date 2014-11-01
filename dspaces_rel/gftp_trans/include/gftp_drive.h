@@ -21,7 +21,7 @@ class GFTPDriver
     GFTPDriver();
     ~GFTPDriver();
     
-    int init_server(int port);
+    int init_server(std::string data_intf, int port);
     void read_print_stream(std::string name, FILE* fp);
     int put_file(std::string src_url, std::string dst_url);
     int get_file(std::string src_url, std::string dst_url);

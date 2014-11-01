@@ -117,10 +117,10 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
     {"app_id", optional_argument, NULL, 3},
     {"dht_lintf", optional_argument, NULL, 4},
     {"dht_lport", optional_argument, NULL, 5},
-    {"ipeer_dht_lip", optional_argument, NULL, 6},
+    {"ipeer_dht_laddr", optional_argument, NULL, 6},
     {"ipeer_dht_lport", optional_argument, NULL, 7},
     {"trans_protocol", optional_argument, NULL, 8},
-    {"ib_lintf", optional_argument, NULL, 9},
+    {"wa_lintf", optional_argument, NULL, 9},
     {"gftp_lport", optional_argument, NULL, 10},
     {"tmpfs_dir", optional_argument, NULL, 11},
     {0, 0, 0, 0}
@@ -156,16 +156,16 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
         opt_map[(char*)"dht_lport"] = optarg;
         break;
       case 6:
-        opt_map[(char*)"ipeer_dht_lip"] = optarg;
+        opt_map[(char*)"ipeer_dht_laddr"] = optarg;
         break;
       case 7:
-        opt_map[(char*)"ipeer_lport"] = optarg;
+        opt_map[(char*)"ipeer_dht_lport"] = optarg;
         break;
       case 8:
         opt_map[(char*)"trans_protocol"] = optarg;
         break;
       case 9:
-        opt_map[(char*)"ib_lintf"] = optarg;
+        opt_map[(char*)"wa_lintf"] = optarg;
         break;
       case 10:
         opt_map[(char*)"gftp_lport"] = optarg;
@@ -277,8 +277,8 @@ int main(int argc , char **argv)
   
   int num_dscnodes = boost::lexical_cast<int>(opt_map[(char*)"num_dscnodes"]);
   int app_id = boost::lexical_cast<int>(opt_map[(char*)"app_id"]);
-  char dht_lip[100];
-  char ib_lip[100];
+  char dht_laddr[100];
+  char wa_laddr[100];
   
   if (strcmp(opt_map[(char*)"type"], (char*)"put") == 0) {
     WADspacesDriver wads_driver(app_id, num_dscnodes-1);
@@ -316,27 +316,28 @@ int main(int argc , char **argv)
     getline(std::cin, temp);
   }
   else if (strcmp(opt_map[(char*)"type"], (char*)"ri_t") == 0) {
-    char* dht_lip_t = intf_to_ip(opt_map[(char*)"dht_lintf"]);
-    strcpy(dht_lip, dht_lip_t);
-    std::cout << "main:: dht_lip= " << dht_lip << "\n";
+    char* dht_laddr_t = intf_to_ip(opt_map[(char*)"dht_lintf"]);
+    strcpy(dht_laddr, dht_laddr_t);
+    std::cout << "main:: dht_laddr= " << dht_laddr << "\n";
     
-    char* ib_lip_t = intf_to_ip(opt_map[(char*)"ib_lintf"]);
-    strcpy(ib_lip, ib_lip_t);
-    std::cout << "main:: ib_lip= " << ib_lip << "\n";
+    char* wa_laddr_t = intf_to_ip(opt_map[(char*)"wa_lintf"]);
+    strcpy(wa_laddr, wa_laddr_t);
+    std::cout << "main:: wa_laddr= " << wa_laddr << "\n";
     //
-    if (!opt_map.count((char*)"ipeer_dht_lip") ) {
-      opt_map[(char*)"ipeer_dht_lip"] = NULL;
+    if (!opt_map.count((char*)"ipeer_dht_laddr") ) {
+      opt_map[(char*)"ipeer_dht_laddr"] = NULL;
       opt_map[(char*)"ipeer_dht_lport"] = (char*)"0";
     }
     
     std::string trans_protocol(opt_map[(char*)"trans_protocol"] );
-    std::string wa_laddr(intf_to_ip(opt_map[(char*)"ib_lintf"] ) );
+    std::string wa_lintf(opt_map[(char*)"wa_lintf"] );
+    std::string wa_laddr_str(wa_laddr);
     std::string wa_gftp_lport(opt_map[(char*)"gftp_lport"] );
     std::string tmpfs_dir(opt_map[(char*)"tmpfs_dir"] );
     RIManager ri_manager(opt_map[(char*)"dht_id"][0], num_dscnodes-1, app_id, 
-                         dht_lip, atoi(opt_map[(char*)"dht_lport"]),
-                         opt_map[(char*)"ipeer_dht_lip"], atoi(opt_map[(char*)"ipeer_dht_lport"]),
-                         trans_protocol, wa_laddr, wa_gftp_lport, tmpfs_dir,
+                         dht_laddr, atoi(opt_map[(char*)"dht_lport"]),
+                         opt_map[(char*)"ipeer_dht_laddr"], atoi( (opt_map[(char*)"ipeer_dht_lport"]) ),
+                         trans_protocol, wa_laddr_str, wa_lintf, wa_gftp_lport, tmpfs_dir,
                          wa_ib_lport_list);
 
     //usleep(5*1000*1000);
@@ -346,27 +347,28 @@ int main(int argc , char **argv)
     getline(std::cin, temp);
   }
   else if (strcmp(opt_map[(char*)"type"], (char*)"ri") == 0) {
-    char* dht_lip_t = intf_to_ip(opt_map[(char*)"dht_lintf"]);
-    strcpy(dht_lip, dht_lip_t);
-    std::cout << "main:: dht_lip= " << dht_lip << "\n";
+    char* dht_laddr_t = intf_to_ip(opt_map[(char*)"dht_lintf"]);
+    strcpy(dht_laddr, dht_laddr_t);
+    std::cout << "main:: dht_laddr= " << dht_laddr << "\n";
     
-    char* ib_lip_t = intf_to_ip(opt_map[(char*)"ib_lintf"]);
-    strcpy(ib_lip, ib_lip_t);
-    std::cout << "main:: ib_lip= " << ib_lip << "\n";
+    char* wa_laddr_t = intf_to_ip(opt_map[(char*)"wa_lintf"]);
+    strcpy(wa_laddr, wa_laddr_t);
+    std::cout << "main:: wa_laddr= " << wa_laddr << "\n";
     //
-    if (!opt_map.count((char*)"ipeer_dht_lip") ) {
-      opt_map[(char*)"ipeer_dht_lip"] = NULL;
+    if (!opt_map.count((char*)"ipeer_dht_laddr") ) {
+      opt_map[(char*)"ipeer_dht_laddr"] = NULL;
       opt_map[(char*)"ipeer_dht_lport"] = (char*)"0";
     }
     
     std::string trans_protocol(opt_map[(char*)"trans_protocol"] );
-    std::string wa_laddr(intf_to_ip(opt_map[(char*)"ib_lintf"] ) );
+    std::string wa_laddr_str(wa_laddr);
+    std::string wa_lintf(opt_map[(char*)"wa_lintf"] );
     std::string wa_gftp_lport(opt_map[(char*)"gftp_lport"] );
     std::string tmpfs_dir(opt_map[(char*)"tmpfs_dir"] );
     RIManager ri_manager(opt_map[(char*)"dht_id"][0], num_dscnodes-1, app_id, 
-                         dht_lip, atoi(opt_map[(char*)"dht_lport"]),
-                         opt_map[(char*)"ipeer_dht_lip"], atoi(opt_map[(char*)"ipeer_dht_lport"]),
-                         trans_protocol, wa_laddr, wa_gftp_lport, tmpfs_dir,
+                         dht_laddr, atoi(opt_map[(char*)"dht_lport"]),
+                         opt_map[(char*)"ipeer_dht_laddr"], atoi( (opt_map[(char*)"ipeer_dht_lport"]) ),
+                         trans_protocol, wa_laddr_str, wa_lintf, wa_gftp_lport, tmpfs_dir,
                          wa_ib_lport_list);
     
     std::cout << "Enter\n";

@@ -116,7 +116,7 @@ class IBClient{
     
     void send_data(struct rdma_cm_id *id)
     {
-      LOG(INFO) << "send_data:: started.";
+      // LOG(INFO) << "send_data:: started.";
       
       data_type* data_t_ = data_;
       size_t data_length_t = data_length;
@@ -140,7 +140,7 @@ class IBClient{
       free(chunk_);
       send_eof(id);
       //
-      LOG(INFO) << "send_data:: done.";
+      // LOG(INFO) << "send_data:: done.";
     };
     
     void send_chunk(struct rdma_cm_id *id, size_t chunk_size, data_type* chunk) // chunk_size in bytes
@@ -183,8 +183,6 @@ class IBClient{
     
     void on_completion(struct ibv_wc *wc)
     {
-      LOG(INFO) << "on_completion:: started...";
-      
       struct rdma_cm_id *id = (struct rdma_cm_id *)(uintptr_t)(wc->wr_id);
       struct client_context *ctx = (struct client_context *)id->context;
     

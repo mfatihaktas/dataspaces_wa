@@ -10,6 +10,7 @@ MAQUIS_DIR=/net/hp101/ihpcsc/maktas7
 
 # ULAM_DIR=~
 ULAM_DIR=/home/sc14demo/common-apps
+FULAM_TARCHER_DIR=/home/sc14demo/common-apps/dataspaces_wa
 # TULAM_DIR=/cac/u01/mfa51/Desktop/boost_1_56_0
 TULAM_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa
 
@@ -34,11 +35,13 @@ elif [ $1  = 'ssh' ]; then
   elif [ $2 = 'u' ]; then
     if [ -z "$3" ]; then
       echo "sshing to ulam$3"
-      ssh -A -t maktas@202.83.248.123 ssh -A ulam$3
+      ssh maktas@202.83.248.123
     else
       echo "sshing to ulam$3"
-      ssh maktas@202.83.248.123
+      ssh -A -t maktas@202.83.248.123 ssh ulam$3
     fi
+  elif [ $2 = 'a' ]; then
+    ssh -A -t maktas@202.83.248.123 ssh archer$3
   fi
 elif [ $1  = 'tr' ]; then #scp only source code
   if [ $2 = 'm' ]; then
@@ -47,6 +50,7 @@ elif [ $1  = 'tr' ]; then #scp only source code
   elif [ $2 = 'u' ]; then
     # scp -r $TULAM_DIR maktas@202.83.248.123:$ULAM_DIR
     rsync -avz $TULAM_DIR maktas@202.83.248.123:$ULAM_DIR
+    ssh maktas@202.83.248.123 rsync -avz $FULAM_TARCHER_DIR archer1:ARCHER_DIR
   fi
 else
   echo "Argument did not match !"
