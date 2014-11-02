@@ -240,10 +240,15 @@ struct RQTable
                             int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
     std::string to_str();
     std::map<std::string, std::string> to_str_str_map();
+    
+    int mark_all();
+    std::map<std::string, std::string> to_unmarked_str_str_map();
   private:
     thread_safe_map<key_ver_pair, char> key_ver__dsid_map;
     thread_safe_map<key_ver_pair, std::string> key_ver__data_type_map;
     thread_safe_map<key_ver_pair, std::map<std::string, std::vector<uint64_t> > > key_ver__datainfo_map;
+    
+    thread_safe_map<key_ver_pair, bool> key_ver__mark;
 };
 
 struct RSTable //Remote Subscription Table

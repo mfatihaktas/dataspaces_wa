@@ -146,7 +146,7 @@ void DHTServer::init_recv()
       {
         //LOG(ERROR) << "init_recv:: err=" << err.what();
         LOG(INFO) << "init_recv:: server:" << host_name << "; client closed the conn.";
-        close();
+        // close();
         return;
       }
       msgsize_buffer[HEADER_MSGSIZE_LENGTH] = '\0';

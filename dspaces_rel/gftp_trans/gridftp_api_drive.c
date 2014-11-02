@@ -6,8 +6,6 @@
 void done_cb(void *user_arg, globus_ftp_client_handle_t *handle, globus_object_t *err);
 void data_write_cb(void *user_arg, globus_ftp_client_handle_t *handle, globus_object_t * err, 
                           globus_byte_t *buffer, globus_size_t length, globus_off_t offset, globus_bool_t eof);
-void load_gftp_modules();
-void unload_gftp_modules();
 void _wait(void* user_arg);
 void _continue(void* user_arg);
 //
@@ -85,7 +83,6 @@ void load_gftp_modules()
     printf("Failed to load GLOBUS_FTP_CLIENT_MODULE. Error=%s - %s \n", status, tmpstr);
     exit(1);
   }
-  
   //
   printf("load_gftp_modules:: loaded. \n");
 }
@@ -93,9 +90,8 @@ void load_gftp_modules()
 void unload_gftp_modules()
 {
   globus_module_deactivate_all();
-  
   //
-  printf("load_gftp_modules:: unloaded. \n");
+  printf("unload_gftp_modules:: unloaded. \n");
 }
 
 void _wait(void* user_arg)
@@ -123,7 +119,7 @@ int gridftp_get_file(const char* src_url, const char* dst_url)
   struct trans_context *tc_ = (struct trans_context*)malloc(sizeof(struct trans_context) );
   tc_->done = GLOBUS_FALSE;
   // 
-  load_gftp_modules();
+  // load_gftp_modules();
   
   globus_ftp_client_handleattr_t            hattr;
   globus_ftp_client_operationattr_t         oattr;
@@ -173,7 +169,7 @@ int gridftp_get_file(const char* src_url, const char* dst_url)
   //
   fclose(fd);
   globus_ftp_client_handle_destroy(&handle);
-  unload_gftp_modules();
+  // unload_gftp_modules();
   //
   return 0;
 }
@@ -183,7 +179,7 @@ int gridftp_put_file(const char* src_url, const char* dst_url)
   struct trans_context *tc_ = (struct trans_context*)malloc(sizeof(struct trans_context) );
   tc_->done = GLOBUS_FALSE;
   // 
-  load_gftp_modules();
+  // load_gftp_modules();
   
   globus_ftp_client_handleattr_t            hattr;
   globus_ftp_client_operationattr_t         oattr;
@@ -234,7 +230,7 @@ int gridftp_put_file(const char* src_url, const char* dst_url)
   //
   fclose(fd);
   globus_ftp_client_handle_destroy(&handle);
-  unload_gftp_modules();
+  // unload_gftp_modules();
   //
   return 0;
 }

@@ -2,7 +2,7 @@
 echo $1 $2 $3
 
 DHT_LINTF="em2" #"eth0"
-WA_LINTF="em2" #"ib0"
+WA_LINTF="ib0" #"em2" #"ib0"
 
 RM1_DHT_LPORT="60000"
 RM2_DHT_LPORT="65000"
@@ -11,7 +11,7 @@ RM2_DHT_LIP="192.168.2.152" #"192.168.100.120" "192.168.2.152" #
 GFTP_LPORT="62002"
 TMPFS_DIR="/dev/shm"
 
-TRANS_PROTOCOL="g" #"i"
+TRANS_PROTOCOL="i" #"g" #"i"
 
 # DSPACES_BIN=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.4.0/install/bin
 DSPACES_BIN=$DSPACES_DIR/bin
@@ -58,8 +58,16 @@ elif [ $1  = 'rm' ]; then
   read -p "[Enter]"
   echo "killing Gftps..."
   fuser -k -n tcp $GFTP_LPORT
-  # rm nohup.out
+  fuser -k -n tcp $RM1_DHT_LPORT
+  fuser -k -n tcp $RM2_DHT_LPORT
 elif [ $1  = 'drm' ]; then
+  if [ $TRANS_PROTOCOL  = 'g' ]; then
+    echo "Starting Gftps..."
+    globus-gridftp-server -aa -password-file pwfile -c None \
+                          -port $GFTP_LPORT \
+                          -d error,warn,info,dump,all &
+                          # -data-interface $WA_LINTF \
+  fi
   if [ $2  = '1' ]; then
     export GLOG_logtostderr=1
     gdb --args ./exp --type="ri" --dht_id=$2 --num_dscnodes=$NUM_DSCNODES --app_id=10 \
@@ -73,6 +81,11 @@ elif [ $1  = 'drm' ]; then
                      --trans_protocol=$TRANS_PROTOCOL --wa_lintf=$WA_LINTF \
                      --gftp_lport=$GFTP_LPORT --tmpfs_dir=$TMPFS_DIR
   fi
+  read -p "[Enter]"
+  echo "killing Gftps..."
+  fuser -k -n tcp $GFTP_LPORT
+  fuser -k -n tcp $RM1_DHT_LPORT
+  fuser -k -n tcp $RM2_DHT_LPORT
 elif [ $1  = 'gc' ]; then
   TRANS_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/gftp_trans/dummy
   # S_IP=192.168.2.152

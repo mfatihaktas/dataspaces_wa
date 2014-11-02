@@ -1,7 +1,7 @@
 #include "ds_drive.h"
 
 //************************************  DspacesDriver  *******************************//
-#define INTER_LOCK_TIME 1000 //usec
+#define INTER_LOCK_TIME 10*1000 //usec
 #define INTER_RI_GET_TIME 2*1000*1000 //usec
 
 DSpacesDriver::DSpacesDriver(int num_peers, int appid)
@@ -81,7 +81,8 @@ int DSpacesDriver::init(int num_peers, int appid)
 int DSpacesDriver::sync_put(const char* var_name, unsigned int ver, int size,
                             int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
 {
-  //boost::lock_guard<boost::mutex> guard(dspaces_mtx);
+  // boost::lock_guard<boost::mutex> guard(dspaces_mtx);
+  // 
   dspaces_define_gdim(var_name, ndim, gdim_);
   
   //dspaces_lock_on_write(var_name, &mpi_comm);
@@ -100,6 +101,7 @@ int DSpacesDriver::sync_put(const char* var_name, unsigned int ver, int size,
 int DSpacesDriver::get(const char* var_name, unsigned int ver, int size,
                        int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
 {
+  // 
   dspaces_define_gdim(var_name, ndim, gdim_);
   
   property_mtx.lock();
@@ -108,13 +110,25 @@ int DSpacesDriver::get(const char* var_name, unsigned int ver, int size,
   property_mtx.unlock();
   
   //dspaces_lock_on_read(var_name, &mpi_comm);
-  lock_on_read(var_name);
-  
+  {
+    // boost::lock_guard<boost::mutex> guard(dspaces_mtx);
+    lock_on_read(var_name);
+  }
   //boost::lock_guard<boost::mutex> guard(dspaces_mtx);
-  int result= dspaces_get(var_name, ver, size,
-                          ndim, lb_, ub_, data_);
+  int result;
+  {
+    // LOG(INFO) << "get:: locking for var_name= " << var_name;
+    // boost::lock_guard<boost::mutex> guard(dspaces_mtx);
+    result = dspaces_get(var_name, ver, size,
+                         ndim, lb_, ub_, data_);
+  
+    // LOG(INFO) << "get:: dspaces_get done for var_name= " << var_name;
+  }
   //dspaces_unlock_on_read(var_name, &mpi_comm);
-  unlock_on_read(var_name);
+  {
+    // boost::lock_guard<boost::mutex> guard(dspaces_mtx);
+    unlock_on_read(var_name);
+  }
   
   return result;
 }

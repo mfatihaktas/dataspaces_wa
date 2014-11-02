@@ -13,6 +13,8 @@ struct trans_context {
   globus_cond_t cond;
 };
 
+void load_gftp_modules();
+void unload_gftp_modules();
 int gridftp_get_file(const char* src_url, const char* dst_url);
 int gridftp_put_file(const char* src_url, const char* dst_url);
 // int gridftp_fancy_put_file(const char* src_url, const char* dst_url, int num_streams);

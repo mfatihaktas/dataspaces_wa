@@ -2,12 +2,14 @@
 
 GFTPDriver::GFTPDriver()
 {
+  load_gftp_modules();
   //
   LOG(INFO) << "GFTPDriver:: constructed.";
 }
 
 GFTPDriver::~GFTPDriver()
 {
+  unload_gftp_modules();
   close();
   //
   LOG(INFO) << "GFTPDriver:: destructed.";

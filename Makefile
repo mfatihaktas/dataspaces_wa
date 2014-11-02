@@ -80,7 +80,7 @@ $(ODIR)/%.o: %.c
 endif
 
 lib: 
-	ar -cvq $(DSPACESWA_LIB)/libdspaces_wa.a $(ODIR)/dataspaces_wa.o $(DSPACESREL_ODIR)/ds_client.o $(DSPACESREL_ODIR)/ds_drive.o $(OVERLAYNET_ODIR)/dht_node.o $(OVERLAYNET_ODIR)/dht_server.o $(OVERLAYNET_ODIR)/dht_client.o $(OVERLAYNET_ODIR)/packet.o $(IBTRANS_ODIR)/ib_delivery.o $(IBTRANS_ODIR)/common.o $(GFTPTRANS_ODIR)/gftp_delivery.o $(GFTPTRANS_ODIR)/gftp_drive.o $(GFTPTRANS_ODIR)/gridftp_api_drive.o $(GFTPTRANS_ODIR)/io_drive.o
+	ar -cvq $(DSPACESWA_LIB)/libdspaces_wa.a $(ODIR)/dataspaces_wa.o $(DSPACESREL_OBJS) $(OVERLAYNET_OBJS) $(IBTRANS_OBJS) $(GFTPTRANS_OBJS)
 
 lclean:
 	rm -f $(ODIR)/*.o

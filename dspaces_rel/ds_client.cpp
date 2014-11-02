@@ -338,6 +338,7 @@ int RQTable::add_key_ver(std::string key, unsigned int ver,
   key_ver_pair kv = std::make_pair(key, ver);
   key_ver__dsid_map[kv] = ds_id;
   key_ver__data_type_map[kv] = data_type;
+  key_ver__mark[kv] = false;
   
   if (size != 0)
   {
@@ -392,6 +393,7 @@ int RQTable::del_key_ver(std::string key, unsigned int ver)
   key_ver__dsid_map.del(kv);
   key_ver__data_type_map.del(kv);
   key_ver__datainfo_map.del(kv);
+  key_ver__mark.del(kv);
   //
   LOG(INFO) << "del_key:: deleted kv= <" << key << ", " << ver << ">";
   return 0;
@@ -443,6 +445,7 @@ std::string RQTable::to_str()
     ss << "\tds_id=" << it->second << "\n";
 
     ss << "\tdata_type=" << key_ver__data_type_map[kv] << "\n";
+    ss << "\tmark=" << key_ver__mark[kv] << "\n";
 
     std::map<std::string, std::vector<uint64_t> > datainfo_map = key_ver__datainfo_map[kv];
     ss << "\tsize=" << datainfo_map["size"].back() << "\n";
@@ -510,6 +513,63 @@ std::map<std::string, std::string> RQTable::to_str_str_map()
     str_str_map["ub_" + counter_str] = ub;
     
     counter++;
+  }
+  
+  return str_str_map;
+}
+
+int RQTable::mark_all()
+{
+  for (std::map<key_ver_pair, bool>::iterator it = key_ver__mark.begin(); it != key_ver__mark.end(); it++)
+  {
+    it->second = true;
+  }
+  
+  return 0;
+}
+
+std::map<std::string, std::string> RQTable::to_unmarked_str_str_map()
+{
+  std::map<std::string, std::string> str_str_map;
+  
+  int counter = 0;
+  for (std::map<key_ver_pair, char>::iterator it = key_ver__dsid_map.begin(); it != key_ver__dsid_map.end(); it++) 
+  {
+    key_ver_pair kv = it->first;
+    if (!key_ver__mark[kv]) {
+      std::string key = kv.first;
+      unsigned int ver = kv.second;
+      char ds_id = it->second;
+      
+      std::map<std::string, std::vector<uint64_t> > datainfo_map = key_ver__datainfo_map[kv];
+      uint64_t size = datainfo_map["size"].back();
+      int ndim = (int)datainfo_map["ndim"].back();
+      std::string gdim = "";
+      std::string lb = "";
+      std::string ub = "";
+      for(int i = 0; i < ndim; i++) {
+        gdim += boost::lexical_cast<std::string>(datainfo_map["gdim"][i]);
+        lb += boost::lexical_cast<std::string>(datainfo_map["lb"][i]);
+        ub += boost::lexical_cast<std::string>(datainfo_map["ub"][i]);
+        if (i < ndim-1) {
+          gdim += ",";
+          lb += ",";
+          ub += ",";
+        }
+      }
+      //
+      std::string counter_str = boost::lexical_cast<std::string>(counter);
+      str_str_map["key_" + counter_str] = key;
+      str_str_map["ver_" + counter_str] = boost::lexical_cast<std::string>(ver);
+      str_str_map["ds_id_" + counter_str] = ds_id;
+      str_str_map["size_" + counter_str] = boost::lexical_cast<std::string>(size);
+      str_str_map["ndim_" + counter_str] = boost::lexical_cast<std::string>(ndim);
+      str_str_map["gdim_" + counter_str] = gdim;
+      str_str_map["lb_" + counter_str] = lb;
+      str_str_map["ub_" + counter_str] = ub;
+      
+      counter++;
+    }
   }
   
   return str_str_map;
@@ -890,7 +950,9 @@ std::string RIManager::to_str()
 
 int RIManager::bcast_rq_table()
 {
-  std::map<std::string, std::string> rq_table_map = rq_table.to_str_str_map();
+  // std::map<std::string, std::string> rq_table_map = rq_table.to_str_str_map();
+  std::map<std::string, std::string> rq_table_map = rq_table.to_unmarked_str_str_map();
+  rq_table.mark_all();
   
   rq_table_map["type"] = REMOTE_RQTABLE;
   rq_table_map["id"] = id;

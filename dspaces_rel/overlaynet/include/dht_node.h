@@ -358,9 +358,7 @@ class DHTNode{
       msg_map["lport"] = boost::lexical_cast<std::string>(dhtnode_->get_next_lport() );
       
       // boost::shared_ptr<Packet> temp_( new Packet(JOIN_REQUEST, msg_map) );
-      boost::shared_ptr<Packet> temp_ = boost::make_shared<Packet>(JOIN_REQUEST, msg_map);
-      
-      return temp_;
+      return boost::make_shared<Packet>(JOIN_REQUEST, msg_map);
     }
     
     boost::shared_ptr<Packet> gen_join_reply(char peer_id, bool pos)
@@ -403,8 +401,7 @@ class DHTNode{
       }
       //
       // boost::shared_ptr<Packet> temp_ ( new Packet(JOIN_REPLY, msg_map) );
-      boost::shared_ptr<Packet> temp_ = boost::make_shared<Packet>(JOIN_REPLY, msg_map);
-      return temp_;
+      return boost::make_shared<Packet>(JOIN_REPLY, msg_map);
     }
     
     boost::shared_ptr<Packet> gen_join_ack()
@@ -413,8 +410,7 @@ class DHTNode{
       msg_map["id"] = dhtnode_->id;
       
       // boost::shared_ptr<Packet> temp_( new Packet(JOIN_ACK, msg_map) );
-      boost::shared_ptr<Packet> temp_ = boost::make_shared<Packet>(JOIN_ACK, msg_map);
-      return temp_;
+      return boost::make_shared<Packet>(JOIN_ACK, msg_map);
     }
     
     boost::shared_ptr<Packet> gen_ping()
@@ -423,8 +419,7 @@ class DHTNode{
       msg_map["id"] = dhtnode_->id;
       
       // boost::shared_ptr<Packet> temp_( new Packet(PING, msg_map) );
-      boost::shared_ptr<Packet> temp_ = boost::make_shared<Packet>(PING, msg_map);
-      return temp_;
+      return boost::make_shared<Packet>(PING, msg_map);
     }
     
     boost::shared_ptr<Packet> gen_pong()
@@ -433,8 +428,7 @@ class DHTNode{
       msg_map["id"] = dhtnode_->id;
       
       // boost::shared_ptr<Packet> temp_( new Packet(PONG, msg_map) );
-      boost::shared_ptr<Packet> temp_ = boost::make_shared<Packet>(PONG, msg_map);
-      return temp_;
+      return boost::make_shared<Packet>(PONG, msg_map);
     }
   };
   //
@@ -447,7 +441,7 @@ class DHTNode{
     //
     DHTNode(char id, func_rimsg_recv_cb _rimsg_recv_cb,
             char* lip, int lport, 
-            char* joinhost_lip = NULL, int joinhost_lport = 0 );
+            char* joinhost_lip, int joinhost_lport );
     ~DHTNode();
     int get_num_peers();
     
