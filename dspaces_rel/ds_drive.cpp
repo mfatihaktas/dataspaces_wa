@@ -1,7 +1,7 @@
 #include "ds_drive.h"
 
 //************************************  DspacesDriver  *******************************//
-#define INTER_LOCK_TIME 10*1000 //usec
+#define INTER_LOCK_TIME 2*1000 //usec
 #define INTER_RI_GET_TIME 2*1000*1000 //usec
 
 DSpacesDriver::DSpacesDriver(int num_peers, int appid)

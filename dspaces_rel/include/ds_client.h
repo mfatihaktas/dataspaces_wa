@@ -30,7 +30,9 @@
 #include "packet.h"
 
 #include "ib_delivery.h"
+#ifdef _GRIDFTP_
 #include "gftp_delivery.h"
+#endif
 
 #ifndef _TEST_MACROS_
 #define _TEST_MACROS_
@@ -279,6 +281,7 @@ struct GFTPBTable //Gridftp Bootstrap Table
 
 const std::string INFINIBAND = "i";
 const std::string GRIDFTP = "g";
+
 class RFPManager //Remote Fetch & Place Manager
 {
   public:
@@ -295,6 +298,7 @@ class RFPManager //Remote Fetch & Place Manager
                int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_,
                std::string laddr, std::string lport, std::string tmpfs_dir);
     
+#ifdef _GRIDFTP_
     int gftp_get__ds_put(std::string gftps_laddr, std::string gftps_lport, std::string gftps_tmpfs_dir,
                          std::string key, unsigned int ver,
                          int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
@@ -303,6 +307,7 @@ class RFPManager //Remote Fetch & Place Manager
                          std::string gftps_laddr, std::string gftps_lport, std::string gftps_tmpfs_dir);
     int gftpfile_read__ds_put(std::string key, unsigned int ver,
                               int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
+#endif
     std::string get_lport();
     int ib_receive__ds_put(std::string ib_laddr, std::string ib_lport,
                            std::string key, unsigned int ver, std::string data_type,
@@ -316,8 +321,9 @@ class RFPManager //Remote Fetch & Place Manager
     std::string wa_trans_protocol;
     boost::shared_ptr<DSpacesDriver> ds_driver_;
     boost::shared_ptr<IBDDManager> ibdd_manager_;
+#ifdef _GRIDFTP_
     boost::shared_ptr<GFTPDDManager> gftpdd_manager_;
-    
+#endif
     std::map<key_ver_pair, size_t> key_ver__recvedsize_map;
     std::map<key_ver_pair, void*> key_ver__data_map;
 };

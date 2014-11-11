@@ -340,6 +340,10 @@ int main(int argc , char **argv)
                          trans_protocol, wa_laddr_str, wa_lintf, wa_gftp_lport, tmpfs_dir,
                          wa_ib_lport_list);
     
+    syncer<char> dummy_syncer;
+    dummy_syncer.add_sync_point('d', 1);
+    dummy_syncer.wait('d');
+    
     std::cout << "Enter\n";
     getline(std::cin, temp);
   }

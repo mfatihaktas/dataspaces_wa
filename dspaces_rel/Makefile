@@ -38,13 +38,13 @@ IBTRANS_DIR = $(DSPACESREL_DIR)/ib_trans
 IBTRANS_ODIR = $(IBTRANS_DIR)/obj
 IBTRANS_OBJS = $(IBTRANS_ODIR)/ib_delivery.o $(IBTRANS_ODIR)/common.o
 
-# ifndef ULAM
+ifdef GRIDFTP
 GFTP_INC = -I$(GFTPINC_DIR)
 GFTP_LIB = -L$(GFTPLIB_DIR) -lglobus_ftp_client
 GFTPTRANS_DIR = $(DSPACESREL_DIR)/gftp_trans
 GFTPTRANS_ODIR = $(GFTPTRANS_DIR)/obj
 GFTPTRANS_OBJS = $(GFTPTRANS_ODIR)/gftp_delivery.o $(GFTPTRANS_ODIR)/gftp_drive.o $(GFTPTRANS_ODIR)/gridftp_api_drive.o $(GFTPTRANS_ODIR)/io_drive.o
-# endif
+endif
 
 DSPACESREL_INC = -I$(DSPACESREL_DIR)/include -I$(OVERLAYNET_DIR)/include -I$(IBTRANS_DIR)/include -I$(GFTPTRANS_DIR)/include
 # 
@@ -67,9 +67,9 @@ submake_ibtrans_dir:
 	make -C $(IBTRANS_DIR) 
 
 submake_gftptrans_dir:
-# ifndef ULAM 
+ifdef GRIDFTP 
 	make -C $(GFTPTRANS_DIR)
-# endif
+endif
 
 exp: $(ODIR)/exp.o $(ODIR)/ds_client.o $(ODIR)/ds_drive.o $(OVERLAYNET_OBJS) $(IBTRANS_OBJS) $(GFTPTRANS_OBJS)
 	$(MPICPP) -g -o $@ $^ $(INC) $(LIB)
@@ -83,6 +83,8 @@ lclean:
 clean:
 	make -C $(OVERLAYNET_DIR) clean
 	make -C $(IBTRANS_DIR) clean
+ifdef GRIDFTP
 	make -C $(GFTPTRANS_DIR) clean
+endif
 	rm -f $(ODIR)/*.o ${APPS} 
 	

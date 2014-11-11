@@ -666,25 +666,20 @@ RFPManager::RFPManager(std::string wa_trans_protocol, boost::shared_ptr<DSpacesD
                        std::string wa_gftp_lport, std::string tmpfs_dir)
 : wa_trans_protocol(wa_trans_protocol),
   ds_driver_(ds_driver_),
-  ibdd_manager_( boost::make_shared<IBDDManager>(wa_ib_lport_list) ),
-  gftpdd_manager_( boost::make_shared<GFTPDDManager>(wa_gftp_lintf, boost::lexical_cast<int>(wa_gftp_lport), tmpfs_dir) )
+  ibdd_manager_( boost::make_shared<IBDDManager>(wa_ib_lport_list) )
 {
   if ( !(wa_trans_protocol.compare(INFINIBAND) == 0 || wa_trans_protocol.compare(GRIDFTP) == 0) ) {
     LOG(ERROR) << "RFPManager:: unknown wa_trans_protocol= " << wa_trans_protocol;
     exit(1);
   }
+#ifdef _GRIDFTP_
   if (wa_trans_protocol.compare(GRIDFTP) == 0) {
+    gftpdd_manager_ = boost::make_shared<GFTPDDManager>(wa_gftp_lintf, boost::lexical_cast<int>(wa_gftp_lport), tmpfs_dir);
     // boost::make_shared<boost::thread>(&RFPManager::init_gftp_server, this);
     // boost::thread(&RFPManager::init_gftp_server, this);
   }
+#endif
   LOG(INFO) << "RFPManager:: constructed.";
-}
-
-void RFPManager::init_gftp_server()
-{
-  if (gftpdd_manager_->init_gftp_server() ) {
-    LOG(ERROR) << "RFPManager:: gftpdd_manager_->init_gftp_server failed!";
-  }
 }
 
 RFPManager::~RFPManager()
@@ -702,6 +697,7 @@ int RFPManager::wa_get(std::string laddr, std::string lport, std::string tmpfs_d
     return 0;
     // return gftp_get__ds_put(laddr, lport, tmpfs_dir, key, ver, size, ndim, gdim_, lb_, ub_);
   }
+  return 1;
 }
 
 int RFPManager::wa_put(std::string key, unsigned int ver, std::string data_type,
@@ -710,8 +706,19 @@ int RFPManager::wa_put(std::string key, unsigned int ver, std::string data_type,
   if (wa_trans_protocol.compare(INFINIBAND) == 0) {
     return ds_get__ib_send(key, ver, data_type, size, ndim, gdim_, lb_, ub_, laddr.c_str(), lport.c_str() );
   }
+#ifdef _GRIDFTP_
   else if (wa_trans_protocol.compare(GRIDFTP) == 0) {
     return ds_get__gftp_put(key, ver, size, ndim, gdim_, lb_, ub_, laddr, lport, tmpfs_dir);
+  }
+#endif
+  return 1;
+}
+
+#ifdef _GRIDFTP_
+void RFPManager::init_gftp_server()
+{
+  if (gftpdd_manager_->init_gftp_server() ) {
+    LOG(ERROR) << "RFPManager:: gftpdd_manager_->init_gftp_server failed!";
   }
 }
 
@@ -785,16 +792,19 @@ int RFPManager::gftpfile_read__ds_put(std::string key, unsigned int ver,
   free_all<uint64_t*>(3, gdim_, lb_, ub_);
   free(data_);
 }
+#endif
 
 std::string RFPManager::get_lport()
 {
   if (wa_trans_protocol.compare(INFINIBAND) == 0) {
     return ibdd_manager_->get_next_avail_ib_lport();
   }
+#ifdef _GRIDFTP_
   else if (wa_trans_protocol.compare(GRIDFTP) == 0) {
     return boost::lexical_cast<std::string>(gftpdd_manager_->get_gftps_port() );
   }
-  
+#endif
+  return "";
 }
 
 int RFPManager::ib_receive__ds_put(std::string ib_laddr, std::string ib_lport,
@@ -1229,7 +1239,7 @@ int RIManager::remote_fetch(char ds_id, std::map<std::string, std::string> r_fet
   rf_wa_get_syncer.add_sync_point(kv, 1);
   rf_wa_get_syncer.wait(kv);
   rf_wa_get_syncer.del_sync_point(kv);
-  
+#ifdef _GRIDFTP_
   if (this->wa_trans_protocol.compare(GRIDFTP) == 0) {
     int size, ndim;
     uint64_t *gdim_, *lb_, *ub_;
@@ -1243,6 +1253,7 @@ int RIManager::remote_fetch(char ds_id, std::map<std::string, std::string> r_fet
       LOG(ERROR) << "remote_fetch:: rfp_manager_->gftpfile_read__ds_put failed!";
     }
   }
+#endif
   // 
   LOG(INFO) << "remote_fetch:: done.";
   return 0;
@@ -1476,6 +1487,7 @@ void RIManager::handle_r_fetch(std::map<std::string, std::string> r_fetch_map)
     LOG(ERROR) << "handle_r_fetch:: rfp_manager_->wa_put failed!";
   }
   // 
+#ifdef _GRIDFTP_
   if (wa_trans_protocol.compare(GRIDFTP) == 0) {
     char to_id = r_fetch_map["id"].c_str()[0];
     std::map<std::string, std::string> gftp_put_done_map;
@@ -1489,6 +1501,7 @@ void RIManager::handle_r_fetch(std::map<std::string, std::string> r_fetch_map)
       return;
     }
   }
+#endif
   //
   free_all<uint64_t*>(3, gdim_, lb_, ub_);
   LOG(INFO) << "handle_r_fetch:: done.";

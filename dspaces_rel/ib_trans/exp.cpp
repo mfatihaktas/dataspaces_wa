@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <getopt.h>
 #include <map>
+#include <sys/time.h>
 
 #include <boost/lexical_cast.hpp>
 #include <glog/logging.h>
@@ -111,57 +112,73 @@ int main(int argc , char **argv)
   std::string temp;
   google::InitGoogleLogging("exp");
   //
+  struct timeval start_time;
+  struct timeval end_time;
+  // 
   std::map<char*, char*> opt_map = parse_opts(argc, argv);
   
   std::string ib_lports[] = {"1234","1235","1236","1237"};
   std::list<std::string> ib_lport_list(ib_lports, ib_lports + sizeof(ib_lports) / sizeof(std::string) );
-  
+  // 
   IBDDManager dd_manager(ib_lport_list);
-  if (strcmp(opt_map[(char*)"type"], (char*)"server") == 0){
+  if (strcmp(opt_map[(char*)"type"], (char*)"server") == 0) {
     dd_manager.init_ib_server("dummy", 0, data_type_str, dd_manager.get_next_avail_ib_lport().c_str(), 
                               boost::bind(&recv_handler, _1, _2, _3, _4) );
     
-    dd_manager.init_ib_server("dummy2", 0, data_type_str, dd_manager.get_next_avail_ib_lport().c_str(), 
-                              boost::bind(&recv_handler, _1, _2, _3, _4) );
+    // dd_manager.init_ib_server("dummy2", 0, data_type_str, dd_manager.get_next_avail_ib_lport().c_str(), 
+    //                           boost::bind(&recv_handler, _1, _2, _3, _4) );
   
-    dd_manager.init_ib_server("dummy2", 0, data_type_str, dd_manager.get_next_avail_ib_lport().c_str(), 
-                              boost::bind(&recv_handler, _1, _2, _3, _4) );
+    // dd_manager.init_ib_server("dummy2", 0, data_type_str, dd_manager.get_next_avail_ib_lport().c_str(), 
+    //                           boost::bind(&recv_handler, _1, _2, _3, _4) );
   
-    dd_manager.init_ib_server("dummy2", 0, data_type_str, dd_manager.get_next_avail_ib_lport().c_str(), 
-                              boost::bind(&recv_handler, _1, _2, _3, _4) );
+    // dd_manager.init_ib_server("dummy2", 0, data_type_str, dd_manager.get_next_avail_ib_lport().c_str(), 
+    //                           boost::bind(&recv_handler, _1, _2, _3, _4) );
   }
-  else if (strcmp(opt_map[(char*)"type"], (char*)"client") == 0){
+  else if (strcmp(opt_map[(char*)"type"], (char*)"client") == 0) {
+    // size_t data_length = 4* 1024*1024*256;
     size_t data_length = 1024*1024*256;
     void* data_ = (void*)malloc(sizeof(data_type)*data_length);
     
     for (int i = 0; i < data_length; i++){
       static_cast<data_type*>(data_)[i] = (data_type)i*1.2;
     }
-    
+    // ////////////////////////////////////////////////////////////////////////////////////////////
+    if (gettimeofday(&start_time, NULL) ) {
+      LOG(ERROR) << "main:: gettimeofday returned non-zero.";
+      return 1;
+    }
     std::string port = opt_map[(char*)"port"];
     dd_manager.init_ib_client(opt_map[(char*)"s_addr"], opt_map[(char*)"port"],
                               data_type_str, data_length, data_);
+    if (gettimeofday(&end_time, NULL) ) {
+      LOG(ERROR) << "main:: gettimeofday returned non-zero.";
+      return 1;
+    }
+    long exec_time_sec = end_time.tv_sec - start_time.tv_sec;
+    long exec_time_usec = end_time.tv_usec - start_time.tv_usec;
+    LOG(INFO) << "main:: exec_time= " << exec_time_sec << "." << exec_time_usec / 1000 << " sec.";
+    // ////////////////////////////////////////////////////////////////////////////////////////////
     
-    port = boost::lexical_cast<std::string>(1 + boost::lexical_cast<int>(port) );
+    // port = boost::lexical_cast<std::string>(1 + boost::lexical_cast<int>(port) );
     
-    dd_manager.init_ib_client(opt_map[(char*)"s_addr"], port.c_str(),
-                              data_type_str, data_length, data_);
+    // dd_manager.init_ib_client(opt_map[(char*)"s_addr"], port.c_str(),
+    //                           data_type_str, data_length, data_);
     
-    port = boost::lexical_cast<std::string>(1 + boost::lexical_cast<int>(port) );
+    // port = boost::lexical_cast<std::string>(1 + boost::lexical_cast<int>(port) );
     
-    dd_manager.init_ib_client(opt_map[(char*)"s_addr"], port.c_str(),
-                              data_type_str, data_length, data_);
+    // dd_manager.init_ib_client(opt_map[(char*)"s_addr"], port.c_str(),
+    //                           data_type_str, data_length, data_);
                               
-    port = boost::lexical_cast<std::string>(1 + boost::lexical_cast<int>(port) );
+    // port = boost::lexical_cast<std::string>(1 + boost::lexical_cast<int>(port) );
     
-    dd_manager.init_ib_client(opt_map[(char*)"s_addr"], port.c_str(),
-                              data_type_str, data_length, data_);
+    // dd_manager.init_ib_client(opt_map[(char*)"s_addr"], port.c_str(),
+    //                           data_type_str, data_length, data_);
     
     free(data_);
     // std::cout << "Enter\n";
     // getline(std::cin, temp);
   }
-  else if (strcmp(opt_map[(char*)"type"], (char*)"bqueue") == 0){
+  else if (strcmp(opt_map[(char*)"type"], (char*)"bqueue") == 0) {
     // BQueue<int> bq;
     //bq.create_timed_push_thread(12);
     

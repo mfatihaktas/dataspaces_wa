@@ -41,6 +41,7 @@ struct thread_safe_map
     {
       map_it = map.find(k);
       map.erase(map_it);
+      return 0;
     };
     
     bool contains(Tk k)

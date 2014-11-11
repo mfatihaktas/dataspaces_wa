@@ -1,12 +1,12 @@
 #!/bin/bash
 echo $1 $2 $3
 
-DHT_LINTF="em2" #"eth0"
+DHT_LINTF="em2" #"em2" #"eth0"
 WA_LINTF="ib0" #"em2" #"ib0"
 
 RM1_DHT_LPORT="60000"
 RM2_DHT_LPORT="65000"
-RM2_DHT_LIP="192.168.2.152" #"192.168.100.120" "192.168.2.152" #
+RM2_DHT_LIP="192.168.100.120" #"192.168.100.120" #"192.168.100.120" "192.168.2.152" #
 
 GFTP_LPORT="62002"
 TMPFS_DIR="/dev/shm"
@@ -56,7 +56,7 @@ elif [ $1  = 'rm' ]; then
                              --gftp_lport=$GFTP_LPORT --tmpfs_dir=$TMPFS_DIR
   fi
   read -p "[Enter]"
-  echo "killing Gftps..."
+  echo "killing stubborns..."
   fuser -k -n tcp $GFTP_LPORT
   fuser -k -n tcp $RM1_DHT_LPORT
   fuser -k -n tcp $RM2_DHT_LPORT
@@ -118,7 +118,7 @@ elif [ $1  = 'init' ]; then
     LD_LIBRARY_PATH=/opt/gcc-4.8.2/lib64:$LD_LIBRARY_PATH
     LD_LIBRARY_PATH=/cac/u01/mfa51/Desktop/glog-0.3.3/install/lib:$LD_LIBRARY_PATH
     export LD_LIBRARY_PATH
-    echo LD_LIBRARY_PATH
+    echo "LD_LIBRARY_PATH="
     echo $LD_LIBRARY_PATH
   elif [ $2  = 'u' ]; then
     # export ULAM=ULAM
@@ -137,7 +137,7 @@ elif [ $1  = 'init' ]; then
     LD_LIBRARY_PATH=/home/sc14demo/common-apps/boost_1_56_0/install/lib:$LD_LIBRARY_PATH
     LD_LIBRARY_PATH=/home/sc14demo/common-apps/glog-0.3.3/install/lib:$LD_LIBRARY_PATH
     export LD_LIBRARY_PATH
-    echo LD_LIBRARY_PATH
+    echo "LD_LIBRARY_PATH="
     echo $LD_LIBRARY_PATH
   elif [ $2  = 'm' ]; then
     # export MAQUIS=MAQUIS
@@ -155,8 +155,12 @@ elif [ $1  = 'init' ]; then
     LD_LIBRARY_PATH=/net/hp101/ihpcsc/maktas7/boost_1_56_0/install/lib:$LD_LIBRARY_PATH
     LD_LIBRARY_PATH=/net/hp101/ihpcsc/maktas7/glog-0.3.3/install/lib:$LD_LIBRARY_PATH
     export LD_LIBRARY_PATH
-    echo LD_LIBRARY_PATH
+    echo "LD_LIBRARY_PATH="
     echo $LD_LIBRARY_PATH
+    
+    export PATH=/net/hj1/ihpcl/bin:$PATH
+    echo "PATH="
+    echo $PATH
   fi
 else
   echo "Argument did not match !"
