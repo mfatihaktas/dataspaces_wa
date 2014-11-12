@@ -51,7 +51,7 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
     {"app_id", optional_argument, NULL, 3},
     {"dht_lintf", optional_argument, NULL, 4},
     {"dht_lport", optional_argument, NULL, 5},
-    {"ipeer_dht_lip", optional_argument, NULL, 6},
+    {"ipeer_dht_laddr", optional_argument, NULL, 6},
     {"ipeer_dht_lport", optional_argument, NULL, 7},
     {"trans_protocol", optional_argument, NULL, 8},
     {"ib_lintf", optional_argument, NULL, 9},
@@ -91,7 +91,7 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
         opt_map[(char*)"dht_lport"] = optarg;
         break;
       case 6:
-        opt_map[(char*)"ipeer_dht_lip"] = optarg;
+        opt_map[(char*)"ipeer_dht_laddr"] = optarg;
         break;
       case 7:
         opt_map[(char*)"ipeer_dht_lport"] = optarg;
@@ -143,15 +143,15 @@ int main(int argc , char **argv)
   int num_dscnodes = boost::lexical_cast<int>(opt_map[(char*)"num_dscnodes"]);
   int app_id = boost::lexical_cast<int>(opt_map[(char*)"app_id"]);
   
-  if (strcmp(opt_map[(char*)"type"], (char*)"put") == 0){
+  if (strcmp(opt_map[(char*)"type"], (char*)"put") == 0) {
     //
   }
   else if (strcmp(opt_map[(char*)"type"], (char*)"get") == 0){
     //
   }
-  else if (strcmp(opt_map[(char*)"type"], (char*)"ri") == 0){
-    if (!opt_map.count((char*)"ipeer_dht_lip")){
-      opt_map[(char*)"ipeer_dht_lip"] = NULL;
+  else if (strcmp(opt_map[(char*)"type"], (char*)"ri") == 0) {
+    if ( (!opt_map.count((char*)"ipeer_dht_laddr") ) || (strcmp(opt_map[(char*)"ipeer_dht_laddr"], (char*)"") == 0) ) {
+      opt_map[(char*)"ipeer_dht_laddr"] = NULL;
       opt_map[(char*)"ipeer_dht_lport"] = (char*)"0";
     }
     
@@ -166,7 +166,7 @@ int main(int argc , char **argv)
     
     RIManager ri_manager(opt_map[(char*)"dht_id"][0], num_dscnodes-1, app_id, 
                          intf_to_ip(opt_map[(char*)"dht_lintf"]), atoi(opt_map[(char*)"dht_lport"]),
-                         opt_map[(char*)"ipeer_dht_lip"], atoi(opt_map[(char*)"ipeer_dht_lport"]),
+                         opt_map[(char*)"ipeer_dht_laddr"], atoi(opt_map[(char*)"ipeer_dht_lport"]),
                          trans_protocol, wa_laddr, wa_gftp_lintf, wa_gftp_lport, tmpfs_dir,
                          wa_ib_lport_list);
     //usleep(1*1000*1000);

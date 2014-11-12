@@ -43,9 +43,9 @@ DSpacesDriver::~DSpacesDriver()
   */
   //LOG(INFO) << "~DSpacesDriver:: all riget_threads joined.";
   
-  if (!finalized){
-    finalize();
-  }
+  // if (!finalized){
+  //   finalize();
+  // }
   //
   LOG(INFO) << "~DSpacesDriver:: destructed.";
 }

@@ -1121,9 +1121,9 @@ void RIManager::handle_put(std::map<std::string, std::string> put_map)
     
     //debug_print(key, ver, size, ndim, gdim_, lb_, ub_, NULL);
     rq_table.put_key_ver(key, ver, data_type, this->id, size, ndim, gdim_, lb_, ub_);
-    // if (bcast_rq_table() ) {
-    //   LOG(ERROR) << "handle_l_put:: bcast_rq_table failed!";
-    // }
+    if (bcast_rq_table() ) {
+      LOG(ERROR) << "handle_l_put:: bcast_rq_table failed!";
+    }
   }
   //
   free_all<uint64_t*>(3, gdim_, lb_, ub_);
@@ -1131,10 +1131,10 @@ void RIManager::handle_put(std::map<std::string, std::string> put_map)
   // LOG(INFO) << "handle_put:: rq_table=\n" << rq_table.to_str();
 }
 
-void handle_early_subscribe(int app_id, std::map<std::string, std::string> early_subs_map)
-{
+// void RIManager::handle_early_subscribe(int app_id, std::map<std::string, std::string> early_subs_map)
+// {
   
-}
+// }
 
 /*************************************************************************/
 void RIManager::handle_possible_remote_places(std::string key, unsigned int ver)

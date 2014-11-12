@@ -324,7 +324,7 @@ int main(int argc , char **argv)
     strcpy(wa_laddr, wa_laddr_t);
     std::cout << "main:: wa_laddr= " << wa_laddr << "\n";
     //
-    if (!opt_map.count((char*)"ipeer_dht_laddr") ) {
+    if ( (!opt_map.count((char*)"ipeer_dht_laddr") ) || (strcmp(opt_map[(char*)"ipeer_dht_laddr"], (char*)"") == 0) ) {
       opt_map[(char*)"ipeer_dht_laddr"] = NULL;
       opt_map[(char*)"ipeer_dht_lport"] = (char*)"0";
     }

@@ -23,19 +23,29 @@ if [ $1  = 's' ]; then
   $DSPACES_BIN/./dataspaces_server --server $NUM_SNODES --cnodes $NUM_DSCNODES
   #$DSPACES_BIN/./dataspaces_server -s $NUM_SNODES -c $NUM_DSCNODES
 elif [ $1  = 'p' ]; then
-  if [ $2  = '1' ]; then
-    GLOG_logtostderr=1 ./exp --type="put" --num_dscnodes=$NUM_DSCNODES --app_id=1
-  elif [ $2  = '2' ]; then
-    GLOG_logtostderr=1 ./exp --type="put" --num_dscnodes=$NUM_DSCNODES --app_id=1
-  elif [ $2  = '22' ]; then
-    GLOG_logtostderr=1 ./exp --type="put_2" --num_dscnodes=$NUM_DSCNODES --app_id=1
-  fi
+  GLOG_logtostderr=1 ./exp --type="put" --num_dscnodes=$NUM_DSCNODES --app_id=1
+  # if [ $2  = '1' ]; then
+  #   GLOG_logtostderr=1 ./exp --type="put" --num_dscnodes=$NUM_DSCNODES --app_id=1
+  # elif [ $2  = '2' ]; then
+  #   GLOG_logtostderr=1 ./exp --type="put" --num_dscnodes=$NUM_DSCNODES --app_id=1
+  # elif [ $2  = '22' ]; then
+  #   GLOG_logtostderr=1 ./exp --type="put_2" --num_dscnodes=$NUM_DSCNODES --app_id=1
+  # fi
 elif [ $1  = 'g' ]; then
-  if [ $2  = '1' ]; then
-    GLOG_logtostderr=1 ./exp --type="get" --num_dscnodes=$NUM_DSCNODES --app_id=1
-  elif [ $2  = '2' ]; then
-    GLOG_logtostderr=1 ./exp --type="get" --num_dscnodes=$NUM_DSCNODES --app_id=1
-  fi
+  GLOG_logtostderr=1 ./exp --type="get" --num_dscnodes=$NUM_DSCNODES --app_id=1
+  # if [ $2  = '1' ]; then
+  #   GLOG_logtostderr=1 ./exp --type="get" --num_dscnodes=$NUM_DSCNODES --app_id=1
+  # elif [ $2  = '2' ]; then
+  #   GLOG_logtostderr=1 ./exp --type="get" --num_dscnodes=$NUM_DSCNODES --app_id=1
+  # fi
+elif [ $1  = 'dp' ]; then
+  export GLOG_logtostderr=1 
+  export MALLOC_CHECK_=2
+  gdb --args ./exp --type="put" --num_dscnodes=$NUM_DSCNODES --app_id=1
+elif [ $1  = 'dg' ]; then
+  export GLOG_logtostderr=1 
+  export MALLOC_CHECK_=2
+  gdb --args ./exp --type="get" --num_dscnodes=$NUM_DSCNODES --app_id=1
 elif [ $1  = 'rm' ]; then
   if [ $TRANS_PROTOCOL  = 'g' ]; then
     echo "Starting Gftps..."
