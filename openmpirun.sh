@@ -2,7 +2,7 @@
 echo $1 $2 $3
 
 NUM_DS_NODE_LIST=( 4 4 )
-DS_NODE_LIST=( "-host dell01 -host dell02 -host dell03 -host dell04" "-host dell11 -host dell12 -host dell13 -host dell14" )
+DS_NODE_LIST=( "-host dell01 -host dell02 -host dell03 -host dell04" "-host dell05 -host dell06 -host dell07 -host dell08" )
 RI_MANAGER_NODE_LIST=( "-host dell01" "-host dell02" )
 NUM_DSPACESWA_CLIENT_LIST=( 1 1 )
 

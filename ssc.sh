@@ -42,6 +42,9 @@ elif [ $1  = 'ssh' ]; then
       ssh maktas7@maquis$3.cc.gatech.edu
     fi
   elif [ $2 = 'u' ]; then
+    ssh -p 2222 maktas@202.83.248.123 &
+    PIDSAVE=$!
+    sleep 1; kill $PIDSAVE
     if [ -z "$3" ]; then
       echo "sshing to ulam$3"
       ssh maktas@202.83.248.123
@@ -61,11 +64,15 @@ elif [ $1  = 'tr' ]; then #scp only source code
     if [ -z "$3" ]; then
       echo "which Maquis node? 1-16"
     else
-      rsync -avz $TMAQUIS_DIR maktas7@maquis$3.cc.gatech.edu:$MAQUIS_DIR
+      rsync -avz --exclude-from .gitignore $TMAQUIS_DIR maktas7@maquis$3.cc.gatech.edu:$MAQUIS_DIR
     fi
   elif [ $2 = 'u' ]; then
-    rsync -avz $TULAM_DIR maktas@202.83.248.123:$ULAM_DIR
-    ssh maktas@202.83.248.123 rsync -avz $FULAM_TARCHER_DIR archer5:$ARCHER_DIR
+    ssh -p 2222 maktas@202.83.248.123 &
+    PIDSAVE=$!
+    sleep 1; kill $PIDSAVE
+    #
+    rsync -avz --exclude-from .gitignore $TULAM_DIR maktas@202.83.248.123:$ULAM_DIR
+    ssh maktas@202.83.248.123 rsync --exclude-from $FULAM_TARCHER_DIR/.gitignore -avz $FULAM_TARCHER_DIR archer5:$ARCHER_DIR
   fi
 else
   echo "Argument did not match !"

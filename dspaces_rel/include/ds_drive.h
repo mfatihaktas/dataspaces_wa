@@ -30,6 +30,8 @@ class DSpacesDriver
     int init(int num_peers, int appid);
     int sync_put(const char* var_name, unsigned int ver, int size,
                  int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
+    int get_(const char* var_name, unsigned int ver, int size,
+             int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
     int get(const char* var_name, unsigned int ver, int size,
             int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
     int sync_put_without_lock(const char* var_name, unsigned int ver, int size,
@@ -56,7 +58,16 @@ class DSpacesDriver
     struct timeval last_lock_time;
     
     boost::mutex property_mtx;
-    boost::mutex dspaces_mtx;
+    boost::mutex dspaces_read_mtx;
+    boost::mutex dspaces_write_mtx;
+    
+    boost::mutex dspaces_get__mtx;
+    boost::mutex dspaces_get_mtx;
+    boost::mutex dspaces_sync_put_mtx;
+    
+    bool get_flag;
+    bool get__flag;
+    bool sync_put_flag;
     //
     std::map<std::string, function_cb_on_get> varname_cbonget_map;
     std::vector<boost::shared_ptr<boost::thread> > riget_thread_v;

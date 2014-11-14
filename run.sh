@@ -110,6 +110,7 @@ elif [ $1  = 'show' ]; then
 elif [ $1  = 'init' ]; then
   if [ $2  = 'd' ]; then
     # ENV VARIABLES FOR MAKE
+    # export GRIDFTP=GRIDFTP
     export CC=/opt/gcc-4.8.2/bin/gcc
     export CPP=/opt/gcc-4.8.2/bin/g++
     export MPICPP=/cac/u01/mfa51/Desktop/mpich-3.1.2/install/bin/mpicxx

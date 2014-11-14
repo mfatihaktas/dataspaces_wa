@@ -87,12 +87,15 @@ int WADspacesDriver::put(std::string data_type, std::string key, unsigned int ve
 {
   std::map<std::string, std::string> msg_map = rmessenger.gen_i_msg(PUT, app_id, data_type,
                                                                     key, ver, size, ndim, gdim_, lb_, ub_);
+  
+  int return_ = ds_driver_->sync_put(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_);
+  
   if (bc_client_->send(msg_map) ){
     LOG(ERROR) << "put:: bc_client_->send failed!";
     return 1;
   }
   
-  return ds_driver_->sync_put(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_);
+  return return_;
 }
 
 int WADspacesDriver::get(bool blocking, std::string data_type, std::string key, unsigned int ver, 
@@ -126,7 +129,7 @@ int WADspacesDriver::get(bool blocking, std::string data_type, std::string key, 
   rg_syncer.wait(kv);
   rg_syncer.del_sync_point(kv);
   
-  if (key_ver__dsid_map[kv] == '?'){
+  if (key_ver__dsid_map[kv] == '?') {
     LOG(INFO) << "get:: <key= " << key << ", ver= " << ver << "> does not exist";
     key_ver__dsid_map.del(kv);
     return 1;

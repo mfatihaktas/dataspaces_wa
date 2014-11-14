@@ -196,24 +196,24 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
   return opt_map;
 }
 
-#define TEST_SIZE 1024*1024
-#define TEST_NDIM 1
+#define TEST_SIZE 10
+#define TEST_NDIM 3
 #define TEST_DATASIZE pow(TEST_SIZE, TEST_NDIM)
-#define TEST_VER 1
-#define TEST_SGDIM 1024*1024*257
+#define TEST_VER 0
+#define TEST_SGDIM 1024
 
 void get_test(WADspacesDriver& wads_driver)
 {
   std::string var_name = "dummy";
-  uint64_t* gdim = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t));
-  for (int i=0; i<TEST_NDIM; i++){
+  uint64_t* gdim = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
+  for (int i = 0; i < TEST_NDIM; i++) {
     gdim[i] = TEST_SGDIM;
   }
   //specifics
   int *data = (int*)malloc(TEST_DATASIZE*sizeof(int));
-  uint64_t *lb = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t));
-  uint64_t *ub = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t));
-  for (int i=0; i<TEST_NDIM; i++){
+  uint64_t *lb = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
+  uint64_t *ub = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
+  for (int i = 0; i < TEST_NDIM; i++) {
     lb[i] = 0;
     ub[i] = TEST_SIZE-1;
   }
@@ -234,20 +234,20 @@ void get_test(WADspacesDriver& wads_driver)
 
 void put_test(std::string var_name, WADspacesDriver& wads_driver)
 {
-  uint64_t* gdim = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t));
-  for (int i=0; i<TEST_NDIM; i++){
+  uint64_t* gdim = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
+  for (int i=0; i<TEST_NDIM; i++) {
     gdim[i] = TEST_SGDIM;
   }
   //specifics
-  int *data = (int*)malloc(TEST_DATASIZE*sizeof(int));
-  uint64_t *lb = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t));
-  uint64_t *ub = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t));
+  int *data = (int*)malloc(TEST_DATASIZE*sizeof(int) );
+  uint64_t *lb = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
+  uint64_t *ub = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
   for (int i=0; i<TEST_NDIM; i++){
     lb[i] = 0;
     ub[i] = TEST_SIZE-1;
   }
   
-  for (int i=0; i<TEST_DATASIZE; i++){
+  for (int i=0; i<TEST_DATASIZE; i++) {
     data[i] = (i+1);
   }
   
