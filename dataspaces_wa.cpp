@@ -90,7 +90,7 @@ int WADspacesDriver::put(std::string data_type, std::string key, unsigned int ve
   
   int return_ = ds_driver_->sync_put(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_);
   
-  if (bc_client_->send(msg_map) ){
+  if (bc_client_->send(msg_map) ) {
     LOG(ERROR) << "put:: bc_client_->send failed!";
     return 1;
   }
@@ -116,6 +116,7 @@ int WADspacesDriver::get(bool blocking, std::string data_type, std::string key, 
     LOG(ERROR) << "get:: bc_client_->send failed!";
     return 1;
   }
+  // usleep(1000);
   //
   boost::shared_ptr<BCServer> bc_server_( 
     new BCServer(app_id, 0, APP_RIMANAGER_MAX_MSG_SIZE, "reply_app_", 

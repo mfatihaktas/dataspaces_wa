@@ -33,8 +33,12 @@ int GFTPDriver::init_server(std::string data_intf, int port)
   LOG(INFO) << "init_server:: started for data_intf= " << data_intf << ", port= " << port;
   
   // std::string cmd = "nohup globus-gridftp-server -aa -password-file pwfile -c None ";
-  std::string cmd = "globus-gridftp-server -daemon -aa -password-file pwfile -c None ";
-  cmd += "-data-interface " + data_intf + " ";
+  // std::string cmd = "globus-gridftp-server -daemon -aa -password-file pwfile -c None ";
+  // cmd += "-data-interface " + data_intf + " ";
+  // cmd += "-d error,warn,info,dump,all ";
+  // cmd += "-port " + boost::lexical_cast<std::string>(port);
+  // cmd += " &";
+  std::string cmd = "globus-gridftp-server -aa -password-file pwfile -c None ";
   cmd += "-d error,warn,info,dump,all ";
   cmd += "-port " + boost::lexical_cast<std::string>(port);
   cmd += " &";

@@ -65,9 +65,9 @@ class DSpacesDriver
     boost::mutex dspaces_get_mtx;
     boost::mutex dspaces_sync_put_mtx;
     
-    bool get_flag;
-    bool get__flag;
-    bool sync_put_flag;
+    int get_flag;
+    int get__flag;
+    int sync_put_flag;
     //
     std::map<std::string, function_cb_on_get> varname_cbonget_map;
     std::vector<boost::shared_ptr<boost::thread> > riget_thread_v;

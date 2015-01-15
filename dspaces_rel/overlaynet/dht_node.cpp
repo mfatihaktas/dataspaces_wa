@@ -248,12 +248,12 @@ void DHTNode::handle_join_request(const Packet& p)
   peer_name[1] = '\0';
   
   int r = ptable.add_peer(id, peer_name, this->lip, get_next_lport(), lip, lport, join_lip, join_lport);
-  if (r == 0){
+  if (r == 0) {
     ptable.add_comm_channel(id);
     function_recv_callback fp_handle_recv = boost::bind(&DHTNode::handle_recv, this, _1);
     ptable.set_recv_callback(id, fp_handle_recv);
   }
-  else{
+  else {
     LOG(ERROR) << "handle_join_request:: add_peer failed!";
   }
   boost::shared_ptr<Packet> p_ = msger.gen_join_reply(id, (r == 0) );
@@ -266,7 +266,7 @@ void DHTNode::handle_join_reply(const Packet& p)
   LOG(INFO) << "handle_join_reply:: p = \n" << p.to_str();
   std::map<std::string, std::string> msg_map = p.get_msg_map();
   
-  if (msg_map["ack"].compare("ok") == 0){
+  if (msg_map["ack"].compare("ok") == 0) {
     char* join_lip = string_to_char_(msg_map["join_lip"]);
     int join_lport = atoi(msg_map["join_lport"].c_str());
     char id = (msg_map["id"].c_str())[0];
@@ -278,7 +278,7 @@ void DHTNode::handle_join_reply(const Packet& p)
     peer_name[1] = '\0';
     
     int r = ptable.add_peer(id, peer_name, this->lip, next_lport, lip, lport, join_lip, join_lport);
-    if (r == 0){
+    if (r == 0) {
       ptable.add_comm_channel(id);
       function_recv_callback fp_handle_recv = boost::bind(&DHTNode::handle_recv, this, _1);
       ptable.set_recv_callback(id, fp_handle_recv);

@@ -26,10 +26,11 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
   static struct option long_options[] =
   {
     {"type", optional_argument, NULL, 0},
-    {"src_url", optional_argument, NULL, 1},
-    {"dst_url", optional_argument, NULL, 2},
-    {"data_intf", optional_argument, NULL, 3},
-    {"port", optional_argument, NULL, 4},
+    {"s_lintf", optional_argument, NULL, 1},
+    {"s_laddr", optional_argument, NULL, 2},
+    {"s_lport", optional_argument, NULL, 3},
+    {"tmpfs_dir", optional_argument, NULL, 4},
+    {"s_tmpfs_dir", optional_argument, NULL, 5},
     {0, 0, 0, 0}
   };
   
@@ -48,19 +49,19 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
         opt_map["type"] = optarg;
         break;
       case 1:
-        opt_map["src_url"] = optarg;
+        opt_map["s_lintf"] = optarg;
         break;
       case 2:
-        opt_map["dst_url"] = optarg;
+        opt_map["s_laddr"] = optarg;
         break;
       case 3:
-        opt_map["data_intf"] = optarg;
+        opt_map["s_lport"] = optarg;
         break;
       case 4:
-        opt_map["port"] = optarg;
+        opt_map["tmpfs_dir"] = optarg;
         break;
-      case 's':
-        opt_map["s"] = "s";
+      case 5:
+        opt_map["s_tmpfs_dir"] = optarg;
         break;
       case '?':
         break; //getopt_long already printed an error message.
@@ -113,14 +114,13 @@ int main(int argc , char **argv)
   //
   std::map<std::string, std::string> opt_map = parse_opts(argc, argv);
   
-  std::string file_dir = "/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/gftp_trans/dummy";
+  // std::string file_dir = "/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/gftp_trans/dummy";
   // std::string file_dir = "/dev/shm";
   
   size_t datasize = 1*1*1000;
   
-  // GFTPDDManager gftpdd_manager(file_dir);
   if (opt_map["type"].compare("s") == 0) {
-    GFTPDDManager gftpdd_manager(opt_map["data_intf"], boost::lexical_cast<int>(opt_map["port"]), file_dir);
+    GFTPDDManager gftpdd_manager(opt_map["s_lintf"], boost::lexical_cast<int>(opt_map["s_lport"]), opt_map["s_tmpfs_dir"]);
     gftpdd_manager.init_gftp_server();
     
     std::cout << "Enter\n";
@@ -146,9 +146,8 @@ int main(int argc , char **argv)
     
     size_t datasize_inB;
     void* data_;
-    // "192.168.2.152"
-    GFTPDDManager gftpdd_manager("", 0, file_dir + "/get");
-    gftpdd_manager.get_over_gftp("127.0.0.1", "5000", file_dir + "/server",
+    GFTPDDManager gftpdd_manager("", boost::lexical_cast<int>(opt_map["s_lport"]), opt_map["tmpfs_dir"]);
+    gftpdd_manager.get_over_gftp(opt_map["s_laddr"], opt_map["s_lport"], opt_map["s_tmpfs_dir"],
                                 "dummy", 0, datasize_inB, data_);
     int* int_data_ = static_cast<int*>(data_);
     int datasize = datasize_inB / sizeof(int);
@@ -157,6 +156,8 @@ int main(int argc , char **argv)
       std::cout << int_data_[i] << " ";
     }
     std::cout << "\n";
+    
+    free(data_);
     
     std::cout << "Enter\n";
     getline(std::cin, temp);
@@ -173,33 +174,13 @@ int main(int argc , char **argv)
       data_[i] = i + 1;
     }
     LOG(INFO) << "main:: datasize_inB= " << datasize_inB;
-    GFTPDDManager gftpdd_manager("", 0, file_dir + "/put");
-    gftpdd_manager.put_over_gftp("127.0.0.1", "5000", file_dir + "/server",
+    GFTPDDManager gftpdd_manager("", boost::lexical_cast<int>(opt_map["s_lport"]), opt_map["tmpfs_dir"]);
+    gftpdd_manager.put_over_gftp(opt_map["s_laddr"], opt_map["s_lport"], opt_map["s_tmpfs_dir"],
                                  "dummy", 0, datasize_inB, data_);
-    // gftpdd_manager.put_over_gftp("127.0.0.1", "5000", "/dev/shm/",
-    //                             "dummy", 0, datasize_inB, data_);
     
     std::cout << "Enter\n";
     getline(std::cin, temp);
   }
-  else if (opt_map["type"].compare("p2") == 0) {
-    size_t datasize_inB = datasize*sizeof(int);
-    int* data_ = (int*)malloc(datasize_inB);
-    for (int i = 0; i < datasize; i++) {
-      data_[i] = i + 1;
-    }
-    LOG(INFO) << "main:: datasize_inB= " << datasize_inB;
-    GFTPDDManager gftpdd_manager("", 0, file_dir + "/put");
-    gftpdd_manager.put_over_gftp("127.0.0.1", "5000", file_dir + "server",
-                                "dummy", 1, datasize_inB, data_);
-  
-    
-    std::cout << "Enter\n";
-    getline(std::cin, temp);
-  }
-  
-  /*
-  */
   //gridftp_put_file( (char*)(opt_map["src_url"].c_str()), (char*)(opt_map["dst_url"].c_str()) );
   //gridftp_fancy_put_file( (char*)(opt_map["src_url"].c_str()), (char*)(opt_map["dst_url"].c_str()), 2);
   

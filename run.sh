@@ -110,7 +110,7 @@ elif [ $1  = 'show' ]; then
 elif [ $1  = 'init' ]; then
   if [ $2  = 'd' ]; then
     # ENV VARIABLES FOR MAKE
-    # export GRIDFTP=GRIDFTP
+    export GRIDFTP=GRIDFTP
     export CC=/opt/gcc-4.8.2/bin/gcc
     export CPP=/opt/gcc-4.8.2/bin/g++
     export MPICPP=/cac/u01/mfa51/Desktop/mpich-3.1.2/install/bin/mpicxx
@@ -132,7 +132,7 @@ elif [ $1  = 'init' ]; then
     echo "LD_LIBRARY_PATH="
     echo $LD_LIBRARY_PATH
   elif [ $2  = 'u' ]; then
-    # export ULAM=ULAM
+    export ULAM=ULAM
     export CC=gcc
     export CPP=g++
     export MPICPP=mpicxx
@@ -151,7 +151,7 @@ elif [ $1  = 'init' ]; then
     echo "LD_LIBRARY_PATH="
     echo $LD_LIBRARY_PATH
   elif [ $2  = 'm' ]; then
-    # export MAQUIS=MAQUIS
+    export MAQUIS=MAQUIS
     export CC=gcc
     export CPP=g++
     export MPICPP=mpicxx

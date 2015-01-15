@@ -16,13 +16,12 @@ void done_cb(void *user_arg, globus_ftp_client_handle_t *handle, globus_object_t
     printf("\t Status= File Transfer Failed \n");
     printf("\t ERROR=%s \n", globus_object_printable_to_string(err) );
   }
-  else{
+  else {
     printf("done_cb:: \n");
     printf("\t Status= File Transferred Successfully \n");
-    free((struct trans_context*)user_arg);
+    ( (struct trans_context*)user_arg)->done = GLOBUS_TRUE;
   }
-  
-  _continue(user_arg);
+  // _continue(user_arg);
 }
 
 void data_read_cb(void *user_arg, globus_ftp_client_handle_t *handle, globus_object_t * err, 
@@ -113,7 +112,6 @@ void _continue(void *user_arg)
   globus_mutex_unlock(&tc_->lock);
 }
 
-
 int gridftp_get_file(const char* src_url, const char* dst_url)
 {
   struct trans_context *tc_ = (struct trans_context*)malloc(sizeof(struct trans_context) );
@@ -166,6 +164,7 @@ int gridftp_get_file(const char* src_url, const char* dst_url)
   }
   
   _wait((void*)tc_);
+  free(tc_);
   //
   fclose(fd);
   globus_ftp_client_handle_destroy(&handle);
@@ -227,6 +226,7 @@ int gridftp_put_file(const char* src_url, const char* dst_url)
   }
   
   _wait((void*)tc_);
+  free(tc_);
   //
   fclose(fd);
   globus_ftp_client_handle_destroy(&handle);

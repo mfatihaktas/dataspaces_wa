@@ -1,5 +1,5 @@
 #!/bin/bash
-echo $1
+echo $1 $2 $3
 
 DSPACES_BINDIR=/cac/u01/mfa51/Desktop/dataspaces_wa/dataspaces/dataspaces-1.4.0/install/bin
 

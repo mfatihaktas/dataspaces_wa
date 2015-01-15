@@ -134,16 +134,15 @@ void DHTServer::init_listen()
 
 void DHTServer::init_recv()
 {
-  while (!stop_flag){
+  while (!stop_flag) {
     try
     {
       boost::system::error_code ec;
       char msgsize_buffer[HEADER_MSGSIZE_LENGTH+1];
-      try{
+      try {
         boost::asio::read(*socket_, boost::asio::buffer( msgsize_buffer, HEADER_MSGSIZE_LENGTH ) );
       }
-      catch( boost::system::system_error& err)
-      {
+      catch( boost::system::system_error& err) {
         //LOG(ERROR) << "init_recv:: err=" << err.what();
         LOG(INFO) << "init_recv:: server:" << host_name << "; client closed the conn.";
         // close();

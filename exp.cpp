@@ -196,7 +196,7 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
   return opt_map;
 }
 
-#define TEST_SIZE 10
+#define TEST_SIZE 300
 #define TEST_NDIM 3
 #define TEST_DATASIZE pow(TEST_SIZE, TEST_NDIM)
 #define TEST_VER 0
@@ -347,7 +347,7 @@ int main(int argc , char **argv)
     std::cout << "Enter\n";
     getline(std::cin, temp);
   }
-  else{
+  else {
     LOG(ERROR) << "main:: unknown type= " << opt_map[(char*)"type"];
   }
   

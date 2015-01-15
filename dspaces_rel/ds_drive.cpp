@@ -27,9 +27,14 @@ DSpacesDriver::DSpacesDriver(MPI_Comm mpi_comm, int num_peers, int appid)
 : finalized(false),
   num_peers(num_peers),
   appid(appid),
-  mpi_comm(mpi_comm)
+  mpi_comm(mpi_comm),
+  get_flag(false),
+  get__flag(false),
+  sync_put_flag(false)
 {
   init(num_peers, appid);
+  
+  this->get__flag = false;
   
   refresh_last_lock_time();
   //
@@ -86,22 +91,21 @@ int DSpacesDriver::sync_put(const char* var_name, unsigned int ver, int size,
 {
   boost::lock_guard<boost::mutex> guard(dspaces_sync_put_mtx);
   // dspaces_define_gdim(var_name, ndim, gdim_);
-  
-  LOG(INFO) << "sync_put:: will wait for get__flag...";
-  bool flag = true;
-  while (flag) {
-    {
-      boost::lock_guard<boost::mutex> guard(property_mtx);
-      flag = this->get__flag;
-    }
-  }
-  usleep(2*100);
-  LOG(INFO) << "sync_put:: done waiting for get__flag.";
-  
   {
     boost::lock_guard<boost::mutex> guard(property_mtx);
     this->sync_put_flag = true;
   }
+  
+  LOG(INFO) << "sync_put:: will wait for get__flag= " << this->get__flag;
+  
+  while (this->get__flag) {
+    // {
+    //   boost::lock_guard<boost::mutex> guard(property_mtx);
+    //   flag = this->get__flag;
+    // }
+  }
+  // usleep(10*1000);
+  LOG(INFO) << "sync_put:: done waiting for get__flag.";
   
   // do_timing("sync_put");
   {
@@ -138,21 +142,20 @@ int DSpacesDriver::get_(const char* var_name, unsigned int ver, int size,
 {
   boost::lock_guard<boost::mutex> guard(dspaces_get__mtx);
   // dspaces_define_gdim(var_name, ndim, gdim_);
-  
-  LOG(INFO) << "get_:: will wait for get_flag || sync_put_flag...";
-  bool flag = true;
-  while (flag) {
-    {
-      boost::lock_guard<boost::mutex> guard(property_mtx);
-      flag = this->get_flag || this->sync_put_flag;
-    }
-  }
-  LOG(INFO) << "get_:: done waiting for get_flag || sync_put_flag.";
-  
   {
     boost::lock_guard<boost::mutex> guard(property_mtx);
     this->get__flag = true;
   }
+  
+  LOG(INFO) << "get_:: will wait for get_flag || sync_put_flag...";
+  bool flag = true;
+  while (this->get_flag || this->sync_put_flag) {
+    {
+      // boost::lock_guard<boost::mutex> guard(property_mtx);
+      // flag = this->get_flag || this->sync_put_flag;
+    }
+  }
+  LOG(INFO) << "get_:: done waiting for get_flag || sync_put_flag.";
   
   // do_timing("get_");
   {
@@ -192,6 +195,11 @@ int DSpacesDriver::get(const char* var_name, unsigned int ver, int size,
 {
   boost::lock_guard<boost::mutex> guard(dspaces_get_mtx);
   
+  {
+    boost::lock_guard<boost::mutex> guard(property_mtx);
+    this->get_flag = true;
+  }
+  
   LOG(INFO) << "get:: will wait for get__flag...";
   struct timeval wait_start_time_val, current_time_val, diff_time_val;
   if (gettimeofday(&wait_start_time_val, NULL) ) {
@@ -209,6 +217,8 @@ int DSpacesDriver::get(const char* var_name, unsigned int ver, int size,
       timeval_subtract(&diff_time_val, &current_time_val, &wait_start_time_val);
       if (diff_time_val.tv_sec > 1) {
         LOG(ERROR) << "get:: too much waiting for get__flag, breaking.";
+        // TODO
+        // this->get__flag = false;
         break;
       }
       
@@ -217,11 +227,6 @@ int DSpacesDriver::get(const char* var_name, unsigned int ver, int size,
     }
   }
   LOG(INFO) << "get:: done waiting for get__flag.";
-  
-  {
-    boost::lock_guard<boost::mutex> guard(property_mtx);
-    this->get_flag = true;
-  }
   
   // dspaces_define_gdim(var_name, ndim, gdim_);
   // do_timing("get");

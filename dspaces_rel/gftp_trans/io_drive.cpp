@@ -57,6 +57,7 @@ size_t IODriver::read_file(std::string another_working_dir, std::string file_nam
     working_dir_ = another_working_dir;
   }
   std::string file_dir_name = working_dir_ + file_name;
+  LOG(INFO) << "read_file:: file_dir_name= " << file_dir_name;
   // 
   std::ifstream fin (file_dir_name.c_str(), std::ifstream::binary);
   

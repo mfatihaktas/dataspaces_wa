@@ -56,6 +56,7 @@ int GFTPDDManager::get_over_gftp(std::string s_laddr, std::string s_lport, std::
   std::string src_url = "ftp://" + s_laddr + ":" + s_lport + s_tmpfs_dir + fname;
   std::string dst_url = tmpfs_dir + fname;
   
+  // LOG(INFO) << "get_over_gftp:: will gftp_driver_->get_file; src_url= " << src_url << ", dst_url= " << dst_url;
   if (gftp_driver_->get_file(src_url, dst_url) ) {
     LOG(ERROR) << "get_over_gftp:: gftp_driver_->get_file failed!";
     return 1;

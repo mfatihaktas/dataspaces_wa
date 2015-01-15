@@ -1,8 +1,6 @@
 #ifndef _DSWA_H_
 #define _DSWA_H_
 
-// #define _GRIDFTP_
-
 #include "ds_client.h"
 #include "packet.h"
 

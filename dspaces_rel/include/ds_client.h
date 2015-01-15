@@ -1,6 +1,8 @@
 #ifndef _DSCLIENT_H_
 #define _DSCLIENT_H_
 
+#define _GRIDFTP_
+
 #include "mpi.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -264,6 +266,7 @@ struct RSTable //Remote Subscription Table
     thread_safe_map<key_ver_pair, std::vector<char> > key_ver__ds_id_vector_map;
 };
 
+
 struct GFTPBTable //Gridftp Bootstrap Table
 {
   public:
@@ -378,9 +381,11 @@ class RIManager
     void handle_r_place(std::map<std::string, std::string> r_place_map);
     void handle_rp_reply(std::map<std::string, std::string> rp_reply_map);
     void handle_r_subscribe(std::map<std::string, std::string> r_subs_map);
+#ifdef _GRIDFTP_
     void handle_gftpput_done(std::map<std::string, std::string> gftpput_done_map);
     void handle_gftpb_ping(std::map<std::string, std::string> gftpb_ping_map);
     void handle_gftpb_pong(std::map<std::string, std::string> gftpb_pong_map);
+#endif
     
     int send_msg(char ds_id, char msg_type, std::map<std::string, std::string> msg_map);
     int broadcast_msg(char msg_type, std::map<std::string, std::string> msg_map);

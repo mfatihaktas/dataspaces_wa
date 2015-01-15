@@ -64,8 +64,7 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
   while (1)
   {
     int option_index = 0;
-    c = getopt_long (argc, argv, "s",
-                     long_options, &option_index);
+    c = getopt_long (argc, argv, "s", long_options, &option_index);
 
     if (c == -1) //Detect the end of the options.
       break;

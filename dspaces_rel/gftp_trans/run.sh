@@ -2,47 +2,52 @@
 echo $1 $2 $3
 
 TRANS_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/gftp_trans/dummy
-DATA_INTF="em2"
-PORT=11000
-S_IP=192.168.2.152
-# S_IP=127.0.0.1
+S_LINTF="em2"
+# S_LADDR=127.0.0.1
+S_LADDR=192.168.2.152
+S_LPORT=62000
+TMPFS_DIR="/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/gftp_trans/dummy"
+S_TMPFS_DIR=$TMPFS_DIR"/server"
 # S_FNAME=dummy.dat
 S_FNAME=tx.dat
 C_FNAME=recved_tx.dat
 
 C2_FNAME=recved2_tx.dat
 
-if [ $1  = 'g' ]; then  
-  GLOG_logtostderr=1 ./exp --type="g" --src_url="ftp://$S_IP:$PORT$TRANS_DIR/$S_FNAME" --dst_url="$TRANS_DIR/$C_FNAME"
-elif [ $1  = 'dg' ]; then  
-  export GLOG_logtostderr=1
-  gdb --args ./exp --type="g" --src_url="ftp://$S_IP:$PORT$TRANS_DIR/$S_FNAME" --dst_url="$TRANS_DIR/$C_FNAME"
-elif [ $1  = 'p' ]; then  
-  GLOG_logtostderr=1 ./exp --type="p" --src_url="$TRANS_DIR/$S_FNAME" --dst_url="ftp://$S_IP:$PORT$TRANS_DIR/$C_FNAME"
-elif [ $1  = 'dp' ]; then  
-  export GLOG_logtostderr=1
-  gdb --args ./exp --type="p" --src_url="$TRANS_DIR/$S_FNAME" --dst_url="ftp://$S_IP:$PORT$TRANS_DIR/$C_FNAME"
-elif [ $1  = 'p2' ]; then  
-  GLOG_logtostderr=1 ./exp --type="p2" --src_url="$TRANS_DIR/$S_FNAME" --dst_url="ftp://$S_IP:$PORT$TRANS_DIR/$C2_FNAME"
-elif [ $1  = 's' ]; then
-  GLOG_logtostderr=1 ./exp --type="s" --data_intf=$DATA_INTF --port=$PORT
+if [ $1  = 's' ]; then
+  GLOG_logtostderr=1 ./exp --type="s" --s_lintf=$S_LINTF --s_lport=$S_LPORT --s_tmpfs_dir=$TMPFS_DIR"/server"
 elif [ $1  = 'ds' ]; then
   export GLOG_logtostderr=1
   gdb --args ./exp -s --port=$PORT
+elif [ $1  = 'g' ]; then
+  # GLOG_logtostderr=1 ./exp --type="g" --src_url="ftp://$S_LADDR:$PORT$TRANS_DIR/$S_FNAME" --dst_url="$TRANS_DIR/$C_FNAME"
+  # export GLOG_logtostderr=1
+  # valgrind --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=20 --track-fds=yes ./exp --type="g" --s_laddr=$S_LADDR --s_lport=$S_LPORT --tmpfs_dir=$TMPFS_DIR"/get" --s_tmpfs_dir=$TMPFS_DIR"/server"
+  GLOG_logtostderr=1 ./exp --type="g" --s_laddr=$S_LADDR --s_lport=$S_LPORT --tmpfs_dir=$TMPFS_DIR"/get" --s_tmpfs_dir=$TMPFS_DIR"/server"
+elif [ $1  = 'dg' ]; then
+  export GLOG_logtostderr=1
+  gdb --args ./exp --type="g" --s_laddr=$S_LADDR --s_lport=$S_LPORT --tmpfs_dir=$TMPFS_DIR"/get" --s_tmpfs_dir=$TMPFS_DIR"/server"
+elif [ $1  = 'p' ]; then
+  # GLOG_logtostderr=1 ./exp --type="p" --src_url="$TRANS_DIR/$S_FNAME" --dst_url="ftp://$S_LADDR:$PORT$TRANS_DIR/$C_FNAME"
+  GLOG_logtostderr=1 ./exp --type="p" --s_laddr=$S_LADDR --s_lport=$S_LPORT --tmpfs_dir=$TMPFS_DIR"/put" --s_tmpfs_dir=$TMPFS_DIR"/server"
+elif [ $1  = 'dp' ]; then
+  export GLOG_logtostderr=1
+  gdb --args ./exp --type="p" --s_laddr=$S_LADDR --s_lport=$S_LPORT --tmpfs_dir=$TMPFS_DIR"/put" --s_tmpfs_dir=$TMPFS_DIR"/server"
 elif [ $1  = 'show' ]; then
   netstat -antu
-elif [ $1  = 'ts' ]; then
+elif [ $1  = 'bs' ]; then
   globus-gridftp-server -aa -password-file pwfile -c None \
-                        -port $PORT \
+                        -port $S_LPORT \
                         -d error,warn,info,dump,all \
                         #-single
                         #-control-interface 127.0.0.1:$CPORT
-elif [ $1  = 'tc' ]; then
-  globus-url-copy -vb -p $P -cc $CC \
-                  ftp://"$S_IP:$PORT$TRANS_DIR/$S_FNAME" file://"$TRANS_DIR/$C_FNAME"
-elif [ $1  = 'tc2' ]; then
-  globus-url-copy -vb -p $P -cc $CC \
-                  ftp://"$S_IP:$PORT$TRANS_DIR/$S_FNAME" file://"$TRANS_DIR/$C2_FNAME"
+elif [ $1  = 'bc' ]; then
+  # echo "globus-url-copy -vb -p $P -cc $CC ftp://$S_LADDR:$S_LPORT$TRANS_DIR/$S_FNAME file://$TRANS_DIR/$C_FNAME"
+  globus-url-copy -vb \
+                  ftp://$S_LADDR:$S_LPORT$TRANS_DIR/$S_FNAME file://$TRANS_DIR/$C_FNAME
+elif [ $1  = 'bc2' ]; then
+  globus-url-copy -vb \
+                  ftp://$S_LADDR:$S_LPORT$TRANS_DIR/$S_FNAME file://$TRANS_DIR/$C2_FNAME
 elif [ $1  = 'gf' ]; then
   dd if=/dev/urandom of="$TRANS_DIR/$S_FNAME" bs=1024 count=1000 #outputs bs x count Bs
 elif [ $1  = 'cf' ]; then
