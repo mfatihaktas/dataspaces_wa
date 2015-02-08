@@ -15,7 +15,7 @@ DSDriver::DSDriver(int num_dscnodes, int app_id)
     fprintf(stderr, "DSDriver:: init failed!\n");
     return;
   }
-  //
+  // 
   printf("DSDriver:: constructed.\n");
 }
 
@@ -29,7 +29,7 @@ DSDriver::DSDriver(MPI_Comm mpi_comm, int num_dscnodes, int app_id)
     fprintf(stderr, "DSDriver:: init failed!\n");
     return;
   }
-  //
+  // 
   printf("DSDriver:: constructed.\n");
 }
 

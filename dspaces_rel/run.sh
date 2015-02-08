@@ -1,7 +1,7 @@
 #!/bin/bash
 echo $1 $2 $3
 
-DSPACES_BINDIR=/cac/u01/mfa51/Desktop/dataspaces_wa/dataspaces/dataspaces-1.4.0/install/bin
+DSPACES_BINDIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.4.0/install/bin
 
 NUM_SNODES=1
 NUM_DSCNODES=$((1+1)) #+1: RIManager

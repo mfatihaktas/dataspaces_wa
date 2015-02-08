@@ -64,16 +64,23 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
 
 int main(int argc , char **argv)
 {
+  std::string temp;
   std::map<std::string, std::string> opt_map = parse_opts(argc, argv);
   // 
   DSTest ds_test(atoi(opt_map["num_dscnodes"].c_str()), atoi(opt_map["app_id"].c_str()),
                  atoi(opt_map["num_putget_threads"].c_str()) );
   
-  if (opt_map["type"].compare("put_test_") == 0) {
+  if (opt_map["type"].compare("put_test") == 0) {
     ds_test.run_multithreaded_put_test("put_thread");
+    
+    std::cout << "Enter\n";
+    getline(std::cin, temp);
   }
   else if (opt_map["type"].compare("get_test") == 0) {
-    // ds_test.run_multithreaded_get_test("get_thread_");
+    ds_test.run_multithreaded_get_test("get_thread");
+    
+    std::cout << "Enter\n";
+    getline(std::cin, temp);
   }
   else {
     std::cerr << "main:: unknown type= " << opt_map["type"] << "\n";
