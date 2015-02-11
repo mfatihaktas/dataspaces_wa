@@ -60,6 +60,35 @@ int main(int argc , char **argv)
   // 
   // std::map<char*, char*> opt_map = parse_opts(argc, argv);
   LZAlgo lz_algo(2, NULL);
+  char access_seq_arr[] = {'a',  'a','a',  'a','b',  'a','b','a',  'a','b','b',  'b'};
+  // for (int i = 0; i < (sizeof(access_seq_arr)/sizeof(*access_seq_arr)); i++) {
+  //   lz_algo.add_access(access_seq_arr[i]);
+  // }
+  lz_algo.add_access('a');
+  
+  lz_algo.add_access('a');
+  lz_algo.add_access('a');
+  
+  lz_algo.add_access('a');
+  lz_algo.add_access('b');
+  
+  lz_algo.add_access('a');
+  lz_algo.add_access('b');
+  lz_algo.add_access('a');
+  
+  lz_algo.add_access('a');
+  lz_algo.add_access('b');
+  lz_algo.add_access('b');
+  
+  lz_algo.add_access('b');
+  
+  lz_algo.add_access('a');
+  lz_algo.add_access('b');
+  lz_algo.add_access('a');
+  lz_algo.add_access('a');
+  
+  // lz_algo.print_parse_tree();
+  lz_algo.pprint_parse_tree();
   
   return 0;
 }

@@ -3,6 +3,9 @@ echo $1 $2 $3
 
 if [ $1  = 'e' ]; then
   GLOG_logtostderr=1 ./exp
+elif [ $1  = 'de' ]; then
+  GLOG_logtostderr=1
+  gdb --args ./exp
 elif [ $1  = 'init' ]; then
   if [ $2  = 'd' ]; then
     # ENV VARIABLES FOR MAKE

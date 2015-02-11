@@ -71,6 +71,7 @@ class Graph
       properties(v) = prop;
       if (num_vertices == 0) {
         root = v;
+        cur = v;
       }
       num_vertices++;
       
@@ -91,7 +92,7 @@ class Graph
       return e;
     }
     /*******************************************  get/set  ****************************************/
-    Vertex get_cur() { return cur; }
+    Vertex& get_cur() { return cur; }
     void set_cur(Vertex v) { cur = v; }
     Vertex get_root() { return root; }
     void set_root(Vertex v) { root = v; }
@@ -125,13 +126,16 @@ class Graph
       return param[v];
     }
     /********************************************  to_str  ****************************************/
-    void print()
+    std::string to_str()
     {
-      LOG(INFO) << "print:: printing graph...";
+      std::stringstream ss;
       vertex_iter_pair_t vertices = boost::vertices(graph);
       for (vertex_iter i = vertices.first; i != vertices.second; i++) {
-        std::cout << vertex_to_str(*i) << "\n";
+        ss << vertex_to_str(*i) << "\n";
       }
+      
+      ss << "\n";
+      return ss.str();
     }
     
     std::string vertex_to_str(Vertex v)
@@ -144,6 +148,7 @@ class Graph
       ss << "\t key= " << v_prop.key << "\n";
       ss << "\t add_rank= " << v_prop.add_rank << "\n";
       ss << "\t num_visit= " << v_prop.num_visit << "\n";
+      ss << "\t status= " << v_prop.status << "\n";
       
       ss << "  out-edges: \n";
       out_edge_iter out_i, out_end;
@@ -162,12 +167,37 @@ class Graph
            << "targ.name= " << properties(boost::target(e, graph)).name << "\n";
       }
 
-      ss << "  adjacent vertices: \n";
+      ss << "  adjacent vertices: \n\t";
       adjacency_iter_pair_t ai_pair = get_adj_vertices(v);
       for (adjacency_iter ai = ai_pair.first;  ai != ai_pair.second; ai++) {
         ss << properties(*ai).name <<  ", ";
       }
       ss << "\n";
+      
+      return ss.str();
+    }
+    
+    std::string to_pretty_str()
+    {
+      return tree_to_pretty_str(root, 0);
+    }
+    
+    std::string tree_to_pretty_str(Vertex root, int level)
+    {
+      std::stringstream ss;
+      if (level > 0 ) {
+        for (int i = 0; i < level-1; i++)
+          ss << "   ";
+        ss << "|--";
+      }
+      
+      VERTEX_PROPERTIES r_prop = properties(root);
+      ss << r_prop.name << ", nv: " << r_prop.num_visit << "\n";
+      adjacency_iter_pair_t ai_pair = get_adj_vertices(root);
+      
+      for (adjacency_iter ai = ai_pair.first;  ai != ai_pair.second; ai++) {
+        ss << tree_to_pretty_str(*ai, level + 1);
+      }
       
       return ss.str();
     }
@@ -178,6 +208,7 @@ struct Vertex_Properties {
   char key;
   int add_rank;
   int num_visit;
+  char status;
 };
 
 struct Edge_Properties {
@@ -194,7 +225,7 @@ class ParseTree {
   > GraphContainer;
   typedef boost::graph_traits<GraphContainer>::vertex_descriptor Vertex;
   typedef boost::graph_traits<GraphContainer>::edge_descriptor Edge;
-  typedef typename boost::graph_traits<GraphContainer>::adjacency_iterator adjacency_iter;
+  typedef boost::graph_traits<GraphContainer>::adjacency_iterator adjacency_iter;
   typedef std::pair<adjacency_iter, adjacency_iter> adjacency_iter_pair_t;
     
   private:
@@ -207,10 +238,11 @@ class ParseTree {
       num_access(0)
     {
       Vertex_Properties root_prop;
-      root_prop.name = "root";
-      root_prop.key = 'R';
+      root_prop.name = "R";
+      root_prop.key = 'r';
       root_prop.add_rank = 0;
       root_prop.num_visit = 0;
+      root_prop.status = 'R';
       pt_graph.add_vertex(root_prop);
       // pt_graph.print();
       // 
@@ -219,9 +251,9 @@ class ParseTree {
     
     ~ParseTree() { LOG(INFO) << "ParseTree:: destructed."; }
     
-    bool does_vertex_have_key_in_adjs(Vertex v, char key, Vertex& adj_v)
+    bool does_vertex_have_key_in_adjs(Vertex& v, char key, Vertex& adj_v)
     {
-      adjacency_iter_pair_t ai_pair = get_adj_vertices(v);
+      adjacency_iter_pair_t ai_pair = pt_graph.get_adj_vertices(v);
       for (adjacency_iter ai = ai_pair.first;  ai != ai_pair.second; ai++) {
         Vertex_Properties adj_prop = pt_graph.properties(*ai);
         if (adj_prop.key == key) {
@@ -232,18 +264,27 @@ class ParseTree {
       return false;
     }
     
-    void create__connect_leaf(Vertex v, std::string leaf_name, char leaf_key)
+    Vertex create__connect_leaf(Vertex& v, char leaf_key)
     {
+      Vertex_Properties& v_prop = pt_graph.properties(v);
+      if (v_prop.status == 'L') {
+        v_prop.status = 'N';
+        // LOG(INFO) << "create__connect_leaf:: status changed from L to N for v.name= " << v_prop.name << "\n";
+      }
+      
       Vertex_Properties leaf_prop;
-      leaf_prop.name = leaf_name;
+      leaf_prop.name = boost::lexical_cast<std::string>(v_prop.name) + boost::lexical_cast<std::string>(leaf_key);
       leaf_prop.key = leaf_key;
       leaf_prop.add_rank = num_access;
-      leaf_prop.num_visit = 0;
+      leaf_prop.num_visit = 1;
+      leaf_prop.status = 'L';
       Vertex leaf = pt_graph.add_vertex(leaf_prop);
       
       Edge_Properties e_prop;
       e_prop.key = leaf_key;
       pt_graph.add_directed_edge(v, leaf, e_prop);
+      
+      return leaf;
     }
     
     void move_cur(Vertex v)
@@ -255,62 +296,62 @@ class ParseTree {
     int add_access(char key)
     {
       Vertex cur_v = pt_graph.get_cur();
-      Vertex_Properties cur_properties = pt_graph.properties(cur_v);
-      if (cur_properties.key == 'R') {
-        Vertex leaf_to_go;
-        if (does_vertex_have_key_in_adjs(cur_v, key, leaf_to_go) ) { //go down
-          move_cur(leaf_to_go);
-          return 0;
-        }
-        else {
-          create__connect_leaf(cur_v, boost::lexical_cast<std::string>(key), key);
-          move_cur(new_leaf);
-          return 0;
-        }
-        
+      Vertex_Properties cur_prop = pt_graph.properties(cur_v);
+      
+      Vertex leaf_to_go;
+      if (does_vertex_have_key_in_adjs(cur_v, key, leaf_to_go) ) { //go down
+        // LOG(INFO) << "add_access:: cur_prop.name= " << cur_prop.name << " has key= " << key
+        //           << " in adj leaf_to_go_prop.name= " << pt_graph.properties(leaf_to_go).name << "\n";
+        move_cur(leaf_to_go);
+        return 0;
       }
       else {
+        create__connect_leaf(cur_v, key);
         
-        if (cur_properties.num_visit == 1) { //no leaf
-          Vertex_Properties v_prop;
-          v_prop.name = boost::lexical_cast<std::string>(cur_properties.key) + boost::lexical_cast<std::string>(key);
-          v_prop.key = key;
-          v_prop.add_rank = num_access;
-          v_prop.num_visit = 1;
-          Vertex new_leaf = pt_graph.add_vertex(v_prop);
-          
-          Edge_Properties e_prop;
-          e_prop.key = key;
-          pt_graph.add_directed_edge(cur_v(), new_leaf, e_prop);
-          
-          pt_graph.set_cur(pt_graph.get_root() );
-          return 0;
+        if (cur_prop.status != 'R') {
+          Vertex back_to_root_leaf;
+          if (!does_vertex_have_key_in_adjs(cur_v, 'R', back_to_root_leaf) )
+            create__connect_leaf(cur_v, 'R');
         }
-        else {
-          if (does_vertex_have_key_in_adjs(cur_v(), key) ) { //go down
-            
-          }
-        }
+          
+        move_cur(pt_graph.get_root());
+        return 0;
       }
       
+      // if (cur_prop.status == 'R' || cur_prop.status == 'L') {
+      // }
+      
       num_access++;
+    }
+    
+    std::string to_str()
+    {
+      return pt_graph.to_str();
+    }
+    
+    std::string to_pretty_str()
+    {
+      return pt_graph.to_pretty_str();
     }
 };
 
 class LZAlgo {
-  public:
-    LZAlgo(int alphabet_length, char* alphabet_);
-    
-    int add_access(char key);
-    int get_to_prefetch(int num_keys, char* key_);
-    
-    void print_parse_tree();
   private:
     int alphabet_length;
     char* alphabet_;
     // 
     std::vector<char> access_seq_vector;
     ParseTree parse_tree;
+    
+  public:
+    LZAlgo(int alphabet_length, char* alphabet_);
+    ~LZAlgo();
+    
+    int add_access(char key);
+    int get_to_prefetch(int num_keys, char* key_);
+    
+    void print_parse_tree();
+    void pprint_parse_tree();
 };
 
 #endif // LZPREFETCH_H
