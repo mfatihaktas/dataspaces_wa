@@ -3,11 +3,13 @@
 
 #include <iostream>
 #include <vector>
+#include <stdlib.h>     // srand, rand
+#include <time.h>       // time
 #include <boost/lexical_cast.hpp>
 #include <glog/logging.h>
 
-#include <utility>                   // for std::pair
-#include <algorithm>                 // for std::for_each
+#include <utility>                   // std::pair
+#include <algorithm>                 // std::for_each
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/dijkstra_shortest_paths.hpp>
@@ -52,7 +54,7 @@ class Graph
   
   protected:
     GraphContainer graph;
-    Vertex root, cur;
+    Vertex root, pre_cur, cur;
     int num_vertices;
     
   public:
@@ -72,6 +74,7 @@ class Graph
       if (num_vertices == 0) {
         root = v;
         cur = v;
+        pre_cur = v;
       }
       num_vertices++;
       
@@ -94,6 +97,8 @@ class Graph
     /*******************************************  get/set  ****************************************/
     Vertex& get_cur() { return cur; }
     void set_cur(Vertex v) { cur = v; }
+    Vertex& get_pre_cur() { return pre_cur; }
+    void set_pre_cur(Vertex v) { pre_cur = v; }
     Vertex get_root() { return root; }
     void set_root(Vertex v) { root = v; }
     
@@ -192,7 +197,11 @@ class Graph
       }
       
       VERTEX_PROPERTIES r_prop = properties(root);
-      ss << r_prop.name << ", nv: " << r_prop.num_visit << "\n";
+      ss << r_prop.name << ", nv: " << r_prop.num_visit;
+      if ( (properties(cur).name).compare(r_prop.name) == 0) // At cur
+        ss << " <<<";
+      ss << "\n";
+      
       adjacency_iter_pair_t ai_pair = get_adj_vertices(root);
       
       for (adjacency_iter ai = ai_pair.first;  ai != ai_pair.second; ai++) {
@@ -214,6 +223,8 @@ struct Vertex_Properties {
 struct Edge_Properties {
   char key;
 };
+
+#define BACK_TO_ROOT_LEAF_KEY '#'
 
 class ParseTree {
   typedef boost::adjacency_list<
@@ -248,8 +259,11 @@ class ParseTree {
       // 
       LOG(INFO) << "ParseTree:: constructed.";
     }
-    
     ~ParseTree() { LOG(INFO) << "ParseTree:: destructed."; }
+    
+    std::string to_str() { return pt_graph.to_str(); }
+    
+    std::string to_pretty_str() { return pt_graph.to_pretty_str(); }
     
     bool does_vertex_have_key_in_adjs(Vertex& v, char key, Vertex& adj_v)
     {
@@ -289,8 +303,10 @@ class ParseTree {
     
     void move_cur(Vertex v)
     {
+      pt_graph.set_pre_cur(pt_graph.get_cur() );
+      Vertex_Properties& v_prop = pt_graph.properties(v);
       pt_graph.set_cur(v);
-      pt_graph.properties(v).num_visit += 1;
+      v_prop.num_visit += 1;
     }
     
     int add_access(char key)
@@ -310,46 +326,104 @@ class ParseTree {
         
         if (cur_prop.status != 'R') {
           Vertex back_to_root_leaf;
-          if (!does_vertex_have_key_in_adjs(cur_v, 'R', back_to_root_leaf) )
-            create__connect_leaf(cur_v, 'R');
+          if (!does_vertex_have_key_in_adjs(cur_v, BACK_TO_ROOT_LEAF_KEY, back_to_root_leaf) )
+            create__connect_leaf(cur_v, BACK_TO_ROOT_LEAF_KEY);
         }
           
-        move_cur(pt_graph.get_root());
+        move_cur(pt_graph.get_root() );
         return 0;
       }
-      
-      // if (cur_prop.status == 'R' || cur_prop.status == 'L') {
-      // }
       
       num_access++;
     }
     
-    std::string to_str()
+    int get_to_prefetch(int& num_keys, char*& keys_)
     {
-      return pt_graph.to_str();
+      std::map<char, float> key_prob_map;
+      get_key_prob_map_for_prefetch(key_prob_map);
+      
+      if (num_keys > key_prob_map.size() ) {
+        LOG(WARNING) << "get_to_prefetch:: num_keys= " << num_keys << " > key_prob_map.size()= " 
+                     << key_prob_map.size() << "! Updating num_keys= " << key_prob_map.size();
+        num_keys = key_prob_map.size();
+      }
+      // Note: std::map is ordered -- either aphabetical or numerical with keys
+      std::map<float, char> prob_key_map;
+      for (std::map<char, float>::iterator it = key_prob_map.begin(); it != key_prob_map.end(); it++)
+        prob_key_map[it->second] = it->first;
+      
+      keys_ = (char*) malloc(num_keys*sizeof(char) );
+      std::map<float, char>::reverse_iterator rit = prob_key_map.rbegin();
+      for (int i = 0; i < num_keys; i++) {
+        keys_[i] = rit->second;
+        rit++;
+      }
+      
+      return 0;
     }
     
-    std::string to_pretty_str()
+    #define RANDOM_INT_RANGE 1000
+    int get_key_prob_map_for_prefetch(std::map<char, float>& key_prob_map)
     {
-      return pt_graph.to_pretty_str();
+      Vertex& cur_v = pt_graph.get_cur();
+      int total_num_visit = pt_graph.properties(cur_v).num_visit;
+      
+      srand (time(NULL) );
+      adjacency_iter_pair_t ai_pair = pt_graph.get_adj_vertices(cur_v);
+      for (adjacency_iter ai = ai_pair.first;  ai != ai_pair.second; ai++) {
+        Vertex_Properties adj_prop = pt_graph.properties(*ai);
+        
+        int random_int = rand() % RANDOM_INT_RANGE;
+        float random_float = (float)random_int/(RANDOM_INT_RANGE*RANDOM_INT_RANGE);
+        
+        key_prob_map[adj_prop.key] = (float)adj_prop.num_visit/total_num_visit + random_float;
+      }
+      
+      if (key_prob_map.empty() || (key_prob_map.size() == 1 && (key_prob_map.begin())->first == BACK_TO_ROOT_LEAF_KEY) ) { // Prefetch according to root
+        Vertex pt_root = pt_graph.get_root(); // pt_graph.get_pre_cur();
+        
+        key_prob_map.clear();
+        total_num_visit = pt_graph.properties(pt_root).num_visit + 1;
+        
+        ai_pair = pt_graph.get_adj_vertices(pt_root);
+        for (adjacency_iter ai = ai_pair.first;  ai != ai_pair.second; ai++) {
+          Vertex_Properties adj_prop = pt_graph.properties(*ai);
+          
+          int random_int = rand() % RANDOM_INT_RANGE;
+          float random_float = (float)random_int/(RANDOM_INT_RANGE*RANDOM_INT_RANGE);
+          
+          key_prob_map[adj_prop.key] = (float)adj_prop.num_visit/total_num_visit + random_float;
+        }
+      }
+      
+      if (key_prob_map.count(BACK_TO_ROOT_LEAF_KEY) > 0)
+        key_prob_map.erase(key_prob_map.find(BACK_TO_ROOT_LEAF_KEY) );
+      
+      return 0;
     }
+    
 };
 
 class LZAlgo {
   private:
-    int alphabet_length;
+    int alphabet_size;
     char* alphabet_;
     // 
     std::vector<char> access_seq_vector;
     ParseTree parse_tree;
     
   public:
-    LZAlgo(int alphabet_length, char* alphabet_);
+    LZAlgo(int alphabet_size, char* alphabet_);
     ~LZAlgo();
     
     int add_access(char key);
-    int get_to_prefetch(int num_keys, char* key_);
+    // TODO: will be deprecated
+    int get_key_prob_map_for_prefetch(std::map<char, float>& key_prob_map);
+    int get_to_prefetch(int& num_keys, char*& keys_);
     
+    int sim_prefetch_accuracy(float& hit_rate, int cache_size, std::vector<char> access_seq_v);
+    
+    void print_access_seq();
     void print_parse_tree();
     void pprint_parse_tree();
 };
