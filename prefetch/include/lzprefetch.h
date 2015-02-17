@@ -99,7 +99,7 @@ class Graph
     void set_cur(Vertex v) { cur = v; }
     Vertex& get_pre_cur() { return pre_cur; }
     void set_pre_cur(Vertex v) { pre_cur = v; }
-    Vertex get_root() { return root; }
+    Vertex& get_root() { return root; }
     void set_root(Vertex v) { root = v; }
     
     adjacency_iter_pair_t get_adj_vertices(const Vertex& v) const
@@ -154,6 +154,7 @@ class Graph
       ss << "\t add_rank= " << v_prop.add_rank << "\n";
       ss << "\t num_visit= " << v_prop.num_visit << "\n";
       ss << "\t status= " << v_prop.status << "\n";
+      ss << "\t level= " << v_prop.level << "\n";
       
       ss << "  out-edges: \n";
       out_edge_iter out_i, out_end;
@@ -218,6 +219,7 @@ struct Vertex_Properties {
   int add_rank;
   int num_visit;
   char status;
+  int level;
 };
 
 struct Edge_Properties {
@@ -225,6 +227,7 @@ struct Edge_Properties {
 };
 
 #define BACK_TO_ROOT_LEAF_KEY '#'
+#define RANDOM_INT_RANGE 1000
 
 class ParseTree {
   typedef boost::adjacency_list<
@@ -239,14 +242,20 @@ class ParseTree {
   typedef boost::graph_traits<GraphContainer>::adjacency_iterator adjacency_iter;
   typedef std::pair<adjacency_iter, adjacency_iter> adjacency_iter_pair_t;
     
+  // Note: root level is 0
   private:
     Graph<Vertex_Properties, Edge_Properties> pt_graph;
     int num_access;
+    bool with_context;
+    int context_size;
+    std::deque<char> context;
     
   public:
-    ParseTree()
+    ParseTree(bool with_context, int context_size)
     : pt_graph(),
-      num_access(0)
+      num_access(0),
+      with_context(with_context),
+      context_size(context_size)
     {
       Vertex_Properties root_prop;
       root_prop.name = "R";
@@ -254,6 +263,7 @@ class ParseTree {
       root_prop.add_rank = 0;
       root_prop.num_visit = 0;
       root_prop.status = 'R';
+      root_prop.level = 0;
       pt_graph.add_vertex(root_prop);
       // pt_graph.print();
       // 
@@ -292,6 +302,7 @@ class ParseTree {
       leaf_prop.add_rank = num_access;
       leaf_prop.num_visit = 1;
       leaf_prop.status = 'L';
+      leaf_prop.level = v_prop.level + 1;
       Vertex leaf = pt_graph.add_vertex(leaf_prop);
       
       Edge_Properties e_prop;
@@ -301,12 +312,12 @@ class ParseTree {
       return leaf;
     }
     
-    void move_cur(Vertex v)
+    void move_cur(bool inc_num_visit, Vertex v)
     {
       pt_graph.set_pre_cur(pt_graph.get_cur() );
-      Vertex_Properties& v_prop = pt_graph.properties(v);
       pt_graph.set_cur(v);
-      v_prop.num_visit += 1;
+      if (inc_num_visit)
+        (pt_graph.properties(v)).num_visit += 1;
     }
     
     int add_access(char key)
@@ -318,10 +329,10 @@ class ParseTree {
       if (does_vertex_have_key_in_adjs(cur_v, key, leaf_to_go) ) { //go down
         // LOG(INFO) << "add_access:: cur_prop.name= " << cur_prop.name << " has key= " << key
         //           << " in adj leaf_to_go_prop.name= " << pt_graph.properties(leaf_to_go).name << "\n";
-        move_cur(leaf_to_go);
-        return 0;
+        move_cur(true, leaf_to_go);
       }
       else {
+        // if (with_context && cur_prop.level != max_level) {
         create__connect_leaf(cur_v, key);
         
         if (cur_prop.status != 'R') {
@@ -329,12 +340,13 @@ class ParseTree {
           if (!does_vertex_have_key_in_adjs(cur_v, BACK_TO_ROOT_LEAF_KEY, back_to_root_leaf) )
             create__connect_leaf(cur_v, BACK_TO_ROOT_LEAF_KEY);
         }
+        // }
           
-        move_cur(pt_graph.get_root() );
-        return 0;
+        move_cur(true, pt_graph.get_root() );
       }
       
       num_access++;
+      return 0;
     }
     
     int get_to_prefetch(int& num_keys, char*& keys_)
@@ -362,7 +374,6 @@ class ParseTree {
       return 0;
     }
     
-    #define RANDOM_INT_RANGE 1000
     int get_key_prob_map_for_prefetch(std::map<char, float>& key_prob_map)
     {
       Vertex& cur_v = pt_graph.get_cur();
@@ -401,7 +412,105 @@ class ParseTree {
       
       return 0;
     }
+    /**************************************  with_context  ****************************************/
+    int move_cur_on_context(bool inc_num_visit)
+    {
+      for (int i = 0; i < context.size(); i++) {
+        Vertex leaf_to_go;
+        if (does_vertex_have_key_in_adjs(pt_graph.get_cur(), context[i], leaf_to_go) ) //go down
+          move_cur(inc_num_visit, leaf_to_go);
+        else
+          return 1;
+      }
+      return 0;
+    }
     
+    void create__move_cur_on_context()
+    {
+      Vertex& cur_v = pt_graph.get_cur();
+      Vertex_Properties& cur_prop = pt_graph.properties(cur_v);
+      if (cur_prop.status != 'R') {
+        move_cur(true, pt_graph.get_root() );
+        LOG(WARNING) << "create__move_cur_on_context:: called when cur is not on root.";
+      }
+      
+      for (int i = 0; i < context_size; i++) {
+        char leaf_key = context[i];
+        Vertex_Properties leaf_prop;
+        leaf_prop.name = boost::lexical_cast<std::string>(cur_prop.name) + boost::lexical_cast<std::string>(leaf_key);
+        leaf_prop.key = leaf_key;
+        leaf_prop.add_rank = num_access;
+        leaf_prop.num_visit = 0;
+        if (i != context_size - 1)
+          leaf_prop.status = 'N';
+        else
+          leaf_prop.status = 'L';
+        leaf_prop.level = cur_prop.level + 1;
+        Vertex leaf = pt_graph.add_vertex(leaf_prop);
+        
+        Edge_Properties e_prop;
+        e_prop.key = leaf_key;
+        pt_graph.add_directed_edge(cur_v, leaf, e_prop);
+        
+        move_cur(true, leaf);
+      }
+    }
+    
+    int add_access_with_context(char key)
+    {
+      if (context.size() == context_size) {
+        // check if current context is present in the tree, if not create, move down and encode access
+        if (!move_cur_on_context(false) ) // Create
+          create__move_cur_on_context();
+        
+        create__connect_leaf(pt_graph.get_cur(), key);
+        move_cur(true, pt_graph.get_root() );
+        
+        context.pop_front();
+      }
+      context.push_back(key);
+      
+      return 0;
+    }
+    
+    int get_key_prob_map_for_prefetch_with_context(std::map<char, float>& key_prob_map)
+    {
+      // Vertex& cur_v = pt_graph.get_cur();
+      // int total_num_visit = pt_graph.properties(cur_v).num_visit;
+      
+      // srand (time(NULL) );
+      // adjacency_iter_pair_t ai_pair = pt_graph.get_adj_vertices(cur_v);
+      // for (adjacency_iter ai = ai_pair.first;  ai != ai_pair.second; ai++) {
+      //   Vertex_Properties adj_prop = pt_graph.properties(*ai);
+        
+      //   int random_int = rand() % RANDOM_INT_RANGE;
+      //   float random_float = (float)random_int/(RANDOM_INT_RANGE*RANDOM_INT_RANGE);
+        
+      //   key_prob_map[adj_prop.key] = (float)adj_prop.num_visit/total_num_visit + random_float;
+      // }
+      
+      // if (key_prob_map.empty() || (key_prob_map.size() == 1 && (key_prob_map.begin())->first == BACK_TO_ROOT_LEAF_KEY) ) { // Prefetch according to root
+      //   Vertex pt_root = pt_graph.get_root(); // pt_graph.get_pre_cur();
+        
+      //   key_prob_map.clear();
+      //   total_num_visit = pt_graph.properties(pt_root).num_visit + 1;
+        
+      //   ai_pair = pt_graph.get_adj_vertices(pt_root);
+      //   for (adjacency_iter ai = ai_pair.first;  ai != ai_pair.second; ai++) {
+      //     Vertex_Properties adj_prop = pt_graph.properties(*ai);
+          
+      //     int random_int = rand() % RANDOM_INT_RANGE;
+      //     float random_float = (float)random_int/(RANDOM_INT_RANGE*RANDOM_INT_RANGE);
+          
+      //     key_prob_map[adj_prop.key] = (float)adj_prop.num_visit/total_num_visit + random_float;
+      //   }
+      // }
+      
+      // if (key_prob_map.count(BACK_TO_ROOT_LEAF_KEY) > 0)
+      //   key_prob_map.erase(key_prob_map.find(BACK_TO_ROOT_LEAF_KEY) );
+      
+      return 0;
+    }
 };
 
 class LZAlgo {
@@ -415,6 +524,31 @@ class LZAlgo {
   public:
     LZAlgo(int alphabet_size, char* alphabet_);
     ~LZAlgo();
+    
+    int add_access(char key);
+    // TODO: will be deprecated
+    int get_key_prob_map_for_prefetch(std::map<char, float>& key_prob_map);
+    int get_to_prefetch(int& num_keys, char*& keys_);
+    
+    int sim_prefetch_accuracy(float& hit_rate, int cache_size, std::vector<char> access_seq_v);
+    
+    void print_access_seq();
+    void print_parse_tree();
+    void pprint_parse_tree();
+};
+
+class PPMAlgo {
+  private:
+    int alphabet_size;
+    char* alphabet_;
+    int context_size;
+    // 
+    std::vector<char> access_seq_vector;
+    ParseTree parse_tree;
+    
+  public:
+    PPMAlgo(int alphabet_size, char* alphabet_, int context_size);
+    ~PPMAlgo();
     
     int add_access(char key);
     // TODO: will be deprecated

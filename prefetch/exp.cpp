@@ -69,31 +69,37 @@ int main(int argc , char **argv)
   // }
   
   std::map<char*, char*> opt_map = parse_opts(argc, argv);
-  LZAlgo lz_algo(2, NULL);
+  // LZAlgo lz_algo(2, NULL, true, 2);
+  PPMAlgo ppm_algo(2, NULL, 2);
   // char access_seq_arr[] = {'a',  'a','a',  'a','b',  'a','b','a',  'a','b','b',  'b'};
-  // char access_seq_arr[] = {'a',  'b',  'a','b',  'a','b','a',  'b','a',  'b','a','b', 'a','b','a','b'};
-  char access_seq_arr[] = {'a','b','a','b','a','b','a','b','a','b','a','b','a','b','a','b','a','b','a','b','a','b',};
+  // char access_seq_arr[] = {'a','b','a','b','a','b','a','b',  'a','b','a','b','a','b','a','b','a','b','a','b','a'};
+  char access_seq_arr[] = {'a','b','b','a','b','a','b','a','b'};
+  // char access_seq_arr[] = {'a','b','a','b','a','b','a','b','a','b','a','b','a','b','a','b','a','b','a','b','a','b',
+  //                         'a','b','a','b','a','b','a','b','a','b','a','b','a','b','a','b','a','b','a','b','a','b'
+  // };
   // float hit_rate;
   // std::vector<char> access_seq_v (access_seq_arr, access_seq_arr + sizeof(access_seq_arr)/sizeof(*access_seq_arr) );
-  // lz_algo.sim_prefetch_accuracy(hit_rate, 1, access_seq_v);
+  // lz_algo.sim_prefetch_accuracy(hit_rate, 2, access_seq_v);
   // LOG(INFO) << "main:: hit_rate= " << hit_rate;
   
   for (int i = 0; i < sizeof(access_seq_arr)/sizeof(*access_seq_arr); i++) {
-  // for (int i = 0; i < 10; i++) {
-    lz_algo.add_access(access_seq_arr[i]);
+  // // for (int i = 0; i < 10; i++) {
+    // lz_algo.add_access(access_seq_arr[i]);
+    ppm_algo.add_access(access_seq_arr[i]);
     
-    lz_algo.print_access_seq();
-    lz_algo.pprint_parse_tree();
+  //   lz_algo.print_access_seq();
+  //   lz_algo.pprint_parse_tree();
     
-    std::map<char, float> key_prob_map;
-    lz_algo.get_key_prob_map_for_prefetch(key_prob_map);
-    std::cout << "key_prob_map= ";
-    for (std::map<char, float>::iterator it = key_prob_map.begin(); it != key_prob_map.end(); it++) {
-      std::cout << it->first << ": " << it->second << ", ";
-    }
-    std::cout << "\n";
+  //   std::map<char, float> key_prob_map;
+  //   lz_algo.get_key_prob_map_for_prefetch(key_prob_map);
+  //   std::cout << "key_prob_map= ";
+  //   for (std::map<char, float>::iterator it = key_prob_map.begin(); it != key_prob_map.end(); it++) {
+  //     std::cout << it->first << ": " << it->second << ", ";
+  //   }
+  //   std::cout << "\n";
   }
-  lz_algo.pprint_parse_tree();
+  // lz_algo.pprint_parse_tree();
+  ppm_algo.pprint_parse_tree();
   
   return 0;
 }

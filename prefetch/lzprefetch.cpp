@@ -1,9 +1,10 @@
 #include "lzprefetch.h"
 
+/******************************************  LZAlgo  **********************************************/
 LZAlgo::LZAlgo(int alphabet_size, char* alphabet_)
 : alphabet_size(alphabet_size),
   alphabet_(alphabet_),
-  parse_tree()
+  parse_tree(false, 0)
 {
   // 
   LOG(INFO) << "LZAlgo:: constructed.";
@@ -67,13 +68,69 @@ int LZAlgo::sim_prefetch_accuracy(float& hit_rate, int cache_size, std::vector<c
     get_to_prefetch(num_keys, keys_);
     // Update cache
     for (int i = 0; i < num_keys; i++) {
+      char key = keys_[i];
+      if (std::find(cache.begin(), cache.end(), key) != cache.end() ) // In cache
+        continue;
+      
       if (cache.size() == cache_size)
-        cache.pop_back();
-      cache.push_back(keys_[i]);
+        cache.pop_front();
+      cache.push_back(key);
     }
+    free(keys_);
   }
   
   hit_rate = 1.0 - (float)num_miss/num_access;
   
   return 0;
+}
+
+/******************************************  PPMAlgo  *********************************************/
+PPMAlgo::PPMAlgo(int alphabet_size, char* alphabet_, int context_size)
+: alphabet_size(alphabet_size),
+  alphabet_(alphabet_),
+  parse_tree(true, context_size)
+{
+  // 
+  LOG(INFO) << "PPMAlgo:: constructed.";
+}
+
+PPMAlgo::~PPMAlgo() { LOG(INFO) << "PPMAlgo:: constructed."; }
+
+void PPMAlgo::print_access_seq()
+{
+  LOG(INFO) << "print_access_seq:: ";
+  for (std::vector<char>::iterator it = access_seq_vector.begin(); it != access_seq_vector.end(); it++) {
+    std::cout << *it << ", ";
+  }
+  std::cout << "\n";
+}
+
+void PPMAlgo::print_parse_tree()
+{
+  LOG(INFO) << "print_parse_tree::\n";
+  std::cout << parse_tree.to_str();
+}
+
+void PPMAlgo::pprint_parse_tree()
+{
+  LOG(INFO) << "pprint_parse_tree::\n";
+  std::cout << parse_tree.to_pretty_str();
+}
+
+int PPMAlgo::add_access(char key)
+{
+  access_seq_vector.push_back(key);
+  parse_tree.add_access_with_context(key);
+  
+  return 0;
+}
+
+int PPMAlgo::get_key_prob_map_for_prefetch(std::map<char, float>& key_prob_map)
+{
+  return parse_tree.get_key_prob_map_for_prefetch_with_context(key_prob_map);
+}
+
+int PPMAlgo::get_to_prefetch(int& num_keys, char*& keys_)
+{
+  return parse_tree.get_to_prefetch(num_keys, keys_);
 }
