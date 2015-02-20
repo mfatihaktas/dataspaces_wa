@@ -288,6 +288,22 @@ class ParseTree {
       return false;
     }
     
+    int add_access(char key)
+    {
+      if (with_context)
+        add_access_with_context(key);
+      else
+        add_access_without_context(key);
+    }
+    
+    int get_key_prob_map_for_prefetch(std::map<char, float>& key_prob_map)
+    {
+      if (with_context)
+        get_key_prob_map_for_prefetch_with_context(key_prob_map);
+      else
+        get_key_prob_map_for_prefetch_without_context(key_prob_map);
+    }
+    
     Vertex create__connect_leaf(Vertex& v, char leaf_key)
     {
       Vertex_Properties& v_prop = pt_graph.properties(v);
@@ -320,7 +336,7 @@ class ParseTree {
         (pt_graph.properties(v)).num_visit += 1;
     }
     
-    int add_access(char key)
+    int add_access_without_context(char key)
     {
       Vertex cur_v = pt_graph.get_cur();
       Vertex_Properties cur_prop = pt_graph.properties(cur_v);
@@ -349,13 +365,10 @@ class ParseTree {
       return 0;
     }
     
-    int get_to_prefetch(int& num_keys, char*& keys_)
+    int get_to_prefetch(size_t& num_keys, char*& keys_)
     {
       std::map<char, float> key_prob_map;
-      if (with_context)
-        get_key_prob_map_for_prefetch_with_context(key_prob_map);
-      else
-        get_key_prob_map_for_prefetch(key_prob_map);
+      get_key_prob_map_for_prefetch(key_prob_map);
       
       if (num_keys > key_prob_map.size() ) {
         LOG(WARNING) << "get_to_prefetch:: num_keys= " << num_keys << " > key_prob_map.size()= " 
@@ -377,7 +390,7 @@ class ParseTree {
       return 0;
     }
     
-    int get_key_prob_map_for_prefetch(std::map<char, float>& key_prob_map)
+    int get_key_prob_map_for_prefetch_without_context(std::map<char, float>& key_prob_map)
     {
       Vertex& cur_v = pt_graph.get_cur();
       int total_num_visit = pt_graph.properties(cur_v).num_visit;
@@ -500,58 +513,69 @@ class ParseTree {
     {
       move_cur_on_context(false); // even if whole walk could not be finished, predict with smaller context
       // LOG(INFO) << "get_key_prob_map_for_prefetch_with_context:: cur= \n" << pt_graph.vertex_to_str(pt_graph.get_cur() );
-      get_key_prob_map_for_prefetch(key_prob_map);
+      get_key_prob_map_for_prefetch_without_context(key_prob_map);
       move_cur(false, pt_graph.get_root() );
     }
 };
 
-class LZAlgo {
+template <typename T>
+class Cache {
   private:
-    int alphabet_size;
-    char* alphabet_;
-    // 
-    std::vector<char> access_seq_vector;
-    ParseTree parse_tree;
-    
+    size_t cache_size;
+    std::deque<T> cache;
   public:
-    LZAlgo(int alphabet_size, char* alphabet_);
-    ~LZAlgo();
+    Cache(size_t cache_size) 
+    : cache_size(cache_size)
+    {
+      LOG(INFO) << "Cache:: constructed.";
+    }
     
-    int add_access(char key);
-    // TODO: will be deprecated
-    int get_key_prob_map_for_prefetch(std::map<char, float>& key_prob_map);
-    int get_to_prefetch(int& num_keys, char*& keys_);
+    ~Cache() { LOG(INFO) << "Cache:: destructed."; }
     
-    int sim_prefetch_accuracy(float& hit_rate, int cache_size, std::vector<char> access_seq_v);
+    int push_key(T key)
+    {
+      if (cache.size() == cache_size)
+        cache.pop_front();
+      cache.push_back(key);
+    }
     
-    void print_access_seq();
-    void print_parse_tree();
-    void pprint_parse_tree();
+    bool contains(T key)
+    {
+      return (std::find(cache.begin(), cache.end(), key) != cache.end() );
+    }
 };
 
-class PPMAlgo {
-  private:
-    int alphabet_size;
+class PrefetchAlgo {
+  protected:
+    size_t alphabet_size;
     char* alphabet_;
-    int context_size;
-    // 
     std::vector<char> access_seq_vector;
     ParseTree parse_tree;
-    
   public:
-    PPMAlgo(int alphabet_size, char* alphabet_, int context_size);
-    ~PPMAlgo();
+    PrefetchAlgo(size_t alphabet_size, char* alphabet_, bool with_context, size_t context_size);
+    ~PrefetchAlgo();
+    std::string parse_tree_to_str();
+    std::string parse_tree_to_pstr();
+    std::string access_seq_to_str();
     
     int add_access(char key);
     // TODO: will be deprecated
     int get_key_prob_map_for_prefetch(std::map<char, float>& key_prob_map);
-    int get_to_prefetch(int& num_keys, char*& keys_);
+    int get_to_prefetch(size_t& num_keys, char*& keys_);
     
-    int sim_prefetch_accuracy(float& hit_rate, int cache_size, std::vector<char> access_seq_v);
-    
-    void print_access_seq();
-    void print_parse_tree();
-    void pprint_parse_tree();
+    int sim_prefetch_accuracy(float& hit_rate, size_t cache_size, std::vector<char> access_seq_v, std::vector<char>& accuracy_seq_v);
+};
+
+class LZAlgo : public PrefetchAlgo {
+  public:
+    LZAlgo(size_t alphabet_size, char* alphabet_);
+    ~LZAlgo();
+};
+
+class PPMAlgo : public PrefetchAlgo {
+  public:
+    PPMAlgo(size_t alphabet_size, char* alphabet_, size_t context_size);
+    ~PPMAlgo();
 };
 
 #endif // LZPREFETCH_H
