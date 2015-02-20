@@ -352,7 +352,10 @@ class ParseTree {
     int get_to_prefetch(int& num_keys, char*& keys_)
     {
       std::map<char, float> key_prob_map;
-      get_key_prob_map_for_prefetch(key_prob_map);
+      if (with_context)
+        get_key_prob_map_for_prefetch_with_context(key_prob_map);
+      else
+        get_key_prob_map_for_prefetch(key_prob_map);
       
       if (num_keys > key_prob_map.size() ) {
         LOG(WARNING) << "get_to_prefetch:: num_keys= " << num_keys << " > key_prob_map.size()= " 
@@ -413,35 +416,48 @@ class ParseTree {
       return 0;
     }
     /**************************************  with_context  ****************************************/
-    int move_cur_on_context(bool inc_num_visit)
+    std::string context_to_str()
     {
-      for (int i = 0; i < context.size(); i++) {
-        Vertex leaf_to_go;
-        if (does_vertex_have_key_in_adjs(pt_graph.get_cur(), context[i], leaf_to_go) ) //go down
-          move_cur(inc_num_visit, leaf_to_go);
-        else
-          return 1;
-      }
-      return 0;
-    }
-    
-    void create__move_cur_on_context()
-    {
-      Vertex& cur_v = pt_graph.get_cur();
-      Vertex_Properties& cur_prop = pt_graph.properties(cur_v);
-      if (cur_prop.status != 'R') {
-        move_cur(true, pt_graph.get_root() );
-        LOG(WARNING) << "create__move_cur_on_context:: called when cur is not on root.";
+      std::stringstream ss;
+      for (std::deque<char>::iterator it = context.begin(); it != context.end(); it++) {
+        ss << *it << ",";
       }
       
-      for (int i = 0; i < context_size; i++) {
+      return ss.str();
+    }
+    
+    int move_cur_on_context(bool inc_num_visit)
+    {
+      int walked_upto_index_on_context = 0;
+      for (int i = 0; i < context.size(); i++) {
+        Vertex leaf_to_go;
+        if (does_vertex_have_key_in_adjs(pt_graph.get_cur(), context[i], leaf_to_go) ) { //go down
+          move_cur(inc_num_visit, leaf_to_go);
+          walked_upto_index_on_context++;
+        }
+        else {
+          // LOG(INFO) << "move_cur_on_context:: could not walk on context= " << context_to_str();
+          return walked_upto_index_on_context;
+        }
+      }
+      // LOG(INFO) << "move_cur_on_context:: could walk on context= " << context_to_str();
+      return walked_upto_index_on_context;
+    }
+    
+    void create__move_cur_on_context(int walked_upto_index_on_context)
+    {
+      Vertex cur_v = pt_graph.get_cur();
+      Vertex_Properties cur_prop = pt_graph.properties(cur_v);
+      // LOG(WARNING) << "create__move_cur_on_context:: cur= \n" << pt_graph.vertex_to_str(cur_v);
+      
+      for (int i = walked_upto_index_on_context; i < context.size(); i++) {
         char leaf_key = context[i];
         Vertex_Properties leaf_prop;
         leaf_prop.name = boost::lexical_cast<std::string>(cur_prop.name) + boost::lexical_cast<std::string>(leaf_key);
         leaf_prop.key = leaf_key;
         leaf_prop.add_rank = num_access;
         leaf_prop.num_visit = 0;
-        if (i != context_size - 1)
+        if (i != context.size() - 1)
           leaf_prop.status = 'N';
         else
           leaf_prop.status = 'L';
@@ -453,17 +469,24 @@ class ParseTree {
         pt_graph.add_directed_edge(cur_v, leaf, e_prop);
         
         move_cur(true, leaf);
+        cur_v = pt_graph.get_cur();
+        cur_prop = pt_graph.properties(cur_v);
       }
     }
     
     int add_access_with_context(char key)
     {
+      // LOG(INFO) << "add_access_with_context:: context= " << context_to_str();
       if (context.size() == context_size) {
         // check if current context is present in the tree, if not create, move down and encode access
-        if (!move_cur_on_context(false) ) // Create
-          create__move_cur_on_context();
+        create__move_cur_on_context(move_cur_on_context(true) );
         
-        create__connect_leaf(pt_graph.get_cur(), key);
+        Vertex leaf_to_go;
+        if (does_vertex_have_key_in_adjs(pt_graph.get_cur(), key, leaf_to_go) )
+          move_cur(true, leaf_to_go);
+        else
+          create__connect_leaf(pt_graph.get_cur(), key);
+        
         move_cur(true, pt_graph.get_root() );
         
         context.pop_front();
@@ -475,41 +498,10 @@ class ParseTree {
     
     int get_key_prob_map_for_prefetch_with_context(std::map<char, float>& key_prob_map)
     {
-      // Vertex& cur_v = pt_graph.get_cur();
-      // int total_num_visit = pt_graph.properties(cur_v).num_visit;
-      
-      // srand (time(NULL) );
-      // adjacency_iter_pair_t ai_pair = pt_graph.get_adj_vertices(cur_v);
-      // for (adjacency_iter ai = ai_pair.first;  ai != ai_pair.second; ai++) {
-      //   Vertex_Properties adj_prop = pt_graph.properties(*ai);
-        
-      //   int random_int = rand() % RANDOM_INT_RANGE;
-      //   float random_float = (float)random_int/(RANDOM_INT_RANGE*RANDOM_INT_RANGE);
-        
-      //   key_prob_map[adj_prop.key] = (float)adj_prop.num_visit/total_num_visit + random_float;
-      // }
-      
-      // if (key_prob_map.empty() || (key_prob_map.size() == 1 && (key_prob_map.begin())->first == BACK_TO_ROOT_LEAF_KEY) ) { // Prefetch according to root
-      //   Vertex pt_root = pt_graph.get_root(); // pt_graph.get_pre_cur();
-        
-      //   key_prob_map.clear();
-      //   total_num_visit = pt_graph.properties(pt_root).num_visit + 1;
-        
-      //   ai_pair = pt_graph.get_adj_vertices(pt_root);
-      //   for (adjacency_iter ai = ai_pair.first;  ai != ai_pair.second; ai++) {
-      //     Vertex_Properties adj_prop = pt_graph.properties(*ai);
-          
-      //     int random_int = rand() % RANDOM_INT_RANGE;
-      //     float random_float = (float)random_int/(RANDOM_INT_RANGE*RANDOM_INT_RANGE);
-          
-      //     key_prob_map[adj_prop.key] = (float)adj_prop.num_visit/total_num_visit + random_float;
-      //   }
-      // }
-      
-      // if (key_prob_map.count(BACK_TO_ROOT_LEAF_KEY) > 0)
-      //   key_prob_map.erase(key_prob_map.find(BACK_TO_ROOT_LEAF_KEY) );
-      
-      return 0;
+      move_cur_on_context(false); // even if whole walk could not be finished, predict with smaller context
+      // LOG(INFO) << "get_key_prob_map_for_prefetch_with_context:: cur= \n" << pt_graph.vertex_to_str(pt_graph.get_cur() );
+      get_key_prob_map_for_prefetch(key_prob_map);
+      move_cur(false, pt_graph.get_root() );
     }
 };
 

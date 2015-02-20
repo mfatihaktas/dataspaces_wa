@@ -63,7 +63,7 @@ int LZAlgo::sim_prefetch_accuracy(float& hit_rate, int cache_size, std::vector<c
     
     add_access(*it);
     
-    int num_keys = cache_size;
+    int num_keys = 1; //cache_size;
     char* keys_;
     get_to_prefetch(num_keys, keys_);
     // Update cache
@@ -100,7 +100,7 @@ void PPMAlgo::print_access_seq()
 {
   LOG(INFO) << "print_access_seq:: ";
   for (std::vector<char>::iterator it = access_seq_vector.begin(); it != access_seq_vector.end(); it++) {
-    std::cout << *it << ", ";
+    std::cout << *it << ",";
   }
   std::cout << "\n";
 }
@@ -133,4 +133,47 @@ int PPMAlgo::get_key_prob_map_for_prefetch(std::map<char, float>& key_prob_map)
 int PPMAlgo::get_to_prefetch(int& num_keys, char*& keys_)
 {
   return parse_tree.get_to_prefetch(num_keys, keys_);
+}
+
+int PPMAlgo::sim_prefetch_accuracy(float& hit_rate, int cache_size, std::vector<char> access_seq_v, std::vector<char>& accuracy_seq_v)
+{
+  std::deque<char> cache;
+  int num_access = access_seq_v.size();
+  int num_miss = 0;
+  char predicted_key;
+  
+  for (std::vector<char>::iterator it = access_seq_v.begin(); it != access_seq_v.end(); it++) {
+    if (std::find(cache.begin(), cache.end(), *it) == cache.end() ) // Not in cache
+      num_miss++;
+    
+    if (it =! access_seq_v.begin() {
+      if (*it == predicted_key)
+        accuracy_seq_v.push_back('-');
+      else
+        accuracy_seq_v.push_back('f');
+    }
+    
+    add_access(*it);
+    
+    int num_keys = 1; //cache_size;
+    char* keys_;
+    get_to_prefetch(num_keys, keys_);
+    if (num_keys > 0)
+      predicted_key = keys[0];
+    // Update cache
+    for (int i = 0; i < num_keys; i++) {
+      char key = keys_[i];
+      if (std::find(cache.begin(), cache.end(), key) != cache.end() ) // In cache
+        continue;
+      
+      if (cache.size() == cache_size)
+        cache.pop_front();
+      cache.push_back(key);
+    }
+    free(keys_);
+  }
+  
+  hit_rate = 1.0 - (float)num_miss/num_access;
+  
+  return 0;
 }
