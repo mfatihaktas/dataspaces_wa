@@ -11,6 +11,7 @@ DSDriver::DSDriver(int num_dscnodes, int app_id)
   MPI_Barrier(MPI_COMM_WORLD);
   mpi_comm = MPI_COMM_WORLD;
   
+  
   if (init(num_dscnodes, app_id) ) {
     fprintf(stderr, "DSDriver:: init failed!\n");
     return;
@@ -38,7 +39,7 @@ DSDriver::~DSDriver()
   if (!finalized) {
     finalize();
   }
-  //
+  // 
   std::cout << "~DSDriver:: destructed.";
 }
 
@@ -57,7 +58,7 @@ int DSDriver::finalize()
     std::cerr << "finalize:: Exception=" << ex.what();
     return 1;
   }
-  //
+  // 
   finalized = true;
   std::cout << "finalize:: finalized.";
   return 0;
@@ -65,7 +66,7 @@ int DSDriver::finalize()
 
 int DSDriver::init(int num_dscnodes, int app_id)
 {
-  return dspaces_init(num_dscnodes, app_id, &mpi_comm, NULL);
+  return dspaces_init(num_dscnodes-1, app_id, &mpi_comm, NULL);
 }
 
 int DSDriver::sync_put(const char* var_name, unsigned int ver, int size,
@@ -75,7 +76,7 @@ int DSDriver::sync_put(const char* var_name, unsigned int ver, int size,
   
   int result;
   result = dspaces_put(var_name, ver, size,
-                       ndim, lb_, ub_, data_);
+                      ndim, lb_, ub_, data_);
   dspaces_put_sync();
   unlock_on_write(var_name);
   
@@ -83,13 +84,13 @@ int DSDriver::sync_put(const char* var_name, unsigned int ver, int size,
 }
 
 int DSDriver::get(const char* var_name, unsigned int ver, int size,
-                       int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
+                      int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
 {
   lock_on_read(var_name);
   
   int result;
   result = dspaces_get(var_name, ver, size,
-                       ndim, lb_, ub_, data_);
+                      ndim, lb_, ub_, data_);
   unlock_on_read(var_name);
   
   return result;

@@ -7,6 +7,10 @@ NUM_SNODES=1
 NUM_DSCNODES=$((1+1)) #+1: RIManager
 
 if [ $1  = 's' ]; then
+  if [ -a conf ]; then
+    rm srv.lck
+    rm conf                                                                                         #dataspaces_server cannot overwrite this so before every new run this should be removed
+  fi
   $DSPACES_BINDIR/./dataspaces_server --server $NUM_SNODES --cnodes $NUM_DSCNODES
 elif [ $1  = 'p' ]; then
   GLOG_logtostderr=1 ./exp --type=put --dht_id='p' --num_dscnodes=$NUM_DSCNODES --app_id=1

@@ -7,7 +7,7 @@
 #include <net/if.h>
 #include <unistd.h>
 #include <arpa/inet.h>
-//
+// 
 #include <iostream>
 #include <string>
 #include <stdio.h>
@@ -48,7 +48,7 @@ void exp_debug_print(std::string key, unsigned int ver, int size, int ndim,
   }
   std::cout << "\n";
   
-  //
+  // 
   if (data == NULL){
     return;
   }
@@ -91,7 +91,7 @@ char* intf_to_ip(const char* intf)
 {
   int fd;
   struct ifreq ifr;
-  //
+  // 
   fd = socket(AF_INET, SOCK_DGRAM, 0);
   //Type of address to retrieve - IPv4 IP address
   ifr.ifr_addr.sa_family = AF_INET;
@@ -99,7 +99,7 @@ char* intf_to_ip(const char* intf)
   std::memcpy(ifr.ifr_name , intf , IFNAMSIZ-1);
   ioctl(fd, SIOCGIFADDR, &ifr);
   close(fd);
-  //
+  // 
   return inet_ntoa(( (struct sockaddr_in *)&ifr.ifr_addr )->sin_addr);
 }
 
@@ -188,7 +188,7 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
       printf ("%s ", argv[optind++]);
     putchar ('\n');
   }
-  //
+  // 
   std::cout << "opt_map=\n";
   for (std::map<char*, char*>::iterator it=opt_map.begin(); it!=opt_map.end(); ++it){
     std::cout << it->first << " => " << it->second << '\n';
@@ -225,7 +225,7 @@ void get_test(WADspacesDriver& wads_driver)
   }
   // size_t data_length = get_data_length(TEST_NDIM, gdim, lb, ub);
   // exp_debug_print(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim, lb, ub, data, data_length);
-  //
+  // 
   free(gdim);
   free(lb);
   free(ub);
@@ -269,7 +269,7 @@ int main(int argc , char **argv)
 {
   std::string temp;
   google::InitGoogleLogging("exp");
-  //
+  // 
   std::map<char*, char*> opt_map = parse_opts(argc, argv);
   
   std::string wa_ib_lports[] = {"1234","1235","1236","1237"};
@@ -323,7 +323,7 @@ int main(int argc , char **argv)
     char* wa_laddr_t = intf_to_ip(opt_map[(char*)"wa_lintf"]);
     strcpy(wa_laddr, wa_laddr_t);
     std::cout << "main:: wa_laddr= " << wa_laddr << "\n";
-    //
+    // 
     if ( (!opt_map.count((char*)"ipeer_dht_laddr") ) || (strcmp(opt_map[(char*)"ipeer_dht_laddr"], (char*)"") == 0) ) {
       opt_map[(char*)"ipeer_dht_laddr"] = NULL;
       opt_map[(char*)"ipeer_dht_lport"] = (char*)"0";

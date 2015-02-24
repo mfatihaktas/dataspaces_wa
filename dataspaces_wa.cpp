@@ -3,13 +3,13 @@
 //***********************************  RMessenger  ********************************//
 RMessenger::RMessenger()
 {
-  //
+  // 
   LOG(INFO) << "RMessenger:: constructed.";
 }
 
 RMessenger::~RMessenger()
 {
-  //
+  // 
   LOG(INFO) << "RMessenger:: destructed.";
 }
 
@@ -54,7 +54,7 @@ WADspacesDriver::WADspacesDriver(int app_id, int num_local_peers)
   ds_driver_ ( new DSpacesDriver(num_local_peers, app_id) ),
   bc_client_( new BCClient(app_id, num_local_peers, RI_MSG_SIZE, "req_app_", ds_driver_) )
 {
-  //
+  // 
   LOG(INFO) << "WADspacesDriver:: constructed.";
 }
 
@@ -64,13 +64,13 @@ WADspacesDriver::WADspacesDriver(MPI_Comm mpi_comm, int app_id, int num_local_pe
   ds_driver_ ( new DSpacesDriver(mpi_comm, num_local_peers, app_id) ),
   bc_client_( new BCClient(app_id, num_local_peers, RI_MSG_SIZE, "req_app_", ds_driver_) )
 {
-  //
+  // 
   LOG(INFO) << "WADspacesDriver:: constructed.";
 }
 
 WADspacesDriver::~WADspacesDriver()
 {
-  //
+  // 
   LOG(INFO) << "WADspacesDriver:: destructed.";
 }
 
@@ -117,7 +117,7 @@ int WADspacesDriver::get(bool blocking, std::string data_type, std::string key, 
     return 1;
   }
   // usleep(1000);
-  //
+  // 
   boost::shared_ptr<BCServer> bc_server_( 
     new BCServer(app_id, 0, APP_RIMANAGER_MAX_MSG_SIZE, "reply_app_", 
                  boost::bind(&WADspacesDriver::handle_ri_reply, this, _1),
@@ -141,7 +141,7 @@ int WADspacesDriver::get(bool blocking, std::string data_type, std::string key, 
     return 1;
   }
   key_ver__dsid_map.del(kv);
-  //
+  // 
   LOG(INFO) << "get:: done for <key= " << key << ", ver= " << ver << ">.";
   return 0;
 }
@@ -160,7 +160,7 @@ int WADspacesDriver::handle_ri_reply(char* ri_reply)
   key_ver__dsid_map[kv] = ri_reply_map["ds_id"].c_str()[0];
   
   rg_syncer.notify(kv);
-  //
+  // 
   LOG(INFO) << "handle_ri_reply:: done.";
   return 0;
 }

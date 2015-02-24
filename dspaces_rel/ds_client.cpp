@@ -183,24 +183,24 @@ BCServer::BCServer(int app_id, int num_clients, int msg_size,
   f_cb(f_cb),
   ds_driver_ ( ds_driver_ )
 {
-  //
+  // 
   LOG(INFO) << "BCServer:: constructed for comm_var_name= " << base_comm_var_name;
 }
 
 BCServer::~BCServer()
 {
   //ds_driver_->finalize();
-  //
+  // 
   LOG(INFO) << "BCServer:: destructed.";
 }
 
 void BCServer::init_listen_client(int client_id)
 {
   std::string key = base_comm_var_name + boost::lexical_cast<std::string>(client_id);
-  //
+  // 
   ds_driver_->reg_cb_on_get(key, f_cb);
   ds_driver_->init_riget_thread(key, msg_size);
-  //
+  // 
   LOG(INFO) << "init_listen_client:: done for client_id= " << client_id;
 }
 
@@ -210,7 +210,7 @@ void BCServer::init_listen_all()
   for(int i=1; i <= num_clients; i++) {
     init_listen_client(i);
   }
-  //
+  // 
   LOG(INFO) << "init_listen_all:: done.";
 }
 

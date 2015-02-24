@@ -10,7 +10,7 @@
 std::map<std::string, std::string> parse_opts(int argc, char** argv)
 {
   std::map<std::string, std::string> opt_map;
-  //
+  // 
   int c;
   
   static struct option long_options[] =
@@ -54,7 +54,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
       printf ("%s ", argv[optind++]);
     putchar ('\n');
   }
-  //
+  // 
   std::cout << "opt_map= \n";
   for (std::map<std::string, std::string>::iterator it = opt_map.begin(); it != opt_map.end(); ++it) {
     std::cout << it->first << " => " << it->second << '\n';
@@ -66,18 +66,21 @@ int main(int argc , char **argv)
 {
   std::string temp;
   std::map<std::string, std::string> opt_map = parse_opts(argc, argv);
+  int num_dscnodes = atoi(opt_map["num_dscnodes"].c_str() );
+  int app_id = atoi(opt_map["app_id"].c_str() );
+  int num_putget_threads = atoi(opt_map["num_putget_threads"].c_str() );
   // 
-  DSTest ds_test(atoi(opt_map["num_dscnodes"].c_str()), atoi(opt_map["app_id"].c_str()),
-                 atoi(opt_map["num_putget_threads"].c_str()) );
+  DSTest ds_test(num_dscnodes, app_id, num_putget_threads);
+  // DSDriver ds_driver(num_dscnodes, app_id);
   
   if (opt_map["type"].compare("put_test") == 0) {
-    ds_test.run_multithreaded_put_test("put_thread");
+    ds_test.run_multithreaded_put_test("thread");
     
     std::cout << "Enter\n";
     getline(std::cin, temp);
   }
   else if (opt_map["type"].compare("get_test") == 0) {
-    ds_test.run_multithreaded_get_test("get_thread");
+    ds_test.run_multithreaded_get_test("thread");
     
     std::cout << "Enter\n";
     getline(std::cin, temp);

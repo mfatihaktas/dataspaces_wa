@@ -2,6 +2,7 @@
 
 #define MSG_SIZE 50
 #define MSG "test 1 test 2 test 3 test 4 test 5"
+#define RANDOM_INT_RANGE 100
 
 DSTest::DSTest(int num_dscnodes, int app_id, int num_putget_threads)
 : num_dscnodes(num_dscnodes),
@@ -56,11 +57,13 @@ void* DSTest::bst_repetitive_put(void* context)
 void* DSTest::repetitive_put()
 {
   struct pthread_arg_struct arg_struct = put_thread_arg_struct_vector.pop_back();
+  srand(time(NULL));
   
   std::string key = arg_struct.base_key + patch::to_string(arg_struct.thread_id);
   while (1) {
-    srand(time(NULL));
-    sleep(rand() % 5 + 1);
+    // float s_time = 3*(float)(rand() % RANDOM_INT_RANGE)/RANDOM_INT_RANGE;
+    // sleep(s_time);
+    // std::cout << "repetitive_put:: slept for " << s_time << "\n";
     
     if (ds_driver.sync_put(key.c_str(), ver, MSG_SIZE*sizeof(char), ndim, gdim_, lb_, ub_, data_) )
       std::cerr << "repetitive_put:: sync_put failed!\n";
@@ -77,11 +80,13 @@ void* DSTest::bst_repetitive_get(void* context)
 void* DSTest::repetitive_get()
 {
   struct pthread_arg_struct arg_struct = get_thread_arg_struct_vector.pop_back();
+  srand(time(NULL));
   
   std::string key = arg_struct.base_key + patch::to_string(arg_struct.thread_id);
   while (1) {
-    srand(time(NULL));
-    sleep(rand() % 5 + 1);
+    float s_time = 3*(float)(rand() % RANDOM_INT_RANGE)/RANDOM_INT_RANGE - (float)(rand() % RANDOM_INT_RANGE)/RANDOM_INT_RANGE;
+    sleep(s_time);
+    std::cout << "repetitive_get:: slept for " << s_time << "\n";
     
     char *data_to_get_ = (char*)malloc(MSG_SIZE*sizeof(char) );
     while ( ds_driver.get(key.c_str(), ver, MSG_SIZE*sizeof(char), ndim, gdim_, lb_, ub_, data_to_get_) ) {
