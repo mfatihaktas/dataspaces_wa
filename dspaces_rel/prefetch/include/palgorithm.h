@@ -1,5 +1,5 @@
-#ifndef LZPREFETCH_H
-#define LZPREFETCH_H
+#ifndef _PALGORITHM_H_
+#define _PALGORITHM_H_
 
 #include <iostream>
 #include <vector>
@@ -20,7 +20,61 @@
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/property_map/property_map.hpp>
 #include <boost/static_assert.hpp>
-/* definition of basic boost::graph properties */
+
+#include <boost/thread.hpp>
+
+namespace patch
+{
+  template <typename Tk, typename Tv>
+  struct thread_safe_map
+  {
+    private:
+      boost::mutex mutex;
+      typename std::map<Tk, Tv> map;
+      typename std::map<Tk, Tv>::iterator map_it;
+    public:
+      thread_safe_map() {};
+      ~thread_safe_map() {};
+      
+      Tv& operator[](Tk k) {
+        boost::lock_guard<boost::mutex> guard(this->mutex);
+        return map[k];
+      };
+      
+      int del(Tk k)
+      {
+        boost::lock_guard<boost::mutex> guard(this->mutex);
+        map_it = map.find(k);
+        map.erase(map_it);
+      };
+      
+      bool contains(Tk k)
+      {
+        boost::lock_guard<boost::mutex> guard(this->mutex);
+        return !(map.count(k) == 0);
+      };
+      
+      typename std::map<Tk, Tv>::iterator begin() 
+      {
+        boost::lock_guard<boost::mutex> guard(this->mutex);
+        return map.begin();
+      };
+      
+      typename std::map<Tk, Tv>::iterator end()
+      {
+        boost::lock_guard<boost::mutex> guard(this->mutex);
+        return map.end();
+      };
+      
+      size_t size()
+      {
+        boost::lock_guard<boost::mutex> guard(this->mutex);
+        return map.size();
+      };
+  };
+}
+
+// Definition of basic boost::graph properties
 enum vertex_properties_t { vertex_properties };
 enum edge_properties_t { edge_properties };
 namespace boost {
@@ -28,9 +82,9 @@ namespace boost {
   BOOST_INSTALL_PROPERTY(edge, properties);
 }
 
-/* the graph base class template */
+/*******************************************  Graph  **********************************************/
 template <typename VERTEX_PROPERTIES, typename EDGE_PROPERTIES>
-class Graph
+class Graph // The graph base class template
 {
   typedef boost::adjacency_list<
     boost::setS, // disallow parallel edges
@@ -39,7 +93,7 @@ class Graph
     boost::property<vertex_properties_t, VERTEX_PROPERTIES>,
     boost::property<edge_properties_t, EDGE_PROPERTIES>
   > GraphContainer;
-    /* a bunch of graph-specific typedefs */
+    // A bunch of graph-specific typedefs
     typedef typename boost::graph_traits<GraphContainer>::vertex_descriptor Vertex;
     typedef typename boost::graph_traits<GraphContainer>::edge_descriptor Edge;
   
@@ -64,9 +118,9 @@ class Graph
       // 
       LOG(INFO) << "Graph:: constructed.\n";
     }
-
-    virtual ~Graph() { LOG(INFO) << "Graph:: destructed.\n"; }
-    /****************************************  structural  ****************************************/
+    
+    ~Graph() { LOG(INFO) << "Graph:: destructed.\n"; }
+    // ----------------------------------------  structural  ---------------------------------------- //
     Vertex add_vertex(const VERTEX_PROPERTIES& prop)
     {
       Vertex v = boost::add_vertex(graph);
@@ -94,12 +148,17 @@ class Graph
       
       return e;
     }
-    /*******************************************  get/set  ****************************************/
+    // -----------------------------------------  get/set  -------------------------------------- //
     Vertex& get_cur() { return cur; }
+    
     void set_cur(Vertex v) { cur = v; }
+    
     Vertex& get_pre_cur() { return pre_cur; }
+    
     void set_pre_cur(Vertex v) { pre_cur = v; }
+    
     Vertex& get_root() { return root; }
+    
     void set_root(Vertex v) { root = v; }
     
     adjacency_iter_pair_t get_adj_vertices(const Vertex& v) const
@@ -112,25 +171,25 @@ class Graph
       typename boost::property_map<GraphContainer, vertex_properties_t>::type param = get(vertex_properties, graph);
       return param[v];
     }
-  
+    
     const VERTEX_PROPERTIES& properties(const Vertex& v) const
     {
       typename boost::property_map<GraphContainer, vertex_properties_t>::const_type param = get(vertex_properties, graph);
       return param[v];
     }
-  
+    
     EDGE_PROPERTIES& properties(const Edge& v)
     {
       typename boost::property_map<GraphContainer, edge_properties_t>::type param = get(edge_properties, graph);
       return param[v];
     }
-  
+    
     const EDGE_PROPERTIES& properties(const Edge& v) const
     {
       typename boost::property_map<GraphContainer, edge_properties_t>::const_type param = get(edge_properties, graph);
       return param[v];
     }
-    /********************************************  to_str  ****************************************/
+    // -------------------------------------------  to_str  ------------------------------------- //
     std::string to_str()
     {
       std::stringstream ss;
@@ -172,7 +231,7 @@ class Graph
         ss << "\t src.name= " << properties(boost::source(e, graph)).name << " --> " 
            << "targ.name= " << properties(boost::target(e, graph)).name << "\n";
       }
-
+    
       ss << "  adjacent vertices: \n\t";
       adjacency_iter_pair_t ai_pair = get_adj_vertices(v);
       for (adjacency_iter ai = ai_pair.first;  ai != ai_pair.second; ai++) {
@@ -211,6 +270,7 @@ class Graph
       
       return ss.str();
     }
+    
 };
 
 struct Vertex_Properties {
@@ -348,7 +408,6 @@ class ParseTree {
         move_cur(true, leaf_to_go);
       }
       else {
-        // if (with_context && cur_prop.level != max_level) {
         create__connect_leaf(cur_v, key);
         
         if (cur_prop.status != 'R') {
@@ -356,8 +415,6 @@ class ParseTree {
           if (!does_vertex_have_key_in_adjs(cur_v, BACK_TO_ROOT_LEAF_KEY, back_to_root_leaf) )
             create__connect_leaf(cur_v, BACK_TO_ROOT_LEAF_KEY);
         }
-        // }
-          
         move_cur(true, pt_graph.get_root() );
       }
       
@@ -428,7 +485,7 @@ class ParseTree {
       
       return 0;
     }
-    /**************************************  with_context  ****************************************/
+    // -------------------------------------  with_context  ------------------------------------- //
     std::string context_to_str()
     {
       std::stringstream ss;
@@ -532,7 +589,7 @@ class Cache {
     
     ~Cache() { LOG(INFO) << "Cache:: destructed."; }
     
-    int push_key(T key)
+    int push(T key)
     {
       if (cache.size() == cache_size)
         cache.pop_front();
@@ -543,13 +600,15 @@ class Cache {
     {
       return (std::find(cache.begin(), cache.end(), key) != cache.end() );
     }
+    
+    size_t size() { return cache.size(); }
 };
 
 class PrefetchAlgo {
   protected:
     size_t alphabet_size;
     char* alphabet_;
-    std::vector<char> access_seq_vector;
+    std::vector<char> access_vector;
     ParseTree parse_tree;
   public:
     PrefetchAlgo(size_t alphabet_size, char* alphabet_, bool with_context, size_t context_size);
@@ -559,7 +618,7 @@ class PrefetchAlgo {
     std::string access_seq_to_str();
     
     int add_access(char key);
-    // TODO: will be deprecated
+    // TODO: will be deDGE_pROPERTIESrecated
     int get_key_prob_map_for_prefetch(std::map<char, float>& key_prob_map);
     int get_to_prefetch(size_t& num_keys, char*& keys_);
     
@@ -578,4 +637,4 @@ class PPMAlgo : public PrefetchAlgo {
     ~PPMAlgo();
 };
 
-#endif // LZPREFETCH_H
+#endif // _PALGORITHM_H_

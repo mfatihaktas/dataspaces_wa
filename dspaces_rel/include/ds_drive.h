@@ -23,7 +23,7 @@ typedef boost::function<void(char*)> function_cb_on_get;
 class DSpacesDriver
 {
   public:
-    DSpacesDriver(int num_peers, int appid);
+    DSpacesDriver(int appid, int num_peers);
     DSpacesDriver(MPI_Comm mpi_comm, int num_peers, int appid);
     ~DSpacesDriver();
     int finalize();
@@ -50,7 +50,7 @@ class DSpacesDriver
     int refresh_last_lock_time();
   private:
     bool finalized;
-    int num_peers, appid;
+    int appid, num_peers;
     int nprocs, rank;
     MPI_Comm mpi_comm;
     

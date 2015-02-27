@@ -1,6 +1,6 @@
-#include "lzprefetch.h"
+#include "palgorithm.h"
 
-/******************************************  PrefetchAlgo  **********************************************/
+/***************************************  PrefetchAlgo  *******************************************/
 PrefetchAlgo::PrefetchAlgo(size_t alphabet_size, char* alphabet_, bool with_context, size_t context_size)
 : alphabet_size(alphabet_size),
   alphabet_(alphabet_),
@@ -15,7 +15,7 @@ std::string PrefetchAlgo::parse_tree_to_pstr() { return parse_tree.to_pretty_str
 std::string PrefetchAlgo::access_seq_to_str()
 {
   std::stringstream ss;
-  for (std::vector<char>::iterator it = access_seq_vector.begin(); it != access_seq_vector.end(); it++) {
+  for (std::vector<char>::iterator it = access_vector.begin(); it != access_vector.end(); it++) {
     ss << *it << ",";
   }
   ss << "\n";
@@ -25,7 +25,7 @@ std::string PrefetchAlgo::access_seq_to_str()
 
 int PrefetchAlgo::add_access(char key)
 {
-  access_seq_vector.push_back(key);
+  access_vector.push_back(key);
   parse_tree.add_access(key);
 }
 
@@ -65,7 +65,7 @@ int PrefetchAlgo::sim_prefetch_accuracy(float& hit_rate, size_t cache_size, std:
       if (cache.contains(key) )
         continue;
       
-      cache.push_key(key);
+      cache.push(key);
     }
     free(keys_);
   }

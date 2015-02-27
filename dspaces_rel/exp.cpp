@@ -163,11 +163,16 @@ int main(int argc , char **argv)
     std::string wa_gftp_lport(opt_map[(char*)"gftp_lport"] );
     std::string tmpfs_dir(opt_map[(char*)"tmpfs_dir"] );
     
-    RIManager ri_manager(opt_map[(char*)"dht_id"][0], num_dscnodes-1, app_id, 
-                         intf_to_ip(opt_map[(char*)"dht_lintf"]), atoi(opt_map[(char*)"dht_lport"]),
-                         opt_map[(char*)"ipeer_dht_laddr"], atoi(opt_map[(char*)"ipeer_dht_lport"]),
-                         trans_protocol, wa_laddr, wa_gftp_lintf, wa_gftp_lport, tmpfs_dir,
-                         wa_ib_lport_list);
+    size_t buffer_size = 2;
+    char alphabet_ = {'a', 'b'};
+    size_t alphabet_size = sizeof(alphabet_)/sizeof(*alphabet_);
+    size_t context_size = 2;
+    
+    RIManager ri_manager(app_id, num_dscnodes-1,
+                         opt_map[(char*)"dht_id"][0], intf_to_ip(opt_map[(char*)"dht_lintf"]), atoi(opt_map[(char*)"dht_lport"]), opt_map[(char*)"ipeer_dht_laddr"], atoi(opt_map[(char*)"ipeer_dht_lport"]),
+                         trans_protocol, wa_laddr, wa_gftp_lintf, wa_gftp_lport, 
+                         tmpfs_dir, wa_ib_lport_list,
+                         buffer_size, alphabet_, alphabet_size, context_size);
     //usleep(1*1000*1000);
     
     std::cout << "Enter\n";

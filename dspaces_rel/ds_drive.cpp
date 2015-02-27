@@ -4,10 +4,10 @@
 #define INTER_LOCK_TIME 1000*1000 //usec
 #define INTER_RI_GET_TIME 2*1000*1000 //usec
 
-DSpacesDriver::DSpacesDriver(int num_peers, int appid)
+DSpacesDriver::DSpacesDriver(int appid, int num_peers)
 : finalized(false),
-  num_peers(num_peers),
   appid(appid),
+  num_peers(num_peers),
   get_flag(false),
   get__flag(false),
   sync_put_flag(false)
@@ -19,7 +19,7 @@ DSpacesDriver::DSpacesDriver(int num_peers, int appid)
   mpi_comm = MPI_COMM_WORLD;
   
   init(num_peers, appid);
-  //
+  // 
   LOG(INFO) << "DSpacesDriver:: constructed.";
 }
 
@@ -37,7 +37,7 @@ DSpacesDriver::DSpacesDriver(MPI_Comm mpi_comm, int num_peers, int appid)
   this->get__flag = false;
   
   refresh_last_lock_time();
-  //
+  // 
   LOG(INFO) << "DSpacesDriver:: constructed.";
 }
 
@@ -60,11 +60,11 @@ DSpacesDriver::~DSpacesDriver()
 
 int DSpacesDriver::finalize()
 {
-  if (finalized){
+  if (finalized) {
     LOG(INFO) << "finalize:: already finalized!";
     return 2;
   }
-  try{
+  try {
     dspaces_finalize();
     MPI_Barrier(mpi_comm);
     MPI_Finalize();
@@ -75,7 +75,7 @@ int DSpacesDriver::finalize()
     LOG(ERROR) << "finalize:: Exception=" << ex.what();
     return 1;
   }
-  //
+  // 
   finalized = true;
   LOG(INFO) << "finalize:: finalized.";
   return 0;

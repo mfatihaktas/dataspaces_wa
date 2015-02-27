@@ -30,6 +30,7 @@
 #include "ds_drive.h"
 #include "dht_node.h"
 #include "packet.h"
+#include "prefetch.h"
 
 #include "ib_delivery.h"
 #ifdef _GRIDFTP_
@@ -42,57 +43,22 @@
 #define TEST_Z(x)  do { if (!(x)) printf("error: " #x " failed (returned zero or null)."); } while (0)
 #endif
 
-template <typename T>
-void free_all(int num, ...)
+namespace patch
 {
-  va_list arguments;                     // A place to store the list of arguments
-
-  va_start ( arguments, num );           // Initializing arguments to store all values after num
+  template <typename T>
+  void free_all(int num, ...)
+  {
+    va_list arguments;                     // A place to store the list of arguments
   
-  for ( int x = 0; x < num; x++ )        // Loop until all numbers are added
-    va_arg ( arguments, T* );
-  
-  va_end ( arguments );                  // Cleans up the list
+    va_start ( arguments, num );           // Initializing arguments to store all values after num
+    
+    for ( int x = 0; x < num; x++ )        // Loop until all numbers are added
+      va_arg ( arguments, T* );
+    
+    va_end ( arguments );                  // Cleans up the list
+  }
 }
 
-// //********************************   thread_safe_map  **********************************//
-// template <typename Tk, typename Tv>
-// struct thread_safe_map
-// {
-//   private:
-//     boost::mutex mutex;
-//     typename std::map<Tk, Tv> map;
-//     typename std::map<Tk, Tv>::iterator map_it;
-//   public:
-//     thread_safe_map() {};
-//     ~thread_safe_map() {};
-    
-//     Tv& operator[](Tk k) {
-//       boost::lock_guard<boost::mutex> guard(this->mutex);
-//       return map[k];
-//     };
-    
-//     int del(Tk k)
-//     {
-//       map_it = map.find(k);
-//       map.erase(map_it);
-//     };
-    
-//     bool contains(Tk k)
-//     {
-//       return !(map.count(k) == 0);
-//     };
-    
-//     typename std::map<Tk, Tv>::iterator begin()
-//     {
-//       return map.begin();
-//     };
-    
-//     typename std::map<Tk, Tv>::iterator end()
-//     {
-//       return map.end();
-//     };
-// };
 //************************************   syncer  **********************************//
 template <typename T>
 struct syncer{
@@ -101,14 +67,8 @@ struct syncer{
     thread_safe_map<T, boost::shared_ptr<boost::mutex> > point_m_map;
     thread_safe_map<T, int> point_numpeers_map;
   public:
-    syncer() 
-    {
-      // LOG(INFO) << "syncer:: constructed.";
-    };
-    ~syncer()
-    {
-      // LOG(INFO) << "syncer:: destructed.";
-    };
+    syncer() {LOG(INFO) << "syncer:: constructed."; };
+    ~syncer() { LOG(INFO) << "syncer:: destructed."; };
     int add_sync_point(T point, int num_peers)
     {
       if (point_cv_map.contains(point) ) {
@@ -179,9 +139,9 @@ class IMsgCoder
                        int size, int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_);
 };
 
-//Server side of blocking communication channel over dataspaces
-//Single server <-> many clients
-//used by RIManager
+// Server side of blocking communication channel over dataspaces
+// Single server <-> many clients
+// used by RIManager
 typedef boost::function<void(char*)> function_cb_on_recv;
 
 class BCServer
@@ -201,7 +161,7 @@ class BCServer
     boost::shared_ptr<DSpacesDriver> ds_driver_;
 };
 
-//Client side of blocking communication channel over dataspaces
+// Client side of blocking communication channel over dataspaces
 class BCClient
 {
   public:
@@ -218,10 +178,8 @@ class BCClient
     boost::shared_ptr<DSpacesDriver> ds_driver_;
 };
 
-//Remote Query Table
-//A key 'k' can only be in a single dataspaces
 typedef std::pair<std::string, unsigned int> key_ver_pair;
-struct RQTable
+struct RQTable //Remote Query Table
 {
   public:
     RQTable();
@@ -357,21 +315,52 @@ typedef std::pair<std::string, std::string> laddr_lport_pair;
 typedef std::pair<laddr_lport_pair, std::string> laddr_lport__tmpfsdir_pair;
 class RIManager
 {
+  private:
+    //ImpRem: Since handle_ core functions are called by client threads, properties must be thread-safe
+    int app_id, num_cnodes;
+    char id;
+    std::string wa_trans_protocol, wa_gftp_lintf, wa_laddr, wa_gftp_lport, tmpfs_dir; //RIManager needs these for gftpb process
+    IMsgCoder imsg_coder;
+    
+    boost::shared_ptr<DSpacesDriver> ds_driver_;
+    boost::shared_ptr<BCServer> bc_server_;
+    boost::shared_ptr<DHTNode> dht_node_;
+    boost::shared_ptr<RFPManager> rfp_manager_;
+    boost::shared_ptr<PBuffer> pbuffer_;
+    thread_safe_map<int, boost::shared_ptr<BCClient> > appid_bcclient_map; //TODO: prettify
+    
+    RQTable rq_table;
+    syncer<key_ver_pair> rq_syncer;
+    
+    thread_safe_map<key_ver_pair, laddr_lport__tmpfsdir_pair> key_ver___laddr_lport__tmpfsdir_map;
+    syncer<key_ver_pair> rp_syncer;
+    
+    RSTable rs_table;
+    syncer<key_ver_pair> handle_rp_syncer;
+    
+    syncer<key_ver_pair> b_get_syncer;
+    
+    syncer<key_ver_pair> rf_wa_get_syncer;
+    syncer<key_ver_pair> rp_wa_get_syncer;
+    // 
+    GFTPBTable gftpb_table;
+    syncer<char> gftpb_ping_syncer;
   public:
-    RIManager(char id, int num_cnodes, int app_id, 
-              char* dht_lip, int dht_lport, char* ipeer_dht_lip, int ipeer_dht_lport, 
+    RIManager(int app_id, int num_cnodes, 
+              char id, char* dht_lip, int dht_lport, char* ipeer_dht_lip, int ipeer_dht_lport, 
               std::string wa_trans_protocol, std::string wa_laddr, std::string wa_gftp_lintf, std::string wa_gftp_lport, 
-              std::string tmpfs_dir, std::list<std::string> wa_ib_lport_list);
+              std::string tmpfs_dir, std::list<std::string> wa_ib_lport_list,
+              size_t buffer_size, char* alphabet_, size_t alphabet_size, size_t context_size);
     ~RIManager();
     std::string to_str();
     
     void handle_app_req(char* app_req);
     void handle_get(bool blocking, int app_id, std::map<std::string, std::string> get_map);
-    void handle_r_get(bool blocking, int app_id, std::map<std::string, std::string> r_get_map,
+    void remote_get(bool blocking, int app_id, std::map<std::string, std::string> r_get_map,
                       std::map<std::string, std::string> reply_msg_map);
     void handle_put(std::map<std::string, std::string> put_map);
     void handle_possible_remote_places(std::string key, unsigned int ver);
-    // void handle_early_subscribe(int app_id, std::map<std::string, std::string> early_subs_map);
+    void handle_prefetch(std::map<std::string, std::string> prefetch_map);
     
     void handle_wamsg(std::map<std::string, std::string> wamsg_map);
     void handle_r_query(bool subscribe, std::map<std::string, std::string> r_query_map);
@@ -386,7 +375,6 @@ class RIManager
     void handle_gftpb_ping(std::map<std::string, std::string> gftpb_ping_map);
     void handle_gftpb_pong(std::map<std::string, std::string> gftpb_pong_map);
 #endif
-    
     int send_msg(char ds_id, char msg_type, std::map<std::string, std::string> msg_map);
     int broadcast_msg(char msg_type, std::map<std::string, std::string> msg_map);
     int bcast_rq_table();
@@ -396,34 +384,5 @@ class RIManager
     int remote_place(std::string key, unsigned int ver, char to_id);
     int remote_subscribe(std::string key, unsigned int ver);
     int gftpb_ping(char to_id); //blocks until pong is received
-  private:
-    //ImpRem: Since handle_ core functions are called by client threads, properties must be thread-safe
-    char id;
-    int num_cnodes, app_id;
-    std::string wa_trans_protocol, wa_gftp_lintf, wa_laddr, wa_gftp_lport, tmpfs_dir; //RIManager needs these for gftpb process
-    IMsgCoder imsg_coder;
-    
-    boost::shared_ptr<DSpacesDriver> ds_driver_;
-    boost::shared_ptr<BCServer> bc_server_;
-    boost::shared_ptr<DHTNode> dht_node_;
-    boost::shared_ptr<RFPManager> rfp_manager_;
-    thread_safe_map<int, boost::shared_ptr<BCClient> > appid_bcclient_map; //TODO: prettify
-    
-    RQTable rq_table;
-    syncer<key_ver_pair> rq_syncer;
-    
-    thread_safe_map<key_ver_pair, laddr_lport__tmpfsdir_pair> key_ver___laddr_lport__tmpfsdir_map;
-    syncer<key_ver_pair> rp_syncer;
-    
-    RSTable rs_table;
-    syncer<key_ver_pair> handle_rp_syncer;
-    
-    syncer<key_ver_pair> b_r_get_syncer;
-    
-    syncer<key_ver_pair> rf_wa_get_syncer;
-    syncer<key_ver_pair> rp_wa_get_syncer;
-    // 
-    GFTPBTable gftpb_table;
-    syncer<char> gftpb_ping_syncer;
 };
-#endif //end of _DSCLIENT_H
+#endif //end of _DSCLIENT_H_
