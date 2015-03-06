@@ -54,8 +54,8 @@ DSpacesDriver::~DSpacesDriver()
   // if (!finalized){
   //   finalize();
   // }
-  //
-  LOG(INFO) << "~DSpacesDriver:: destructed.";
+  // 
+  LOG(INFO) << "DSpacesDriver:: destructed.";
 }
 
 int DSpacesDriver::finalize()

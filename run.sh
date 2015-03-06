@@ -6,7 +6,7 @@ WA_LINTF="ib0" #"em2" #"ib0"
 
 RM1_DHT_LPORT="60000"
 RM2_DHT_LPORT="65000"
-RM2_DHT_LIP="192.168.100.120" #"192.168.100.120" #"192.168.100.120" "192.168.2.152" #
+RM1_DHT_LIP="192.168.2.151" #"192.168.100.120" #"192.168.100.120" #"192.168.100.120"
 
 GFTP_LPORT="62002"
 TMPFS_DIR="/dev/shm"
@@ -23,29 +23,21 @@ if [ $1  = 's' ]; then
   $DSPACES_BIN/./dataspaces_server --server $NUM_SNODES --cnodes $NUM_DSCNODES
   #$DSPACES_BIN/./dataspaces_server -s $NUM_SNODES -c $NUM_DSCNODES
 elif [ $1  = 'p' ]; then
-  GLOG_logtostderr=1 ./exp --type="put" --num_dscnodes=$NUM_DSCNODES --app_id=1
-  # if [ $2  = '1' ]; then
-  #   GLOG_logtostderr=1 ./exp --type="put" --num_dscnodes=$NUM_DSCNODES --app_id=1
-  # elif [ $2  = '2' ]; then
-  #   GLOG_logtostderr=1 ./exp --type="put" --num_dscnodes=$NUM_DSCNODES --app_id=1
-  # elif [ $2  = '22' ]; then
-  #   GLOG_logtostderr=1 ./exp --type="put_2" --num_dscnodes=$NUM_DSCNODES --app_id=1
-  # fi
+  GLOG_logtostderr=1 ./exp --type="put" --app_id=1 --num_dscnodes=$NUM_DSCNODES
+elif [ $1  = 'mp' ]; then
+  GLOG_logtostderr=1 ./ds_wa_test --type="mput" --app_id=1 --num_dscnodes=$NUM_DSCNODES --num_put_get=10
 elif [ $1  = 'g' ]; then
-  GLOG_logtostderr=1 ./exp --type="get" --num_dscnodes=$NUM_DSCNODES --app_id=1
-  # if [ $2  = '1' ]; then
-  #   GLOG_logtostderr=1 ./exp --type="get" --num_dscnodes=$NUM_DSCNODES --app_id=1
-  # elif [ $2  = '2' ]; then
-  #   GLOG_logtostderr=1 ./exp --type="get" --num_dscnodes=$NUM_DSCNODES --app_id=1
-  # fi
+  GLOG_logtostderr=1 ./exp --type="get" --app_id=1 --num_dscnodes=$NUM_DSCNODES
+elif [ $1  = 'mg' ]; then
+  GLOG_logtostderr=1 ./ds_wa_test --type="mget" --app_id=1 --num_dscnodes=$NUM_DSCNODES --num_put_get=10
 elif [ $1  = 'dp' ]; then
   export GLOG_logtostderr=1 
   export MALLOC_CHECK_=2
-  gdb --args ./exp --type="put" --num_dscnodes=$NUM_DSCNODES --app_id=1
+  gdb --args ./exp --type="put" --app_id=1 --num_dscnodes=$NUM_DSCNODES
 elif [ $1  = 'dg' ]; then
   export GLOG_logtostderr=1 
   export MALLOC_CHECK_=2
-  gdb --args ./exp --type="get" --num_dscnodes=$NUM_DSCNODES --app_id=1
+  gdb --args ./exp --type="get" --app_id=1 --num_dscnodes=$NUM_DSCNODES
 elif [ $1  = 'rm' ]; then
   if [ $TRANS_PROTOCOL  = 'g' ]; then
     echo "Starting Gftps..."
@@ -55,13 +47,13 @@ elif [ $1  = 'rm' ]; then
                           # -data-interface $WA_LINTF \
   fi
   if [ $2  = '1' ]; then
-    GLOG_logtostderr=1 ./exp --type="ri" --dht_id=$2 --num_dscnodes=$NUM_DSCNODES --app_id=10 \
-                             --dht_lintf=$DHT_LINTF --dht_lport=$RM1_DHT_LPORT --ipeer_dht_laddr=$RM2_DHT_LIP --ipeer_dht_lport=$RM2_DHT_LPORT \
+    GLOG_logtostderr=  ./exp --type="ri" --app_id=10 --num_dscnodes=$NUM_DSCNODES \
+                             --dht_id=$2 --dht_lintf=$DHT_LINTF --dht_lport=$RM1_DHT_LPORT \
                              --trans_protocol=$TRANS_PROTOCOL --wa_lintf=$WA_LINTF \
                              --gftp_lport=$GFTP_LPORT --tmpfs_dir=$TMPFS_DIR
   elif [ $2  = '2' ]; then
-    GLOG_logtostderr=  ./exp --type="ri" --dht_id=$2 --num_dscnodes=$NUM_DSCNODES --app_id=10 \
-                             --dht_lintf=$DHT_LINTF --dht_lport=$RM2_DHT_LPORT \
+    GLOG_logtostderr=1 ./exp --type="ri" --app_id=10 --num_dscnodes=$NUM_DSCNODES \
+                             --dht_id=$2 --dht_lintf=$DHT_LINTF --dht_lport=$RM2_DHT_LPORT --ipeer_dht_laddr=$RM1_DHT_LIP --ipeer_dht_lport=$RM1_DHT_LPORT \
                              --trans_protocol=$TRANS_PROTOCOL --wa_lintf=$WA_LINTF \
                              --gftp_lport=$GFTP_LPORT --tmpfs_dir=$TMPFS_DIR
   fi
@@ -80,14 +72,14 @@ elif [ $1  = 'drm' ]; then
   fi
   if [ $2  = '1' ]; then
     export GLOG_logtostderr=1
-    gdb --args ./exp --type="ri" --dht_id=$2 --num_dscnodes=$NUM_DSCNODES --app_id=10 \
-                     --dht_lintf=$DHT_LINTF --dht_lport=$RM1_DHT_LPORT --ipeer_dht_laddr=$RM2_DHT_LIP --ipeer_dht_lport=$RM2_DHT_LPORT \
+    gdb --args ./exp --type="ri" --dht_id=$2 --app_id=1 --num_dscnodes=$NUM_DSCNODES0 \
+                     --dht_lintf=$DHT_LINTF --dht_lport=$RM1_DHT_LPORT \
                      --trans_protocol=$TRANS_PROTOCOL --wa_lintf=$WA_LINTF \
                      --gftp_lport=$GFTP_LPORT --tmpfs_dir=$TMPFS_DIR
   elif [ $2  = '2' ]; then
     export GLOG_logtostderr=1 
-    gdb --args ./exp --type="ri" --dht_id=$2 --num_dscnodes=$NUM_DSCNODES --app_id=10 \
-                     --dht_lintf=$DHT_LINTF --dht_lport=$RM2_DHT_LPORT \
+    gdb --args ./exp --type="ri" --app_id=10 --num_dscnodes=$NUM_DSCNODES \
+                     --dht_id=$2 --dht_lintf=$DHT_LINTF --dht_lport=$RM2_DHT_LPORT --ipeer_dht_laddr=$RM1_DHT_LIP --ipeer_dht_lport=$RM1_DHT_LPORT \
                      --trans_protocol=$TRANS_PROTOCOL --wa_lintf=$WA_LINTF \
                      --gftp_lport=$GFTP_LPORT --tmpfs_dir=$TMPFS_DIR
   fi

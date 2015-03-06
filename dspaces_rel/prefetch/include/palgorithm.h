@@ -589,11 +589,30 @@ class Cache {
     
     ~Cache() { LOG(INFO) << "Cache:: destructed."; }
     
+    std::string to_str()
+    {
+      std::stringstream ss;
+      ss << "cache_size= " << boost::lexical_cast<std::string>(cache_size) << "\n";
+      ss << "cache_content= ";
+      typename std::deque<T>::iterator it;
+      for (it = cache.begin(); it != cache.end(); it++) {
+        ss << "<" << it->first << "," << it->second << ">, ";
+      }
+      ss << "\n";
+      
+      return ss.str();
+    }
+    
     int push(T key)
     {
+      if (contains(key) ) {
+        return 1;
+      }
+      
       if (cache.size() == cache_size)
         cache.pop_front();
       cache.push_back(key);
+      return 0;
     }
     
     bool contains(T key)

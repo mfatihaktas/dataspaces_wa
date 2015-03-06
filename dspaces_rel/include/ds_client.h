@@ -1,7 +1,7 @@
 #ifndef _DSCLIENT_H_
 #define _DSCLIENT_H_
 
-#define _GRIDFTP_
+// #define _GRIDFTP_
 
 #include "mpi.h"
 #include <stdio.h>
@@ -18,7 +18,7 @@
 #include <boost/function.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
-//for boost serialization
+// for boost serialization
 #include <fstream>
 #include <sstream>
 #include <boost/serialization/serialization.hpp>
@@ -43,25 +43,10 @@
 #define TEST_Z(x)  do { if (!(x)) printf("error: " #x " failed (returned zero or null)."); } while (0)
 #endif
 
-namespace patch
-{
-  template <typename T>
-  void free_all(int num, ...)
-  {
-    va_list arguments;                     // A place to store the list of arguments
-  
-    va_start ( arguments, num );           // Initializing arguments to store all values after num
-    
-    for ( int x = 0; x < num; x++ )        // Loop until all numbers are added
-      va_arg ( arguments, T* );
-    
-    va_end ( arguments );                  // Cleans up the list
-  }
-}
-
 //************************************   syncer  **********************************//
 template <typename T>
-struct syncer{
+struct syncer 
+{
   private:
     thread_safe_map<T, boost::shared_ptr<boost::condition_variable> > point_cv_map;
     thread_safe_map<T, boost::shared_ptr<boost::mutex> > point_m_map;
@@ -342,6 +327,7 @@ class RIManager
     
     syncer<key_ver_pair> rf_wa_get_syncer;
     syncer<key_ver_pair> rp_wa_get_syncer;
+    
     // 
     GFTPBTable gftpb_table;
     syncer<char> gftpb_ping_syncer;
@@ -356,8 +342,7 @@ class RIManager
     
     void handle_app_req(char* app_req);
     void handle_get(bool blocking, int app_id, std::map<std::string, std::string> get_map);
-    void remote_get(bool blocking, int app_id, std::map<std::string, std::string> r_get_map,
-                      std::map<std::string, std::string> reply_msg_map);
+    int remote_get(char ds_id, std::map<std::string, std::string> r_get_map);
     void handle_put(std::map<std::string, std::string> put_map);
     void handle_possible_remote_places(std::string key, unsigned int ver);
     void handle_prefetch(std::map<std::string, std::string> prefetch_map);

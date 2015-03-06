@@ -1,4 +1,4 @@
-#include "palgorithm.h"
+#include "prefetch.h"
 
 #include <iostream>
 #include <string>
@@ -9,6 +9,20 @@
 
 #include <boost/lexical_cast.hpp>
 #include <glog/logging.h>
+
+namespace patch
+{
+  std::string str_str_map_to_str(std::map<std::string, std::string> str_map)
+  {
+    std::stringstream ss;
+    for (std::map<std::string, std::string>::const_iterator it = str_map.begin(); 
+         it != str_map.end(); it++){
+      ss << "\t" << it->first << ": " << it->second << "\n";
+    }
+    
+    return ss.str();
+  }
+}
 
 std::map<char*, char*> parse_opts(int argc, char** argv)
 {
@@ -53,22 +67,8 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
   return opt_map;
 }
 
-int main(int argc , char **argv)
+void palgo_test()
 {
-  std::string temp;
-  google::InitGoogleLogging("exp");
-  // 
-  // std::map<float, char> den_map;
-  // den_map[0.5] = 'a';
-  // den_map[0.5] = 'b';
-  // den_map[0.5] = 'c';
-  
-  // std::cout << "den_map: \n";
-  // for (std::map<float, char>::iterator it = den_map.begin(); it != den_map.end(); ++it) {
-  //   std::cout << it->first << " => " << it->second << '\n';
-  // }
-  
-  std::map<char*, char*> opt_map = parse_opts(argc, argv);
   LZAlgo lz_algo(2, NULL);
   PPMAlgo ppm_algo(2, NULL, 2);
   // char access_seq_arr[] = {'a',  'a','a',  'a','b',  'a','b','a',  'a','b','b',  'b'};
@@ -84,7 +84,7 @@ int main(int argc , char **argv)
   // lz_algo.sim_prefetch_accuracy(hit_rate, 2, access_seq_v);
   // LOG(INFO) << "main:: lz_algo; hit_rate= " << hit_rate;
   ppm_algo.sim_prefetch_accuracy(hit_rate, 1, access_seq_v, accuracy_seq_v);
-  LOG(INFO) << "main:: ppm_algo; hit_rate= " << hit_rate;
+  std::cout << "ppm_algo; hit_rate= " << hit_rate;
   std::cout << "access_seq= \n";
   std::cout << ppm_algo.access_seq_to_str();
   std::cout << "accuracy_seq= \n";
@@ -121,6 +121,53 @@ int main(int argc , char **argv)
   // }
   // std::cout << "parse_tree= \n" << lz_algo.parse_tree_to_pstr();
   // std::cout << "parse_tree= \n" << ppm_algo.parse_tree_to_pstr();
+}
+
+void handle_prefetch(std::map<std::string, std::string> pmap)
+{
+  LOG(INFO) << "handle_prefetch:: pmap= \n" << patch::str_str_map_to_str(pmap);
+}
+
+void prefetch_test()
+{
+  size_t buffer_size = 2;
+  char alphabet_[] = {'a', 'b'};
+  int alphabet_size = sizeof(alphabet_)/sizeof(*alphabet_);
+  size_t context_size = 2;
+  
+  PBuffer pbuffer(buffer_size, boost::bind(handle_prefetch, _1), 
+                  alphabet_, alphabet_size, context_size);
+  
+  std::string keys_[] = {"k1", "k2", "k3", "k4", "k5", "k6", "k7", "k8", "k9", "k10"};
+  size_t keys_size = 10;
+  for (int i = 0; i < keys_size; i++) {
+    pbuffer.reg_key_ver__pkey_pver_pair(keys_[i], 0);
+  }
+  
+  int num_access = 7;
+  for (int i = 0; i < num_access; i++) {
+    pbuffer.add_access(keys_[i], 0);
+  }
+  
+  std::cout << "pbuffer= " << pbuffer.to_str();
+  
+  // size_t num_keys = 1;
+  // std::vector<key_ver_pair> key_ver_vector;
+  // pbuffer.get_to_prefetch(num_keys, key_ver_vector);
+  // std::cout << "get_to_prefetch returns:\n";
+  // for (int i = 0; i < num_keys; i++) {
+  //   std::cout << "<key= " << key_ver_vector[i].first << ", ver= " << key_ver_vector[i].second << "> \n";
+  // }
+}
+
+int main(int argc , char **argv)
+{
+  std::string temp;
+  google::InitGoogleLogging("exp");
+  // 
+  std::map<char*, char*> opt_map = parse_opts(argc, argv);
+  // palgo_test();
+  prefetch_test();
   
   return 0;
 }

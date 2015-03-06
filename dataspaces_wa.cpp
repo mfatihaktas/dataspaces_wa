@@ -1,6 +1,17 @@
 #include "dataspaces_wa.h"
 
-//***********************************  RMessenger  ********************************//
+std::string str_str_map_to_str(std::map<std::string, std::string> str_map)
+{
+  std::stringstream ss;
+  for (std::map<std::string, std::string>::const_iterator it = str_map.begin(); 
+      it != str_map.end(); it++) {
+    ss << "\t" << it->first << ": " << it->second << "\n";
+  }
+  
+  return ss.str();
+}
+
+/*******************************************  RMessenger  *****************************************/
 RMessenger::RMessenger()
 {
   // 
@@ -47,7 +58,7 @@ std::map<std::string, std::string> RMessenger::gen_i_msg(std::string msg_type, i
   return msg_map;
 }
 
-//********************************  WADspacesDriver  ******************************//
+/***************************************  WADspacesDriver  ****************************************/
 WADspacesDriver::WADspacesDriver(int app_id, int num_local_peers)
 : app_id(app_id),
   num_local_peers(num_local_peers),
@@ -72,14 +83,6 @@ WADspacesDriver::~WADspacesDriver()
 {
   // 
   LOG(INFO) << "WADspacesDriver:: destructed.";
-}
-
-void WADspacesDriver::print_str_map(std::map<std::string, std::string> str_map)
-{
-  for (std::map<std::string, std::string>::const_iterator it=str_map.begin(); 
-       it!=str_map.end(); ++it){
-    std::cout << "\t" << it->first << ":" << it->second << "\n";
-  }
 }
 
 int WADspacesDriver::put(std::string data_type, std::string key, unsigned int ver, int size,
@@ -131,7 +134,7 @@ int WADspacesDriver::get(bool blocking, std::string data_type, std::string key, 
   rg_syncer.del_sync_point(kv);
   
   if (key_ver__dsid_map[kv] == '?') {
-    LOG(INFO) << "get:: <key= " << key << ", ver= " << ver << "> does not exist";
+    LOG(INFO) << "get:: <key= " << key << ", ver= " << ver << "> does not exist.";
     key_ver__dsid_map.del(kv);
     return 1;
   }
@@ -150,8 +153,7 @@ int WADspacesDriver::handle_ri_reply(char* ri_reply)
 {
   std::map<std::string, std::string> ri_reply_map = imsg_coder.decode(ri_reply);
   
-  LOG(INFO) << "handle_ri_reply:: ri_reply_map=";
-  print_str_map(ri_reply_map);
+  LOG(INFO) << "handle_ri_reply:: ri_reply_map= \n" << str_str_map_to_str(ri_reply_map);
   
   std::string key = ri_reply_map["key"];
   unsigned int ver = boost::lexical_cast<unsigned int>(ri_reply_map["ver"]);

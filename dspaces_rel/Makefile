@@ -46,19 +46,23 @@ GFTPTRANS_ODIR = $(GFTPTRANS_DIR)/obj
 GFTPTRANS_OBJS = $(GFTPTRANS_ODIR)/gftp_delivery.o $(GFTPTRANS_ODIR)/gftp_drive.o $(GFTPTRANS_ODIR)/gridftp_api_drive.o $(GFTPTRANS_ODIR)/io_drive.o
 endif
 
-DSPACESREL_INC = -I$(DSPACESREL_DIR)/include -I$(OVERLAYNET_DIR)/include -I$(IBTRANS_DIR)/include -I$(GFTPTRANS_DIR)/include
+PREFETCH_DIR = $(DSPACESREL_DIR)/prefetch
+PREFETCH_ODIR = $(PREFETCH_DIR)/obj
+PREFETCH_OBJS = $(PREFETCH_ODIR)/prefetch.o $(PREFETCH_ODIR)/palgorithm.o
+
+DSPACESREL_INC = -I$(DSPACESREL_DIR)/include -I$(OVERLAYNET_DIR)/include -I$(IBTRANS_DIR)/include -I$(GFTPTRANS_DIR)/include -I$(PREFETCH_DIR)/include
 # 
 INC = $(DSPACES_INC) $(GLOG_INC) $(BOOST_INC) $(DSPACESREL_INC) $(GFTP_INC)
 LIB = $(DSPACES_LIB) $(GLOG_LIB) $(BOOST_LIB) $(IBVERBS_LIB) $(MPI_LIB) $(GFTP_LIB)
 
-IDIR = include
 ODIR = obj
+OBJS = $(ODIR)/ds_client.o $(ODIR)/ds_drive.o $(OVERLAYNET_OBJS) $(IBTRANS_OBJS) $(GFTPTRANS_OBJS) $(PREFETCH_OBJS)
 
 .PHONY: all lclean clean submake_ibtrans_dir submake_overlaynet_dir submake_gftptrans_dir
 
 APPS := exp
 
-all: submake_overlaynet_dir submake_ibtrans_dir submake_gftptrans_dir ${APPS}
+all: submake_overlaynet_dir submake_ibtrans_dir submake_gftptrans_dir submake_prefetch_dir ${APPS}
 
 submake_overlaynet_dir:
 	make -C $(OVERLAYNET_DIR)
@@ -71,7 +75,10 @@ ifdef GRIDFTP
 	make -C $(GFTPTRANS_DIR)
 endif
 
-exp: $(ODIR)/exp.o $(ODIR)/ds_client.o $(ODIR)/ds_drive.o $(OVERLAYNET_OBJS) $(IBTRANS_OBJS) $(GFTPTRANS_OBJS)
+submake_prefetch_dir:
+	make -C $(PREFETCH_DIR)
+	
+exp: $(ODIR)/exp.o $(OBJS)
 	$(MPICPP) -g -o $@ $^ $(INC) $(LIB)
 
 $(ODIR)/%.o: %.cpp
@@ -86,5 +93,6 @@ clean:
 ifdef GRIDFTP
 	make -C $(GFTPTRANS_DIR) clean
 endif
+	make -C $(PREFETCH_DIR) clean
 	rm -f $(ODIR)/*.o ${APPS} 
 	

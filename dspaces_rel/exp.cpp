@@ -1,6 +1,6 @@
 #include "ds_client.h"
 
-//for intf_to_ip
+// for intf_to_ip
 #include <cstring>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -9,7 +9,7 @@
 #include <net/if.h>
 #include <unistd.h>
 #include <arpa/inet.h>
-//
+// 
 #include <iostream>
 #include <string>
 #include <stdio.h>
@@ -25,22 +25,22 @@ char* intf_to_ip(const char* intf)
 {
   int fd;
   struct ifreq ifr;
-  //
+  // 
   fd = socket(AF_INET, SOCK_DGRAM, 0);
-  //Type of address to retrieve - IPv4 IP address
+  // Type of address to retrieve - IPv4 IP address
   ifr.ifr_addr.sa_family = AF_INET;
-  //Copy the interface name in the ifreq structure
+  // Copy the interface name in the ifreq structure
   std::memcpy(ifr.ifr_name , intf , IFNAMSIZ-1);
   ioctl(fd, SIOCGIFADDR, &ifr);
   close(fd);
-  //
+  // 
   return inet_ntoa(( (struct sockaddr_in *)&ifr.ifr_addr )->sin_addr);
 }
 
 std::map<char*, char*> parse_opts(int argc, char** argv)
 {
   std::map<char*, char*> opt_map;
-  //
+  // 
   int c;
   
   static struct option long_options[] =
@@ -164,7 +164,7 @@ int main(int argc , char **argv)
     std::string tmpfs_dir(opt_map[(char*)"tmpfs_dir"] );
     
     size_t buffer_size = 2;
-    char alphabet_ = {'a', 'b'};
+    char alphabet_[] = {'a', 'b'};
     size_t alphabet_size = sizeof(alphabet_)/sizeof(*alphabet_);
     size_t context_size = 2;
     
@@ -172,7 +172,7 @@ int main(int argc , char **argv)
                          opt_map[(char*)"dht_id"][0], intf_to_ip(opt_map[(char*)"dht_lintf"]), atoi(opt_map[(char*)"dht_lport"]), opt_map[(char*)"ipeer_dht_laddr"], atoi(opt_map[(char*)"ipeer_dht_lport"]),
                          trans_protocol, wa_laddr, wa_gftp_lintf, wa_gftp_lport, 
                          tmpfs_dir, wa_ib_lport_list,
-                         buffer_size, alphabet_, alphabet_size, context_size);
+                         buffer_size, alphabet_, alphabet_size, context_size );
     //usleep(1*1000*1000);
     
     std::cout << "Enter\n";

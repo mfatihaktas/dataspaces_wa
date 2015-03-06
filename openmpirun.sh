@@ -10,7 +10,7 @@ NUM_DSPACESWA_CLIENT_LIST=( 1 1 )
 DSPACES_BIN_DIR=$DSPACES_DIR/bin                                                                    # DSPACES_DIR, DSPACESWA_DIR is set with ". run.sh init ?"
 DSPACESWA_BIN_DIR=$DSPACESWA_DIR
 
-TRANS_PROTOCOL="g"                                                                                  #i:infiniband, g:gridftp
+TRANS_PROTOCOL="i"                                                                                  #i:infiniband, g:gridftp
 TMPFS_DIR="/cac/u01/mfa51/Desktop/dataspaces_wa/cache"
 #
 RI_MANAGER_APP_ID_LIST=( 10 10 )                                                                    #$((NUM_DSPACES_CNODES+1))
@@ -18,8 +18,8 @@ RI_MANAGER_CONTROL_LINTF_LIST=( "em2" "em2" )                                   
 RI_MANAGER_CONTROL_LPORT_LIST=( "60000" "61000" )
 RI_MANAGER_CONTROL_CONNECT_TO_LADDR_LIST=( "" "192.168.2.151" )
 RI_MANAGER_CONTROL_CONNECT_TO_LPORT_LIST=( "" "60000" )
-# RI_MANAGER_DATA_LINTF_LIST=( "ib0" "ib0" )                                                          #"em2"
-RI_MANAGER_DATA_LINTF_LIST=( "em2" "em2" )
+RI_MANAGER_DATA_LINTF_LIST=( "ib0" "ib0" )                                                          #"em2"
+# RI_MANAGER_DATA_LINTF_LIST=( "em2" "em2" )
 RI_MANAGER_DATA_GFTP_LPORT_LIST=( "60100" "61100" )
 RI_MANAGER_DATA_TMPFS_DIR_LIST=( $TMPFS_DIR"/put" $TMPFS_DIR"/get" )
 
@@ -48,9 +48,10 @@ if [ $1  = 'r' ]; then
     sleep 1
     
     $MPIRUN -npernode 1 -x LD_LIBRARY_PATH -x GLOG_logtostderr ${RI_MANAGER_NODE_LIST[$2]} \
-      $DSPACESWA_BIN_DIR/exp --type="ri" --dht_id=$2 \
-                             --num_dscnodes=$((${NUM_DSPACESWA_CLIENT_LIST[$2]}+1)) \
+      $DSPACESWA_BIN_DIR/exp --type="ri" \
                              --app_id=${RI_MANAGER_APP_ID_LIST[$2]} \
+                             --num_dscnodes=$((${NUM_DSPACESWA_CLIENT_LIST[$2]}+1)) \
+                             --dht_id=$2 \
                              --dht_lintf=${RI_MANAGER_CONTROL_LINTF_LIST[$2]} \
                              --dht_lport=${RI_MANAGER_CONTROL_LPORT_LIST[$2]} \
                              --ipeer_dht_laddr=${RI_MANAGER_CONTROL_CONNECT_TO_LADDR_LIST[$2]} \
@@ -59,7 +60,6 @@ if [ $1  = 'r' ]; then
                              --wa_lintf=${RI_MANAGER_DATA_LINTF_LIST[$2]} \
                              --gftp_lport=${RI_MANAGER_DATA_GFTP_LPORT_LIST[$2]} \
                              --tmpfs_dir=${RI_MANAGER_DATA_TMPFS_DIR_LIST[$2]} &
-    #intelmpi
   fi
 elif [ $1  = 'k' ]; then
   for i in "${DS_NODE_LIST[@]}"
