@@ -30,18 +30,70 @@
 #include "ds_drive.h"
 #include "dht_node.h"
 #include "packet.h"
-#include "prefetch.h"
 
 #include "ib_delivery.h"
 #ifdef _GRIDFTP_
 #include "gftp_delivery.h"
-#endif
+#endif // _GRIDFTP_
 
-#ifndef _TEST_MACROS_
-#define _TEST_MACROS_
-#define TEST_NZ(x) do { int r=x; if (r){ printf("error: " #x " failed (returned non-zero=%d).", r); } } while (0)
-#define TEST_Z(x)  do { if (!(x)) printf("error: " #x " failed (returned zero or null)."); } while (0)
-#endif
+#include "prefetch.h"
+#include "profiler.h"
+
+// #ifndef _TEST_MACROS_
+// #define _TEST_MACROS_
+// #define TEST_NZ(x) do { int r=x; if (r){ printf("error: " #x " failed (returned non-zero=%d).", r); } } while (0)
+// #define TEST_Z(x)  do { if (!(x)) printf("error: " #x " failed (returned zero or null)."); } while (0)
+// #endif
+
+//********************************   thread_safe_vector  **********************************//
+template <typename T>
+struct thread_safe_vector
+{
+  private:
+    boost::mutex mutex;
+    typename std::vector<T> vector;
+    typename std::vector<T>::iterator it;
+  public:
+    thread_safe_vector() {};
+    ~thread_safe_vector() {};
+    
+    T& operator[](int i) {
+      boost::lock_guard<boost::mutex> guard(this->mutex);
+      return vector[i];
+    };
+    
+    void push_back(T e)
+    {
+      boost::lock_guard<boost::mutex> guard(this->mutex);
+      vector.push_back(e);
+    }
+    
+    int del(T e)
+    {
+      boost::lock_guard<boost::mutex> guard(this->mutex);
+      it = std::find(vector.begin(), vector.end(), e);
+      vector.erase(it);
+      return 0;
+    };
+    
+    bool contains(T e)
+    {
+      boost::lock_guard<boost::mutex> guard(this->mutex);
+      return (std::find(vector.begin(), vector.end(), e) != vector.end() );
+    };
+    
+    typename std::vector<T>::iterator begin()
+    {
+      boost::lock_guard<boost::mutex> guard(this->mutex);
+      return vector.begin();
+    };
+    
+    typename std::vector<T>::iterator end()
+    {
+      boost::lock_guard<boost::mutex> guard(this->mutex);
+      return vector.end();
+    };
+};
 
 //************************************   syncer  **********************************//
 template <typename T>
@@ -253,7 +305,7 @@ class RFPManager //Remote Fetch & Place Manager
                          std::string gftps_laddr, std::string gftps_lport, std::string gftps_tmpfs_dir);
     int gftpfile_read__ds_put(std::string key, unsigned int ver,
                               int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
-#endif
+#endif // _GRIDFTP_
     std::string get_lport();
     int ib_receive__ds_put(std::string ib_laddr, std::string ib_lport,
                            std::string key, unsigned int ver, std::string data_type,
@@ -269,7 +321,7 @@ class RFPManager //Remote Fetch & Place Manager
     boost::shared_ptr<IBDDManager> ibdd_manager_;
 #ifdef _GRIDFTP_
     boost::shared_ptr<GFTPDDManager> gftpdd_manager_;
-#endif
+#endif // _GRIDFTP_
     std::map<key_ver_pair, size_t> key_ver__recvedsize_map;
     std::map<key_ver_pair, void*> key_ver__data_map;
 };
@@ -328,6 +380,10 @@ class RIManager
     syncer<key_ver_pair> rf_wa_get_syncer;
     syncer<key_ver_pair> rp_wa_get_syncer;
     
+    thread_safe_vector<key_ver_pair> key_ver_being_fetched_vector;
+    syncer<key_ver_pair> being_fetched_syncer;
+    
+    TProfiler<key_ver_pair> remote_get_time_profiler;
     // 
     GFTPBTable gftpb_table;
     syncer<char> gftpb_ping_syncer;
@@ -336,7 +392,7 @@ class RIManager
               char id, char* dht_lip, int dht_lport, char* ipeer_dht_lip, int ipeer_dht_lport, 
               std::string wa_trans_protocol, std::string wa_laddr, std::string wa_gftp_lintf, std::string wa_gftp_lport, 
               std::string tmpfs_dir, std::list<std::string> wa_ib_lport_list,
-              size_t buffer_size, char* alphabet_, size_t alphabet_size, size_t context_size);
+              bool with_prefetch, size_t buffer_size, char* alphabet_, size_t alphabet_size, size_t context_size);
     ~RIManager();
     std::string to_str();
     
@@ -359,7 +415,7 @@ class RIManager
     void handle_gftpput_done(std::map<std::string, std::string> gftpput_done_map);
     void handle_gftpb_ping(std::map<std::string, std::string> gftpb_ping_map);
     void handle_gftpb_pong(std::map<std::string, std::string> gftpb_pong_map);
-#endif
+#endif // _GRIDFTP_
     int send_msg(char ds_id, char msg_type, std::map<std::string, std::string> msg_map);
     int broadcast_msg(char msg_type, std::map<std::string, std::string> msg_map);
     int bcast_rq_table();

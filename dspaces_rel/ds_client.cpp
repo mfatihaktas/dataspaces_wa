@@ -30,13 +30,13 @@ namespace patch
     std::cout << "\n";
     
     std::cout << "lb=";
-    for (int i=0; i<ndim; i++){
+    for (int i=0; i<ndim; i++) {
       std::cout << "\t" << lb[i] << ", ";
     }
     std::cout << "\n";
     
     std::cout << "ub=";
-    for (int i=0; i<ndim; i++){
+    for (int i=0; i<ndim; i++) {
       std::cout << "\t" << ub[i] << ", ";
     }
     std::cout << "\n";
@@ -263,7 +263,7 @@ int BCClient::send(std::map<std::string, std::string> msg_map)
     return 1;
   }
   
-  //1 dimensional char array
+  // 1 dimensional char array
   // uint64_t gdim = 0; //max_msg_size;
   // uint64_t lb = 0;
   // uint64_t ub = 0; //max_msg_size-1;
@@ -283,9 +283,9 @@ int BCClient::send(std::map<std::string, std::string> msg_map)
   }
   // sync_put(const char* var_name, unsigned int ver, int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
   int result = ds_driver_->sync_put(comm_var_name.c_str(), 0, max_msg_size*sizeof(char), 3, gdim_, lb_, ub_, data_);
-  //int result = ds_driver_->sync_put_without_lock(comm_var_name.c_str(), 1, sizeof(char), 1, &gdim, &lb, &ub, data_);
+  // int result = ds_driver_->sync_put_without_lock(comm_var_name.c_str(), 1, sizeof(char), 1, &gdim, &lb, &ub, data_);
   free(data_);
-  //ds_driver_->lock_on_write(comm_var_name.c_str() );
+  // ds_driver_->lock_on_write(comm_var_name.c_str() );
   patch::free_all<uint64_t*>(3, gdim_, lb_, ub_);
   
   return result;
@@ -572,6 +572,7 @@ std::map<std::string, std::string> RQTable::to_unmarked_str_str_map()
       str_str_map["gdim_" + counter_str] = gdim;
       str_str_map["lb_" + counter_str] = lb;
       str_str_map["ub_" + counter_str] = ub;
+      str_str_map["data_type_" + counter_str] = key_ver__data_type_map[kv];
       
       counter++;
     }
@@ -683,7 +684,7 @@ RFPManager::RFPManager(std::string wa_trans_protocol, boost::shared_ptr<DSpacesD
     // boost::make_shared<boost::thread>(&RFPManager::init_gftp_server, this);
     // boost::thread(&RFPManager::init_gftp_server, this);
   }
-#endif
+#endif // _GRIDFTP_
   LOG(INFO) << "RFPManager:: constructed.";
 }
 
@@ -704,7 +705,7 @@ int RFPManager::wa_get(std::string laddr, std::string lport, std::string tmpfs_d
     // return gftp_get__ds_put(laddr, lport, tmpfs_dir, key, ver, size, ndim, gdim_, lb_, ub_);
     return gftpfile_read__ds_put(key, ver, size, ndim, gdim_, lb_, ub_);
   }
-#endif
+#endif // _GRIDFTP_
   else {
     LOG(ERROR) << "wa_get:: unknown wa_trans_protocol= " << wa_trans_protocol;
     return 1;
@@ -721,7 +722,7 @@ int RFPManager::wa_put(std::string key, unsigned int ver, std::string data_type,
   else if (wa_trans_protocol.compare(GRIDFTP) == 0) {
     return ds_get__gftp_put(key, ver, size, ndim, gdim_, lb_, ub_, laddr, lport, tmpfs_dir);
   }
-#endif
+#endif // _GRIDFTP_
   else {
     LOG(ERROR) << "wa_put:: unknown wa_trans_protocol= " << wa_trans_protocol;
     return 1;
@@ -810,7 +811,7 @@ int RFPManager::gftpfile_read__ds_put(std::string key, unsigned int ver,
   LOG(INFO) << "gftpfile_read__ds_put:: done for <key= " << key << ", ver= " << ver << ">.";
   return 0;
 }
-#endif
+#endif // _GRIDFTP_
 
 std::string RFPManager::get_lport()
 {
@@ -821,7 +822,7 @@ std::string RFPManager::get_lport()
   else if (wa_trans_protocol.compare(GRIDFTP) == 0) {
     return boost::lexical_cast<std::string>(gftpdd_manager_->get_gftps_port() );
   }
-#endif
+#endif // _GRIDFTP_
   return "";
 }
 
@@ -935,7 +936,7 @@ RIManager::RIManager(int app_id, int num_cnodes,
                      char id, char* dht_lip, int dht_lport, char* ipeer_dht_lip, int ipeer_dht_lport,
                      std::string wa_trans_protocol, std::string wa_laddr, std::string wa_gftp_lintf, std::string wa_gftp_lport, 
                      std::string tmpfs_dir, std::list<std::string> wa_ib_lport_list,
-                     size_t buffer_size, char* alphabet_, size_t alphabet_size, size_t context_size)
+                     bool with_prefetch, size_t buffer_size, char* alphabet_, size_t alphabet_size, size_t context_size)
 : app_id(app_id),
   num_cnodes(num_cnodes),
   id(id),
@@ -951,7 +952,7 @@ RIManager::RIManager(int app_id, int num_cnodes,
                           boost::bind(&RIManager::handle_app_req, this, _1),
                           ds_driver_) ),
   rfp_manager_(new RFPManager(wa_trans_protocol, ds_driver_, wa_ib_lport_list, wa_gftp_lintf, wa_gftp_lport, tmpfs_dir) ),
-  pbuffer_(new PBuffer(buffer_size, boost::bind(&RIManager::handle_prefetch, this, _1), 
+  pbuffer_(new PBuffer(with_prefetch, buffer_size, boost::bind(&RIManager::handle_prefetch, this, _1), 
                        alphabet_, alphabet_size, context_size) )
 {
   bc_server_->init_listen_all();
@@ -961,7 +962,7 @@ RIManager::RIManager(int app_id, int num_cnodes,
 
 RIManager::~RIManager()
 {
-  //dht_node_->close();
+  // dht_node_->close();
   // 
   LOG(INFO) << "RIManager:: destructed.";
 }
@@ -975,7 +976,7 @@ std::string RIManager::to_str()
   ss << "\t wa_trans_protocol= " << wa_trans_protocol << "\n";
   ss << "\t wa_laddr= " << wa_laddr << "\n";
   ss << "\t wa_gftp_lport= " << wa_gftp_lport << "\n";
-  ss << "\t dht_node=\n" << dht_node_->to_str() << "\n";
+  ss << "\t dht_node= \n" << dht_node_->to_str() << "\n";
   
   return ss.str();
 }
@@ -1070,15 +1071,25 @@ void RIManager::handle_get(bool blocking, int app_id, std::map<std::string, std:
       LOG(INFO) << "handle_get:: <key= " << key << ", ver= " << ver << "> exists in local ds_id= " << ds_id;
     }
     else {
-      LOG(INFO) << "handle_get:: <key= " << key << ", ver= " << ver << "> exists in remote ds_id= " << ds_id;
       // TODO: <key, ver> may be being prefetched, should check for it.
-      
-      if (remote_get(ds_id, get_map) ) {
-        LOG(ERROR) << "handle_get:: remote_get failed for <key= " << key << ", ver= " << ver << ">.";
-        ds_id = '?';
+      key_ver_pair kv = std::make_pair(key, ver);
+      if (key_ver_being_fetched_vector.contains(kv) ) {
+        LOG(INFO) << "handle_get:: <key= " << key << ", ver= " << ver << "> is being fetched right now...";
+        being_fetched_syncer.add_sync_point(kv, 1);
+        being_fetched_syncer.wait(kv);
+        being_fetched_syncer.del_sync_point(kv);
+        
+        ds_id = this->id;
       }
       else {
-        ds_id = this->id;
+        LOG(INFO) << "handle_get:: <key= " << key << ", ver= " << ver << "> exists in remote ds_id= " << ds_id;
+        if (remote_get(ds_id, get_map) ) {
+          LOG(ERROR) << "handle_get:: remote_get failed for <key= " << key << ", ver= " << ver << ">.";
+          ds_id = '?';
+        }
+        else {
+          ds_id = this->id;
+        }
       }
     }
   }
@@ -1103,12 +1114,22 @@ int RIManager::remote_get(char ds_id, std::map<std::string, std::string> r_get_m
     LOG(ERROR) << "remote_get:: decode_msg_map failed!";
     return 1;
   }
-   
+  
+  key_ver_pair kv = std::make_pair(key, ver);
+  remote_get_time_profiler.add_event(kv, ("<" + key + ", " + boost::lexical_cast<std::string>(ver) + ">") );
+  key_ver_being_fetched_vector.push_back(kv);
+  
   if (remote_fetch(ds_id, r_get_map) ) {
     LOG(INFO) << "remote_get:: remote_fetch failed!";
+    key_ver_being_fetched_vector.del(kv);
     return 1;
   }
+  
   rq_table.add_key_ver(key, ver, data_type, this->id, size, ndim, gdim_, lb_, ub_);
+  key_ver_being_fetched_vector.del(kv);
+  being_fetched_syncer.notify(kv);
+  remote_get_time_profiler.end_event(kv);
+  LOG(INFO) << "remote_get:: remote_get_time_profiler= \n" << remote_get_time_profiler.to_str();
   // 
   patch::free_all<uint64_t*>(3, gdim_, lb_, ub_);
   LOG(INFO) << "remote_get:: done for <key= " << r_get_map["key"] << ", ver= " << r_get_map["ver"] << ">.";
@@ -1132,6 +1153,7 @@ void RIManager::handle_put(std::map<std::string, std::string> put_map)
     
     // patch::debug_print(key, ver, size, ndim, gdim_, lb_, ub_, NULL);
     rq_table.put_key_ver(key, ver, data_type, this->id, size, ndim, gdim_, lb_, ub_);
+    
     if (bcast_rq_table() ) {
       LOG(ERROR) << "handle_l_put:: bcast_rq_table failed!";
     }
@@ -1145,7 +1167,7 @@ void RIManager::handle_put(std::map<std::string, std::string> put_map)
 
 void RIManager::handle_prefetch(std::map<std::string, std::string> prefetch_map)
 {
-  LOG(INFO) << "handle_prefetch:: started for <key= " << prefetch_map["key"] << ", ver= " << prefetch_map["ver"] << ">.";
+  LOG(INFO) << "HANDLE_PREFETCH:: STARTED for <key= " << prefetch_map["key"] << ", ver= " << prefetch_map["ver"] << ">.";
   
   std::string key = prefetch_map["key"];
   unsigned int ver = boost::lexical_cast<unsigned int>(prefetch_map["ver"]);
@@ -1164,17 +1186,28 @@ void RIManager::handle_prefetch(std::map<std::string, std::string> prefetch_map)
     LOG(INFO) << "handle_prefetch:: <key= " << key << ", ver= " << ver << "> ALREADY exists in local ds_id= " << ds_id;
   }
   else {
-    LOG(INFO) << "handle_prefetch:: <key= " << key << ", ver= " << ver << "> exists in remote ds_id= " << ds_id;
-    std::map<std::string, std::string> r_g_map;
-    if (imsg_coder.encode_msg_map(r_g_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_) ) {
-      LOG(ERROR) << "handle_prefetch:: imsg_coder.encode_msg_map failed! for <key= " << key << ", ver= " << ver << ">.";
+    // TODO: <key, ver> may be being fetched, should check for it. This can happen when 
+    // there is no gap between remote gets done by the user app.
+    key_ver_pair kv = std::make_pair(key, ver);
+    if (key_ver_being_fetched_vector.contains(kv) ) {
+      LOG(INFO) << "handle_get:: <key= " << key << ", ver= " << ver << "> is being fetched right now...";
+      being_fetched_syncer.add_sync_point(kv, 1);
+      being_fetched_syncer.wait(kv);
+      being_fetched_syncer.del_sync_point(kv);
     }
-    if (remote_get(ds_id, r_g_map) ) {
-      LOG(ERROR) << "handle_prefetch:: remote_get failed for <key= " << key << ", ver= " << ver << ">.";
+    else {
+      LOG(INFO) << "handle_prefetch:: <key= " << key << ", ver= " << ver << "> exists in remote ds_id= " << ds_id;
+      std::map<std::string, std::string> r_g_map;
+      if (imsg_coder.encode_msg_map(r_g_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_) ) {
+        LOG(ERROR) << "handle_prefetch:: imsg_coder.encode_msg_map failed! for <key= " << key << ", ver= " << ver << ">.";
+      }
+      if (remote_get(ds_id, r_g_map) ) {
+        LOG(ERROR) << "handle_prefetch:: remote_get failed for <key= " << key << ", ver= " << ver << ">.";
+      }
     }
   }
   // 
-  LOG(INFO) << "handle_prefetch:: done for <key= " << key << ", ver= " << ver << ">.";
+  LOG(INFO) << "HANDLE_PREFETCH:: DONE for <key= " << key << ", ver= " << ver << ">.";
 }
 
 // -------------------------------------------  support  ---------------------------------------- //
@@ -1297,7 +1330,7 @@ int RIManager::remote_fetch(char ds_id, std::map<std::string, std::string> r_fet
     }
     patch::free_all<uint64_t*>(3, gdim_, lb_, ub_);
   }
-#endif
+#endif // _GRIDFTP_
   // 
   LOG(INFO) << "remote_fetch:: done.";
   return 0;
@@ -1460,7 +1493,7 @@ void RIManager::handle_wamsg(std::map<std::string, std::string> wamsg_map)
   else if (type.compare(GFTPB_PONG) == 0) {
     handle_gftpb_pong(wamsg_map);
   }
-#endif
+#endif // _GRIDFTP_
   else{
     LOG(ERROR) << "handle_wamsg:: unknown type= " << type;
   }
@@ -1556,7 +1589,7 @@ void RIManager::handle_r_fetch(std::map<std::string, std::string> r_fetch_map)
       return;
     }
   }
-#endif
+#endif // _GRIDFTP_
   // 
   patch::free_all<uint64_t*>(3, gdim_, lb_, ub_);
   LOG(INFO) << "handle_r_fetch:: done.";
@@ -1742,4 +1775,4 @@ void RIManager::handle_gftpb_pong(std::map<std::string, std::string> gftpb_pong_
   // 
   LOG(INFO) << "handle_gftpb_pong:: done.";
 }
-#endif
+#endif // _GRIDFTP_

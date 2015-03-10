@@ -27,7 +27,7 @@ namespace patch
 std::map<char*, char*> parse_opts(int argc, char** argv)
 {
   std::map<char*, char*> opt_map;
-  //
+  // 
   int c;
   
   static struct option long_options[] =
@@ -41,7 +41,7 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
     int option_index = 0;
     c = getopt_long (argc, argv, "s", long_options, &option_index);
 
-    if (c == -1) //Detect the end of the options.
+    if (c == -1) // Detect the end of the options.
       break;
     
     switch (c)
@@ -59,7 +59,7 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
       printf ("%s ", argv[optind++]);
     putchar ('\n');
   }
-  //
+  // 
   std::cout << "opt_map=\n";
   for (std::map<char*, char*>::iterator it = opt_map.begin(); it != opt_map.end(); ++it) {
     std::cout << it->first << " => " << it->second << '\n';
@@ -135,7 +135,7 @@ void prefetch_test()
   int alphabet_size = sizeof(alphabet_)/sizeof(*alphabet_);
   size_t context_size = 2;
   
-  PBuffer pbuffer(buffer_size, boost::bind(handle_prefetch, _1), 
+  PBuffer pbuffer(true, buffer_size, boost::bind(handle_prefetch, _1), 
                   alphabet_, alphabet_size, context_size);
   
   std::string keys_[] = {"k1", "k2", "k3", "k4", "k5", "k6", "k7", "k8", "k9", "k10"};

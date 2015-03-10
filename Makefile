@@ -51,7 +51,11 @@ PREFETCH_DIR = $(DSPACESREL_DIR)/prefetch
 PREFETCH_ODIR = $(PREFETCH_DIR)/obj
 PREFETCH_OBJS = $(PREFETCH_ODIR)/prefetch.o $(PREFETCH_ODIR)/palgorithm.o
 
-DSPACESWA_INC = -I$(DSPACESWA_DIR)/include -I$(DSPACESREL_DIR)/include -I$(OVERLAYNET_DIR)/include -I$(IBTRANS_DIR)/include -I$(GFTPTRANS_DIR)/include -I$(PREFETCH_DIR)/include
+PROFILER_DIR = $(DSPACESREL_DIR)/profiler
+PROFILER_ODIR = $(PROFILER_DIR)/obj
+PROFILER_OBJS = $(PROFILER_ODIR)/profiler.o
+
+DSPACESWA_INC = -I$(DSPACESWA_DIR)/include -I$(DSPACESREL_DIR)/include -I$(OVERLAYNET_DIR)/include -I$(IBTRANS_DIR)/include -I$(GFTPTRANS_DIR)/include -I$(PREFETCH_DIR)/include -I$(PROFILER_DIR)/include
 DSPACESWA_LIB = $(DSPACESWA_DIR)/lib
 
 IBVERBS_LIB = -L/usr/lib64 -libverbs
@@ -60,7 +64,7 @@ INC = $(DSPACES_INC) $(GLOG_INC) $(BOOST_INC) $(DSPACESWA_INC) $(GFTP_INC)
 LIB = $(DSPACES_LIB) $(GLOG_LIB) $(BOOST_LIB) $(IBVERBS_LIB) $(MPI_LIB) $(GFTP_LIB)
 
 ODIR = obj
-OBJS = $(ODIR)/dataspaces_wa.o $(DSPACESREL_OBJS) $(OVERLAYNET_OBJS) $(IBTRANS_OBJS) $(GFTPTRANS_OBJS) $(PREFETCH_OBJS)
+OBJS = $(ODIR)/dataspaces_wa.o $(DSPACESREL_OBJS) $(OVERLAYNET_OBJS) $(IBTRANS_OBJS) $(GFTPTRANS_OBJS) $(PREFETCH_OBJS) $(PROFILER_OBJS)
 LIBDIR = lib
 
 .PHONY: lib all lclean clean submake_dspaces_rel
@@ -90,7 +94,7 @@ lib:
 	ar -cvq $(DSPACESWA_LIB)/libdspaces_wa.a $(OBJS)
 
 lclean:
-	rm -f $(ODIR)/*.o
+	rm -f $(ODIR)/*.o ${APPS}
 
 clean:
 	make -C $(DSPACESREL_DIR) clean

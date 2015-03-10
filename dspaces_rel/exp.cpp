@@ -172,8 +172,8 @@ int main(int argc , char **argv)
                          opt_map[(char*)"dht_id"][0], intf_to_ip(opt_map[(char*)"dht_lintf"]), atoi(opt_map[(char*)"dht_lport"]), opt_map[(char*)"ipeer_dht_laddr"], atoi(opt_map[(char*)"ipeer_dht_lport"]),
                          trans_protocol, wa_laddr, wa_gftp_lintf, wa_gftp_lport, 
                          tmpfs_dir, wa_ib_lport_list,
-                         buffer_size, alphabet_, alphabet_size, context_size );
-    //usleep(1*1000*1000);
+                         true, buffer_size, alphabet_, alphabet_size, context_size );
+    // usleep(1*1000*1000);
     
     std::cout << "Enter\n";
     getline(std::cin, temp);

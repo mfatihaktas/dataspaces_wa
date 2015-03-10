@@ -341,11 +341,11 @@ int main(int argc , char **argv)
                          opt_map[(char*)"dht_id"][0], dht_laddr, atoi(opt_map[(char*)"dht_lport"]), opt_map[(char*)"ipeer_dht_laddr"], atoi( (opt_map[(char*)"ipeer_dht_lport"]) ),
                          trans_protocol, wa_laddr_str, wa_lintf, wa_gftp_lport, 
                          tmpfs_dir, wa_ib_lport_list,
-                         buffer_size, alphabet_, alphabet_size, context_size );
+                         true, buffer_size, alphabet_, alphabet_size, context_size );
     
-    syncer<char> dummy_syncer;
-    dummy_syncer.add_sync_point('d', 1);
-    dummy_syncer.wait('d');
+    // syncer<char> dummy_syncer;
+    // dummy_syncer.add_sync_point('d', 1);
+    // dummy_syncer.wait('d');
     
     std::cout << "Enter\n";
     getline(std::cin, temp);

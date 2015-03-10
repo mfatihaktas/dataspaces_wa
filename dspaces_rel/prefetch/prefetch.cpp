@@ -1,8 +1,9 @@
 #include "prefetch.h"
 
-PBuffer::PBuffer(size_t buffer_size, func_handle_prefetch_cb _handle_prefetch_cb, 
+PBuffer::PBuffer(bool with_prefetch, size_t buffer_size, func_handle_prefetch_cb _handle_prefetch_cb, 
                 char* alphabet_, size_t alphabet_size, size_t context_size)
-: buffer_size(buffer_size),
+: with_prefetch(with_prefetch),
+  buffer_size(buffer_size),
   _handle_prefetch_cb(_handle_prefetch_cb),
   alphabet_(alphabet_),
   alphabet_size(alphabet_size),
@@ -18,6 +19,8 @@ PBuffer::~PBuffer() { LOG(INFO) << "PBuffer:: destructed."; }
 std::string PBuffer::to_str()
 {
   std::stringstream ss;
+  ss << "with_prefetch= " << boost::lexical_cast<std::string>(with_prefetch) << "\n";
+  ss << "buffer_size= " << boost::lexical_cast<std::string>(buffer_size) << "\n";
   ss << "alphabet_size= " << boost::lexical_cast<std::string>(alphabet_size) << "\n";
   ss << "alphabet_= ";
   for (int i = 0; i < alphabet_size; i++) {
@@ -96,7 +99,9 @@ int PBuffer::prefetch()
     handle_prefetch_map["key"] = it->first;
     handle_prefetch_map["ver"] = boost::lexical_cast<std::string>(it->second);
     
-    _handle_prefetch_cb(handle_prefetch_map);
+    if (with_prefetch)
+      _handle_prefetch_cb(handle_prefetch_map);
+      
     push(it->first, it->second);
   }
 }
@@ -109,7 +114,8 @@ int PBuffer::get_to_prefetch(size_t& num_keys, std::vector<key_ver_pair>& key_ve
   for (int i = 0; i < num_keys; i++) {
     pkey_pver_pair pkpv = std::make_pair(pkeys_[i], pver);
     if (!pkey_pver__key_ver_map.contains(pkpv) ) {
-      LOG(WARNING) << "get_to_prefetch:: palgo.get_to_prefetch returned a pkvp which is not registered!";
+      LOG(WARNING) << "get_to_prefetch:: palgo.get_to_prefetch returned not registered!;" 
+                   << "<pkey= " << pkeys_[i] << ", " << "pver= " << pver << ">.";
     }
     else {
       key_ver_vector.push_back(pkey_pver__key_ver_map[pkpv] );

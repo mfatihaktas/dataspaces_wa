@@ -122,7 +122,7 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
         opt_map[(char*)"app_id"] = optarg;
         break;
       case 3:
-        opt_map[(char*)"num_put_get"] = optarg;
+        opt_map[(char*)"num_putget"] = optarg;
         break;
       default:
         break;
@@ -141,7 +141,7 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
   return opt_map;
 }
 
-#define TEST_SIZE 300
+#define TEST_SIZE 512
 #define TEST_NDIM 3
 #define TEST_DATASIZE pow(TEST_SIZE, TEST_NDIM)
 #define TEST_VER 0
@@ -164,8 +164,9 @@ void multi_get_test(int num_gets, std::string base_var_name, WADspacesDriver& wa
   
   for (int i = 0; i < num_gets; i++) {
     std::string var_name = base_var_name + "_" + boost::lexical_cast<std::string>(i);
+    std::cout << "\n"; // to see better on terminal
     if (wads_driver.get(true, "int", var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_) ) {
-      LOG(ERROR) << "get_test:: wads_driver.get failed for var_name= " << var_name;
+      LOG(ERROR) << "multi_get_test:: wads_driver.get failed for var_name= " << var_name;
       return;
     }
   }
@@ -197,8 +198,9 @@ void multi_put_test(int num_puts, std::string base_var_name, WADspacesDriver& wa
   
   for (int i = 0; i < num_puts; i++) {
     std::string var_name = base_var_name + "_" + boost::lexical_cast<std::string>(i);
+    std::cout << "\n"; // to see better on terminal
     if (wads_driver.put("int", var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_) ) {
-      LOG(ERROR) << "get_test:: wads_driver.put failed for var_name= " << var_name;
+      LOG(ERROR) << "multi_put_test:: wads_driver.put failed for var_name= " << var_name;
       return;
     }
   }
@@ -217,16 +219,19 @@ int main(int argc , char **argv)
   
   int num_dscnodes = boost::lexical_cast<int>(opt_map[(char*)"num_dscnodes"]);
   int app_id = boost::lexical_cast<int>(opt_map[(char*)"app_id"]);
-  int num_put_get = boost::lexical_cast<int>(opt_map[(char*)"num_put_get"]);
+  int num_putget = boost::lexical_cast<int>(opt_map[(char*)"num_putget"]);
   
+  TProfiler<std::string> tprofiler;
   if (strcmp(opt_map[(char*)"type"], (char*)"mput") == 0) {
     WADspacesDriver wads_driver(app_id, num_dscnodes-1);
     
     std::cout << "Enter for multi_put_test...\n";
     getline(std::cin, temp);
     
-    multi_put_test(num_put_get, "dummy", wads_driver);
-    // multi_put_test(num_put_get, "dummy2", wads_driver);
+    tprofiler.add_event("multi_put_test", "multi_put_test");
+    multi_put_test(num_putget, "dummy", wads_driver);
+    tprofiler.end_event("multi_put_test");
+    // multi_put_test(num_putget, "dummy2", wads_driver);
     
     std::cout << "Enter\n";
     getline(std::cin, temp);
@@ -237,7 +242,9 @@ int main(int argc , char **argv)
     std::cout << "Enter for multi_get_test...\n";
     getline(std::cin, temp);
     
-    multi_get_test(num_put_get, "dummy", wads_driver);
+    tprofiler.add_event("multi_get_test", "multi_get_test");
+    multi_get_test(num_putget, "dummy", wads_driver);
+    tprofiler.end_event("multi_get_test");
     
     std::cout << "Enter\n";
     getline(std::cin, temp);
@@ -246,5 +253,7 @@ int main(int argc , char **argv)
     LOG(ERROR) << "main:: unknown type= " << opt_map[(char*)"type"];
   }
   
+  std::cout << "main:: tprofiler= \n" << tprofiler.to_str();
+  // 
   return 0;
 }

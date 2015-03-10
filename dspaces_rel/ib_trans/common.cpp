@@ -18,7 +18,7 @@ Connector::Connector(pre_conn_cb_fn pc, connect_cb_fn conn, completion_cb_fn com
 
 Connector::~Connector()
 {
-  //
+  // 
   LOG(INFO) << "Connector:: destructed.";
 }
 
@@ -130,7 +130,7 @@ void Connector::event_loop(struct rdma_event_channel *ec, int exit_on_disconnect
 
 void* Connector::poll_cq(void *ctx)
 {
-  //struct ibv_cq *cq = ((struct context*)ctx)->cq;
+  // struct ibv_cq *cq = ((struct context*)ctx)->cq;
   struct ibv_cq *cq;
   struct ibv_wc wc;
 

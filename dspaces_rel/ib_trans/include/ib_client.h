@@ -26,7 +26,7 @@ class IBClient{
     data_type* data_;
     
     int num_srs;
-    //
+    // 
     boost::shared_ptr<Connector> connector_;
   public:
     IBClient(const char* s_laddr, const char* s_lport, 
@@ -43,12 +43,12 @@ class IBClient{
         NULL )
       )
     {
-      //
+      // 
       LOG(INFO) << "IBClient:: constructed:\n" << to_str();
     };
     ~IBClient()
     {
-      //
+      // 
       LOG(INFO) << "IBClient:: destructed.";
     };
     

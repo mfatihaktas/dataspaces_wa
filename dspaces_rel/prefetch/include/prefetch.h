@@ -11,6 +11,7 @@ typedef std::pair<char, unsigned int> pkey_pver_pair;
 
 class PBuffer { //Prefetching Buffer
   private:
+    bool with_prefetch;
     size_t buffer_size;
     func_handle_prefetch_cb _handle_prefetch_cb;
     char* alphabet_;
@@ -26,7 +27,7 @@ class PBuffer { //Prefetching Buffer
     PPMAlgo palgo;
     
   public:
-    PBuffer(size_t buffer_size, func_handle_prefetch_cb _handle_prefetch_cb, 
+    PBuffer(bool with_prefetch, size_t buffer_size, func_handle_prefetch_cb _handle_prefetch_cb, 
             char* alphabet_, size_t alphabet_size, size_t context_size);
     ~PBuffer();
     std::string to_str();

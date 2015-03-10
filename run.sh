@@ -21,15 +21,15 @@ NUM_DSCNODES=$((1+1)) #+1: RIManager
 
 if [ $1  = 's' ]; then
   $DSPACES_BIN/./dataspaces_server --server $NUM_SNODES --cnodes $NUM_DSCNODES
-  #$DSPACES_BIN/./dataspaces_server -s $NUM_SNODES -c $NUM_DSCNODES
+  # $DSPACES_BIN/./dataspaces_server -s $NUM_SNODES -c $NUM_DSCNODES
 elif [ $1  = 'p' ]; then
   GLOG_logtostderr=1 ./exp --type="put" --app_id=1 --num_dscnodes=$NUM_DSCNODES
 elif [ $1  = 'mp' ]; then
-  GLOG_logtostderr=1 ./ds_wa_test --type="mput" --app_id=1 --num_dscnodes=$NUM_DSCNODES --num_put_get=10
+  GLOG_logtostderr=1 ./ds_wa_test --type="mput" --app_id=1 --num_dscnodes=$NUM_DSCNODES --num_putget=10
 elif [ $1  = 'g' ]; then
   GLOG_logtostderr=1 ./exp --type="get" --app_id=1 --num_dscnodes=$NUM_DSCNODES
 elif [ $1  = 'mg' ]; then
-  GLOG_logtostderr=1 ./ds_wa_test --type="mget" --app_id=1 --num_dscnodes=$NUM_DSCNODES --num_put_get=10
+  GLOG_logtostderr=1 ./ds_wa_test --type="mget" --app_id=1 --num_dscnodes=$NUM_DSCNODES --num_putget=10
 elif [ $1  = 'dp' ]; then
   export GLOG_logtostderr=1 
   export MALLOC_CHECK_=2
@@ -72,8 +72,8 @@ elif [ $1  = 'drm' ]; then
   fi
   if [ $2  = '1' ]; then
     export GLOG_logtostderr=1
-    gdb --args ./exp --type="ri" --dht_id=$2 --app_id=1 --num_dscnodes=$NUM_DSCNODES0 \
-                     --dht_lintf=$DHT_LINTF --dht_lport=$RM1_DHT_LPORT \
+    gdb --args ./exp --type="ri" --app_id=1 --num_dscnodes=$NUM_DSCNODES \
+                     --dht_id=$2 --dht_lintf=$DHT_LINTF --dht_lport=$RM1_DHT_LPORT \
                      --trans_protocol=$TRANS_PROTOCOL --wa_lintf=$WA_LINTF \
                      --gftp_lport=$GFTP_LPORT --tmpfs_dir=$TMPFS_DIR
   elif [ $2  = '2' ]; then

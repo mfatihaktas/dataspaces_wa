@@ -39,6 +39,7 @@ struct thread_safe_map
     
     int del(Tk k)
     {
+      boost::lock_guard<boost::mutex> guard(this->mutex);
       map_it = map.find(k);
       map.erase(map_it);
       return 0;
@@ -46,16 +47,19 @@ struct thread_safe_map
     
     bool contains(Tk k)
     {
+      boost::lock_guard<boost::mutex> guard(this->mutex);
       return !(map.count(k) == 0);
     };
     
     typename std::map<Tk, Tv>::iterator begin()
     {
+      boost::lock_guard<boost::mutex> guard(this->mutex);
       return map.begin();
     };
     
     typename std::map<Tk, Tv>::iterator end()
     {
+      boost::lock_guard<boost::mutex> guard(this->mutex);
       return map.end();
     };
 };
