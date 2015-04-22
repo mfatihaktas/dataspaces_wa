@@ -9,15 +9,15 @@
 #include <glog/logging.h>
 
 #include "profiler.h"
-#include "patch_sim.h"
+#include "patch_pre.h"
 
 
 template <typename T>
 class Space {
-  private:
     boost::mutex mutex;
-    patch_sim::thread_safe_vector<T> space;
-    patch_sim::syncer<T> putget_syncer;
+  private:
+    patch_pre::thread_safe_vector<T> space;
+    patch_pre::syncer<T> putget_syncer;
   public:
     Space() { LOG(INFO) << "Space:: constructed."; }
     ~Space() { LOG(INFO) << "Space:: destructed."; }
@@ -34,6 +34,7 @@ class Space {
       return ss.str();
     }
     
+    // Note: syncer does not work properly when the add_sync_point and notify are called with 0 time interval
     int put(T kv)
     {
       if (contains(kv) ) {

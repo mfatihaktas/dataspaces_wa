@@ -1,11 +1,13 @@
-#ifndef _PATCH_SIM_H_
-#define _PATCH_SIM_H_
+#ifndef _PATCH_PRE_H_
+#define _PATCH_PRE_H_
 
 #include <vector>
 #include <map>
 #include <boost/thread.hpp>
+#include <boost/lexical_cast.hpp>
+#include <glog/logging.h>
 
-namespace patch_sim {
+namespace patch_pre {
   template<typename T>
   std::string vector_to_str(std::vector<T> v)
   {
@@ -181,4 +183,4 @@ namespace patch_sim {
   };
 }
 
-#endif // _PATCH_SIM_H_
+#endif // _PATCH_PRE_H_

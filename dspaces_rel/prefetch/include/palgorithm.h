@@ -12,7 +12,7 @@
 #include <algorithm>                 // std::for_each
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/adjacency_list.hpp>
-#include <boost/graph/dijkstra_shortest_paths.hpp>
+// #include <boost/graph/dijkstra_shortest_paths.hpp>
 
 #include <boost/config.hpp>
 #include <boost/version.hpp>
@@ -20,59 +20,6 @@
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/property_map/property_map.hpp>
 #include <boost/static_assert.hpp>
-
-#include <boost/thread.hpp>
-
-namespace patch
-{
-  template <typename Tk, typename Tv>
-  struct thread_safe_map
-  {
-    private:
-      boost::mutex mutex;
-      typename std::map<Tk, Tv> map;
-      typename std::map<Tk, Tv>::iterator map_it;
-    public:
-      thread_safe_map() {};
-      ~thread_safe_map() {};
-      
-      Tv& operator[](Tk k) {
-        boost::lock_guard<boost::mutex> guard(this->mutex);
-        return map[k];
-      };
-      
-      int del(Tk k)
-      {
-        boost::lock_guard<boost::mutex> guard(this->mutex);
-        map_it = map.find(k);
-        map.erase(map_it);
-      };
-      
-      bool contains(Tk k)
-      {
-        boost::lock_guard<boost::mutex> guard(this->mutex);
-        return !(map.count(k) == 0);
-      };
-      
-      typename std::map<Tk, Tv>::iterator begin() 
-      {
-        boost::lock_guard<boost::mutex> guard(this->mutex);
-        return map.begin();
-      };
-      
-      typename std::map<Tk, Tv>::iterator end()
-      {
-        boost::lock_guard<boost::mutex> guard(this->mutex);
-        return map.end();
-      };
-      
-      size_t size()
-      {
-        boost::lock_guard<boost::mutex> guard(this->mutex);
-        return map.size();
-      };
-  };
-}
 
 // Definition of basic boost::graph properties
 enum vertex_properties_t { vertex_properties };
@@ -289,6 +236,7 @@ struct Edge_Properties {
 #define BACK_TO_ROOT_LEAF_KEY '#'
 #define RANDOM_INT_RANGE 1000
 
+template <typename KEY_T>
 class ParseTree {
   typedef boost::adjacency_list<
     boost::setS, // disallow parallel edges
@@ -308,7 +256,7 @@ class ParseTree {
     int num_access;
     bool with_context;
     int context_size;
-    std::deque<char> context;
+    std::deque<KEY_T> context;
     
   public:
     ParseTree(bool with_context, int context_size)
@@ -335,7 +283,7 @@ class ParseTree {
     
     std::string to_pretty_str() { return pt_graph.to_pretty_str(); }
     
-    bool does_vertex_have_key_in_adjs(Vertex& v, char key, Vertex& adj_v)
+    bool does_vertex_have_key_in_adjs(Vertex& v, KEY_T key, Vertex& adj_v)
     {
       adjacency_iter_pair_t ai_pair = pt_graph.get_adj_vertices(v);
       for (adjacency_iter ai = ai_pair.first;  ai != ai_pair.second; ai++) {
@@ -348,7 +296,7 @@ class ParseTree {
       return false;
     }
     
-    int add_access(char key)
+    int add_access(KEY_T key)
     {
       if (with_context)
         add_access_with_context(key);
@@ -356,7 +304,7 @@ class ParseTree {
         add_access_without_context(key);
     }
     
-    int get_key_prob_map_for_prefetch(std::map<char, float>& key_prob_map)
+    int get_key_prob_map_for_prefetch(std::map<KEY_T, float>& key_prob_map)
     {
       if (with_context)
         get_key_prob_map_for_prefetch_with_context(key_prob_map);
@@ -364,7 +312,7 @@ class ParseTree {
         get_key_prob_map_for_prefetch_without_context(key_prob_map);
     }
     
-    Vertex create__connect_leaf(Vertex& v, char leaf_key)
+    Vertex create__connect_leaf(Vertex& v, KEY_T leaf_key)
     {
       Vertex_Properties& v_prop = pt_graph.properties(v);
       if (v_prop.status == 'L') {
@@ -396,7 +344,7 @@ class ParseTree {
         (pt_graph.properties(v)).num_visit += 1;
     }
     
-    int add_access_without_context(char key)
+    int add_access_without_context(KEY_T key)
     {
       Vertex cur_v = pt_graph.get_cur();
       Vertex_Properties cur_prop = pt_graph.properties(cur_v);
@@ -422,9 +370,9 @@ class ParseTree {
       return 0;
     }
     
-    int get_to_prefetch(size_t& num_keys, char*& keys_)
+    int get_to_prefetch(size_t& num_keys, KEY_T*& keys_)
     {
-      std::map<char, float> key_prob_map;
+      std::map<KEY_T, float> key_prob_map;
       get_key_prob_map_for_prefetch(key_prob_map);
       
       if (num_keys > key_prob_map.size() ) {
@@ -433,12 +381,12 @@ class ParseTree {
         num_keys = key_prob_map.size();
       }
       // Note: std::map is ordered -- either aphabetical or numerical with keys
-      std::map<float, char> prob_key_map;
-      for (std::map<char, float>::iterator it = key_prob_map.begin(); it != key_prob_map.end(); it++)
+      std::map<float, KEY_T> prob_key_map;
+      for (typename std::map<KEY_T, float>::iterator it = key_prob_map.begin(); it != key_prob_map.end(); it++)
         prob_key_map[it->second] = it->first;
       
-      keys_ = (char*) malloc(num_keys*sizeof(char) );
-      std::map<float, char>::reverse_iterator rit = prob_key_map.rbegin();
+      keys_ = (KEY_T*) malloc(num_keys*sizeof(KEY_T) );
+      typename std::map<float, KEY_T>::reverse_iterator rit = prob_key_map.rbegin();
       for (int i = 0; i < num_keys; i++) {
         keys_[i] = rit->second;
         rit++;
@@ -447,7 +395,7 @@ class ParseTree {
       return 0;
     }
     
-    int get_key_prob_map_for_prefetch_without_context(std::map<char, float>& key_prob_map)
+    int get_key_prob_map_for_prefetch_without_context(std::map<KEY_T, float>& key_prob_map)
     {
       Vertex& cur_v = pt_graph.get_cur();
       int total_num_visit = pt_graph.properties(cur_v).num_visit;
@@ -489,8 +437,8 @@ class ParseTree {
     std::string context_to_str()
     {
       std::stringstream ss;
-      for (std::deque<char>::iterator it = context.begin(); it != context.end(); it++) {
-        ss << *it << ",";
+      for (typename std::deque<KEY_T>::iterator it = context.begin(); it != context.end(); it++) {
+        ss << boost::lexical_cast<std::string>(*it) << ",";
       }
       
       return ss.str();
@@ -521,7 +469,7 @@ class ParseTree {
       // LOG(WARNING) << "create__move_cur_on_context:: cur= \n" << pt_graph.vertex_to_str(cur_v);
       
       for (int i = walked_upto_index_on_context; i < context.size(); i++) {
-        char leaf_key = context[i];
+        KEY_T leaf_key = context[i];
         Vertex_Properties leaf_prop;
         leaf_prop.name = boost::lexical_cast<std::string>(cur_prop.name) + boost::lexical_cast<std::string>(leaf_key);
         leaf_prop.key = leaf_key;
@@ -544,7 +492,7 @@ class ParseTree {
       }
     }
     
-    int add_access_with_context(char key)
+    int add_access_with_context(KEY_T key)
     {
       // LOG(INFO) << "add_access_with_context:: context= " << context_to_str();
       if (context.size() == context_size) {
@@ -566,7 +514,7 @@ class ParseTree {
       return 0;
     }
     
-    int get_key_prob_map_for_prefetch_with_context(std::map<char, float>& key_prob_map)
+    int get_key_prob_map_for_prefetch_with_context(std::map<KEY_T, float>& key_prob_map)
     {
       move_cur_on_context(false); // even if whole walk could not be finished, predict with smaller context
       // LOG(INFO) << "get_key_prob_map_for_prefetch_with_context:: cur= \n" << pt_graph.vertex_to_str(pt_graph.get_cur() );
@@ -623,37 +571,112 @@ class Cache {
     size_t size() { return cache.size(); }
 };
 
+template<typename KEY_T>
 class PrefetchAlgo {
   protected:
     size_t alphabet_size;
-    char* alphabet_;
-    std::vector<char> access_vector;
-    ParseTree parse_tree;
+    KEY_T* alphabet_;
+    std::vector<KEY_T> access_vector;
+    ParseTree<KEY_T> parse_tree;
   public:
-    PrefetchAlgo(size_t alphabet_size, char* alphabet_, bool with_context, size_t context_size);
-    ~PrefetchAlgo();
-    std::string parse_tree_to_str();
-    std::string parse_tree_to_pstr();
-    std::string access_seq_to_str();
+    PrefetchAlgo(size_t alphabet_size, KEY_T* alphabet_, bool with_context, size_t context_size)
+    : alphabet_size(alphabet_size),
+      alphabet_(alphabet_),
+      parse_tree(with_context, context_size) {}
     
-    int add_access(char key);
+    ~PrefetchAlgo() {}
+    
+    std::string parse_tree_to_str() { return parse_tree.to_str(); }
+    std::string parse_tree_to_pstr() { return parse_tree.to_pretty_str(); }
+    
+    std::string access_seq_to_str()
+    {
+      std::stringstream ss;
+      for (typename std::vector<KEY_T>::iterator it = access_vector.begin(); it != access_vector.end(); it++) {
+        ss << boost::lexical_cast<std::string>(*it) << ",";
+      }
+      ss << "\n";
+      
+      return ss.str();
+    }
+    
+    int add_access(KEY_T key)
+    {
+      access_vector.push_back(key);
+      parse_tree.add_access(key);
+    }
+    
     // TODO: will be deDGE_pROPERTIESrecated
-    int get_key_prob_map_for_prefetch(std::map<char, float>& key_prob_map);
-    int get_to_prefetch(size_t& num_keys, char*& keys_);
+    int get_key_prob_map_for_prefetch(std::map<KEY_T, float>& key_prob_map)
+    {
+      return parse_tree.get_key_prob_map_for_prefetch(key_prob_map);
+    }
     
-    int sim_prefetch_accuracy(float& hit_rate, size_t cache_size, std::vector<char> access_seq_v, std::vector<char>& accuracy_seq_v);
+    int get_to_prefetch(size_t& num_keys, KEY_T*& keys_)
+    {
+      return parse_tree.get_to_prefetch(num_keys, keys_);
+    }
+    
+    int sim_prefetch_accuracy(float& hit_rate, size_t cache_size, std::vector<KEY_T> access_seq_v, std::vector<char>& accuracy_seq_v)
+    {
+      Cache<KEY_T> cache(cache_size);
+      int num_miss = 0;
+      
+      for (typename std::vector<KEY_T>::iterator it = access_seq_v.begin(); it != access_seq_v.end(); it++) {
+        if (!cache.contains(*it) ) {
+          accuracy_seq_v.push_back('f');
+          num_miss++;
+        }
+        else {
+          accuracy_seq_v.push_back('-');
+        }
+        
+        add_access(*it);
+        
+        size_t num_keys = 1; //cache_size;
+        KEY_T* keys_;
+        get_to_prefetch(num_keys, keys_);
+        // Update cache
+        for (int i = 0; i < num_keys; i++) {
+          KEY_T key = keys_[i];
+          if (cache.contains(key) )
+            continue;
+          
+          cache.push(key);
+        }
+        free(keys_);
+      }
+      
+      hit_rate = 1.0 - (float)num_miss/access_seq_v.size();
+      
+      return 0;
+    }
 };
 
-class LZAlgo : public PrefetchAlgo {
+template<typename KEY_T>
+class LZAlgo : public PrefetchAlgo<KEY_T> {
   public:
-    LZAlgo(size_t alphabet_size, char* alphabet_);
-    ~LZAlgo();
+    LZAlgo(size_t alphabet_size, KEY_T* alphabet_)
+    : PrefetchAlgo<KEY_T>(alphabet_size, alphabet_, false, 0)
+    {
+      // 
+      LOG(INFO) << "LZAlgo:: constructed.";
+    }
+    
+    ~LZAlgo() { LOG(INFO) << "LZAlgo:: constructed."; }
 };
 
-class PPMAlgo : public PrefetchAlgo {
+template<typename KEY_T>
+class PPMAlgo : public PrefetchAlgo<KEY_T> {
   public:
-    PPMAlgo(size_t alphabet_size, char* alphabet_, size_t context_size);
-    ~PPMAlgo();
+    PPMAlgo(size_t alphabet_size, KEY_T* alphabet_, size_t context_size)
+    : PrefetchAlgo<KEY_T>(alphabet_size, alphabet_, true, context_size)
+    {
+      // 
+      LOG(INFO) << "PPMAlgo:: constructed.";
+    }
+    
+    ~PPMAlgo() { LOG(INFO) << "PPMAlgo:: constructed."; }
 };
 
 #endif // _PALGORITHM_H_

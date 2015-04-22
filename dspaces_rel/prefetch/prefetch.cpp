@@ -55,7 +55,7 @@ std::string PBuffer::to_str()
 }
 
 // ****************************************  state rel  ***************************************** //
-int PBuffer::reg_key_ver__pkey_pver_pair(std::string key, unsigned int ver)
+int PBuffer::reg_key_ver__pkey_pver_pair(int app_id, std::string key, unsigned int ver)
 {
   // TODO: for every <key, ver> advertised one of the peer dataspaces is registered with pkey by 
   // walking on the alphabet_ with incremental pver

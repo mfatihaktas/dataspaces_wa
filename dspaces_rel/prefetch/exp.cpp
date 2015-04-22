@@ -6,10 +6,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
-#include <map>
-
-#include <boost/lexical_cast.hpp>
-#include <glog/logging.h>
 
 namespace patch_exp
 {
@@ -70,8 +66,8 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
 
 void palgo_test()
 {
-  LZAlgo lz_algo(2, NULL);
-  PPMAlgo ppm_algo(2, NULL, 2);
+  LZAlgo<char> lz_algo(2, NULL);
+  PPMAlgo<char> ppm_algo(2, NULL, 2);
   // char access_seq_arr[] = {'a',  'a','a',  'a','b',  'a','b','a',  'a','b','b',  'b'};
   // char access_seq_arr[] = {'a','b','a','b','a','b','a','b',  'a','b','a','b','a','b','a','b','a','b','a','b','a'};
   // char access_seq_arr[] = {'a','b','b','a','b','a','b','a','b'};
@@ -89,7 +85,7 @@ void palgo_test()
   std::cout << "access_seq= \n";
   std::cout << ppm_algo.access_seq_to_str();
   std::cout << "accuracy_seq= \n";
-  for (int i =0; i < accuracy_seq_v.size(); i++) {
+  for (int i = 0; i < accuracy_seq_v.size(); i++) {
     std::cout << accuracy_seq_v[i] << ",";
   }
   std::cout << "\n";
@@ -124,78 +120,78 @@ void palgo_test()
   // std::cout << "parse_tree= \n" << ppm_algo.parse_tree_to_pstr();
 }
 
-void handle_prefetch(std::map<std::string, std::string> pmap)
-{
-  LOG(INFO) << "handle_prefetch:: pmap= \n" << patch_exp::str_str_map_to_str(pmap);
-}
+// void handle_prefetch(std::map<std::string, std::string> pmap)
+// {
+//   LOG(INFO) << "handle_prefetch:: pmap= \n" << patch_exp::str_str_map_to_str(pmap);
+// }
 
-void prefetch_test()
-{
-  size_t buffer_size = 2;
-  char alphabet_[] = {'a', 'b'};
-  int alphabet_size = sizeof(alphabet_)/sizeof(*alphabet_);
-  size_t context_size = 2;
+// void prefetch_test()
+// {
+//   size_t buffer_size = 2;
+//   char alphabet_[] = {'a', 'b'};
+//   int alphabet_size = sizeof(alphabet_)/sizeof(*alphabet_);
+//   size_t context_size = 2;
   
-  PBuffer pbuffer(true, buffer_size, boost::bind(handle_prefetch, _1), 
-                  alphabet_, alphabet_size, context_size);
+//   PBuffer pbuffer(true, buffer_size, boost::bind(handle_prefetch, _1), 
+//                   alphabet_, alphabet_size, context_size);
   
-  std::string keys_[] = {"k1", "k2", "k3", "k4", "k5", "k6", "k7", "k8", "k9", "k10"};
-  size_t keys_size = 10;
-  for (int i = 0; i < keys_size; i++) {
-    pbuffer.reg_key_ver__pkey_pver_pair(keys_[i], 0);
-  }
+//   std::string keys_[] = {"k1", "k2", "k3", "k4", "k5", "k6", "k7", "k8", "k9", "k10"};
+//   size_t keys_size = 10;
+//   for (int i = 0; i < keys_size; i++) {
+//     pbuffer.reg_key_ver__pkey_pver_pair(0,  keys_[i], 0);
+//   }
   
-  int num_access = 7;
-  for (int i = 0; i < num_access; i++) {
-    pbuffer.add_access(keys_[i], 0);
-  }
+//   int num_access = 7;
+//   for (int i = 0; i < num_access; i++) {
+//     pbuffer.add_access(keys_[i], 0);
+//   }
   
-  std::cout << "pbuffer= " << pbuffer.to_str();
+//   std::cout << "pbuffer= " << pbuffer.to_str();
   
-  // size_t num_keys = 1;
-  // std::vector<key_ver_pair> key_ver_vector;
-  // pbuffer.get_to_prefetch(num_keys, key_ver_vector);
-  // std::cout << "get_to_prefetch returns:\n";
-  // for (int i = 0; i < num_keys; i++) {
-  //   std::cout << "<key= " << key_ver_vector[i].first << ", ver= " << key_ver_vector[i].second << "> \n";
-  // }
-}
+//   // size_t num_keys = 1;
+//   // std::vector<key_ver_pair> key_ver_vector;
+//   // pbuffer.get_to_prefetch(num_keys, key_ver_vector);
+//   // std::cout << "get_to_prefetch returns:\n";
+//   // for (int i = 0; i < num_keys; i++) {
+//   //   std::cout << "<key= " << key_ver_vector[i].first << ", ver= " << key_ver_vector[i].second << "> \n";
+//   // }
+// }
 
-void sim_test(int max_num_app, int max_num_putget, float putget_rate_pseudo_mean)
-{
-  // char sample_access_arr[] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o'};
-  // std::vector<char> sample_access_vec(sample_access_arr, sample_access_arr + sizeof(sample_access_arr)/sizeof(*sample_access_arr) );
-  srand(time(NULL) );
+// void sim_test(int max_num_app, int max_num_putget, float putget_rate_pseudo_mean)
+// {
+//   // char sample_access_arr[] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o'};
+//   // std::vector<char> sample_access_vec(sample_access_arr, sample_access_arr + sizeof(sample_access_arr)/sizeof(*sample_access_arr) );
+//   srand(time(NULL) );
   
-  int num_p = rand() % max_num_app + 1;
-  std::vector<int> pid__num_put_vec;
-  std::vector<float> put_rate_vector;
-  for (int i = 0; i < num_p; i++) {
-    int num_put = rand() % max_num_putget + 1;
-    pid__num_put_vec.push_back(num_put);
-    put_rate_vector.push_back((float) (rand() % 10 + 5) * putget_rate_pseudo_mean / 10);
-  }
+//   int num_p = rand() % max_num_app + 1;
+//   std::vector<int> pid__num_put_vec;
+//   std::vector<float> put_rate_vector;
+//   for (int i = 0; i < num_p; i++) {
+//     int num_put = rand() % max_num_putget + 1;
+//     pid__num_put_vec.push_back(num_put);
+//     put_rate_vector.push_back((float) (rand() % 10 + 5) * putget_rate_pseudo_mean / 10);
+//   }
   
-  int num_c = num_p; // rand() % max_num_app + 1;
-  std::vector<int> cid__num_get_vec;
-  std::vector<float> get_rate_vector;
+//   int num_c = num_p; // rand() % max_num_app + 1;
+//   std::vector<int> cid__num_get_vec;
+//   std::vector<float> get_rate_vector;
   
-  for (int i = 0; i < num_c; i++) {
-    // int num_get = rand() % max_num_putget + 1;
-    // cid__num_get_vec.push_back(num_get);
-    cid__num_get_vec.push_back(pid__num_put_vec[i]);
-    get_rate_vector.push_back((float) (rand() % 10 + 5) * putget_rate_pseudo_mean / 10);
-  }
+//   for (int i = 0; i < num_c; i++) {
+//     // int num_get = rand() % max_num_putget + 1;
+//     // cid__num_get_vec.push_back(num_get);
+//     cid__num_get_vec.push_back(pid__num_put_vec[i]);
+//     get_rate_vector.push_back((float) (rand() % 10 + 5) * putget_rate_pseudo_mean / 10);
+//   }
   
-  PCSim pc_sim(num_p, pid__num_put_vec, put_rate_vector,
-               num_c, cid__num_get_vec, get_rate_vector );
+//   PCSim pc_sim(num_p, pid__num_put_vec, put_rate_vector,
+//               num_c, cid__num_get_vec, get_rate_vector );
 
-  pc_sim.sim_all();
-  // 
-  std::string temp;
-  std::cout << "Enter\n";
-  getline(std::cin, temp);
-}
+//   pc_sim.sim_all();
+//   // 
+//   std::string temp;
+//   std::cout << "Enter\n";
+//   getline(std::cin, temp);
+// }
 
 int main(int argc , char **argv)
 {
@@ -203,9 +199,9 @@ int main(int argc , char **argv)
   google::InitGoogleLogging("exp");
   // 
   std::map<char*, char*> opt_map = parse_opts(argc, argv);
-  // palgo_test();
+  palgo_test();
   // prefetch_test();
-  sim_test(5, 5, 0.5);
+  // sim_test(5, 5, 0.5);
   
   // srand(time(NULL) );
   // float lambda = 0.1;

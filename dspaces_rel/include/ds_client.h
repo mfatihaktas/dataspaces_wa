@@ -27,6 +27,7 @@
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/tokenizer.hpp>
 
+#include "patch_ds.h"
 #include "ds_drive.h"
 #include "dht_node.h"
 #include "packet.h"
@@ -39,127 +40,6 @@
 #include "prefetch.h"
 #include "profiler.h"
 
-// #ifndef _TEST_MACROS_
-// #define _TEST_MACROS_
-// #define TEST_NZ(x) do { int r=x; if (r){ printf("error: " #x " failed (returned non-zero=%d).", r); } } while (0)
-// #define TEST_Z(x)  do { if (!(x)) printf("error: " #x " failed (returned zero or null)."); } while (0)
-// #endif
-
-//********************************   thread_safe_vector  **********************************//
-template <typename T>
-struct thread_safe_vector
-{
-  private:
-    boost::mutex mutex;
-    typename std::vector<T> vector;
-    typename std::vector<T>::iterator it;
-  public:
-    thread_safe_vector() {};
-    ~thread_safe_vector() {};
-    
-    T& operator[](int i) {
-      boost::lock_guard<boost::mutex> guard(this->mutex);
-      return vector[i];
-    };
-    
-    void push_back(T e)
-    {
-      boost::lock_guard<boost::mutex> guard(this->mutex);
-      vector.push_back(e);
-    }
-    
-    int del(T e)
-    {
-      boost::lock_guard<boost::mutex> guard(this->mutex);
-      it = std::find(vector.begin(), vector.end(), e);
-      vector.erase(it);
-      return 0;
-    };
-    
-    bool contains(T e)
-    {
-      boost::lock_guard<boost::mutex> guard(this->mutex);
-      return (std::find(vector.begin(), vector.end(), e) != vector.end() );
-    };
-    
-    typename std::vector<T>::iterator begin()
-    {
-      boost::lock_guard<boost::mutex> guard(this->mutex);
-      return vector.begin();
-    };
-    
-    typename std::vector<T>::iterator end()
-    {
-      boost::lock_guard<boost::mutex> guard(this->mutex);
-      return vector.end();
-    };
-};
-
-//************************************   syncer  **********************************//
-template <typename T>
-struct syncer 
-{
-  private:
-    thread_safe_map<T, boost::shared_ptr<boost::condition_variable> > point_cv_map;
-    thread_safe_map<T, boost::shared_ptr<boost::mutex> > point_m_map;
-    thread_safe_map<T, int> point_numpeers_map;
-  public:
-    syncer() {LOG(INFO) << "syncer:: constructed."; };
-    ~syncer() { LOG(INFO) << "syncer:: destructed."; };
-    int add_sync_point(T point, int num_peers)
-    {
-      if (point_cv_map.contains(point) ) {
-        LOG(ERROR) << "add_sync_point:: already added point.";
-        return 1;
-      }
-      boost::shared_ptr<boost::condition_variable> t_cv_( new boost::condition_variable() );
-      boost::shared_ptr<boost::mutex> t_m_( new boost::mutex() );
-      
-      point_cv_map[point] = t_cv_;
-      point_m_map[point] = t_m_;
-      point_numpeers_map[point] = num_peers;
-      
-      return 0;
-    };
-    int del_sync_point(T point)
-    {
-      if (!point_cv_map.contains(point) ) {
-        LOG(ERROR) << "del_sync_point:: non-existing point.";
-        return 1;
-      }
-      point_cv_map.del(point);
-      point_m_map.del(point);
-      point_numpeers_map.del(point);
-      
-      return 0;
-    };
-    int wait(T point)
-    {
-      boost::mutex::scoped_lock lock(*point_m_map[point]);
-      point_cv_map[point]->wait(lock);
-      
-      return 0;
-    };
-    int notify(T point)
-    {
-      if (!point_cv_map.contains(point) ) {
-        LOG(ERROR) << "notify:: non-existing point.";
-        return 1;
-      }
-      
-      int num_peers_to_wait = point_numpeers_map[point];
-      --num_peers_to_wait;
-      
-      if (num_peers_to_wait == 0) {
-        point_cv_map[point]->notify_one();
-        return 0;
-      }
-      point_numpeers_map[point] = num_peers_to_wait;
-      
-      return 0;
-    };
-};
-/*******************************************************************************************/
 class IMsgCoder
 {
   public:
@@ -243,11 +123,11 @@ struct RQTable //Remote Query Table
     int mark_all();
     std::map<std::string, std::string> to_unmarked_str_str_map();
   private:
-    thread_safe_map<key_ver_pair, char> key_ver__dsid_map;
-    thread_safe_map<key_ver_pair, std::string> key_ver__data_type_map;
-    thread_safe_map<key_ver_pair, std::map<std::string, std::vector<uint64_t> > > key_ver__datainfo_map;
+    patch_ds::thread_safe_map<key_ver_pair, char> key_ver__dsid_map;
+    patch_ds::thread_safe_map<key_ver_pair, std::string> key_ver__data_type_map;
+    patch_ds::thread_safe_map<key_ver_pair, std::map<std::string, std::vector<uint64_t> > > key_ver__datainfo_map;
     
-    thread_safe_map<key_ver_pair, bool> key_ver__mark;
+    patch_ds::thread_safe_map<key_ver_pair, bool> key_ver__mark;
 };
 
 struct RSTable //Remote Subscription Table
@@ -258,7 +138,7 @@ struct RSTable //Remote Subscription Table
     int push_subscriber(std::string key, unsigned int ver, char ds_id);
     int pop_subscriber(std::string key, unsigned int ver, char& ds_id);
   private:
-    thread_safe_map<key_ver_pair, std::vector<char> > key_ver__ds_id_vector_map;
+    patch_ds::thread_safe_map<key_ver_pair, std::vector<char> > key_ver__ds_id_vector_map;
 };
 
 
@@ -272,9 +152,9 @@ struct GFTPBTable //Gridftp Bootstrap Table
     int get(char ds_id, std::string &laddr, std::string &lport, std::string &tmpfs_dir);
     bool contains(char ds_id);
   private:
-    thread_safe_map<char, std::string> dsid_laddr_map;
-    thread_safe_map<char, std::string> dsid_lport_map;
-    thread_safe_map<char, std::string> dsid_tmpfsdir_map;
+    patch_ds::thread_safe_map<char, std::string> dsid_laddr_map;
+    patch_ds::thread_safe_map<char, std::string> dsid_lport_map;
+    patch_ds::thread_safe_map<char, std::string> dsid_tmpfsdir_map;
 };
 
 const std::string INFINIBAND = "i";
@@ -364,29 +244,29 @@ class RIManager
     boost::shared_ptr<DHTNode> dht_node_;
     boost::shared_ptr<RFPManager> rfp_manager_;
     boost::shared_ptr<PBuffer> pbuffer_;
-    thread_safe_map<int, boost::shared_ptr<BCClient> > appid_bcclient_map; //TODO: prettify
+    patch_ds::thread_safe_map<int, boost::shared_ptr<BCClient> > appid_bcclient_map; //TODO: prettify
     
     RQTable rq_table;
-    syncer<key_ver_pair> rq_syncer;
+    patch_ds::syncer<key_ver_pair> rq_syncer;
     
-    thread_safe_map<key_ver_pair, laddr_lport__tmpfsdir_pair> key_ver___laddr_lport__tmpfsdir_map;
-    syncer<key_ver_pair> rp_syncer;
+    patch_ds::thread_safe_map<key_ver_pair, laddr_lport__tmpfsdir_pair> key_ver___laddr_lport__tmpfsdir_map;
+    patch_ds::syncer<key_ver_pair> rp_syncer;
     
     RSTable rs_table;
-    syncer<key_ver_pair> handle_rp_syncer;
+    patch_ds::syncer<key_ver_pair> handle_rp_syncer;
     
-    syncer<key_ver_pair> b_get_syncer;
+    patch_ds::syncer<key_ver_pair> b_get_syncer;
     
-    syncer<key_ver_pair> rf_wa_get_syncer;
-    syncer<key_ver_pair> rp_wa_get_syncer;
+    patch_ds::syncer<key_ver_pair> rf_wa_get_syncer;
+    patch_ds::syncer<key_ver_pair> rp_wa_get_syncer;
     
-    thread_safe_vector<key_ver_pair> key_ver_being_fetched_vector;
-    syncer<key_ver_pair> being_fetched_syncer;
+    patch_ds::thread_safe_vector<key_ver_pair> key_ver_being_fetched_vector;
+    patch_ds::syncer<key_ver_pair> being_fetched_syncer;
     
     TProfiler<key_ver_pair> remote_get_time_profiler;
     // 
     GFTPBTable gftpb_table;
-    syncer<char> gftpb_ping_syncer;
+    patch_ds::syncer<char> gftpb_ping_syncer;
   public:
     RIManager(int app_id, int num_cnodes, 
               char id, char* dht_lip, int dht_lport, char* ipeer_dht_lip, int ipeer_dht_lport, 
@@ -426,4 +306,5 @@ class RIManager
     int remote_subscribe(std::string key, unsigned int ver);
     int gftpb_ping(char to_id); //blocks until pong is received
 };
+
 #endif //end of _DSCLIENT_H_

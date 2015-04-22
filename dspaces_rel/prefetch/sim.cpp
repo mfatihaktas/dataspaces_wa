@@ -1,8 +1,5 @@
 #include "sim.h"
 
-#include <boost/lexical_cast.hpp>
-#include <glog/logging.h>
-
 PCSim::PCSim(int num_p, std::vector<int> num_put_vec, std::vector<float> put_rate_vec, 
              int num_c, std::vector<int> num_get_vec, std::vector<float> get_rate_vec )
 : num_p(num_p), num_c(num_c),
@@ -20,12 +17,12 @@ std::string PCSim::to_str()
 {
   std::stringstream ss;
   ss << "num_p= " << boost::lexical_cast<std::string>(num_p) << "\n";
-  ss << "num_put_vec= " << patch_sim::vector_to_str<int>(num_put_vec) << "\n";
-  ss << "put_rate_vec= " << patch_sim::vector_to_str<float>(put_rate_vec) << "\n";
+  ss << "num_put_vec= " << patch_pre::vector_to_str<int>(num_put_vec) << "\n";
+  ss << "put_rate_vec= " << patch_pre::vector_to_str<float>(put_rate_vec) << "\n";
   
   ss << "num_c= " << boost::lexical_cast<std::string>(num_c) << "\n";
-  ss << "num_get_vec= " << patch_sim::vector_to_str<int>(num_get_vec) << "\n";
-  ss << "get_rate_vec= " << patch_sim::vector_to_str<float>(get_rate_vec) << "\n";
+  ss << "num_get_vec= " << patch_pre::vector_to_str<int>(num_get_vec) << "\n";
+  ss << "get_rate_vec= " << patch_pre::vector_to_str<float>(get_rate_vec) << "\n";
   
   return ss.str();
 }

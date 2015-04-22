@@ -20,49 +20,50 @@
 #include "dht_client.h"
 #include "packet.h"
 
-//********************************   thread_safe_map  **********************************//
-template <typename Tk, typename Tv>
-struct thread_safe_map
-{
-  private:
-    boost::mutex mutex;
-    typename std::map<Tk, Tv> map;
-    typename std::map<Tk, Tv>::iterator map_it;
-  public:
-    thread_safe_map() {};
-    ~thread_safe_map() {};
-    
-    Tv& operator[](Tk k) {
-      boost::lock_guard<boost::mutex> guard(this->mutex);
-      return map[k];
-    };
-    
-    int del(Tk k)
-    {
-      boost::lock_guard<boost::mutex> guard(this->mutex);
-      map_it = map.find(k);
-      map.erase(map_it);
-      return 0;
-    };
-    
-    bool contains(Tk k)
-    {
-      boost::lock_guard<boost::mutex> guard(this->mutex);
-      return !(map.count(k) == 0);
-    };
-    
-    typename std::map<Tk, Tv>::iterator begin()
-    {
-      boost::lock_guard<boost::mutex> guard(this->mutex);
-      return map.begin();
-    };
-    
-    typename std::map<Tk, Tv>::iterator end()
-    {
-      boost::lock_guard<boost::mutex> guard(this->mutex);
-      return map.end();
-    };
-};
+namespace patch_dht{
+  template <typename Tk, typename Tv>
+  struct thread_safe_map
+  {
+    private:
+      boost::mutex mutex;
+      typename std::map<Tk, Tv> map;
+      typename std::map<Tk, Tv>::iterator map_it;
+    public:
+      thread_safe_map() {};
+      ~thread_safe_map() {};
+      
+      Tv& operator[](Tk k) {
+        boost::lock_guard<boost::mutex> guard(this->mutex);
+        return map[k];
+      };
+      
+      int del(Tk k)
+      {
+        boost::lock_guard<boost::mutex> guard(this->mutex);
+        map_it = map.find(k);
+        map.erase(map_it);
+        return 0;
+      };
+      
+      bool contains(Tk k)
+      {
+        boost::lock_guard<boost::mutex> guard(this->mutex);
+        return !(map.count(k) == 0);
+      };
+      
+      typename std::map<Tk, Tv>::iterator begin()
+      {
+        boost::lock_guard<boost::mutex> guard(this->mutex);
+        return map.begin();
+      };
+      
+      typename std::map<Tk, Tv>::iterator end()
+      {
+        boost::lock_guard<boost::mutex> guard(this->mutex);
+        return map.end();
+      };
+  };
+}
 
 //********************************  comm_channel  **********************************//
 struct comm_channel {
@@ -173,8 +174,8 @@ struct peer_info{
 struct peer_table{
   boost::mutex mutex;
   std::vector<char> peer_id_vector;
-  thread_safe_map<char, boost::shared_ptr<peer_info> > id_pinfo_map;
-  thread_safe_map<char, boost::shared_ptr<comm_channel> > id_commchannel_map;
+  patch_dht::thread_safe_map<char, boost::shared_ptr<peer_info> > id_pinfo_map;
+  patch_dht::thread_safe_map<char, boost::shared_ptr<comm_channel> > id_commchannel_map;
   // 
   bool is_peer(char id)
   {
