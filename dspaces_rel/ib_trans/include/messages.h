@@ -1,5 +1,5 @@
-#ifndef RDMA_MESSAGES_H
-#define RDMA_MESSAGES_H
+#ifndef _RDMA_MESSAGES_H_
+#define _RDMA_MESSAGES_H_
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -26,4 +26,4 @@ struct message
   } data;
 };
 
-#endif
+#endif // _RDMA_MESSAGES_H_

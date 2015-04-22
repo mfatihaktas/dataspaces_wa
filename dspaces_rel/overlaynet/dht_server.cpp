@@ -4,13 +4,12 @@
 #define HEADER_MSGSIZE_LENGTH 4
 
 DHTServer::DHTServer(char* host_name, char* host, int port, 
-                     function_recv_callback recv_callback)
-: io_service_(new boost::asio::io_service),
-// 	acceptor_(new boost::asio::ip::tcp::acceptor( *io_service_ ) ),
-// 	socket_(new boost::asio::ip::tcp::socket( *io_service_ ) ),
-// : io_service_(boost::make_shared<boost::asio::io_service>() ),
-//   acceptor_(boost::make_shared<boost::asio::ip::tcp::acceptor>(*io_service_) ),
-//   socket_(boost::make_shared<boost::asio::ip::tcp::socket>(*io_service_)),
+                     function_recv_callback _recv_callback)
+: host_name(host_name),
+  host(host),
+  port(port),
+  _recv_callback(_recv_callback),
+  io_service_(new boost::asio::io_service),
 	stop_flag(0)
 {
   //to make sure socket is created after io_service
@@ -29,19 +28,10 @@ DHTServer::DHTServer(char* host_name, char* host, int port,
     new boost::asio::ip::tcp::socket( *io_service_ )
   );
   socket_ = t_socket_;
+  
+  boost::make_shared<boost::thread>(&DHTServer::init_listen, this);
   // 
-  this->host_name = host_name;
-  this->host = host;
-  this->port = port;
-  //
-  _recv_callback = recv_callback;
-  //
-  // boost::shared_ptr< boost::thread > t_(
-  //   new boost::thread(&DHTServer::init_listen, this)
-  // );
-  boost::shared_ptr<boost::thread> t_ = boost::make_shared<boost::thread>(&DHTServer::init_listen, this);
-  //
-  LOG(INFO) << "server:" << host_name << " constructed.";
+  LOG(INFO) << "DHTServer:: constructed; host_name= " << host_name;
 }
 
 DHTServer::~DHTServer()
@@ -49,13 +39,18 @@ DHTServer::~DHTServer()
   if (!stop_flag) {
     close();
   }
-  //
-  LOG(INFO) << "server:" << host_name << " destructed.";
+  // 
+  LOG(INFO) << "DHTServer:: destructed; host_name= " << host_name;
 }
 
-bool DHTServer::is_alive()
+std::string DHTServer::to_str()
 {
-  return (stop_flag == 0);
+  std::stringstream ss;
+  ss << "\t host_name= " << boost::lexical_cast<std::string>(host_name) << "\n";
+  ss << "\t host= " << boost::lexical_cast<std::string>(host) << "\n";
+  ss << "\t port= " << boost::lexical_cast<std::string>(port) << "\n";
+  
+  return ss.str();
 }
 
 void DHTServer::set_recv_callback(function_recv_callback recv_callback)
@@ -63,15 +58,14 @@ void DHTServer::set_recv_callback(function_recv_callback recv_callback)
   _recv_callback = recv_callback;
 }
 
-int DHTServer::close(){
-  if (!is_alive() ) {
-    LOG(ERROR) << "close:: server:" << host_name << " is already closed!";
+int DHTServer::close() {
+  if (stop_flag != 0 ) {
+    LOG(ERROR) << "close:: already closed!; server= \n" << to_str();
     return 2;
   }
-  try
-  {
+  try {
     stop_flag = 1;
-    //
+    // 
     boost::system::error_code ec;
     socket_->shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
     // socket_->shutdown(boost::asio::ip::tcp::socket::shutdown_receive, ec);
@@ -90,21 +84,19 @@ int DHTServer::close(){
     }
     */
     //acceptor_->close();
-    //
-    LOG(INFO) << "close:: server:" << host_name << " closed.";
+    // 
+    LOG(INFO) << "close:: closed server= \n" << to_str();
     return 0;
   }
-  catch( std::exception & ex )
-  {
-    LOG(ERROR) << "init_listen:: Exception=" << ex.what();
+  catch(std::exception& ex) {
+    LOG(ERROR) << "close:: Exception=" << ex.what();
     return 1;
   }
 }
 
 void DHTServer::init_listen()
 {
-  try
-  {
+  try {
 	  boost::asio::ip::tcp::resolver resolver( *io_service_ );
 	  boost::asio::ip::tcp::resolver::query query( 
 		  host,
@@ -112,7 +104,7 @@ void DHTServer::init_listen()
 	  );
 	  boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve( query );
 	  LOG(INFO) << "init_listen:: server:" << host_name << " listening on " << endpoint;
-	  //
+	  // 
 	  acceptor_->open( endpoint.protocol() );
 	  acceptor_->set_option( boost::asio::ip::tcp::acceptor::reuse_address( true ) );
 	  acceptor_->bind( endpoint );
@@ -126,8 +118,7 @@ void DHTServer::init_listen()
     // acceptor_->close();
     init_recv();
   }
-  catch( std::exception & ex )
-  {
+  catch( std::exception & ex ) {
     LOG(ERROR) << "init_listen:: Exception=" << ex.what();
   }
 }
@@ -153,11 +144,11 @@ void DHTServer::init_recv()
       //LOG(INFO) << "init_recv:: msgsize_buffer=" << msgsize_buffer;
       int msgsize = boost::lexical_cast<int>(str);
       //LOG(INFO) << "init_recv:: msgsize=" << msgsize;
-      //
+      // 
       char* msg = new char[msgsize];
       boost::asio::read(*socket_, boost::asio::buffer( msg, msgsize ) );
       //LOG(INFO) << "init_recv:: msg=" << msg;
-      //
+      // 
       // boost::shared_ptr< boost::thread > t_(
       //   new boost::thread(&DHTServer::handle_recv, this, msg)
       // );

@@ -41,22 +41,22 @@ char* intf_to_ip(char* intf)
 {
   int fd;
   struct ifreq ifr;
-  //
+  // 
   fd = socket(AF_INET, SOCK_DGRAM, 0);
-  //Type of address to retrieve - IPv4 IP address
+  // Type of address to retrieve - IPv4 IP address
   ifr.ifr_addr.sa_family = AF_INET;
-  //Copy the interface name in the ifreq structure
+  // Copy the interface name in the ifreq structure
   std::memcpy(ifr.ifr_name , intf , IFNAMSIZ-1);
   ioctl(fd, SIOCGIFADDR, &ifr);
   close(fd);
-  //
+  // 
   return inet_ntoa(( (struct sockaddr_in *)&ifr.ifr_addr )->sin_addr);
 }
 
 std::map<char*, char*> parse_opts(int argc, char** argv)
 {
   std::map<char*, char*> opt_map;
-  //
+  // 
   int c;
   
   static struct option long_options[] =
@@ -103,15 +103,15 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
         break;
     }
   }
-  if (optind < argc){
-    printf ("non-option ARGV-elements: ");
+  if (optind < argc) {
+    std::cout << "Non-option ARGV-elements: \n";
     while (optind < argc)
-      printf ("%s ", argv[optind++]);
-    putchar ('\n');
+      std::cout << argv[optind++] << ", ";
+    std::cout << "\n";
   }
-  //
-  std::cout << "opt_map=\n";
-  for (std::map<char*, char*>::iterator it=opt_map.begin(); it!=opt_map.end(); ++it){
+  // 
+  std::cout << "opt_map= \n";
+  for (std::map<char*, char*>::iterator it=opt_map.begin(); it!=opt_map.end(); ++it) {
     std::cout << it->first << " => " << it->second << '\n';
   }
   return opt_map;
@@ -120,25 +120,19 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
 int main (int argc, char **argv)
 {
   google::InitGoogleLogging("exp");
-  //
   std::map<char*, char*> opt_map = parse_opts(argc, argv);
+  // 
   
-  //std::cout << "opt_map[(char*)\"intf\"]=" << opt_map[(char*)"intf"] << std::endl;
-  
-  //char* ip = intf_to_ip((char*)"lo");
-  //std::cout << "ip=" << ip << std::endl;
-  if (!opt_map.count((char*)"ipeer_lip")){
+  if (!opt_map.count((char*)"ipeer_lip") ) {
     opt_map[(char*)"ipeer_lip"] = NULL;
   }
-  if (!opt_map.count((char*)"ipeer_lport")){
+  if (!opt_map.count((char*)"ipeer_lport") ) {
     opt_map[(char*)"ipeer_lport"] = (char*)"0";
   }
   
   DHTNode dhtn( *(opt_map[(char*)"id"]), boost::bind(&handle_msg, _1),
                 intf_to_ip(opt_map[(char*)"intf"]), atoi(opt_map[(char*)"lport"]),
                 opt_map[(char*)"ipeer_lip"], atoi(opt_map[(char*)"ipeer_lport"]) );
-  //boost::function<void(char*)> fp = boost::bind(handle_read, _1);
-  //DHTServer dhts( (char*)"localhost", 6000, fp );
   
   return 0;
 }

@@ -13,7 +13,7 @@ TMPFS_DIR="/dev/shm"
 
 TRANS_PROTOCOL="i" #"g" #"i"
 
-# DSPACES_BIN=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.4.0/install/bin
+# DSPACES_BIN=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.5.0/install/bin
 DSPACES_BIN=$DSPACES_DIR/bin
 
 NUM_SNODES=1
@@ -25,11 +25,13 @@ if [ $1  = 's' ]; then
 elif [ $1  = 'p' ]; then
   GLOG_logtostderr=1 ./exp --type="put" --app_id=1 --num_dscnodes=$NUM_DSCNODES
 elif [ $1  = 'mp' ]; then
-  GLOG_logtostderr=1 ./ds_wa_test --type="mput" --app_id=1 --num_dscnodes=$NUM_DSCNODES --num_putget=10
+  GLOG_logtostderr=1 ./ds_wa_test --type="mput" --app_id=1 --num_dscnodes=$NUM_DSCNODES --num_putget=10 \
+                                  --inter_time_sec=0
 elif [ $1  = 'g' ]; then
   GLOG_logtostderr=1 ./exp --type="get" --app_id=1 --num_dscnodes=$NUM_DSCNODES
 elif [ $1  = 'mg' ]; then
-  GLOG_logtostderr=1 ./ds_wa_test --type="mget" --app_id=1 --num_dscnodes=$NUM_DSCNODES --num_putget=10
+  GLOG_logtostderr=1 ./ds_wa_test --type="mget" --app_id=1 --num_dscnodes=$NUM_DSCNODES --num_putget=10 \
+                                  --inter_time_sec=10
 elif [ $1  = 'dp' ]; then
   export GLOG_logtostderr=1 
   export MALLOC_CHECK_=2
@@ -111,7 +113,7 @@ elif [ $1  = 'init' ]; then
     export BOOST_DIR=/cac/u01/mfa51/Desktop/boost_1_56_0/install
     export GFTPINC_DIR=/usr/include/globus
     export GFTPLIB_DIR=/usr/lib64
-    export DSPACES_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.4.0/install
+    export DSPACES_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.5.0/install
     export DSPACESWA_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa
   
     # source /opt/rh/devtoolset-2/enable
@@ -134,7 +136,7 @@ elif [ $1  = 'init' ]; then
     export BOOST_DIR=/home/sc14demo/common-apps/boost_1_56_0/install
     export GFTPINC_DIR=/usr/include/globus
     export GFTPLIB_DIR=/usr/lib64
-    export DSPACES_DIR=/home/sc14demo/common-apps/dataspaces-1.4.0/install
+    export DSPACES_DIR=/home/sc14demo/common-apps/dataspaces-1.5.0/install
     export DSPACESWA_DIR=/home/sc14demo/common-apps/dataspaces_wa
     
     LD_LIBRARY_PATH=/home/sc14demo/common-apps/boost_1_56_0/install/lib:$LD_LIBRARY_PATH
@@ -152,7 +154,7 @@ elif [ $1  = 'init' ]; then
     export BOOST_DIR=/net/hp101/ihpcsc/maktas7/boost_1_56_0/install
     export GFTPINC_DIR=/usr/include/globus
     export GFTPLIB_DIR=/usr/lib64
-    export DSPACES_DIR=/net/hp101/ihpcsc/maktas7/dataspaces-1.4.0/install
+    export DSPACES_DIR=/net/hp101/ihpcsc/maktas7/dataspaces-1.5.0/install
     export DSPACESWA_DIR=/net/hp101/ihpcsc/maktas7/dataspaces_wa
     
     LD_LIBRARY_PATH=/net/hp101/ihpcsc/maktas7/boost_1_56_0/install/lib:$LD_LIBRARY_PATH

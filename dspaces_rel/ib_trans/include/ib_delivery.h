@@ -1,5 +1,5 @@
-#ifndef IB_DELIVERY_H
-#define IB_DELIVERY_H
+#ifndef _IB_DELIVERY_H_
+#define _IB_DELIVERY_H_
 
 #include "ib_server.h"
 #include "ib_client.h"
@@ -8,58 +8,60 @@
 
 #define str_equals(x,y) (strcmp(x.c_str(), (const char*)y) == 0)
 
-template <typename T>
-class BQueue //Blocking Queue
-{
-  public:
-    void push(T const& value) {
-      // usleep(3*1000*1000);
-      {
-        boost::lock_guard<boost::mutex> guard(this->mutex);
-        d_queue.push_front(value);
-      }
-      this->d_condition.notify_one();
-    };
-    
-    T pop() {
-      while(d_queue.empty() )
-      {
-        boost::mutex::scoped_lock lock(this->d_mutex);
-        this->d_condition.wait(lock);
-      }
+namespace patch_ibdd {
+  template <typename T>
+  class BQueue //Blocking Queue
+  {
+    public:
+      void push(T const& value) {
+        // usleep(3*1000*1000);
+        {
+          boost::lock_guard<boost::mutex> guard(this->mutex);
+          d_queue.push_front(value);
+        }
+        this->d_condition.notify_one();
+      };
       
-      T rc;
-      {
-        boost::lock_guard<boost::mutex> guard(this->mutex);
-        rc = this->d_queue.back();
-        this->d_queue.pop_back();
-      }
-      return rc;
-    };
-    
-    std::string to_str()
-    {
-      std::stringstream ss;
-      ss << "\t->";
-      for (typename std::deque<T>::iterator it = d_queue.begin(); it != d_queue.end(); ++it){
-        ss << boost::lexical_cast<std::string>(*it) << ", ";
-      }
-      ss << "->\n";
+      T pop() {
+        while(d_queue.empty() )
+        {
+          boost::mutex::scoped_lock lock(this->d_mutex);
+          this->d_condition.wait(lock);
+        }
+        
+        T rc;
+        {
+          boost::lock_guard<boost::mutex> guard(this->mutex);
+          rc = this->d_queue.back();
+          this->d_queue.pop_back();
+        }
+        return rc;
+      };
       
-      return ss.str();
-    };
+      std::string to_str()
+      {
+        std::stringstream ss;
+        ss << "\t->";
+        for (typename std::deque<T>::iterator it = d_queue.begin(); it != d_queue.end(); ++it){
+          ss << boost::lexical_cast<std::string>(*it) << ", ";
+        }
+        ss << "->\n";
+        
+        return ss.str();
+      };
+      
+      void create_timed_push_thread(T value)
+      {
+        boost::thread(&BQueue<T>::push, this, value);
+      };
+    private:
+      boost::mutex mutex;
     
-    void create_timed_push_thread(T value)
-    {
-      boost::thread(&BQueue<T>::push, this, value);
-    };
-  private:
-    boost::mutex mutex;
-  
-    boost::mutex d_mutex;
-    boost::condition_variable d_condition;
-    std::deque<T> d_queue;
-};
+      boost::mutex d_mutex;
+      boost::condition_variable d_condition;
+      std::deque<T> d_queue;
+  };
+}
 
 class IBDDManager //Data Delivery
 {
@@ -74,7 +76,7 @@ class IBDDManager //Data Delivery
     std::string get_next_avail_ib_lport();
     void give_ib_lport_back(std::string ib_lport);
   private:
-    BQueue<std::string> ib_lport_queue;
+    patch_ibdd::BQueue<std::string> ib_lport_queue;
 };
 
-#endif
+#endif // _IB_DELIVERY_H_

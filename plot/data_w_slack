@@ -1,0 +1,69 @@
+slack = 10
+-> dell cluster with prefetching
+
+datasize = 0.125 MB = 128 KB
+name= dummy_0, dur_sec= 2.56164002, start_time_sec= 1.40000002e-05, end_time_sec= 2.56165409
+name= dummy_1, dur_sec= 2.38526535, start_time_sec= 12.5618076, end_time_sec= 14.947073
+name= dummy_2, dur_sec= 2.48700142, start_time_sec= 24.9472408, end_time_sec= 27.4342422
+name= dummy_3, dur_sec= 2.48418427, start_time_sec= 37.4344101, end_time_sec= 39.9185944
+name= dummy_4, dur_sec= 0.278522491, start_time_sec= 49.9186783, end_time_sec= 50.1972008
+name= dummy_5, dur_sec= 0.281093597, start_time_sec= 60.1972847, end_time_sec= 60.4783783
+name= dummy_6, dur_sec= 0.280426025, start_time_sec= 70.4784622, end_time_sec= 70.7588882
+name= dummy_7, dur_sec= 0.279212952, start_time_sec= 80.7589874, end_time_sec= 81.0382004
+name= dummy_8, dur_sec= 0.279579163, start_time_sec= 91.0382919, end_time_sec= 91.3178711
+name= dummy_9, dur_sec= 0.279960632, start_time_sec= 101.317978, end_time_sec= 101.597939
+total_dur_sec= 11.5969
+
+datasize = 1 MB = 1024 KB
+name= dummy_0, dur_sec= 2.51229692, start_time_sec= 1.40000002e-05, end_time_sec= 2.51231098
+name= dummy_1, dur_sec= 2.40744781, start_time_sec= 12.5124769, end_time_sec= 14.9199247
+name= dummy_2, dur_sec= 2.52999496, start_time_sec= 24.9200859, end_time_sec= 27.4500809
+name= dummy_3, dur_sec= 2.52218628, start_time_sec= 37.4502449, end_time_sec= 39.9724312
+name= dummy_4, dur_sec= 0.290000916, start_time_sec= 49.9725151, end_time_sec= 50.262516
+name= dummy_5, dur_sec= 0.2891922, start_time_sec= 60.2626038, end_time_sec= 60.551796
+name= dummy_6, dur_sec= 0.28931427, start_time_sec= 70.5518799, end_time_sec= 70.8411942
+name= dummy_7, dur_sec= 0.287376404, start_time_sec= 80.8412781, end_time_sec= 81.1286545
+name= dummy_8, dur_sec= 0.292526245, start_time_sec= 91.1287384, end_time_sec= 91.4212646
+name= dummy_9, dur_sec= 0.290267944, start_time_sec= 101.421349, end_time_sec= 101.711617
+total_dur_sec= 11.7106
+
+datasize = 8 MB = 8192 KB
+name= dummy_0, dur_sec= 2.53523302, start_time_sec= 1.40000002e-05, end_time_sec= 2.53524709
+name= dummy_1, dur_sec= 2.7236042, start_time_sec= 12.535429, end_time_sec= 15.2590332
+name= dummy_2, dur_sec= 2.72572708, start_time_sec= 25.2592297, end_time_sec= 27.9849567
+name= dummy_3, dur_sec= 2.62150192, start_time_sec= 37.9851036, end_time_sec= 40.6066055
+name= dummy_4, dur_sec= 0.343540192, start_time_sec= 50.6066933, end_time_sec= 50.9502335
+name= dummy_5, dur_sec= 0.347961426, start_time_sec= 60.9503212, end_time_sec= 61.2982826
+name= dummy_6, dur_sec= 0.34147644, start_time_sec= 71.2983704, end_time_sec= 71.6398468
+name= dummy_7, dur_sec= 0.348510742, start_time_sec= 81.6399307, end_time_sec= 81.9884415
+name= dummy_8, dur_sec= 0.344497681, start_time_sec= 91.988533, end_time_sec= 92.3330307
+name= dummy_9, dur_sec= 0.345054626, start_time_sec= 102.333115, end_time_sec= 102.678169
+total_dur_sec= 12.6771
+
+datasize = 64 MB = 65536 KB
+name= dummy_0, dur_sec= 4.38424969, start_time_sec= 1.6e-05, end_time_sec= 4.3842659
+name= dummy_1, dur_sec= 3.5703001, start_time_sec= 14.3844843, end_time_sec= 17.9547844
+name= dummy_2, dur_sec= 3.95388603, start_time_sec= 27.9549541, end_time_sec= 31.9088402
+name= dummy_3, dur_sec= 3.72011948, start_time_sec= 41.9090195, end_time_sec= 45.6291389
+name= dummy_4, dur_sec= 0.750247955, start_time_sec= 55.6292915, end_time_sec= 56.3795395
+name= dummy_5, dur_sec= 0.762321472, start_time_sec= 66.3797379, end_time_sec= 67.1420593
+name= dummy_6, dur_sec= 0.759735107, start_time_sec= 77.1421432, end_time_sec= 77.9018784
+name= dummy_7, dur_sec= 0.75012207, start_time_sec= 87.9020309, end_time_sec= 88.652153
+name= dummy_8, dur_sec= 0.769447327, start_time_sec= 98.6522903, end_time_sec= 99.4217377
+name= dummy_9, dur_sec= 0.739570618, start_time_sec= 109.421829, end_time_sec= 110.1614
+total_dur_sec= 20.16
+
+datasize = 512 MB = 524288 KB
+name= dummy_0, dur_sec= 12.2455225, start_time_sec= 1.29999999e-05, end_time_sec= 12.2455359
+name= dummy_1, dur_sec= 12.1036777, start_time_sec= 22.2457409, end_time_sec= 34.3494186
+name= dummy_2, dur_sec= 12.5419197, start_time_sec= 44.3495865, end_time_sec= 56.8915062
+name= dummy_3, dur_sec= 12.1903076, start_time_sec= 66.8916779, end_time_sec= 79.0819855
+name= dummy_4, dur_sec= 4.04659271, start_time_sec= 89.0820618, end_time_sec= 93.1286545
+name= dummy_5, dur_sec= 4.08576965, start_time_sec= 103.128937, end_time_sec= 107.214706
+name= dummy_6, dur_sec= 4.11585999, start_time_sec= 117.214798, end_time_sec= 121.330658
+name= dummy_7, dur_sec= 4.11523438, start_time_sec= 131.33075, end_time_sec= 135.445984
+name= dummy_8, dur_sec= 4.05712891, start_time_sec= 145.446121, end_time_sec= 149.50325
+name= dummy_9, dur_sec= 4.25752258, start_time_sec= 159.503342, end_time_sec= 163.760864
+total_dur_sec= 73.7595
+
+----------------------------------------------------------------------------------------------------

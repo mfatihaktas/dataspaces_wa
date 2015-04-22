@@ -343,12 +343,15 @@ void DSpacesDriver::ri_get(std::string var_name, int size)
   
   // get_(const char* var_name, unsigned int ver, int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
   
-  while ( get_(var_name.c_str(), 0, size*sizeof(char), 3, gdim_, lb_, ub_, data_) ) {
+  // while ( get_(var_name.c_str(), 0, size*sizeof(char), 3, gdim_, lb_, ub_, data_) ) {
+  if ( get_(var_name.c_str(), 0, size*sizeof(char), 3, gdim_, lb_, ub_, data_) ) {
     LOG(ERROR) << "ri_get:: get failed!";
-    usleep(INTER_RI_GET_TIME);
+    // usleep(INTER_RI_GET_TIME);
   }
-  //LOG(INFO) << "ri_get:: data=\n" << data;
-  varname_cbonget_map[var_name](data_);
+  else {
+    //LOG(INFO) << "ri_get:: data=\n" << data;
+    varname_cbonget_map[var_name](data_);
+  }
   
   free(data_);
   free(gdim_);

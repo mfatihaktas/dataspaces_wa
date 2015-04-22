@@ -1,4 +1,5 @@
 #include "prefetch.h"
+#include "sim.h"
 
 #include <iostream>
 #include <string>
@@ -10,7 +11,7 @@
 #include <boost/lexical_cast.hpp>
 #include <glog/logging.h>
 
-namespace patch
+namespace patch_exp
 {
   std::string str_str_map_to_str(std::map<std::string, std::string> str_map)
   {
@@ -84,7 +85,7 @@ void palgo_test()
   // lz_algo.sim_prefetch_accuracy(hit_rate, 2, access_seq_v);
   // LOG(INFO) << "main:: lz_algo; hit_rate= " << hit_rate;
   ppm_algo.sim_prefetch_accuracy(hit_rate, 1, access_seq_v, accuracy_seq_v);
-  std::cout << "ppm_algo; hit_rate= " << hit_rate;
+  std::cout << "ppm_algo; hit_rate= " << hit_rate << "\n";
   std::cout << "access_seq= \n";
   std::cout << ppm_algo.access_seq_to_str();
   std::cout << "accuracy_seq= \n";
@@ -125,7 +126,7 @@ void palgo_test()
 
 void handle_prefetch(std::map<std::string, std::string> pmap)
 {
-  LOG(INFO) << "handle_prefetch:: pmap= \n" << patch::str_str_map_to_str(pmap);
+  LOG(INFO) << "handle_prefetch:: pmap= \n" << patch_exp::str_str_map_to_str(pmap);
 }
 
 void prefetch_test()
@@ -160,6 +161,42 @@ void prefetch_test()
   // }
 }
 
+void sim_test(int max_num_app, int max_num_putget, float putget_rate_pseudo_mean)
+{
+  // char sample_access_arr[] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o'};
+  // std::vector<char> sample_access_vec(sample_access_arr, sample_access_arr + sizeof(sample_access_arr)/sizeof(*sample_access_arr) );
+  srand(time(NULL) );
+  
+  int num_p = rand() % max_num_app + 1;
+  std::vector<int> pid__num_put_vec;
+  std::vector<float> put_rate_vector;
+  for (int i = 0; i < num_p; i++) {
+    int num_put = rand() % max_num_putget + 1;
+    pid__num_put_vec.push_back(num_put);
+    put_rate_vector.push_back((float) (rand() % 10 + 5) * putget_rate_pseudo_mean / 10);
+  }
+  
+  int num_c = num_p; // rand() % max_num_app + 1;
+  std::vector<int> cid__num_get_vec;
+  std::vector<float> get_rate_vector;
+  
+  for (int i = 0; i < num_c; i++) {
+    // int num_get = rand() % max_num_putget + 1;
+    // cid__num_get_vec.push_back(num_get);
+    cid__num_get_vec.push_back(pid__num_put_vec[i]);
+    get_rate_vector.push_back((float) (rand() % 10 + 5) * putget_rate_pseudo_mean / 10);
+  }
+  
+  PCSim pc_sim(num_p, pid__num_put_vec, put_rate_vector,
+               num_c, cid__num_get_vec, get_rate_vector );
+
+  pc_sim.sim_all();
+  // 
+  std::string temp;
+  std::cout << "Enter\n";
+  getline(std::cin, temp);
+}
+
 int main(int argc , char **argv)
 {
   std::string temp;
@@ -167,7 +204,18 @@ int main(int argc , char **argv)
   // 
   std::map<char*, char*> opt_map = parse_opts(argc, argv);
   // palgo_test();
-  prefetch_test();
+  // prefetch_test();
+  sim_test(5, 5, 0.5);
+  
+  // srand(time(NULL) );
+  // float lambda = 0.1;
+  // int num_exp = 1000;
+  // float sum = 0;
+  // for (int i = 0; i < num_exp; i++) {
+  //   // std::cout << "main:: random number= " << static_cast<float>(rand() ) / static_cast<float>(RAND_MAX) << "\n";
+  //   sum += -1 * log(1.0 - (static_cast<float>(rand() ) / static_cast<float>(RAND_MAX) ) ) / lambda;
+  // }
+  // std::cout << "main:: sample mean= " << sum/num_exp << "\n";
   
   return 0;
 }

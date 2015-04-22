@@ -7,7 +7,7 @@
 typedef boost::function<void(std::string, unsigned int, size_t, void*)> data_recv_cb;
 
 template <class data_type>
-class IBServer{
+class IBServer {
   
   struct conn_context
   {
@@ -38,18 +38,19 @@ class IBServer{
         )
       )
     {
-      //
+      // 
       LOG(INFO) << "IBServer constructed:\n" << to_str();
     };
     ~IBServer()
     {
-      //
+      // 
       LOG(INFO) << "IBServer destructed.";
     };
     
     std::string to_str()
     {
       std::stringstream ss;
+      
       ss << "\t key= " << key << "\n";
       ss << "\t ver= " << boost::lexical_cast<std::string>(ver) << "\n";
       ss << "\t lport= " << boost::lexical_cast<std::string>(lport) << "\n";
@@ -78,7 +79,7 @@ class IBServer{
       struct ibv_send_wr wr, *bad_wr = NULL;
       struct ibv_sge sge;
     
-      memset(&wr, 0, sizeof(wr));
+      memset(&wr, 0, sizeof(wr) );
     
       wr.wr_id = (uintptr_t)id;
       wr.opcode = IBV_WR_SEND;
@@ -92,7 +93,7 @@ class IBServer{
     
       TEST_NZ(ibv_post_send(id->qp, &wr, &bad_wr) );
     };
-    //state handlers
+    // State handlers
     void on_pre_conn(struct rdma_cm_id *id)
     {
       struct conn_context *ctx = (struct conn_context *)malloc(sizeof(struct conn_context) );
@@ -102,7 +103,7 @@ class IBServer{
       posix_memalign((void **)&ctx->buffer, sysconf(_SC_PAGESIZE), BUFFER_LENGTH*sizeof(data_type) );
       TEST_Z(ctx->buffer_mr = ibv_reg_mr(connector_->rc_get_pd(), ctx->buffer, BUFFER_LENGTH*sizeof(data_type), IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE));
     
-      posix_memalign((void **)&ctx->msg, sysconf(_SC_PAGESIZE), sizeof(*ctx->msg));
+      posix_memalign((void **)&ctx->msg, sysconf(_SC_PAGESIZE), sizeof(*ctx->msg) );
       TEST_Z(ctx->msg_mr = ibv_reg_mr(connector_->rc_get_pd(), ctx->msg, sizeof(*ctx->msg), IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE));
     
       post_receive(id);
@@ -128,10 +129,9 @@ class IBServer{
     
       free(ctx->buffer);
       free(ctx->msg);
+      free(ctx);
     
       LOG(INFO) << "on_disconnect:: done.";
-    
-      free(ctx);
     };
     
     void on_completion(struct ibv_wc *wc)
@@ -141,8 +141,7 @@ class IBServer{
       
       if (wc->opcode == IBV_WC_RECV_RDMA_WITH_IMM) {
         uint32_t size = ntohl(wc->imm_data);
-        
-        //print_conn_context(ctx);
+        // print_conn_context(ctx);
         
         if (size == 0) {
           ctx->msg->id = MSG_DONE;
@@ -150,8 +149,8 @@ class IBServer{
           // don't need post_receive() since we're done with this connection
         }
         else {
-          if (ctx->msg->id == MSG_DONE){
-            printf("MSG_DONE received.\n");
+          if (ctx->msg->id == MSG_DONE) {
+            // printf("MSG_DONE received.\n");
             ctx->msg->id = MSG_DONE;
             send_message(id);
             return;
@@ -162,7 +161,7 @@ class IBServer{
             memcpy(is_eof_buf, (char*)ctx->buffer, 3);
             is_eof_buf[3] = '\0';
             // LOG(INFO) << "on_completion:: is_eof_buf= " << is_eof_buf;
-            if(!strcmp(is_eof_buf, (char*)"EOF") ){
+            if(!strcmp(is_eof_buf, (char*)"EOF") ) {
               LOG(INFO) << "on_completion:: EOF received.";
               ctx->msg->id = MSG_DONE;
               send_message(id);
@@ -189,7 +188,7 @@ class IBServer{
       //   boost::bind(&IBServer::on_completion, this, _1),
       //   boost::bind(&IBServer::on_disconnect, this, _1) );
         
-        LOG(INFO) << "init:: waiting for connections. interrupt (^C) to exit.";
+      LOG(INFO) << "init:: waiting for connections. interrupt (^C) to exit.";
         
       connector_->rc_server_loop(lport);
     };

@@ -203,11 +203,12 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
   return opt_map;
 }
 
-#define TEST_SIZE 300
-#define TEST_NDIM 3
-#define TEST_DATASIZE pow(TEST_SIZE, TEST_NDIM)
+#define TEST_NUMKEYS 18
+#define TEST_SIZE 256
+#define TEST_NDIM 1
+#define TEST_DATASIZE TEST_NUMKEYS*pow(TEST_SIZE, 3)
 #define TEST_VER 0
-#define TEST_SGDIM 1024
+#define TEST_SGDIM TEST_DATASIZE
 
 void get_test(WADspacesDriver& wads_driver)
 {
@@ -222,7 +223,7 @@ void get_test(WADspacesDriver& wads_driver)
   uint64_t *ub_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
   for (int i = 0; i < TEST_NDIM; i++) {
     lb_[i] = 0;
-    ub_[i] = TEST_SIZE - 1;
+    ub_[i] = TEST_DATASIZE - 1; //TEST_SIZE - 1;
   }
   
   if (wads_driver.get(true, "int", var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_) ) {
@@ -247,13 +248,14 @@ void put_test(std::string var_name, WADspacesDriver& wads_driver)
   uint64_t *ub_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
   for (int i = 0; i < TEST_NDIM; i++) {
     lb_[i] = 0;
-    ub_[i] = TEST_SIZE - 1;
+    ub_[i] = TEST_DATASIZE - 1; //TEST_SIZE - 1;
   }
   
   for (int i = 0; i < TEST_DATASIZE; i++) {
     data_[i] = i + 1;
   }
   
+  LOG(INFO) << "put_test:: will put datasize= " << (float)TEST_DATASIZE*sizeof(int)/1024/1024 << " MB.";
   if (wads_driver.put("int", var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_) ) {
     LOG(ERROR) << "put_test:: wads_driver.local_put failed!";
     return;
@@ -279,24 +281,16 @@ int main(int argc , char **argv)
   char dht_laddr[100];
   char wa_laddr[100];
   
+  TProfiler<std::string> tprofiler;
   if (strcmp(opt_map[(char*)"type"], (char*)"put") == 0) {
     WADspacesDriver wads_driver(app_id, num_dscnodes-1);
     
     std::cout << "Enter for put_test...\n";
     getline(std::cin, temp);
     
+    tprofiler.add_event("put_test", "put_test");
     put_test("dummy", wads_driver);
-    
-    std::cout << "Enter\n";
-    getline(std::cin, temp);
-  }
-  else if (strcmp(opt_map[(char*)"type"], (char*)"put_2") == 0) {
-    WADspacesDriver wads_driver(app_id, num_dscnodes-1);
-    
-    std::cout << "Enter for put_test\n";
-    getline(std::cin, temp);
-    
-    put_test("dummy_2", wads_driver);
+    tprofiler.end_event("put_test");
     
     std::cout << "Enter\n";
     getline(std::cin, temp);
@@ -307,7 +301,9 @@ int main(int argc , char **argv)
     std::cout << "Enter for get_test...\n";
     getline(std::cin, temp);
     
+    tprofiler.add_event("get_test", "get_test");
     get_test(wads_driver);
+    tprofiler.end_event("get_test");
     
     std::cout << "Enter\n";
     getline(std::cin, temp);
@@ -343,9 +339,9 @@ int main(int argc , char **argv)
                          tmpfs_dir, wa_ib_lport_list,
                          true, buffer_size, alphabet_, alphabet_size, context_size );
     
-    // syncer<char> dummy_syncer;
-    // dummy_syncer.add_sync_point('d', 1);
-    // dummy_syncer.wait('d');
+    syncer<char> dummy_syncer;
+    dummy_syncer.add_sync_point('d', 1);
+    dummy_syncer.wait('d');
     
     std::cout << "Enter\n";
     getline(std::cin, temp);
@@ -354,5 +350,7 @@ int main(int argc , char **argv)
     LOG(ERROR) << "main:: unknown type= " << opt_map[(char*)"type"];
   }
   
+  std::cout << "main:: tprofiler= \n" << tprofiler.to_str();
+  // 
   return 0;
 }

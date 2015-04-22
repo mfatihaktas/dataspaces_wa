@@ -8,7 +8,7 @@
 #include "messages.h"
 
 template <class data_type>
-class IBClient{
+class IBClient {
   struct client_context
   {
     data_type *buffer;
@@ -44,7 +44,7 @@ class IBClient{
       )
     {
       // 
-      LOG(INFO) << "IBClient:: constructed:\n" << to_str();
+      LOG(INFO) << "IBClient:: constructed client= \n" << to_str();
     };
     ~IBClient()
     {
@@ -123,8 +123,8 @@ class IBClient{
       
       size_t chunk_length;
       data_type* chunk_ = (data_type*)malloc(BUFFER_LENGTH*sizeof(data_type) );
-      while(data_length_t){
-        switch (data_length_t >= BUFFER_LENGTH){
+      while(data_length_t) {
+        switch (data_length_t >= BUFFER_LENGTH) {
           case 1:
             chunk_length = BUFFER_LENGTH;
             break;

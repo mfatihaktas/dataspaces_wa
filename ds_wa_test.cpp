@@ -32,19 +32,19 @@ void debug_print(std::string key, unsigned int ver, int size, int ndim,
             << "size= " << size << "\n"
             << "ndim= " << ndim << "\n";
   std::cout << "gdim=";
-  for (int i=0; i<ndim; i++){
+  for (int i = 0; i < ndim; i++) {
     std::cout << "\t" << gdim[i] << ", ";
   }
   std::cout << "\n";
   
   std::cout << "lb=";
-  for (int i=0; i<ndim; i++){
+  for (int i = 0; i < ndim; i++) {
     std::cout << "\t" << lb[i] << ", ";
   }
   std::cout << "\n";
   
   std::cout << "ub=";
-  for (int i=0; i<ndim; i++){
+  for (int i = 0; i < ndim; i++) {
     std::cout << "\t" << ub[i] << ", ";
   }
   std::cout << "\n";
@@ -55,7 +55,7 @@ void debug_print(std::string key, unsigned int ver, int size, int ndim,
   }
   std::cout << "data_length= " << data_length << "\n";
   std::cout << "data=";
-  for (int i=0; i<data_length; i++){
+  for (int i = 0; i < data_length; i++) {
     std::cout << "\t" << data[i] << ", ";
   }
   std::cout << "\n";
@@ -98,6 +98,7 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
     {"num_dscnodes", optional_argument, NULL, 1},
     {"app_id", optional_argument, NULL, 2},
     {"num_putget", optional_argument, NULL, 3},
+    {"inter_time_sec", optional_argument, NULL, 4},
     {0, 0, 0, 0}
   };
   
@@ -124,6 +125,9 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
       case 3:
         opt_map[(char*)"num_putget"] = optarg;
         break;
+      case 4:
+        opt_map[(char*)"inter_time_sec"] = optarg;
+        break;
       default:
         break;
     }
@@ -147,7 +151,7 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
 #define TEST_VER 0
 #define TEST_SGDIM 1024
 
-void multi_get_test(int num_gets, std::string base_var_name, WADspacesDriver& wads_driver)
+void multi_get_test(int num_gets, float inter_get_time_sec, std::string base_var_name, WADspacesDriver& wads_driver)
 {
   uint64_t* gdim_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
   for (int i = 0; i < TEST_NDIM; i++) {
@@ -162,14 +166,20 @@ void multi_get_test(int num_gets, std::string base_var_name, WADspacesDriver& wa
     ub_[i] = TEST_SIZE - 1;
   }
   
+  TProfiler<int> get_time_profiler;
   for (int i = 0; i < num_gets; i++) {
     std::string var_name = base_var_name + "_" + boost::lexical_cast<std::string>(i);
     std::cout << "\n"; // to see better on terminal
+    get_time_profiler.add_event(i, var_name);
     if (wads_driver.get(true, "int", var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_) ) {
       LOG(ERROR) << "multi_get_test:: wads_driver.get failed for var_name= " << var_name;
       return;
     }
+    get_time_profiler.end_event(i);
+    
+    sleep(inter_get_time_sec);
   }
+  LOG(INFO) << "multi_get_test:: get_time_profiler= \n" << get_time_profiler.to_str();
   // size_t data_length = patch::get_data_length(TEST_NDIM, gdim, lb, ub);
   // debug_print(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_, data_length);
   
@@ -177,7 +187,7 @@ void multi_get_test(int num_gets, std::string base_var_name, WADspacesDriver& wa
   free(data_);
 }
 
-void multi_put_test(int num_puts, std::string base_var_name, WADspacesDriver& wads_driver)
+void multi_put_test(int num_puts, float inter_put_time_sec, std::string base_var_name, WADspacesDriver& wads_driver)
 {
   uint64_t* gdim_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
   for (int i = 0; i < TEST_NDIM; i++) {
@@ -203,6 +213,7 @@ void multi_put_test(int num_puts, std::string base_var_name, WADspacesDriver& wa
       LOG(ERROR) << "multi_put_test:: wads_driver.put failed for var_name= " << var_name;
       return;
     }
+    sleep(inter_put_time_sec);
   }
   // debug_print(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_, patch::get_data_length(TEST_NDIM, gdim_, lb_, ub_) );
   
@@ -220,6 +231,7 @@ int main(int argc , char **argv)
   int num_dscnodes = boost::lexical_cast<int>(opt_map[(char*)"num_dscnodes"]);
   int app_id = boost::lexical_cast<int>(opt_map[(char*)"app_id"]);
   int num_putget = boost::lexical_cast<int>(opt_map[(char*)"num_putget"]);
+  float inter_time_sec = boost::lexical_cast<float>(opt_map[(char*)"inter_time_sec"]);
   
   TProfiler<std::string> tprofiler;
   if (strcmp(opt_map[(char*)"type"], (char*)"mput") == 0) {
@@ -229,7 +241,7 @@ int main(int argc , char **argv)
     getline(std::cin, temp);
     
     tprofiler.add_event("multi_put_test", "multi_put_test");
-    multi_put_test(num_putget, "dummy", wads_driver);
+    multi_put_test(num_putget, inter_time_sec, "dummy", wads_driver);
     tprofiler.end_event("multi_put_test");
     // multi_put_test(num_putget, "dummy2", wads_driver);
     
@@ -243,7 +255,7 @@ int main(int argc , char **argv)
     getline(std::cin, temp);
     
     tprofiler.add_event("multi_get_test", "multi_get_test");
-    multi_get_test(num_putget, "dummy", wads_driver);
+    multi_get_test(num_putget, inter_time_sec, "dummy", wads_driver);
     tprofiler.end_event("multi_get_test");
     
     std::cout << "Enter\n";

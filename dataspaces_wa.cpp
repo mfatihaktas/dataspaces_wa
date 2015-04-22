@@ -139,7 +139,7 @@ int WADspacesDriver::get(bool blocking, std::string data_type, std::string key, 
     return 1;
   }
   
-  if (ds_driver_->get(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_) ){
+  if (ds_driver_->get(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_) ) {
     LOG(ERROR) << "get:: ds_driver_->get failed!";
     return 1;
   }

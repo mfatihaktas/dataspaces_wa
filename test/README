@@ -1,0 +1,17 @@
+This folder contains tests for various purposes.
+- Currently contains only test demonstrating segmentation fault thrown from the communication layer
+of dataspaces for multi-threaded put-get scenario with lock type 2.
+  ds_drive.h: includes wrapper functions to use dataspaces API.
+  ds_test.h: includes class to generate multi-threaded dataspaces put-get.
+  exp.cpp: includes main functions generating the test case using ds_test.
+  run.sh: quick run for dataspaces_server, multi_put and multi_get applications.
+  
+compile:
+  # Variables DSPACES_DIR and MPICPP in Makefile should be modified accordingly
+  make clean; make
+
+run:
+  ./run.sh s # runs dataspaces_server; DSPACES_BINDIR in this file should be modified accordingly
+  ./run.sh p # runs multi-threaded put application
+  ./run.sh g # runs multi-threaded get application
+  

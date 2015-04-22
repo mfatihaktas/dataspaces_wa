@@ -1,7 +1,7 @@
 #!/bin/bash
 echo $1 $2 $3
 
-DSPACES_BINDIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.4.0/install/bin
+# DSPACES_BINDIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.5.0/install/bin
 
 NUM_SNODES=1
 NUM_DSCNODES=$((1+1)) #+1: RIManager
@@ -37,7 +37,7 @@ elif [ $1  = 'init' ]; then
     export BOOST_DIR=/cac/u01/mfa51/Desktop/boost_1_56_0/install
     export GFTPINC_DIR=/usr/include/globus
     export GFTPLIB_DIR=/usr/lib64
-    export DSPACES_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.4.0/install
+    export DSPACES_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.5.0/install
     export DSPACESWA_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa
   
     # source /opt/rh/devtoolset-2/enable
@@ -59,7 +59,7 @@ elif [ $1  = 'init' ]; then
     export BOOST_DIR=/home/sc14demo/common-apps/boost_1_56_0/install
     export GFTPINC_DIR=/usr/include/globus
     export GFTPLIB_DIR=/usr/lib64
-    export DSPACES_DIR=/home/sc14demo/common-apps/dataspaces-1.4.0/install
+    export DSPACES_DIR=/home/sc14demo/common-apps/dataspaces-1.5.0/install
     export DSPACESWA_DIR=/home/sc14demo/common-apps/dataspaces_wa
     
     LD_LIBRARY_PATH=/home/sc14demo/common-apps/boost_1_56_0/install/lib:$LD_LIBRARY_PATH
@@ -76,7 +76,7 @@ elif [ $1  = 'init' ]; then
     export BOOST_DIR=/net/hp101/ihpcsc/maktas7/boost_1_56_0/install
     export GFTPINC_DIR=/usr/include/globus
     export GFTPLIB_DIR=/usr/lib64
-    export DSPACES_DIR=/net/hp101/ihpcsc/maktas7/dataspaces-1.4.0/install
+    export DSPACES_DIR=/net/hp101/ihpcsc/maktas7/dataspaces-1.5.0/install
     export DSPACESWA_DIR=/net/hp101/ihpcsc/maktas7/dataspaces_wa
     
     LD_LIBRARY_PATH=/net/hp101/ihpcsc/maktas7/boost_1_56_0/install/lib:$LD_LIBRARY_PATH

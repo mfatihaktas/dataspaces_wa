@@ -127,5 +127,5 @@ elif [ $1  = 'k' ]; then
     fi
   done
 else
-  echo "Argument did not match !"
+  echo "Argument did not match!"
 fi

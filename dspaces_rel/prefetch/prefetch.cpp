@@ -1,7 +1,7 @@
 #include "prefetch.h"
 
 PBuffer::PBuffer(bool with_prefetch, size_t buffer_size, func_handle_prefetch_cb _handle_prefetch_cb, 
-                char* alphabet_, size_t alphabet_size, size_t context_size)
+                 char* alphabet_, size_t alphabet_size, size_t context_size)
 : with_prefetch(with_prefetch),
   buffer_size(buffer_size),
   _handle_prefetch_cb(_handle_prefetch_cb),

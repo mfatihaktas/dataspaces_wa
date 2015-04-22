@@ -15,28 +15,27 @@ void handle_signal(int signum)
   LOG(INFO) << "handle_signal:: recved signum=" << signum;
   DHTNode::cv.notify_one();
 }
+
 //************************************  DHTNode  **********************************//
 DHTNode::DHTNode(char id, func_rimsg_recv_cb _rimsg_recv_cb,
                  char* lip, int lport,
                  char* joinhost_lip, int joinhost_lport )
-: join_channel((char*)"join", lip, lport, joinhost_lip, joinhost_lport),
+: id(id),
+  _rimsg_recv_cb(_rimsg_recv_cb),
+  lip(lip),
+  lport(lport),
+  joinhost_lip(joinhost_lip),
+  joinhost_lport(joinhost_lport),
+  join_channel((char*)"join", lip, lport, joinhost_lip, joinhost_lport),
   msger( this ),
   next_lport(lport)
 {
-  this->id = id;
-  this->_rimsg_recv_cb = _rimsg_recv_cb;
-  this->lip = lip;
-  this->lport = lport;
-  this->joinhost_lip = joinhost_lip;
-  this->joinhost_lport = joinhost_lport;
-  //
-  function_recv_callback fp_handle_recv = boost::bind(&DHTNode::handle_recv, this, _1);
-  join_channel.set_recv_callback(fp_handle_recv);
+  join_channel.set_recv_callback(boost::bind(&DHTNode::handle_recv, this, _1) );
   
   signal(SIGINT, handle_signal);
-  //
+  // 
   LOG(INFO) << "constructed.";
-  //
+  // 
   if ( joinhost_lip == NULL ){ //first node
     LOG(INFO) << "FIRST NODE";
   }
@@ -45,7 +44,7 @@ DHTNode::DHTNode(char id, func_rimsg_recv_cb _rimsg_recv_cb,
     boost::shared_ptr<Packet> p_ = msger.gen_join_req();
     join_channel.send_to_peer( *p_ );
   }
-  //
+  // 
   // wait_for_flag();
   // close();
 }
@@ -174,7 +173,7 @@ int DHTNode::broadcast_msg(char msg_type, std::map<std::string, std::string> msg
   // boost::shared_ptr< Packet > temp_p_( new Packet(msg_type, msg_map) );
   boost::shared_ptr<Packet> temp_p_ = boost::make_shared<Packet>(msg_type, msg_map);
   
-  //LOG(INFO) << "broadcast_msg:: broadcasting...";
+  // LOG(INFO) << "broadcast_msg:: broadcasting...";
   return send_to_allpeernodes(*temp_p_);
 }
 
@@ -225,7 +224,7 @@ void DHTNode::handle_recv(char* type__srlzedmsgmap)
       handle_rimsg(*p_);
       break;
   }
-  //
+  // 
   delete type__srlzedmsgmap;
 }
 
@@ -242,7 +241,7 @@ void DHTNode::handle_join_request(const Packet& p)
   
   join_channel.reinit_client(join_lip, join_lport);
   join_channel.conn_to_peer();
-  //
+  // 
   char* peer_name = new char[2];
   memcpy(peer_name, &id, 1);
   peer_name[1] = '\0';
@@ -250,14 +249,13 @@ void DHTNode::handle_join_request(const Packet& p)
   int r = ptable.add_peer(id, peer_name, this->lip, get_next_lport(), lip, lport, join_lip, join_lport);
   if (r == 0) {
     ptable.add_comm_channel(id);
-    function_recv_callback fp_handle_recv = boost::bind(&DHTNode::handle_recv, this, _1);
-    ptable.set_recv_callback(id, fp_handle_recv);
+    ptable.set_recv_callback(id, boost::bind(&DHTNode::handle_recv, this, _1) );
   }
   else {
     LOG(ERROR) << "handle_join_request:: add_peer failed!";
   }
   boost::shared_ptr<Packet> p_ = msger.gen_join_reply(id, (r == 0) );
-  //LOG(INFO) << "handle_join_request:: reply = \n" << p_->to_str();
+  // LOG(INFO) << "handle_join_request:: reply = \n" << p_->to_str();
   join_channel.send_to_peer( *p_ );
 }
 
@@ -272,7 +270,7 @@ void DHTNode::handle_join_reply(const Packet& p)
     char id = (msg_map["id"].c_str())[0];
     char* lip = string_to_char_(msg_map["lip"]);
     int lport = atoi(msg_map["lport"].c_str());
-    //
+    // 
     char* peer_name = new char[2];
     memcpy(peer_name, &id, 1);
     peer_name[1] = '\0';
@@ -291,10 +289,10 @@ void DHTNode::handle_join_reply(const Packet& p)
       LOG(INFO) << "handle_join_reply:: joined :) to" << " node; id=" << id;
       
       LOG(INFO) << "handle_join_reply:: ptable=\n" << ptable.to_str();
-      //get ready for incoming join_requests
+      // Get ready for incoming join_requests
       join_channel.reinit();
       join_channel.set_recv_callback(fp_handle_recv);
-      //
+      // 
       fill_pptable(msg_map);
       handle_next_ppeer();
     }
@@ -317,11 +315,11 @@ void DHTNode::handle_join_ack(const Packet& p)
   
   LOG(INFO) << "handle_join_ack:: ptable=\n" << ptable.to_str();
   
-  //for incoming join_requests
+  // For incoming join_requests
   join_channel.reinit();
   function_recv_callback fp_handle_recv = boost::bind(&DHTNode::handle_recv, this, _1);
   join_channel.set_recv_callback(fp_handle_recv);
-  //
+  // 
   test();
 }
 

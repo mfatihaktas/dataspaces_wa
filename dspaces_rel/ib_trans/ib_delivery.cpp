@@ -5,13 +5,13 @@ IBDDManager::IBDDManager(std::list<std::string> ib_lport_list)
   for (std::list<std::string>::iterator it = ib_lport_list.begin(); it != ib_lport_list.end(); it++){
     ib_lport_queue.push(*it);
   }
-  //
+  // 
   LOG(INFO) << "IBDDManager:: constructed; \n" << to_str();
 }
 
 IBDDManager::~IBDDManager()
 {
-  //
+  // 
   LOG(INFO) << "IBDDManager:: destructed.";
 }
 
@@ -27,19 +27,19 @@ std::string IBDDManager::to_str()
 
 void IBDDManager::init_ib_server(std::string key, unsigned int ver, std::string data_type, const char* lport, data_recv_cb dr_cb)
 {
-  if (str_equals(data_type, "int") ){
+  if (str_equals(data_type, "int") ) {
     IBServer<int> ib_server(key, ver, lport, dr_cb);
     ib_server.init();
   }
-  else if (str_equals(data_type, "char") ){
+  else if (str_equals(data_type, "char") ) {
     IBServer<char> ib_server(key, ver, lport, dr_cb);
     ib_server.init();
   }
-  else if (str_equals(data_type, "double") ){
+  else if (str_equals(data_type, "double") ) {
     IBServer<double> ib_server(key, ver, lport, dr_cb);
     ib_server.init();
   }
-  else if (str_equals(data_type, "float") ){
+  else if (str_equals(data_type, "float") ) {
     IBServer<float> ib_server(key, ver, lport, dr_cb);
     ib_server.init();
   }

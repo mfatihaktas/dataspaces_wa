@@ -4,11 +4,13 @@
 #include <iostream>
 #include <vector>
 #include <map>
-#include <boost/lexical_cast.hpp>
-#include <glog/logging.h>
 #include <time.h>
+#include <cmath>
 
+#include <boost/lexical_cast.hpp>
 #include <boost/thread.hpp>
+#include <boost/tuple/tuple.hpp>
+#include <glog/logging.h>
 
 namespace patch_profiler
 {
@@ -113,17 +115,6 @@ class TProfiler { // Time Profiler
     TProfiler() { gettimeofday(&created_time, NULL); };
     ~TProfiler() {};
     
-    void add_event(T event_key, std::string event_name)
-    {
-      Event e(event_name, created_time);
-      event_map[event_key] = e;
-    }
-    
-    void end_event(T event_key)
-    {
-      event_map[event_key].end();
-    }
-    
     std::string to_str()
     {
       std::stringstream ss;
@@ -136,6 +127,26 @@ class TProfiler { // Time Profiler
       ss << "\t" << "total_dur_sec= " << total_dur_sec << "\n";
       
       return ss.str();
+    }
+    
+    void add_event(T event_key, std::string event_name)
+    {
+      Event e(event_name, created_time);
+      event_map[event_key] = e;
+    }
+    
+    void end_event(T event_key)
+    {
+      event_map[event_key].end();
+    }
+    
+    void get_event_dur_vector(float& total_dur, std::vector<T>& event_dur_v)
+    {
+      for (typename std::map<T, Event>::iterator it = event_map.begin(); it != event_map.end(); it++) {
+        float event_dur = (it->second).get_dur_sec();
+        total_dur += event_dur;
+        event_dur_v.push_back(event_dur);
+      }
     }
 };
 

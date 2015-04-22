@@ -23,7 +23,7 @@ class DSDriver
     int finalize();
     int init(int num_dscnodes, int app_id);
     int sync_put(const char* var_name, unsigned int ver, int size,
-                int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
+                 int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
     int get(const char* var_name, unsigned int ver, int size,
             int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
     void lock_on_write(const char* var_name);

@@ -867,7 +867,7 @@ void RFPManager::handle_ib_receive(std::string key, unsigned int ver, size_t dat
   LOG(INFO) << "handle_ib_receive:: for <key= " << key << ", ver= " << ver << ">, recved data_size= " << data_size << ", total_received_size= " << (float)(recved_size+data_size)/1024/1024 << "(MB)";
   
   char* data_t_ = static_cast<char*>(key_ver__data_map[kv]);
-  memcpy(data_t_+recved_size, data_, data_size);
+  memcpy(data_t_ + recved_size, data_, data_size);
   
   key_ver__recvedsize_map[kv] += data_size;
   
@@ -920,7 +920,7 @@ size_t RFPManager::get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uin
       LOG(ERROR) << "get_data_length:: ub= " << ub << " is not feasible!";
       return 0;
     }
-    dim_length[i] = ub - lb+1;
+    dim_length[i] = ub - lb + 1;
   }
   
   size_t volume = 1;
@@ -1519,7 +1519,7 @@ void RIManager::handle_r_query(bool subscribe, std::map<std::string, std::string
   int dummy = -1;
   uint64_t* dummy_;
   if (rq_table.get_key_ver(key, ver, data_type, ds_id, dummy, dummy, dummy_, dummy_, dummy_) ) {
-    //LOG(INFO) << "handle_r_query:: does not exist; key= " << key;
+    // LOG(INFO) << "handle_r_query:: does not exist; key= " << key;
     rq_reply_map["ds_id"] = '?';
     
     if (subscribe) {
@@ -1721,7 +1721,7 @@ void RIManager::handle_rp_reply(std::map<std::string, std::string> rp_reply_map)
   key_ver___laddr_lport__tmpfsdir_map[kv] = std::make_pair(std::make_pair(rp_reply_map["laddr"], rp_reply_map["lport"]), rp_reply_map["tmpfs_dir"]);
   
   rp_syncer.notify(kv);
-  //
+  // 
   LOG(INFO) << "handle_rp_reply:: done.";
 }
 
@@ -1731,7 +1731,7 @@ void RIManager::handle_r_subscribe(std::map<std::string, std::string> r_subs_map
   
   rs_table.push_subscriber(r_subs_map["key"], boost::lexical_cast<unsigned int>(r_subs_map["ver"]), 
                            boost::lexical_cast<char>(r_subs_map["id"]) );
-  //
+  // 
   LOG(INFO) << "handle_r_subscribe:: done.";
 }
 
@@ -1741,7 +1741,7 @@ void RIManager::handle_gftpput_done(std::map<std::string, std::string> gftpput_d
   LOG(INFO) << "handle_gftpput_done:: gftpput_done_map= \n" << patch::str_str_map_to_str(gftpput_done_map);
   
   rf_wa_get_syncer.notify(std::make_pair(gftpput_done_map["key"], boost::lexical_cast<unsigned int>(gftpput_done_map["ver"]) ) );
-  //
+  // 
   LOG(INFO) << "handle_gftpput_done:: done.";
 }
 
@@ -1761,7 +1761,7 @@ void RIManager::handle_gftpb_ping(std::map<std::string, std::string> gftpb_ping_
     LOG(ERROR) << "handle_gftpb_ping:: send_msg to to_id= " << to_id << " failed!";
     return;
   }
-  //
+  // 
   LOG(INFO) << "handle_gftpb_ping:: done.";
 }
 

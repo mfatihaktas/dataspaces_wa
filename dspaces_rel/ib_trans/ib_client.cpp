@@ -8,13 +8,13 @@ IBClient::IBClient(const char* s_laddr, const char* s_lport,
   data_(data_),
   num_srs(0)
 {
-  //
+  // 
   LOG(INFO) << "IBClient:: constructed:\n" << to_str();
 }
 
 IBClient::~IBClient()
 {
-  //
+  // 
   LOG(INFO) << "IBClient:: destructed.";
 }
 
@@ -25,7 +25,7 @@ void IBClient::write_remote(struct rdma_cm_id *id, uint32_t len)
   struct ibv_send_wr wr, *bad_wr = NULL;
   struct ibv_sge sge;
 
-  memset(&wr, 0, sizeof(wr));
+  memset(&wr, 0, sizeof(wr) );
 
   if (len) {
     sge.addr = (uintptr_t)ctx->buffer;
@@ -55,7 +55,7 @@ void IBClient::post_receive(struct rdma_cm_id *id)
   struct ibv_recv_wr wr, *bad_wr = NULL;
   struct ibv_sge sge;
 
-  memset(&wr, 0, sizeof(wr));
+  memset(&wr, 0, sizeof(wr) );
 
   wr.wr_id = (uintptr_t)id;
   wr.sg_list = &sge;
@@ -77,8 +77,8 @@ void IBClient::send_data(struct rdma_cm_id *id)
   
   size_t chunk_size;
   char* chunk_ = (char*)malloc(sizeof(char)*BUFFER_SIZE);
-  while(data_size_t){
-    switch (data_size_t >= BUFFER_SIZE){
+  while(data_size_t) {
+    switch (data_size_t >= BUFFER_SIZE) {
       case 1:
         chunk_size = BUFFER_SIZE;
         break;
@@ -93,7 +93,7 @@ void IBClient::send_data(struct rdma_cm_id *id)
   }
   free(chunk_);
   send_chunk(id, 3, (char*)"EOF");
-  //
+  // 
   LOG(INFO) << "send_data:: done.";
 }
 
@@ -101,7 +101,7 @@ void IBClient::send_chunk(struct rdma_cm_id *id, size_t chunk_size, char* chunk)
 {
   struct client_context *ctx = (struct client_context *)id->context;
 
-  //ssize_t size = read(ctx->fd, ctx->buffer, BUFFER_SIZE);
+  // ssize_t size = read(ctx->fd, ctx->buffer, BUFFER_SIZE);
   memcpy(ctx->buffer, chunk, chunk_size);
 
   write_remote(id, chunk_size);
@@ -115,8 +115,8 @@ void IBClient::on_pre_conn(struct rdma_cm_id *id)
   posix_memalign((void **)&ctx->buffer, sysconf(_SC_PAGESIZE), BUFFER_SIZE);
   TEST_Z(ctx->buffer_mr = ibv_reg_mr(connector.rc_get_pd(), ctx->buffer, BUFFER_SIZE, IBV_ACCESS_LOCAL_WRITE));
 
-  posix_memalign((void **)&ctx->msg, sysconf(_SC_PAGESIZE), sizeof(*ctx->msg));
-  TEST_Z(ctx->msg_mr = ibv_reg_mr(connector.rc_get_pd(), ctx->msg, sizeof(*ctx->msg), IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE));
+  posix_memalign((void **)&ctx->msg, sysconf(_SC_PAGESIZE), sizeof(*ctx->msg) );
+  TEST_Z(ctx->msg_mr = ibv_reg_mr(connector.rc_get_pd(), ctx->msg, sizeof(*ctx->msg), IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE) );
 
   post_receive(id);
 }

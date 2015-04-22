@@ -14,13 +14,13 @@ IBServer::IBServer(const char* lport, data_recv_cb dr_cb)
 : lport(lport),
   dr_cb(dr_cb)
 {
-  //
+  // 
   LOG(INFO) << "IBServer constructed: lport= " << lport;
 }
 
 IBServer::~IBServer()
 {
-  //
+  // 
   LOG(INFO) << "IBServer destructed.";
 }
 
@@ -44,7 +44,7 @@ void IBServer::send_message(struct rdma_cm_id *id)
   struct ibv_send_wr wr, *bad_wr = NULL;
   struct ibv_sge sge;
 
-  memset(&wr, 0, sizeof(wr));
+  memset(&wr, 0, sizeof(wr) );
 
   wr.wr_id = (uintptr_t)id;
   wr.opcode = IBV_WR_SEND;
@@ -56,7 +56,7 @@ void IBServer::send_message(struct rdma_cm_id *id)
   sge.length = sizeof(*ctx->msg);
   sge.lkey = ctx->msg_mr->lkey;
 
-  TEST_NZ(ibv_post_send(id->qp, &wr, &bad_wr));
+  TEST_NZ(ibv_post_send(id->qp, &wr, &bad_wr)) ;
 }
 
 // STATE HANDLERS
@@ -67,10 +67,10 @@ void IBServer::on_pre_conn(struct rdma_cm_id *id)
   id->context = ctx;
 
   posix_memalign((void **)&ctx->buffer, sysconf(_SC_PAGESIZE), BUFFER_SIZE);
-  TEST_Z(ctx->buffer_mr = ibv_reg_mr(connector.rc_get_pd(), ctx->buffer, BUFFER_SIZE, IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE));
+  TEST_Z(ctx->buffer_mr = ibv_reg_mr(connector.rc_get_pd(), ctx->buffer, BUFFER_SIZE, IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE) );
 
-  posix_memalign((void **)&ctx->msg, sysconf(_SC_PAGESIZE), sizeof(*ctx->msg));
-  TEST_Z(ctx->msg_mr = ibv_reg_mr(connector.rc_get_pd(), ctx->msg, sizeof(*ctx->msg), IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE));
+  posix_memalign((void **)&ctx->msg, sysconf(_SC_PAGESIZE), sizeof(*ctx->msg) );
+  TEST_Z(ctx->msg_mr = ibv_reg_mr(connector.rc_get_pd(), ctx->msg, sizeof(*ctx->msg), IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE) );
 
   post_receive(id);
 }
@@ -109,7 +109,7 @@ void IBServer::on_completion(struct ibv_wc *wc)
   if (wc->opcode == IBV_WC_RECV_RDMA_WITH_IMM) {
     uint32_t size = ntohl(wc->imm_data);
     
-    //print_conn_context(ctx);
+    // print_conn_context(ctx);
     
     if (size == 0) {
       ctx->msg->id = MSG_DONE;
@@ -123,8 +123,8 @@ void IBServer::on_completion(struct ibv_wc *wc)
         send_message(id);
         return;
       }
-      else if(size == 3){
-        if(!strcmp((char*)ctx->buffer, (char*)"EOF") ){
+      else if(size == 3) {
+        if(!strcmp((char*)ctx->buffer, (char*)"EOF") ) {
           LOG(INFO) << "on_completion:: EOF received.";
           ctx->msg->id = MSG_DONE;
           send_message(id);

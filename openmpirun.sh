@@ -1,9 +1,10 @@
 #!/bin/bash
 echo $1 $2 $3
 
-NUM_DS_NODE_LIST=( 1 1 )
-# DS_NODE_LIST=( "-host dell01 -host dell02 -host dell03 -host dell04" "-host dell05 -host dell06 -host dell07 -host dell08" )
-DS_NODE_LIST=( "-host dell01" "-host dell02" )
+NUM_DS_NODE_LIST=( 2 2 )
+# DS_NODE_LIST=( "-host dell01 -host dell03 -host dell04 -host dell05" "-host dell02 -host dell06 -host dell07 -host dell08" )
+DS_NODE_LIST=( "-host dell01 -host dell03" "-host dell02 -host dell04" )
+# DS_NODE_LIST=( "-host dell01" "-host dell02" )
 RI_MANAGER_NODE_LIST=( "-host dell01" "-host dell02" )
 NUM_DSPACESWA_CLIENT_LIST=( 1 1 )
 
@@ -73,5 +74,5 @@ elif [ $1  = 'k' ]; then
     $MPIRUN -npernode 1 $i $PKILL -f globus-gridftp-server
   done
 else
-  echo "Argument did not match !"
+  echo "Argument did not match!"
 fi
