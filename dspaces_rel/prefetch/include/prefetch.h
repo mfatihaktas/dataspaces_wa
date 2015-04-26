@@ -6,16 +6,14 @@
 #include "patch_pre.h"
 #include "palgorithm.h"
 
-typedef boost::function<void(std::map<std::string, std::string>)> func_handle_prefetch_cb;
-
 typedef std::pair<std::string, unsigned int> key_ver_pair;
-// pkey: prefetching key in alphabet
-typedef std::pair<KEY_T, unsigned int> pkey_pver_pair;
+typedef boost::function<void(char, key_ver_pair)> func_handle_prefetch_cb;
 
 class PBuffer { //Prefetching Buffer
   private:
-    bool with_prefetch;
+    char ds_id;
     size_t buffer_size;
+    bool with_prefetch;
     func_handle_prefetch_cb _handle_prefetch_cb;
     size_t app_context_size;
     
@@ -29,18 +27,20 @@ class PBuffer { //Prefetching Buffer
     
     // LZAlgo palgo;
     PPMAlgo ppm_algo_to_pick_app;
+    
+    int push(key_ver_pair kv);
+    bool contains(key_ver_pair kv);
+    int get_to_prefetch(size_t& num_keys, std::vector<key_ver_pair>& key_ver_vector);
+    int prefetch();
   public:
-    PBuffer(bool with_prefetch, size_t buffer_size, func_handle_prefetch_cb _handle_prefetch_cb, 
+    PBuffer(char ds_id, size_t buffer_size, 
+            bool with_prefetch, func_handle_prefetch_cb _handle_prefetch_cb, 
             size_t app_context_size);
     ~PBuffer();
     std::string to_str();
     
-    int reg_key_ver(std::string key, unsigned int ver, int app_id);
-    int add_access(std::string key, unsigned int ver, int app_id);
-    int push(std::string key, unsigned int ver);
-    bool contains(std::string key, unsigned int ver);
-    int get_to_prefetch(size_t& num_keys, std::vector<key_ver_pair>& key_ver_vector);
-    int prefetch();
+    int reg_key_ver(int app_id, key_ver_pair kv);
+    int add_access(int app_id, key_ver_pair kv);
 };
 
 #endif // _PREFETCH_H_

@@ -22,8 +22,7 @@ APPS := exp
 
 all: ${APPS}
 
-# $(ODIR)/sim.o
-exp: $(ODIR)/exp.o $(ODIR)/prefetch.o $(ODIR)/palgorithm.o 
+exp: $(ODIR)/exp.o $(ODIR)/sim.o $(ODIR)/prefetch.o $(ODIR)/palgorithm.o 
 	$(CPP) -g -o $@ $^ $(INC) $(LIB)
 
 $(ODIR)/%.o: %.cpp

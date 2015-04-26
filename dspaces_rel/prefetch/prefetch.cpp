@@ -1,9 +1,11 @@
 #include "prefetch.h"
 
-PBuffer::PBuffer(bool with_prefetch, size_t buffer_size, func_handle_prefetch_cb _handle_prefetch_cb, 
+PBuffer::PBuffer(char ds_id, size_t buffer_size, 
+                 bool with_prefetch, func_handle_prefetch_cb _handle_prefetch_cb, 
                  size_t app_context_size )
-: with_prefetch(with_prefetch),
+: ds_id(ds_id),
   buffer_size(buffer_size),
+  with_prefetch(with_prefetch),
   _handle_prefetch_cb(_handle_prefetch_cb),
   app_context_size(app_context_size),
   cache(buffer_size),
@@ -60,11 +62,10 @@ std::string PBuffer::to_str()
 }
 
 // ****************************************  state rel  ***************************************** //
-int PBuffer::reg_key_ver(std::string key, unsigned int ver, int app_id)
+int PBuffer::reg_key_ver(int app_id, key_ver_pair kv)
 {
-  key_ver_pair kv = std::make_pair(key, ver);
   if (reged_key_ver_vec.contains(kv) ) {
-    LOG(ERROR) << "reg_key_ver:: already registered! <key= " << key << ", ver= " << ver << ">.";
+    LOG(ERROR) << "reg_key_ver:: already registered! <key= " << kv.first << ", ver= " << kv.second << ">.";
     return 1;
   }
   reged_key_ver_vec.push_back(kv);
@@ -80,14 +81,12 @@ int PBuffer::reg_key_ver(std::string key, unsigned int ver, int app_id)
 }
 
 // ****************************************  operational  *************************************** //
-int PBuffer::add_access(std::string key, unsigned int ver, int app_id)
+int PBuffer::add_access(int app_id, key_ver_pair kv)
 {
-  key_ver_pair kv = std::make_pair(key, ver);
   if (!reged_key_ver_vec.contains(kv) ) {
-    LOG(WARNING) << "add_access:: non-registered <key= " << key << ", ver= " << ver << ">.";
+    LOG(WARNING) << "add_access:: non-registered <key= " << kv.first << ", ver= " << kv.second << ">.";
     return 1;
   }
-  
   ppm_algo_to_pick_app.add_access(app_id);
   
   acced_key_ver_vec.push_back(kv);
@@ -100,7 +99,6 @@ int PBuffer::add_access(std::string key, unsigned int ver, int app_id)
         key_ver_deq.pop_front();
     }
   }
-  
   // Call for prefetching per access
   // boost::thread(&PBuffer::prefetch, this);
   prefetch();
@@ -115,14 +113,10 @@ int PBuffer::prefetch()
   get_to_prefetch(num_apps, key_ver_vec);
   
   for (std::vector<key_ver_pair>::iterator it = key_ver_vec.begin(); it != key_ver_vec.end(); it++) {
-    std::map<std::string, std::string> handle_prefetch_map;
-    handle_prefetch_map["key"] = it->first;
-    handle_prefetch_map["ver"] = boost::lexical_cast<std::string>(it->second);
-    
     if (with_prefetch)
-      _handle_prefetch_cb(handle_prefetch_map);
+      _handle_prefetch_cb(ds_id, *it);
     
-    push(it->first, it->second);
+    push(*it);
   }
 }
 
@@ -140,23 +134,22 @@ int PBuffer::get_to_prefetch(size_t& num_apps, std::vector<key_ver_pair>& key_ve
   free(app_ids_);
 }
 
-int PBuffer::push(std::string key, unsigned int ver)
+int PBuffer::push(key_ver_pair kv)
 {
-  key_ver_pair kv = std::make_pair(key, ver);
   if (!reged_key_ver_vec.contains(kv) ) {
-    LOG(ERROR) << "push:: reged_key_ver_vec does not contain <key= " << key << ", ver= " << ver << ">.";
+    LOG(ERROR) << "push:: reged_key_ver_vec does not contain <key= " << kv.first << ", ver= " << kv.second << ">.";
     return 1;
   }
   if (cache.push(kv) ) {
-    LOG(ERROR) << "push:: cache.push failed for <key= " << key << ", ver= " << ver << ">.";
+    LOG(ERROR) << "push:: cache.push failed for <key= " << kv.first << ", ver= " << kv.second << ">.";
     return 1;
   }
   
   return 0;
 }
 
-bool PBuffer::contains(std::string key, unsigned int ver)
+bool PBuffer::contains(key_ver_pair kv)
 {
-  return cache.contains(std::make_pair(key, ver) );
+  return cache.contains(kv);
 }
 

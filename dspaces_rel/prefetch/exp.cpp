@@ -11,20 +11,6 @@
 #include <functional>
 #include <string>
 
-namespace patch_exp
-{
-  std::string str_str_map_to_str(std::map<std::string, std::string> str_map)
-  {
-    std::stringstream ss;
-    for (std::map<std::string, std::string>::const_iterator it = str_map.begin(); 
-         it != str_map.end(); it++){
-      ss << "\t" << it->first << ": " << it->second << "\n";
-    }
-    
-    return ss.str();
-  }
-}
-
 std::map<char*, char*> parse_opts(int argc, char** argv)
 {
   std::map<char*, char*> opt_map;
@@ -121,9 +107,9 @@ void palgo_test()
   // std::cout << "parse_tree= \n" << ppm_algo.parse_tree_to_pstr();
 }
 
-void handle_prefetch(std::map<std::string, std::string> pmap)
+void handle_prefetch(char ds_id, key_ver_pair kv)
 {
-  LOG(INFO) << "handle_prefetch:: pmap= \n" << patch_exp::str_str_map_to_str(pmap);
+  LOG(INFO) << "handle_prefetch:: ds_id= " << ds_id << ", <key= " << kv.first << ", ver= " << kv.second << ">.";
 }
 
 void prefetch_test()
@@ -131,21 +117,22 @@ void prefetch_test()
   size_t buffer_size = 2;
   size_t app_context_size = 2;
   
-  PBuffer pbuffer(true, buffer_size, boost::bind(handle_prefetch, _1), 
+  PBuffer pbuffer('a', buffer_size, 
+                  true, boost::bind(handle_prefetch, _1, _2), 
                   app_context_size);
   
   std::string keys_[] = {"k1", "k2", "k3", "k4", "k5", "k6", "k7", "k8", "k9", "k10"};
   size_t keys_size = 10;
   for (int i = 0; i < keys_size; i++) {
-    pbuffer.reg_key_ver(keys_[i], 0, 0);
+    pbuffer.reg_key_ver(0, std::make_pair(keys_[i], 0) );
   }
   
   int num_access = 7;
   for (int i = 0; i < num_access; i++) {
-    pbuffer.add_access(keys_[i], 0, 0);
+    pbuffer.add_access(0, std::make_pair(keys_[i], 0) );
   }
   
-  std::cout << "pbuffer= " << pbuffer.to_str();
+  std::cout << "pbuffer= \n" << pbuffer.to_str();
   
   // size_t num_keys = 1;
   // std::vector<key_ver_pair> key_ver_vector;
@@ -156,35 +143,47 @@ void prefetch_test()
   // }
 }
 
-void sim_test(int max_num_app, int max_num_putget, float putget_rate_pseudo_mean)
+void sim_test(int num_ds, int max_num_app, int max_num_putget, float putget_rate_pseudo_mean)
 {
-  // char sample_access_arr[] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o'};
-  // std::vector<char> sample_access_vec(sample_access_arr, sample_access_arr + sizeof(sample_access_arr)/sizeof(*sample_access_arr) );
   srand(time(NULL) );
   
+  char ds_id_[num_ds];
+  int base_ascii_dec = 97;
+  for (int i = 0; i < num_ds; i++) {
+    ds_id_[i] = (char) (base_ascii_dec + i);
+  }
+  
   int num_p = rand() % max_num_app + 1;
-  std::vector<int> pid__num_put_vec;
-  std::vector<float> put_rate_vector;
+  std::vector<char> p_id__ds_id_vec;
+  std::vector<int> p_id__num_put_vec;
+  std::vector<float> p_id__put_rate_vector;
   for (int i = 0; i < num_p; i++) {
     int num_put = rand() % max_num_putget + 1;
-    pid__num_put_vec.push_back(num_put);
-    put_rate_vector.push_back((float) (rand() % 10 + 5) * putget_rate_pseudo_mean / 10);
+    // TODO: may be randomized
+    p_id__ds_id_vec.push_back(ds_id_[0] ); 
+    
+    p_id__num_put_vec.push_back(num_put);
+    p_id__put_rate_vector.push_back((float) (rand() % 10 + 5) * putget_rate_pseudo_mean / 10);
   }
   
   int num_c = num_p; // rand() % max_num_app + 1;
-  std::vector<int> cid__num_get_vec;
-  std::vector<float> get_rate_vector;
-  
+  std::vector<char> c_id__ds_id_vec;
+  std::vector<int> c_id__num_get_vec;
+  std::vector<float> c_id__get_rate_vector;
   for (int i = 0; i < num_c; i++) {
+    // TODO: may be randomized
+    c_id__ds_id_vec.push_back(ds_id_[1] );
+    
     // int num_get = rand() % max_num_putget + 1;
-    // cid__num_get_vec.push_back(num_get);
-    cid__num_get_vec.push_back(pid__num_put_vec[i]);
-    get_rate_vector.push_back((float) (rand() % 10 + 5) * putget_rate_pseudo_mean / 10);
+    // c_id__num_get_vec.push_back(num_get);
+    c_id__num_get_vec.push_back(p_id__num_put_vec[i]);
+    c_id__get_rate_vector.push_back((float) (rand() % 10 + 5) * putget_rate_pseudo_mean / 10);
   }
   
-  PCSim pc_sim(num_p, pid__num_put_vec, put_rate_vector,
-              num_c, cid__num_get_vec, get_rate_vector );
-
+  PCSim pc_sim(num_ds, ds_id_,
+               num_p, p_id__ds_id_vec, p_id__num_put_vec, p_id__put_rate_vector,
+               num_c, c_id__ds_id_vec, c_id__num_get_vec, c_id__get_rate_vector );
+  
   pc_sim.sim_all();
   // 
   std::string temp;
@@ -199,8 +198,8 @@ int main(int argc , char **argv)
   // 
   std::map<char*, char*> opt_map = parse_opts(argc, argv);
   // palgo_test();
-  prefetch_test();
-  // sim_test(5, 5, 0.5);
+  // prefetch_test();
+  sim_test(2, 5, 5, 0.5);
   
   // srand(time(NULL) );
   // float lambda = 0.1;
