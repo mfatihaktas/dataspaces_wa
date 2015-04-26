@@ -1,14 +1,13 @@
 #include "prefetch.h"
 
 PBuffer::PBuffer(bool with_prefetch, size_t buffer_size, func_handle_prefetch_cb _handle_prefetch_cb, 
-                 char* alphabet_, size_t alphabet_size, size_t context_size)
+                 size_t app_context_size )
 : with_prefetch(with_prefetch),
   buffer_size(buffer_size),
   _handle_prefetch_cb(_handle_prefetch_cb),
-  alphabet_(alphabet_),
-  alphabet_size(alphabet_size),
+  app_context_size(app_context_size),
   cache(buffer_size),
-  palgo(alphabet_size, alphabet_, context_size)
+  ppm_algo_to_pick_app(app_context_size)
 {
   // 
   LOG(INFO) << "PBuffer:: constructed.";
@@ -21,31 +20,37 @@ std::string PBuffer::to_str()
   std::stringstream ss;
   ss << "with_prefetch= " << boost::lexical_cast<std::string>(with_prefetch) << "\n";
   ss << "buffer_size= " << boost::lexical_cast<std::string>(buffer_size) << "\n";
-  ss << "alphabet_size= " << boost::lexical_cast<std::string>(alphabet_size) << "\n";
-  ss << "alphabet_= ";
-  for (int i = 0; i < alphabet_size; i++) {
-    // LOG(INFO) << "to_str:: alphabet_[" << i << "]= " << alphabet_[i] << "\n";
-    ss << boost::lexical_cast<std::string>(alphabet_[i]) << ", ";
-  }
-  ss << "\n";
   
-  ss << "key_ver__pkey_pver_map= \n";
-  for (std::map<key_ver_pair, pkey_pver_pair>::iterator it = key_ver__pkey_pver_map.begin(); 
-       it != key_ver__pkey_pver_map.end(); it++) {
-    ss << "\t<" << (it->first).first << "," << (it->first).second << "> : "
-       << "<" << (it->second).first << "," << (it->second).second << ">\n";
-  }
-  
-  ss << "accessed_key_ver_vector= \n";
-  for (std::vector<key_ver_pair>::iterator it = accessed_key_ver_vector.begin();
-       it != accessed_key_ver_vector.end(); it++) {
+  ss << "reged_key_ver_vec= \n";
+  for (std::vector<key_ver_pair>::iterator it = reged_key_ver_vec.begin();
+       it != reged_key_ver_vec.end(); it++) {
     ss << "\t<" << it->first << "," << it->second << ">\n";
   }
   
-  ss << "buffered_key_ver_vector= \n";
-  for (std::vector<key_ver_pair>::iterator it = buffered_key_ver_vector.begin();
-       it != buffered_key_ver_vector.end(); it++) {
+  ss << "acced_key_ver_vec= \n";
+  for (std::vector<key_ver_pair>::iterator it = acced_key_ver_vec.begin();
+       it != acced_key_ver_vec.end(); it++) {
     ss << "\t<" << it->first << "," << it->second << ">\n";
+  }
+  
+  ss << "app_id__acced_key_ver_vec_map= \n";
+  for (std::map<int, std::vector<key_ver_pair> >::iterator map_it = app_id__acced_key_ver_vec_map.begin(); 
+       map_it != app_id__acced_key_ver_vec_map.end(); map_it++) {
+    ss << "\t app_id= " << boost::lexical_cast<std::string>(map_it->first) << ":\n";
+    for (std::vector<key_ver_pair>::iterator kv_it = (map_it->second).begin();
+         kv_it != (map_it->second).end(); kv_it++) {
+      ss << "\t\t<" << boost::lexical_cast<std::string>(kv_it->first) << "," << boost::lexical_cast<std::string>(kv_it->second) << ">\n";
+    }
+  }
+  
+  ss << "app_id__key_ver_deq_map= \n";
+  for (std::map<int, std::deque<key_ver_pair> >::iterator map_it = app_id__key_ver_deq_map.begin(); 
+       map_it != app_id__key_ver_deq_map.end(); map_it++) {
+    ss << "\t app_id= " << boost::lexical_cast<std::string>(map_it->first) << ":\n";
+    for (std::deque<key_ver_pair>::iterator kv_it = (map_it->second).begin();
+         kv_it != (map_it->second).end(); kv_it++) {
+      ss << "\t\t<" << boost::lexical_cast<std::string>(kv_it->first) << "," << boost::lexical_cast<std::string>(kv_it->second) << ">\n";
+    }
   }
   
   ss << "cache= \n" << cache.to_str();
@@ -55,94 +60,103 @@ std::string PBuffer::to_str()
 }
 
 // ****************************************  state rel  ***************************************** //
-int PBuffer::reg_key_ver__pkey_pver_pair(int app_id, std::string key, unsigned int ver)
+int PBuffer::reg_key_ver(std::string key, unsigned int ver, int app_id)
 {
-  // TODO: for every <key, ver> advertised one of the peer dataspaces is registered with pkey by 
-  // walking on the alphabet_ with incremental pver
   key_ver_pair kv = std::make_pair(key, ver);
-  if (key_ver__pkey_pver_map.contains(kv) ) {
-    LOG(ERROR) << "reg_key_ver__pkey_pver_pair:: already registered <key= " << key << ", ver= " << ver << ">!";
+  if (reged_key_ver_vec.contains(kv) ) {
+    LOG(ERROR) << "reg_key_ver:: already registered! <key= " << key << ", ver= " << ver << ">.";
     return 1;
   }
+  reged_key_ver_vec.push_back(kv);
   
-  int size = key_ver__pkey_pver_map.size();
-  pkey_pver_pair pkpv = std::make_pair(alphabet_[size % alphabet_size], size/alphabet_size);
-  key_ver__pkey_pver_map[kv] = pkpv;
-  pkey_pver__key_ver_map[pkpv] = kv;
+  if (app_id__key_ver_deq_map.contains(app_id) ) {
+    app_id__key_ver_deq_map[app_id].push_back(kv);
+  }
+  else {
+    std::deque<key_ver_pair> key_ver_deq;
+    key_ver_deq.push_back(kv);
+    app_id__key_ver_deq_map[app_id] = key_ver_deq;
+  }
 }
 
 // ****************************************  operational  *************************************** //
-int PBuffer::add_access(std::string key, unsigned int ver)
+int PBuffer::add_access(std::string key, unsigned int ver, int app_id)
 {
   key_ver_pair kv = std::make_pair(key, ver);
-  if (!key_ver__pkey_pver_map.contains(kv) ) {
+  if (!reged_key_ver_vec.contains(kv) ) {
     LOG(WARNING) << "add_access:: non-registered <key= " << key << ", ver= " << ver << ">.";
     return 1;
   }
-  palgo.add_access(key_ver__pkey_pver_map[kv].first );
-  accessed_key_ver_vector.push_back(kv);
+  
+  ppm_algo_to_pick_app.add_access(app_id);
+  
+  acced_key_ver_vec.push_back(kv);
+  app_id__acced_key_ver_vec_map[app_id].push_back(kv);
+  // Update app data FIFO queue before giving prefetching decision
+  std::deque<key_ver_pair>& key_ver_deq = app_id__key_ver_deq_map[app_id];
+  for (std::deque<key_ver_pair>::iterator it = key_ver_deq.begin(); it != key_ver_deq.end(); it++) {
+    if (*it == kv) {
+      while (key_ver_deq.front() != kv)
+        key_ver_deq.pop_front();
+    }
+  }
+  
   // Call for prefetching per access
-  boost::thread(&PBuffer::prefetch, this);
-  // prefetch();
+  // boost::thread(&PBuffer::prefetch, this);
+  prefetch();
   
   return 0;
 }
 
 int PBuffer::prefetch()
 {
-  size_t num_keys = 1;
-  std::vector<key_ver_pair> key_ver_vector;
-  get_to_prefetch(num_keys, key_ver_vector);
+  size_t num_apps = 1;
+  std::vector<key_ver_pair> key_ver_vec;
+  get_to_prefetch(num_apps, key_ver_vec);
   
-  for (std::vector<key_ver_pair>::iterator it = key_ver_vector.begin(); it != key_ver_vector.end(); it++) {
+  for (std::vector<key_ver_pair>::iterator it = key_ver_vec.begin(); it != key_ver_vec.end(); it++) {
     std::map<std::string, std::string> handle_prefetch_map;
     handle_prefetch_map["key"] = it->first;
     handle_prefetch_map["ver"] = boost::lexical_cast<std::string>(it->second);
     
     if (with_prefetch)
       _handle_prefetch_cb(handle_prefetch_map);
-      
+    
     push(it->first, it->second);
   }
 }
 
-int PBuffer::get_to_prefetch(size_t& num_keys, std::vector<key_ver_pair>& key_ver_vector)
+int PBuffer::get_to_prefetch(size_t& num_apps, std::vector<key_ver_pair>& key_ver_vec)
 {
-  unsigned int pver = accessed_key_ver_vector.size() / alphabet_size;
-  char* pkeys_;
-  palgo.get_to_prefetch(num_keys, pkeys_);
-  for (int i = 0; i < num_keys; i++) {
-    pkey_pver_pair pkpv = std::make_pair(pkeys_[i], pver);
-    if (!pkey_pver__key_ver_map.contains(pkpv) ) {
-      LOG(WARNING) << "get_to_prefetch:: palgo.get_to_prefetch returned not registered!;" 
-                   << "<pkey= " << pkeys_[i] << ", " << "pver= " << pver << ">.";
-    }
-    else {
-      key_ver_vector.push_back(pkey_pver__key_ver_map[pkpv] );
-    }
+  // Pick app
+  KEY_T* app_ids_;
+  ppm_algo_to_pick_app.get_to_prefetch(num_apps, app_ids_);
+  // Space acts as FIFO queue for data flow between p-c
+  for (int i = 0; i < num_apps; i++) {
+    std::deque<key_ver_pair>& key_ver_deq = app_id__key_ver_deq_map[app_ids_[i] ];
+    key_ver_vec.push_back(key_ver_deq.front() );
+    key_ver_deq.pop_front();
   }
-  free(pkeys_);
+  free(app_ids_);
 }
 
 int PBuffer::push(std::string key, unsigned int ver)
 {
   key_ver_pair kv = std::make_pair(key, ver);
-  if (!key_ver__pkey_pver_map.contains(kv) ) {
-    LOG(ERROR) << "push:: key_ver__pkey_pver_map does not contain <key= " << key << ", ver= " << ver << ">.";
+  if (!reged_key_ver_vec.contains(kv) ) {
+    LOG(ERROR) << "push:: reged_key_ver_vec does not contain <key= " << key << ", ver= " << ver << ">.";
     return 1;
   }
-  if (cache.push(key_ver__pkey_pver_map[kv] ) ) {
+  if (cache.push(kv) ) {
     LOG(ERROR) << "push:: cache.push failed for <key= " << key << ", ver= " << ver << ">.";
     return 1;
   }
-  buffered_key_ver_vector.push_back(kv);
   
   return 0;
 }
 
 bool PBuffer::contains(std::string key, unsigned int ver)
 {
-  key_ver_pair kv = std::make_pair(key, ver);
-  return cache.contains(key_ver__pkey_pver_map[kv] );
+  return cache.contains(std::make_pair(key, ver) );
 }
 

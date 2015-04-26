@@ -1,6 +1,8 @@
 #ifndef _PREFETCH_H_
 #define _PREFETCH_H_
 
+#include <deque>
+
 #include "patch_pre.h"
 #include "palgorithm.h"
 
@@ -8,33 +10,33 @@ typedef boost::function<void(std::map<std::string, std::string>)> func_handle_pr
 
 typedef std::pair<std::string, unsigned int> key_ver_pair;
 // pkey: prefetching key in alphabet
-typedef std::pair<char, unsigned int> pkey_pver_pair;
+typedef std::pair<KEY_T, unsigned int> pkey_pver_pair;
 
 class PBuffer { //Prefetching Buffer
   private:
     bool with_prefetch;
     size_t buffer_size;
     func_handle_prefetch_cb _handle_prefetch_cb;
-    char* alphabet_;
-    size_t alphabet_size;
-    patch_pre::thread_safe_map<key_ver_pair, pkey_pver_pair>  key_ver__pkey_pver_map;
-    patch_pre::thread_safe_map<pkey_pver_pair, key_ver_pair>  pkey_pver__key_ver_map;
-    Cache<pkey_pver_pair> cache;
+    size_t app_context_size;
     
-    std::vector<key_ver_pair> accessed_key_ver_vector;
-    std::vector<key_ver_pair> buffered_key_ver_vector;
+    patch_pre::thread_safe_map<int, std::deque<key_ver_pair> >  app_id__key_ver_deq_map;
+    // Mostly for checking and logging
+    patch_pre::thread_safe_vector<key_ver_pair> reged_key_ver_vec;
+    patch_pre::thread_safe_vector<key_ver_pair> acced_key_ver_vec;
+    patch_pre::thread_safe_map<int, std::vector<key_ver_pair> > app_id__acced_key_ver_vec_map;
+    
+    Cache<key_ver_pair> cache;
     
     // LZAlgo palgo;
-    PPMAlgo<char> palgo;
-    
+    PPMAlgo ppm_algo_to_pick_app;
   public:
     PBuffer(bool with_prefetch, size_t buffer_size, func_handle_prefetch_cb _handle_prefetch_cb, 
-            char* alphabet_, size_t alphabet_size, size_t context_size);
+            size_t app_context_size);
     ~PBuffer();
     std::string to_str();
     
-    int reg_key_ver__pkey_pver_pair(int app_id, std::string key, unsigned int ver);
-    int add_access(std::string key, unsigned int ver);
+    int reg_key_ver(std::string key, unsigned int ver, int app_id);
+    int add_access(std::string key, unsigned int ver, int app_id);
     int push(std::string key, unsigned int ver);
     bool contains(std::string key, unsigned int ver);
     int get_to_prefetch(size_t& num_keys, std::vector<key_ver_pair>& key_ver_vector);

@@ -220,6 +220,11 @@ class Graph // The graph base class template
     
 };
 
+// Note: has to change key type to whatever KEY_T set for ParseTree, making these properties template does not work with boost::property
+// typedef char KEY_T
+typedef unsigned int KEY_T;
+#define PARSE_TREE_ROOT_KEY 0
+
 struct Vertex_Properties {
   std::string name;
   char key;
@@ -236,14 +241,13 @@ struct Edge_Properties {
 #define BACK_TO_ROOT_LEAF_KEY '#'
 #define RANDOM_INT_RANGE 1000
 
-template <typename KEY_T>
 class ParseTree {
   typedef boost::adjacency_list<
     boost::setS, // disallow parallel edges
     boost::listS, // vertex container
     boost::bidirectionalS, // directed graph
     boost::property<vertex_properties_t, Vertex_Properties>,
-    boost::property<edge_properties_t, Edge_Properties>
+    boost::property<edge_properties_t, Edge_Properties >
   > GraphContainer;
   typedef boost::graph_traits<GraphContainer>::vertex_descriptor Vertex;
   typedef boost::graph_traits<GraphContainer>::edge_descriptor Edge;
@@ -267,7 +271,7 @@ class ParseTree {
     {
       Vertex_Properties root_prop;
       root_prop.name = "R";
-      root_prop.key = 'r';
+      root_prop.key = 'r'; // PARSE_TREE_ROOT_KEY;
       root_prop.add_rank = 0;
       root_prop.num_visit = 0;
       root_prop.status = 'R';
@@ -382,11 +386,11 @@ class ParseTree {
       }
       // Note: std::map is ordered -- either aphabetical or numerical with keys
       std::map<float, KEY_T> prob_key_map;
-      for (typename std::map<KEY_T, float>::iterator it = key_prob_map.begin(); it != key_prob_map.end(); it++)
+      for (std::map<KEY_T, float>::iterator it = key_prob_map.begin(); it != key_prob_map.end(); it++)
         prob_key_map[it->second] = it->first;
       
       keys_ = (KEY_T*) malloc(num_keys*sizeof(KEY_T) );
-      typename std::map<float, KEY_T>::reverse_iterator rit = prob_key_map.rbegin();
+      std::map<float, KEY_T>::reverse_iterator rit = prob_key_map.rbegin();
       for (int i = 0; i < num_keys; i++) {
         keys_[i] = rit->second;
         rit++;
@@ -437,7 +441,7 @@ class ParseTree {
     std::string context_to_str()
     {
       std::stringstream ss;
-      for (typename std::deque<KEY_T>::iterator it = context.begin(); it != context.end(); it++) {
+      for (std::deque<KEY_T>::iterator it = context.begin(); it != context.end(); it++) {
         ss << boost::lexical_cast<std::string>(*it) << ",";
       }
       
@@ -571,112 +575,36 @@ class Cache {
     size_t size() { return cache.size(); }
 };
 
-template<typename KEY_T>
 class PrefetchAlgo {
   protected:
-    size_t alphabet_size;
-    KEY_T* alphabet_;
     std::vector<KEY_T> access_vector;
-    ParseTree<KEY_T> parse_tree;
+    ParseTree parse_tree;
   public:
-    PrefetchAlgo(size_t alphabet_size, KEY_T* alphabet_, bool with_context, size_t context_size)
-    : alphabet_size(alphabet_size),
-      alphabet_(alphabet_),
-      parse_tree(with_context, context_size) {}
+    PrefetchAlgo(bool with_context, size_t context_size);
+    ~PrefetchAlgo();
     
-    ~PrefetchAlgo() {}
+    std::string parse_tree_to_str();
+    std::string parse_tree_to_pstr();
     
-    std::string parse_tree_to_str() { return parse_tree.to_str(); }
-    std::string parse_tree_to_pstr() { return parse_tree.to_pretty_str(); }
+    std::string access_seq_to_str();
     
-    std::string access_seq_to_str()
-    {
-      std::stringstream ss;
-      for (typename std::vector<KEY_T>::iterator it = access_vector.begin(); it != access_vector.end(); it++) {
-        ss << boost::lexical_cast<std::string>(*it) << ",";
-      }
-      ss << "\n";
-      
-      return ss.str();
-    }
-    
-    int add_access(KEY_T key)
-    {
-      access_vector.push_back(key);
-      parse_tree.add_access(key);
-    }
-    
-    // TODO: will be deDGE_pROPERTIESrecated
-    int get_key_prob_map_for_prefetch(std::map<KEY_T, float>& key_prob_map)
-    {
-      return parse_tree.get_key_prob_map_for_prefetch(key_prob_map);
-    }
-    
-    int get_to_prefetch(size_t& num_keys, KEY_T*& keys_)
-    {
-      return parse_tree.get_to_prefetch(num_keys, keys_);
-    }
-    
-    int sim_prefetch_accuracy(float& hit_rate, size_t cache_size, std::vector<KEY_T> access_seq_v, std::vector<char>& accuracy_seq_v)
-    {
-      Cache<KEY_T> cache(cache_size);
-      int num_miss = 0;
-      
-      for (typename std::vector<KEY_T>::iterator it = access_seq_v.begin(); it != access_seq_v.end(); it++) {
-        if (!cache.contains(*it) ) {
-          accuracy_seq_v.push_back('f');
-          num_miss++;
-        }
-        else {
-          accuracy_seq_v.push_back('-');
-        }
-        
-        add_access(*it);
-        
-        size_t num_keys = 1; //cache_size;
-        KEY_T* keys_;
-        get_to_prefetch(num_keys, keys_);
-        // Update cache
-        for (int i = 0; i < num_keys; i++) {
-          KEY_T key = keys_[i];
-          if (cache.contains(key) )
-            continue;
-          
-          cache.push(key);
-        }
-        free(keys_);
-      }
-      
-      hit_rate = 1.0 - (float)num_miss/access_seq_v.size();
-      
-      return 0;
-    }
+    int add_access(KEY_T key);
+    // TODO: will be deprecated
+    int get_key_prob_map_for_prefetch(std::map<KEY_T, float>& key_prob_map);
+    int get_to_prefetch(size_t& num_keys, KEY_T*& keys_);
+    int sim_prefetch_accuracy(float& hit_rate, size_t cache_size, std::vector<KEY_T> access_seq_v, std::vector<char>& accuracy_seq_v);
 };
 
-template<typename KEY_T>
-class LZAlgo : public PrefetchAlgo<KEY_T> {
+class LZAlgo : public PrefetchAlgo {
   public:
-    LZAlgo(size_t alphabet_size, KEY_T* alphabet_)
-    : PrefetchAlgo<KEY_T>(alphabet_size, alphabet_, false, 0)
-    {
-      // 
-      LOG(INFO) << "LZAlgo:: constructed.";
-    }
-    
-    ~LZAlgo() { LOG(INFO) << "LZAlgo:: constructed."; }
+    LZAlgo();
+    ~LZAlgo();
 };
 
-template<typename KEY_T>
-class PPMAlgo : public PrefetchAlgo<KEY_T> {
+class PPMAlgo : public PrefetchAlgo {
   public:
-    PPMAlgo(size_t alphabet_size, KEY_T* alphabet_, size_t context_size)
-    : PrefetchAlgo<KEY_T>(alphabet_size, alphabet_, true, context_size)
-    {
-      // 
-      LOG(INFO) << "PPMAlgo:: constructed.";
-    }
-    
-    ~PPMAlgo() { LOG(INFO) << "PPMAlgo:: constructed."; }
+    PPMAlgo(size_t context_size);
+    ~PPMAlgo();
 };
 
 #endif // _PALGORITHM_H_

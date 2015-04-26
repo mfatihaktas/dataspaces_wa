@@ -181,6 +181,19 @@ namespace patch_pre {
         return 0;
       };
   };
+  
+  // #define HASH_PRIME 54059
+  // #define HASH_PRIME_2 76963
+  // #define HASH_PRIME_3 86969
+  // inline unsigned int hash_str(const char* s)
+  // {
+  //   unsigned int h = 31 /* also prime */;
+  //   while (*s) {
+  //     h = (h * HASH_PRIME) ^ (s[0] * HASH_PRIME_2);
+  //     s++;
+  //   }
+  //   return h; // return h % HASH_PRIME_3;
+  // }
 }
 
 #endif // _PATCH_PRE_H_

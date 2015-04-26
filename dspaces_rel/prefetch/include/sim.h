@@ -13,14 +13,14 @@
 
 
 template <typename T>
-class Space {
+class WASpace {
     boost::mutex mutex;
   private:
     patch_pre::thread_safe_vector<T> space;
     patch_pre::syncer<T> putget_syncer;
   public:
-    Space() { LOG(INFO) << "Space:: constructed."; }
-    ~Space() { LOG(INFO) << "Space:: destructed."; }
+    WASpace() { LOG(INFO) << "WASpace:: constructed."; }
+    ~WASpace() { LOG(INFO) << "WASpace:: destructed."; }
     
     std::string to_str()
     {
@@ -80,7 +80,7 @@ class PCSim { // Prefetching Simulator
     std::vector<int> num_put_vec, num_get_vec;
     std::vector<float> put_rate_vec, get_rate_vec;
     
-    Space<key_ver_pair> space;
+    WASpace<key_ver_pair> space;
     
   public:
     PCSim(int num_p, std::vector<int> num_put_vec, std::vector<float> put_rate_vec, 
