@@ -21,6 +21,56 @@
 #include <boost/property_map/property_map.hpp>
 #include <boost/static_assert.hpp>
 
+/********************************************  Cache  **********************************************/
+template <typename T>
+class Cache {
+  private:
+    size_t cache_size;
+    std::deque<T> cache;
+  public:
+    Cache(size_t cache_size) 
+    : cache_size(cache_size)
+    {
+      LOG(INFO) << "Cache:: constructed.";
+    }
+    
+    ~Cache() { LOG(INFO) << "Cache:: destructed."; }
+    
+    std::string to_str()
+    {
+      std::stringstream ss;
+      ss << "cache_size= " << boost::lexical_cast<std::string>(cache_size) << "\n";
+      ss << "cache_content= \n";
+      typename std::deque<T>::iterator it;
+      for (it = cache.begin(); it != cache.end(); it++) {
+        ss << "<" << boost::lexical_cast<std::string>(it->first) << ", " << boost::lexical_cast<std::string>(it->second) << "> \n";
+      }
+      ss << "\n";
+      
+      return ss.str();
+    }
+    
+    int push(T key)
+    {
+      if (contains(key) )
+        return 1;
+        
+      if (cache.size() == cache_size)
+        cache.pop_front();
+      
+      cache.push_back(key);
+      
+      return 0;
+    }
+    
+    bool contains(T key)
+    {
+      return (std::find(cache.begin(), cache.end(), key) != cache.end() );
+    }
+    
+    size_t size() { return cache.size(); }
+};
+
 // Definition of basic boost::graph properties
 enum vertex_properties_t { vertex_properties };
 enum edge_properties_t { edge_properties };
@@ -222,12 +272,13 @@ class Graph // The graph base class template
 
 // Note: has to change key type to whatever KEY_T set for ParseTree, making these properties template does not work with boost::property
 // typedef char KEY_T
-typedef unsigned int KEY_T;
-#define PARSE_TREE_ROOT_KEY 0
+typedef int KEY_T;
+#define PARSE_TREE_ROOT_KEY -1
+#define BACK_TO_ROOT_LEAF_KEY '#'
 
 struct Vertex_Properties {
   std::string name;
-  char key;
+  int key;
   int add_rank;
   int num_visit;
   char status;
@@ -235,10 +286,9 @@ struct Vertex_Properties {
 };
 
 struct Edge_Properties {
-  char key;
+  int key;
 };
 
-#define BACK_TO_ROOT_LEAF_KEY '#'
 #define RANDOM_INT_RANGE 1000
 
 class ParseTree {
@@ -271,7 +321,7 @@ class ParseTree {
     {
       Vertex_Properties root_prop;
       root_prop.name = "R";
-      root_prop.key = 'r'; // PARSE_TREE_ROOT_KEY;
+      root_prop.key = PARSE_TREE_ROOT_KEY;
       root_prop.add_rank = 0;
       root_prop.num_visit = 0;
       root_prop.status = 'R';
@@ -345,10 +395,10 @@ class ParseTree {
       pt_graph.set_pre_cur(pt_graph.get_cur() );
       pt_graph.set_cur(v);
       if (inc_num_visit)
-        (pt_graph.properties(v)).num_visit += 1;
+        (pt_graph.properties(v) ).num_visit += 1;
     }
     
-    int add_access_without_context(KEY_T key)
+      int add_access_without_context(KEY_T key)
     {
       Vertex cur_v = pt_graph.get_cur();
       Vertex_Properties cur_prop = pt_graph.properties(cur_v);
@@ -380,8 +430,8 @@ class ParseTree {
       get_key_prob_map_for_prefetch(key_prob_map);
       
       if (num_keys > key_prob_map.size() ) {
-        LOG(WARNING) << "get_to_prefetch:: num_keys= " << num_keys << " > key_prob_map.size()= " 
-                     << key_prob_map.size() << "! Updating num_keys= " << key_prob_map.size();
+        // LOG(WARNING) << "get_to_prefetch:: num_keys= " << num_keys << " > key_prob_map.size()= " 
+        //             << key_prob_map.size() << "! Updating num_keys= " << key_prob_map.size();
         num_keys = key_prob_map.size();
       }
       // Note: std::map is ordered -- either aphabetical or numerical with keys
@@ -438,6 +488,36 @@ class ParseTree {
       return 0;
     }
     // -------------------------------------  with_context  ------------------------------------- //
+    int get_key_prob_map_for_prefetch_with_context(std::map<KEY_T, float>& key_prob_map)
+    {
+      move_cur_on_context(false); // even if whole walk could not be finished, predict with smaller context
+      // LOG(INFO) << "get_key_prob_map_for_prefetch_with_context:: cur= \n" << pt_graph.vertex_to_str(pt_graph.get_cur() );
+      get_key_prob_map_for_prefetch_without_context(key_prob_map);
+      move_cur(false, pt_graph.get_root() );
+    }
+    
+    int add_access_with_context(KEY_T key)
+    {
+      // LOG(INFO) << "add_access_with_context:: context= " << context_to_str();
+      if (context.size() == context_size) {
+        // check if current context is present in the tree, if not create, move down and encode access
+        create__move_cur_on_context(move_cur_on_context(true) );
+        
+        Vertex leaf_to_go;
+        if (does_vertex_have_key_in_adjs(pt_graph.get_cur(), key, leaf_to_go) )
+          move_cur(true, leaf_to_go);
+        else
+          create__connect_leaf(pt_graph.get_cur(), key);
+        
+        move_cur(true, pt_graph.get_root() );
+        
+        context.pop_front();
+      }
+      context.push_back(key);
+      
+      return 0;
+    }
+    
     std::string context_to_str()
     {
       std::stringstream ss;
@@ -495,89 +575,11 @@ class ParseTree {
         cur_prop = pt_graph.properties(cur_v);
       }
     }
-    
-    int add_access_with_context(KEY_T key)
-    {
-      // LOG(INFO) << "add_access_with_context:: context= " << context_to_str();
-      if (context.size() == context_size) {
-        // check if current context is present in the tree, if not create, move down and encode access
-        create__move_cur_on_context(move_cur_on_context(true) );
-        
-        Vertex leaf_to_go;
-        if (does_vertex_have_key_in_adjs(pt_graph.get_cur(), key, leaf_to_go) )
-          move_cur(true, leaf_to_go);
-        else
-          create__connect_leaf(pt_graph.get_cur(), key);
-        
-        move_cur(true, pt_graph.get_root() );
-        
-        context.pop_front();
-      }
-      context.push_back(key);
-      
-      return 0;
-    }
-    
-    int get_key_prob_map_for_prefetch_with_context(std::map<KEY_T, float>& key_prob_map)
-    {
-      move_cur_on_context(false); // even if whole walk could not be finished, predict with smaller context
-      // LOG(INFO) << "get_key_prob_map_for_prefetch_with_context:: cur= \n" << pt_graph.vertex_to_str(pt_graph.get_cur() );
-      get_key_prob_map_for_prefetch_without_context(key_prob_map);
-      move_cur(false, pt_graph.get_root() );
-    }
-};
-
-template <typename T>
-class Cache {
-  private:
-    size_t cache_size;
-    std::deque<T> cache;
-  public:
-    Cache(size_t cache_size) 
-    : cache_size(cache_size)
-    {
-      LOG(INFO) << "Cache:: constructed.";
-    }
-    
-    ~Cache() { LOG(INFO) << "Cache:: destructed."; }
-    
-    std::string to_str()
-    {
-      std::stringstream ss;
-      ss << "cache_size= " << boost::lexical_cast<std::string>(cache_size) << "\n";
-      ss << "cache_content= ";
-      typename std::deque<T>::iterator it;
-      for (it = cache.begin(); it != cache.end(); it++) {
-        ss << "<" << it->first << "," << it->second << ">, ";
-      }
-      ss << "\n";
-      
-      return ss.str();
-    }
-    
-    int push(T key)
-    {
-      if (contains(key) ) {
-        return 1;
-      }
-      
-      if (cache.size() == cache_size)
-        cache.pop_front();
-      cache.push_back(key);
-      return 0;
-    }
-    
-    bool contains(T key)
-    {
-      return (std::find(cache.begin(), cache.end(), key) != cache.end() );
-    }
-    
-    size_t size() { return cache.size(); }
 };
 
 class PrefetchAlgo {
   protected:
-    std::vector<KEY_T> access_vector;
+    std::vector<KEY_T> access_vec;
     ParseTree parse_tree;
   public:
     PrefetchAlgo(bool with_context, size_t context_size);
@@ -587,6 +589,7 @@ class PrefetchAlgo {
     std::string parse_tree_to_pstr();
     
     std::string access_seq_to_str();
+    std::vector<KEY_T> get_access_vec();
     
     int add_access(KEY_T key);
     // TODO: will be deprecated

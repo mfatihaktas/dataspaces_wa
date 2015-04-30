@@ -13,7 +13,7 @@ std::string PrefetchAlgo::parse_tree_to_pstr() { return parse_tree.to_pretty_str
 std::string PrefetchAlgo::access_seq_to_str()
 {
   std::stringstream ss;
-  for (std::vector<KEY_T>::iterator it = access_vector.begin(); it != access_vector.end(); it++) {
+  for (std::vector<KEY_T>::iterator it = access_vec.begin(); it != access_vec.end(); it++) {
     ss << boost::lexical_cast<std::string>(*it) << ",";
   }
   ss << "\n";
@@ -21,9 +21,14 @@ std::string PrefetchAlgo::access_seq_to_str()
   return ss.str();
 }
 
+std::vector<KEY_T> PrefetchAlgo::get_access_vec()
+{
+  return access_vec;
+}
+
 int PrefetchAlgo::add_access(KEY_T key)
 {
-  access_vector.push_back(key);
+  access_vec.push_back(key);
   parse_tree.add_access(key);
 }
 

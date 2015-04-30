@@ -60,17 +60,22 @@ void palgo_test()
   PPMAlgo ppm_algo(2);
   // char access_seq_arr[] = {'a','b','a','b','a','b','a','b','a','b','a','b','a','b','a','b','a','b','a','b','a','b',
   //                         'a','b','a','b','a','b','a','b','a','b','a','b','a','b','a','b','a','b','a','b','a','b' };
-  unsigned int access_seq_arr[] = {1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2 };
+  // int access_seq_arr[] = {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0 };
+  // int access_seq_arr[] = {1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0 };
+  // int access_seq_arr[] = {1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+  int access_seq_arr[] = {0, 1, 1, 0, 1, 0, 1, 0, 0, 0 };
   
   float hit_rate;
-  std::vector<unsigned int> access_seq_v(access_seq_arr, access_seq_arr + sizeof(access_seq_arr)/sizeof(*access_seq_arr) );
+  std::vector<int> access_seq_v(access_seq_arr, access_seq_arr + sizeof(access_seq_arr)/sizeof(*access_seq_arr) );
   std::vector<char> accuracy_seq_v;
   // lz_algo.sim_prefetch_accuracy(hit_rate, 2, access_seq_v);
   // LOG(INFO) << "main:: lz_algo; hit_rate= " << hit_rate;
   ppm_algo.sim_prefetch_accuracy(hit_rate, 1, access_seq_v, accuracy_seq_v);
-  std::cout << "ppm_algo; hit_rate= " << hit_rate << "\n";
-  std::cout << "access_seq= \n";
-  std::cout << ppm_algo.access_seq_to_str();
+  std::cout << "PPM_ALGO:\n";
+  std::cout << "hit_rate= " << hit_rate << "\n";
+  std::cout << "access_seq= \n" << ppm_algo.access_seq_to_str() << "\n";
+  std::cout << "parse_tree_to_pstr= \n" << ppm_algo.parse_tree_to_pstr() << "\n";
+  
   std::cout << "accuracy_seq= \n";
   for (int i = 0; i < accuracy_seq_v.size(); i++) {
     std::cout << accuracy_seq_v[i] << ",";
@@ -112,27 +117,58 @@ void handle_prefetch(char ds_id, key_ver_pair kv)
   LOG(INFO) << "handle_prefetch:: ds_id= " << ds_id << ", <key= " << kv.first << ", ver= " << kv.second << ">.";
 }
 
+void add_access(PBuffer* pbuffer, int p_id, int c)
+{
+  pbuffer->add_access(p_id, std::make_pair("d_" + boost::lexical_cast<std::string>(p_id) + "_" + boost::lexical_cast<std::string>(c), 0) );
+}
+
 void prefetch_test()
 {
   size_t buffer_size = 2;
   size_t app_context_size = 2;
   
-  PBuffer pbuffer('a', buffer_size, 
-                  true, boost::bind(handle_prefetch, _1, _2), 
-                  app_context_size);
+  PBuffer pbuffer('a', buffer_size, app_context_size,
+                  true, boost::bind(handle_prefetch, _1, _2) );
   
-  std::string keys_[] = {"k1", "k2", "k3", "k4", "k5", "k6", "k7", "k8", "k9", "k10"};
-  size_t keys_size = 10;
-  for (int i = 0; i < keys_size; i++) {
-    pbuffer.reg_key_ver(0, std::make_pair(keys_[i], 0) );
+  int p_id_[] = {0, 1};
+  int num_p = sizeof(p_id_)/sizeof(*p_id_);
+  int num_put = 20;
+  std::map<int, int> p_id__v_map;
+  
+  for (int i = 0; i < num_p; i++) {
+    int p_id = p_id_[i];
+    for (int j = 0; j < num_put; j++) {
+      pbuffer.reg_key_ver(p_id, std::make_pair("d_" + boost::lexical_cast<std::string>(p_id) + "_" + boost::lexical_cast<std::string>(j), 0) );
+    }
   }
   
-  int num_access = 7;
+  // int acced_p_id_[] = {0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0};
+  // int acced_p_id_[] = {0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,1,1,1,1};
+  // int acced_p_id_[] = {0,0,0,1,0,1,0,1,0,0,1,0,0,0,0};
+  // int num_access = sizeof(acced_p_id_)/sizeof(*acced_p_id_);
+  srand(time(NULL) );
+  int num_access = 30 * (rand() % 10) / 10;
+  int acced_p_id_[num_access];
   for (int i = 0; i < num_access; i++) {
-    pbuffer.add_access(0, std::make_pair(keys_[i], 0) );
+    acced_p_id_[i] = rand() % num_p;
   }
   
-  std::cout << "pbuffer= \n" << pbuffer.to_str();
+  std::map<int, int> p_id__last_i_map;
+  
+  for (int i = 0; i < num_access; i++) {
+    int p_id = acced_p_id_[i];
+    int c = 0;
+    if (p_id__last_i_map.count(p_id) != 0) { // contains
+      ++p_id__last_i_map[p_id];
+      c = p_id__last_i_map[p_id];
+    }
+    else {
+      p_id__last_i_map[p_id] = c;
+    }
+    // pbuffer.add_access(p_id, std::make_pair("d_" + boost::lexical_cast<std::string>(p_id) + "_" + boost::lexical_cast<std::string>(c), 0) );
+    boost::thread t(add_access, &pbuffer, p_id, c);
+    // add_access(&pbuffer, p_id, c);
+  }
   
   // size_t num_keys = 1;
   // std::vector<key_ver_pair> key_ver_vector;
@@ -141,35 +177,40 @@ void prefetch_test()
   // for (int i = 0; i < num_keys; i++) {
   //   std::cout << "<key= " << key_ver_vector[i].first << ", ver= " << key_ver_vector[i].second << "> \n";
   // }
+  // 
+  std::string temp;
+  std::cout << "Enter\n";
+  getline(std::cin, temp);
+  
+  std::cout << "pbuffer= \n" << pbuffer.to_str();
 }
 
-void sim_test(int num_ds, int max_num_app, int max_num_putget, float putget_rate_pseudo_mean)
+void gen_scenario(int num_ds, char*& ds_id_,
+                  int max_num_p, int max_num_c, int max_num_putget, float put_rate_pseudo_mean, float get_rate_pseudo_mean,
+                  int& num_p, int& num_c,
+                  std::vector<char>& p_id__ds_id_vec, std::vector<char>& c_id__ds_id_vec,
+                  std::vector<int>& p_id__num_put_vec, std::vector<int>& c_id__num_get_vec,
+                  std::vector<float>& p_id__put_rate_vec, std::vector<float>& c_id__get_rate_vec,
+                  std::vector<std::vector<float> >& p_id__inter_arr_time_vec_vec, std::vector<std::vector<float> >& c_id__inter_arr_time_vec_vec )
 {
   srand(time(NULL) );
   
-  char ds_id_[num_ds];
   int base_ascii_dec = 97;
   for (int i = 0; i < num_ds; i++) {
     ds_id_[i] = (char) (base_ascii_dec + i);
   }
   
-  int num_p = rand() % max_num_app + 1;
-  std::vector<char> p_id__ds_id_vec;
-  std::vector<int> p_id__num_put_vec;
-  std::vector<float> p_id__put_rate_vector;
+  num_p = 2; // rand() % max_num_p + 1;
   for (int i = 0; i < num_p; i++) {
     int num_put = rand() % max_num_putget + 1;
     // TODO: may be randomized
     p_id__ds_id_vec.push_back(ds_id_[0] ); 
     
     p_id__num_put_vec.push_back(num_put);
-    p_id__put_rate_vector.push_back((float) (rand() % 10 + 5) * putget_rate_pseudo_mean / 10);
+    p_id__put_rate_vec.push_back((float) (rand() % 10 + 5) * put_rate_pseudo_mean / 10);
   }
   
-  int num_c = num_p; // rand() % max_num_app + 1;
-  std::vector<char> c_id__ds_id_vec;
-  std::vector<int> c_id__num_get_vec;
-  std::vector<float> c_id__get_rate_vector;
+  num_c = num_p; // rand() % max_num_p + 1;
   for (int i = 0; i < num_c; i++) {
     // TODO: may be randomized
     c_id__ds_id_vec.push_back(ds_id_[1] );
@@ -177,15 +218,84 @@ void sim_test(int num_ds, int max_num_app, int max_num_putget, float putget_rate
     // int num_get = rand() % max_num_putget + 1;
     // c_id__num_get_vec.push_back(num_get);
     c_id__num_get_vec.push_back(p_id__num_put_vec[i]);
-    c_id__get_rate_vector.push_back((float) (rand() % 10 + 5) * putget_rate_pseudo_mean / 10);
+    c_id__get_rate_vec.push_back((float) (rand() % 10 + 5) * get_rate_pseudo_mean / 10);
   }
   
-  PCSim pc_sim(num_ds, ds_id_,
-               num_p, p_id__ds_id_vec, p_id__num_put_vec, p_id__put_rate_vector,
-               num_c, c_id__ds_id_vec, c_id__num_get_vec, c_id__get_rate_vector );
-  
-  pc_sim.sim_all();
   // 
+  for (int p_id = 0; p_id < num_p; p_id++) {
+    std::vector<float> inter_arr_time_vec;
+    for (int i = 0; i < p_id__num_put_vec[p_id]; i++) {
+      // boost::math::exponential_distribution exp_dist(p_id__put_rate_vec[p_id] );
+      inter_arr_time_vec.push_back(
+        -1 * log(1.0 - (static_cast<float>(rand() ) / static_cast<float>(RAND_MAX) ) ) / p_id__put_rate_vec[p_id] );
+    }
+    p_id__inter_arr_time_vec_vec.push_back(inter_arr_time_vec);
+  }
+  
+  for (int c_id = 0; c_id < num_c; c_id++) {
+    std::vector<float> inter_arr_time_vec;
+    for (int i = 0; i < c_id__num_get_vec[c_id]; i++) {
+      inter_arr_time_vec.push_back(
+        // -1 * log(1.0 - (static_cast<float>(rand() ) / static_cast<float>(RAND_MAX) ) ) / c_id__get_rate_vec[p_id] )
+        2 * (1.0 - (float)(rand() % 10) / 10) );
+    }
+    c_id__inter_arr_time_vec_vec.push_back(inter_arr_time_vec);
+  }
+}
+
+void sim_test()
+{
+  int num_p, num_c;
+  std::vector<char> p_id__ds_id_vec, c_id__ds_id_vec;
+  std::vector<int> p_id__num_put_vec, c_id__num_get_vec;
+  std::vector<float> p_id__put_rate_vec, c_id__get_rate_vec;
+  std::vector<std::vector<float> > p_id__inter_arr_time_vec_vec, c_id__inter_arr_time_vec_vec;
+  
+  int num_ds = 2;
+  char* ds_id_ = (char*) malloc(num_ds*sizeof(char) );
+  gen_scenario(num_ds, ds_id_,
+               5, 5, 15, 5, 0.2,
+               num_p, num_c,
+               p_id__ds_id_vec, c_id__ds_id_vec,
+               p_id__num_put_vec, c_id__num_get_vec,
+               p_id__put_rate_vec, c_id__get_rate_vec,
+               p_id__inter_arr_time_vec_vec, c_id__inter_arr_time_vec_vec);
+  
+  // PCSim pc_sim(num_ds, ds_id_, 20, 2,
+  //             num_p, num_c,
+  //             p_id__ds_id_vec, c_id__ds_id_vec,
+  //             p_id__num_put_vec, c_id__num_get_vec,
+  //             p_id__put_rate_vec, c_id__get_rate_vec,
+  //             p_id__inter_arr_time_vec_vec, c_id__inter_arr_time_vec_vec );
+  
+  // pc_sim.sim_all();
+  
+  std::map<int, std::map<int, float> > app_context_size___c_id__get_lperc_map_map;
+  int app_context_size = 2;
+  for (int i = 1; i <= app_context_size; i++) {
+    PCSim pc_sim(num_ds, ds_id_, 20, i,
+                 num_p, num_c,
+                 p_id__ds_id_vec, c_id__ds_id_vec,
+                 p_id__num_put_vec, c_id__num_get_vec,
+                 p_id__put_rate_vec, c_id__get_rate_vec,
+                 p_id__inter_arr_time_vec_vec, c_id__inter_arr_time_vec_vec );
+  
+    pc_sim.sim_all();
+    pc_sim.wait_for_threads();
+    app_context_size___c_id__get_lperc_map_map[i] = pc_sim.get_c_id__get_lperc_map();
+  }
+  
+  LOG(INFO) << "sim_test:: app_context_size___c_id__get_lperc_map_map= \n";
+  for (int i = 1; i <= app_context_size; i++) {
+    std::cout << "\t app_context_size= " << i << ": \n";
+    std::map<int, float> c_id__get_lperc_map = app_context_size___c_id__get_lperc_map_map[i];
+    for (int c_id = 0; c_id < num_c; c_id++)
+      std::cout << "\t\t c_id= " << c_id << ": lperc= " << c_id__get_lperc_map[c_id] << "\n";
+  }
+  
+  
+  free(ds_id_);
+  
   std::string temp;
   std::cout << "Enter\n";
   getline(std::cin, temp);
@@ -199,7 +309,7 @@ int main(int argc , char **argv)
   std::map<char*, char*> opt_map = parse_opts(argc, argv);
   // palgo_test();
   // prefetch_test();
-  sim_test(2, 5, 5, 0.5);
+  sim_test();
   
   // srand(time(NULL) );
   // float lambda = 0.1;
