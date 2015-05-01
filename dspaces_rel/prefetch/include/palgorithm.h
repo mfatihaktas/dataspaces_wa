@@ -52,13 +52,26 @@ class Cache {
     
     int push(T key)
     {
-      if (contains(key) )
+      if (contains(key) ) {
+        // LOG(ERROR) << "push:: already existing key!";
         return 1;
+      }
         
       if (cache.size() == cache_size)
         cache.pop_front();
       
       cache.push_back(key);
+      
+      return 0;
+    }
+    
+    int del(T key)
+    {
+      if (!contains(key) ) {
+        // LOG(ERROR) << "del:: non-existing key!";
+        return 1;
+      }
+      cache.erase(std::find(cache.begin(), cache.end(), key) );
       
       return 0;
     }
@@ -69,6 +82,15 @@ class Cache {
     }
     
     size_t size() { return cache.size(); }
+    
+    std::vector<T> get_content_vec()
+    {
+      std::vector<T> content_vec;
+      for (typename std::deque<T>::iterator it = cache.begin(); it != cache.end(); it++)
+        content_vec.push_back(*it);
+        
+      return content_vec;
+    }
 };
 
 // Definition of basic boost::graph properties
@@ -273,8 +295,8 @@ class Graph // The graph base class template
 // Note: has to change key type to whatever KEY_T set for ParseTree, making these properties template does not work with boost::property
 // typedef char KEY_T
 typedef int KEY_T;
-#define PARSE_TREE_ROOT_KEY -1
-#define BACK_TO_ROOT_LEAF_KEY '#'
+#define PARSE_TREE_ROOT_KEY -2
+#define BACK_TO_ROOT_LEAF_KEY -1
 
 struct Vertex_Properties {
   std::string name;
@@ -398,8 +420,10 @@ class ParseTree {
         (pt_graph.properties(v) ).num_visit += 1;
     }
     
-      int add_access_without_context(KEY_T key)
+    int add_access_without_context(KEY_T key)
     {
+      LOG(INFO) << "*** add_access_without_context:: called with key= " << key;
+      
       Vertex cur_v = pt_graph.get_cur();
       Vertex_Properties cur_prop = pt_graph.properties(cur_v);
       

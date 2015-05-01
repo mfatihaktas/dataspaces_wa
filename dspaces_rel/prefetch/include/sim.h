@@ -18,6 +18,7 @@ template <typename T>
 class WASpace {
   private:
     int num_ds;
+    char* ds_id_;
     size_t app_context_size;
     
     patch_pre::thread_safe_vector<T> wa_space_vec;
@@ -31,7 +32,7 @@ class WASpace {
     patch_pre::syncer<T> putget_syncer;
   public:
     WASpace(int num_ds, char* ds_id_, size_t pbuffer_size, size_t app_context_size)
-    : num_ds(num_ds), 
+    : num_ds(num_ds), ds_id_(ds_id_),
       app_context_size(app_context_size)
     { 
       for (int i = 0; i < num_ds; i++) {
@@ -41,7 +42,8 @@ class WASpace {
         ds_id__content_vec_map[ds_id] = content_vec;
         
         ds_id__pbuffer_map[ds_id] = boost::make_shared<PBuffer>(ds_id, pbuffer_size, app_context_size,
-                                                                true, boost::bind(&WASpace::handle_prefetch, this, _1, _2) );
+                                                                true, boost::bind(&WASpace::handle_prefetch, this, _1, _2),
+                                                                boost::bind(&WASpace::handle_del, this, _1) );
       
       }
       // 
@@ -52,28 +54,50 @@ class WASpace {
     std::string to_str()
     {
       std::stringstream ss;
-      ss << "num_ds= " << boost::lexical_cast<std::string>(num_ds) << "\n";
-      ss << "app_id__ds_id_map= \n";
-      for (std::map<int, char>::iterator it = app_id__ds_id_map.begin(); it != app_id__ds_id_map.end(); it++) {
-        ss << "\t" << boost::lexical_cast<std::string>(it->first) << " : " << boost::lexical_cast<std::string>(it->second) << "\n";
-      }
+      // ss << "num_ds= " << boost::lexical_cast<std::string>(num_ds) << "\n";
+      // ss << "app_id__ds_id_map= \n";
+      // for (std::map<int, char>::iterator it = app_id__ds_id_map.begin(); it != app_id__ds_id_map.end(); it++) {
+      //   ss << "\t" << boost::lexical_cast<std::string>(it->first) << " : " << boost::lexical_cast<std::string>(it->second) << "\n";
+      // }
       
-      ss << "ds_id__content_vec_map= \n";
-      typename std::map<char, std::vector<T> >::iterator map_it;
-      for (map_it = ds_id__content_vec_map.begin(); map_it != ds_id__content_vec_map.end(); map_it++) {
-        ss << "\tds_id= " << boost::lexical_cast<std::string>(map_it->first) << "\n";
-        for (typename std::vector<T>::iterator vec_it = (map_it->second).begin(); vec_it != (map_it->second).end(); vec_it++) {
-          ss << "\t\t<" << boost::lexical_cast<std::string>(vec_it->first) << ", "
-             << boost::lexical_cast<std::string>(vec_it->second) << "> \n ";
-        }
-        ss << "\n";
-      }
+      // ss << "ds_id__content_vec_map= \n";
+      // typename std::map<char, std::vector<T> >::iterator map_it;
+      // for (map_it = ds_id__content_vec_map.begin(); map_it != ds_id__content_vec_map.end(); map_it++) {
+      //   ss << "\tds_id= " << boost::lexical_cast<std::string>(map_it->first) << "\n";
+      //   for (typename std::vector<T>::iterator vec_it = (map_it->second).begin(); vec_it != (map_it->second).end(); vec_it++) {
+      //     ss << "\t\t<" << boost::lexical_cast<std::string>(vec_it->first) << ", "
+      //       << boost::lexical_cast<std::string>(vec_it->second) << "> \n ";
+      //   }
+      //   ss << "\n";
+      // }
       
-      // ss << "app_context_size= " << boost::lexical_cast<std::string>(app_context_size) << "\n";
+      ss << "app_context_size= " << boost::lexical_cast<std::string>(app_context_size) << "\n";
       ss << "ds_id__pbuffer_map= \n";
       for (std::map<char, boost::shared_ptr<PBuffer> >::iterator map_it = ds_id__pbuffer_map.begin(); map_it != ds_id__pbuffer_map.end(); map_it++) {
         ss << "*** ds_id= " << boost::lexical_cast<std::string>(map_it->first) << "\n"
-           << "pbuffer= \n" << (map_it->second)->to_str();
+          << "pbuffer= \n" << (map_it->second)->to_str();
+      }
+      
+      std::vector<T> intersect_v;
+      for (int i = 0; i < num_ds; i++) {
+        char ds_id = ds_id_[i];
+        
+        std::vector<T> ds_content_vec = ds_id__content_vec_map[ds_id];
+        std::sort(ds_content_vec.begin(), ds_content_vec.end() );
+        
+        std::vector<T> pbuffer_content_vec = ds_id__pbuffer_map[ds_id]->get_content_vec();
+        std::sort(pbuffer_content_vec.begin(), pbuffer_content_vec.end() );
+        
+        std::vector<T> intersect_vec;
+        std::set_intersection(ds_content_vec.begin(), ds_content_vec.end(),
+                              pbuffer_content_vec.begin(), pbuffer_content_vec.end(), 
+                              back_inserter(intersect_vec) );
+        
+        ss << "ds_id= " << boost::lexical_cast<std::string>(ds_id) << "; ";
+        if (intersect_vec.empty() )
+          ss << "No intersection between ds and pbuffer.\n";
+        else
+          ss << "INTERSECTION between ds and pbuffer.\n";
       }
       
       return ss.str();
@@ -132,7 +156,7 @@ class WASpace {
         get_type = 'l';
       }
       else { // Remote fetch
-        LOG(INFO) << "get:: remote fetching to ds_id= " << ds_id << ", <key= " << kv.first << ", ver= " << kv.second << ">.";
+        // LOG(INFO) << "get:: remote fetching to ds_id= " << ds_id << ", <key= " << kv.first << ", ver= " << kv.second << ">.";
         ds_id__content_vec_map[ds_id].push_back(kv);
         get_type = 'r';
       }
@@ -144,7 +168,12 @@ class WASpace {
     
     void handle_prefetch(char ds_id, T kv)
     {
-      LOG(INFO) << "handle_prefetch:: prefetched to ds_id= " << ds_id << ", <key= " << kv.first << ", ver= " << kv.second << ">.";
+      // LOG(INFO) << "handle_prefetch:: prefetched to ds_id= " << ds_id << ", <key= " << kv.first << ", ver= " << kv.second << ">.";
+    }
+    
+    void handle_del(T kv)
+    {
+      // LOG(INFO) << "handle_del:: deleted <key= " << kv.first << ", ver= " << kv.second << ">.";
     }
     
     bool contains(char ds_id, T kv)

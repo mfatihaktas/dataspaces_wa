@@ -1,12 +1,13 @@
 #include "prefetch.h"
 
 PBuffer::PBuffer(char ds_id, size_t buffer_size, size_t app_context_size,
-                 bool with_prefetch, func_handle_prefetch_cb _handle_prefetch_cb )
-: ds_id(ds_id),
-  buffer_size(buffer_size),
+                 bool with_prefetch, func_handle_prefetch_cb _handle_prefetch_cb,
+                 func_handle_del_cb _handle_del_cb )
+: ds_id(ds_id), buffer_size(buffer_size),
   app_context_size(app_context_size),
   with_prefetch(with_prefetch),
   _handle_prefetch_cb(_handle_prefetch_cb),
+  _handle_del_cb(_handle_del_cb),
   cache(buffer_size),
   ppm_algo_to_pick_app(app_context_size)
 {
@@ -90,6 +91,10 @@ int PBuffer::add_access(int p_id, key_ver_pair kv)
     return 1;
   }
   
+  if (!cache.del(kv) )
+    _handle_del_cb(kv);
+  
+  
   size_t num_app = 1;
   std::vector<key_ver_pair> key_ver_vec;
   {// Causes problems while building the parse tree for multi-threaded scenario
@@ -161,4 +166,9 @@ int PBuffer::get_to_prefetch(size_t& num_app, std::vector<key_ver_pair>& key_ver
 bool PBuffer::contains(key_ver_pair kv)
 {
   return cache.contains(kv);
+}
+
+std::vector<key_ver_pair> PBuffer::get_content_vec()
+{
+  return cache.get_content_vec();
 }

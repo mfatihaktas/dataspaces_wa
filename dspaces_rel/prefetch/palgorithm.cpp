@@ -86,7 +86,7 @@ LZAlgo::LZAlgo()
   LOG(INFO) << "LZAlgo:: constructed.";
 }
 
-LZAlgo::~LZAlgo() { LOG(INFO) << "LZAlgo:: constructed."; }
+LZAlgo::~LZAlgo() { LOG(INFO) << "LZAlgo:: destructed."; }
 
 /******************************************  PPMAlgo  *********************************************/
 PPMAlgo::PPMAlgo(size_t context_size)
@@ -96,5 +96,5 @@ PPMAlgo::PPMAlgo(size_t context_size)
   LOG(INFO) << "PPMAlgo:: constructed.";
 }
 
-PPMAlgo::~PPMAlgo() { LOG(INFO) << "PPMAlgo:: constructed."; }
+PPMAlgo::~PPMAlgo() { LOG(INFO) << "PPMAlgo:: destructed."; }
 
