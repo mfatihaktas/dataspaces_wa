@@ -130,6 +130,7 @@ class Graph // The graph base class template
     Vertex root, pre_cur, cur;
     int num_vertices;
     
+    std::map<Vertex, Vertex> ver__up_ver_map;
   public:
     Graph()
     : num_vertices(0)
@@ -165,6 +166,8 @@ class Graph // The graph base class template
       Edge e = boost::add_edge(vs, vt, graph).first;
       properties(e) = e_prop;
       
+      ver__up_ver_map[vt] = vs;
+      
       return e;
     }
     // -----------------------------------------  get/set  -------------------------------------- //
@@ -179,6 +182,11 @@ class Graph // The graph base class template
     Vertex& get_root() { return root; }
     
     void set_root(Vertex v) { root = v; }
+    
+    Vertex& get_up_ver(const Vertex& v)
+    {
+      return ver__up_ver_map[v];
+    }
     
     adjacency_iter_pair_t get_adj_vertices(const Vertex& v) const
     {
@@ -311,8 +319,10 @@ struct Edge_Properties {
   int key;
 };
 
-#define RANDOM_INT_RANGE 1000
-
+typedef int PREFETCH_T;
+#define W_LZ 0
+#define W_ALZ 1
+#define W_PPM 2
 class ParseTree {
   typedef boost::adjacency_list<
     boost::setS, // disallow parallel edges
@@ -325,22 +335,23 @@ class ParseTree {
   typedef boost::graph_traits<GraphContainer>::edge_descriptor Edge;
   typedef boost::graph_traits<GraphContainer>::adjacency_iterator adjacency_iter;
   typedef std::pair<adjacency_iter, adjacency_iter> adjacency_iter_pair_t;
-    
-  // Note: root level is 0
+  
   private:
+    PREFETCH_T prefetch_t;
+    int context_size;
+  
     Graph<Vertex_Properties, Edge_Properties> pt_graph;
     int num_access;
-    bool with_context;
-    int context_size;
     std::deque<KEY_T> context;
     
   public:
-    ParseTree(bool with_context, int context_size)
-    : pt_graph(),
-      num_access(0),
-      with_context(with_context),
-      context_size(context_size)
+    // Note: context_size matters only for PPM Algo
+    ParseTree(PREFETCH_T prefetch_t, int context_size)
+    : prefetch_t(prefetch_t), context_size(context_size),
+      pt_graph(),
+      num_access(0)
     {
+      // Note: root level is 0
       Vertex_Properties root_prop;
       root_prop.name = "R";
       root_prop.key = PARSE_TREE_ROOT_KEY;
@@ -372,20 +383,158 @@ class ParseTree {
       return false;
     }
     
-    int add_access(KEY_T key)
+    int get_to_prefetch(size_t& num_keys, KEY_T*& keys_)
     {
-      if (with_context)
-        add_access_with_context(key);
-      else
-        add_access_without_context(key);
+      std::map<KEY_T, float> key_prob_map;
+      get_key_prob_map_for_prefetch(key_prob_map);
+      
+      if (num_keys > key_prob_map.size() ) {
+        // LOG(WARNING) << "get_to_prefetch:: num_keys= " << num_keys << " > key_prob_map.size()= " 
+        //             << key_prob_map.size() << "! Updating num_keys= " << key_prob_map.size();
+        num_keys = key_prob_map.size();
+      }
+      // Note: std::map is ordered -- either aphabetical or numerical with keys
+      std::map<float, KEY_T> prob_key_map;
+      for (std::map<KEY_T, float>::iterator it = key_prob_map.begin(); it != key_prob_map.end(); it++)
+        prob_key_map[it->second] = it->first;
+      
+      keys_ = (KEY_T*) malloc(num_keys*sizeof(KEY_T) );
+      std::map<float, KEY_T>::reverse_iterator rit = prob_key_map.rbegin();
+      for (int i = 0; i < num_keys; i++) {
+        keys_[i] = rit->second;
+        rit++;
+      }
+      
+      return 0;
     }
     
     int get_key_prob_map_for_prefetch(std::map<KEY_T, float>& key_prob_map)
     {
-      if (with_context)
-        get_key_prob_map_for_prefetch_with_context(key_prob_map);
+      if (prefetch_t == W_LZ)
+        get_key_prob_map_for_prefetch_w_lz(key_prob_map);
+      else if (prefetch_t == W_ALZ)
+        get_key_prob_map_for_prefetch_w_alz(key_prob_map);
+      else if (prefetch_t == W_PPM)
+        get_key_prob_map_for_prefetch_w_ppm(key_prob_map);
+    }
+    
+    int add_access(KEY_T key)
+    {
+      if (prefetch_t == W_PPM)
+        add_access_w_ppm(key);
       else
-        get_key_prob_map_for_prefetch_without_context(key_prob_map);
+        add_access_w_lz(key);
+    }
+    
+    // ----------------------------------------  with_***lz  -------------------------------------- //
+    int get_key_prob_map_for_prefetch_w_lz(std::map<KEY_T, float>& key_prob_map)
+    {
+      Vertex& cur_v = pt_graph.get_cur();
+      int total_num_visit = pt_graph.properties(cur_v).num_visit;
+      if (pt_graph.properties(cur_v).status != 'R')
+        total_num_visit -= 1;
+      
+      srand(time(NULL) );
+      adjacency_iter_pair_t ai_pair = pt_graph.get_adj_vertices(cur_v);
+      for (adjacency_iter ai = ai_pair.first;  ai != ai_pair.second; ai++) {
+        Vertex_Properties adj_prop = pt_graph.properties(*ai);
+        key_prob_map[adj_prop.key] = (float)adj_prop.num_visit/total_num_visit + (static_cast<float>(rand() ) / static_cast<float>(RAND_MAX) / 100);
+      }
+      
+      if (key_prob_map.empty() || (key_prob_map.size() == 1 && (key_prob_map.begin() )->first == BACK_TO_ROOT_LEAF_KEY) ) { // Prefetch according to root
+        Vertex pt_root = pt_graph.get_root(); // pt_graph.get_pre_cur();
+        
+        key_prob_map.clear();
+        total_num_visit = pt_graph.properties(pt_root).num_visit + 1;
+        
+        ai_pair = pt_graph.get_adj_vertices(pt_root);
+        for (adjacency_iter ai = ai_pair.first;  ai != ai_pair.second; ai++) {
+          Vertex_Properties adj_prop = pt_graph.properties(*ai);
+          key_prob_map[adj_prop.key] = (float)adj_prop.num_visit/total_num_visit + (static_cast<float>(rand() ) / static_cast<float>(RAND_MAX) / 100);
+        }
+      }
+      
+      if (key_prob_map.count(BACK_TO_ROOT_LEAF_KEY) > 0)
+        key_prob_map.erase(key_prob_map.find(BACK_TO_ROOT_LEAF_KEY) );
+      
+      return 0;
+    }
+    
+    int get_key_prob_map_for_prefetch_w_alz(std::map<KEY_T, float>& key_prob_map)
+    {
+      srand(time(NULL) );
+      get_key__blended_prob_map(pt_graph.get_cur(), 0, 1.0, key_prob_map);
+      
+      return 0;
+    }
+    
+    void get_key__blended_prob_map(Vertex& v, int call_index, float prob_index, std::map<KEY_T, float>& key__blended_prob_map)
+    {
+      Vertex_Properties v_prop = pt_graph.properties(v);
+      int total_num_visit = v_prop.num_visit;
+      if (v_prop.status == 'R') {
+        if (call_index > 0)
+          total_num_visit += 1;
+      }
+      else {
+        if (call_index == 0)
+          total_num_visit -= 1;
+      }
+      
+      adjacency_iter_pair_t ai_pair = pt_graph.get_adj_vertices(v);
+      int num_adj = 0;
+      for (adjacency_iter ai = ai_pair.first;  ai != ai_pair.second; ai++) {
+        Vertex_Properties adj_prop = pt_graph.properties(*ai);
+        
+        if (adj_prop.key != BACK_TO_ROOT_LEAF_KEY) {
+          if (key__blended_prob_map.count(adj_prop.key) == 0)
+            key__blended_prob_map[adj_prop.key] = prob_index * ( (float)adj_prop.num_visit/total_num_visit + (static_cast<float>(rand() ) / static_cast<float>(RAND_MAX) / 100) );
+          else
+            key__blended_prob_map[adj_prop.key] += prob_index * ( (float)adj_prop.num_visit/total_num_visit + (static_cast<float>(rand() ) / static_cast<float>(RAND_MAX) / 100) );
+        }
+        else { // Update key__blended_prob_map with the lower-order state models -- call the function with upper level vertex
+          if (v_prop.status != 'R') {
+            prob_index *= (float)adj_prop.num_visit/total_num_visit;
+            // LOG(INFO) << "get_key__blended_prob_map:: #1 calling for vertex_to_str= \n" << pt_graph.vertex_to_str(pt_graph.get_up_ver(v) );
+            // return;
+            get_key__blended_prob_map(pt_graph.get_up_ver(v), ++call_index, prob_index, key__blended_prob_map);
+          }
+        }
+        num_adj++;
+      }
+      
+      if (num_adj == 0) { // Can happen when the cur_v is on the vertices connected to the root
+        if (v_prop.status != 'R') {
+          // LOG(INFO) << "get_key__blended_prob_map:: #2 calling for vertex_to_str= \n" << pt_graph.vertex_to_str(pt_graph.get_up_ver(v) );
+          get_key__blended_prob_map(pt_graph.get_up_ver(v), ++call_index, prob_index, key__blended_prob_map);
+        }
+      }
+    }
+    
+    int add_access_w_lz(KEY_T key)
+    {
+      Vertex cur_v = pt_graph.get_cur();
+      Vertex_Properties cur_prop = pt_graph.properties(cur_v);
+      
+      Vertex leaf_to_go;
+      if (does_vertex_have_key_in_adjs(cur_v, key, leaf_to_go) ) { //Go down
+        // LOG(INFO) << "add_access:: cur_prop.name= " << cur_prop.name << " has key= " << key
+        //           << " in adj leaf_to_go_prop.name= " << pt_graph.properties(leaf_to_go).name << "\n";
+        move_cur(true, leaf_to_go);
+      }
+      else {
+        create__connect_leaf(cur_v, key);
+        
+        if (cur_prop.status != 'R') {
+          Vertex back_to_root_leaf;
+          if (!does_vertex_have_key_in_adjs(cur_v, BACK_TO_ROOT_LEAF_KEY, back_to_root_leaf) )
+            create__connect_leaf(cur_v, BACK_TO_ROOT_LEAF_KEY);
+        }
+        move_cur(true, pt_graph.get_root() );
+      }
+      
+      num_access++;
+      return 0;
     }
     
     Vertex create__connect_leaf(Vertex& v, KEY_T leaf_key)
@@ -420,111 +569,20 @@ class ParseTree {
         (pt_graph.properties(v) ).num_visit += 1;
     }
     
-    int add_access_without_context(KEY_T key)
-    {
-      LOG(INFO) << "*** add_access_without_context:: called with key= " << key;
-      
-      Vertex cur_v = pt_graph.get_cur();
-      Vertex_Properties cur_prop = pt_graph.properties(cur_v);
-      
-      Vertex leaf_to_go;
-      if (does_vertex_have_key_in_adjs(cur_v, key, leaf_to_go) ) { //go down
-        // LOG(INFO) << "add_access:: cur_prop.name= " << cur_prop.name << " has key= " << key
-        //           << " in adj leaf_to_go_prop.name= " << pt_graph.properties(leaf_to_go).name << "\n";
-        move_cur(true, leaf_to_go);
-      }
-      else {
-        create__connect_leaf(cur_v, key);
-        
-        if (cur_prop.status != 'R') {
-          Vertex back_to_root_leaf;
-          if (!does_vertex_have_key_in_adjs(cur_v, BACK_TO_ROOT_LEAF_KEY, back_to_root_leaf) )
-            create__connect_leaf(cur_v, BACK_TO_ROOT_LEAF_KEY);
-        }
-        move_cur(true, pt_graph.get_root() );
-      }
-      
-      num_access++;
-      return 0;
-    }
-    
-    int get_to_prefetch(size_t& num_keys, KEY_T*& keys_)
-    {
-      std::map<KEY_T, float> key_prob_map;
-      get_key_prob_map_for_prefetch(key_prob_map);
-      
-      if (num_keys > key_prob_map.size() ) {
-        // LOG(WARNING) << "get_to_prefetch:: num_keys= " << num_keys << " > key_prob_map.size()= " 
-        //             << key_prob_map.size() << "! Updating num_keys= " << key_prob_map.size();
-        num_keys = key_prob_map.size();
-      }
-      // Note: std::map is ordered -- either aphabetical or numerical with keys
-      std::map<float, KEY_T> prob_key_map;
-      for (std::map<KEY_T, float>::iterator it = key_prob_map.begin(); it != key_prob_map.end(); it++)
-        prob_key_map[it->second] = it->first;
-      
-      keys_ = (KEY_T*) malloc(num_keys*sizeof(KEY_T) );
-      std::map<float, KEY_T>::reverse_iterator rit = prob_key_map.rbegin();
-      for (int i = 0; i < num_keys; i++) {
-        keys_[i] = rit->second;
-        rit++;
-      }
-      
-      return 0;
-    }
-    
-    int get_key_prob_map_for_prefetch_without_context(std::map<KEY_T, float>& key_prob_map)
-    {
-      Vertex& cur_v = pt_graph.get_cur();
-      int total_num_visit = pt_graph.properties(cur_v).num_visit;
-      
-      srand (time(NULL) );
-      adjacency_iter_pair_t ai_pair = pt_graph.get_adj_vertices(cur_v);
-      for (adjacency_iter ai = ai_pair.first;  ai != ai_pair.second; ai++) {
-        Vertex_Properties adj_prop = pt_graph.properties(*ai);
-        
-        int random_int = rand() % RANDOM_INT_RANGE;
-        float random_float = (float)random_int/(RANDOM_INT_RANGE*RANDOM_INT_RANGE);
-        
-        key_prob_map[adj_prop.key] = (float)adj_prop.num_visit/total_num_visit + random_float;
-      }
-      
-      if (key_prob_map.empty() || (key_prob_map.size() == 1 && (key_prob_map.begin())->first == BACK_TO_ROOT_LEAF_KEY) ) { // Prefetch according to root
-        Vertex pt_root = pt_graph.get_root(); // pt_graph.get_pre_cur();
-        
-        key_prob_map.clear();
-        total_num_visit = pt_graph.properties(pt_root).num_visit + 1;
-        
-        ai_pair = pt_graph.get_adj_vertices(pt_root);
-        for (adjacency_iter ai = ai_pair.first;  ai != ai_pair.second; ai++) {
-          Vertex_Properties adj_prop = pt_graph.properties(*ai);
-          
-          int random_int = rand() % RANDOM_INT_RANGE;
-          float random_float = (float)random_int/(RANDOM_INT_RANGE*RANDOM_INT_RANGE);
-          
-          key_prob_map[adj_prop.key] = (float)adj_prop.num_visit/total_num_visit + random_float;
-        }
-      }
-      
-      if (key_prob_map.count(BACK_TO_ROOT_LEAF_KEY) > 0)
-        key_prob_map.erase(key_prob_map.find(BACK_TO_ROOT_LEAF_KEY) );
-      
-      return 0;
-    }
-    // -------------------------------------  with_context  ------------------------------------- //
-    int get_key_prob_map_for_prefetch_with_context(std::map<KEY_T, float>& key_prob_map)
+    // ----------------------------------------  with_ppm  -------------------------------------- //
+    int get_key_prob_map_for_prefetch_w_ppm(std::map<KEY_T, float>& key_prob_map)
     {
       move_cur_on_context(false); // even if whole walk could not be finished, predict with smaller context
-      // LOG(INFO) << "get_key_prob_map_for_prefetch_with_context:: cur= \n" << pt_graph.vertex_to_str(pt_graph.get_cur() );
-      get_key_prob_map_for_prefetch_without_context(key_prob_map);
+      // LOG(INFO) << "get_key_prob_map_for_prefetch_w_ppm:: cur= \n" << pt_graph.vertex_to_str(pt_graph.get_cur() );
+      get_key_prob_map_for_prefetch_w_lz(key_prob_map);
       move_cur(false, pt_graph.get_root() );
     }
     
-    int add_access_with_context(KEY_T key)
+    int add_access_w_ppm(KEY_T key)
     {
-      // LOG(INFO) << "add_access_with_context:: context= " << context_to_str();
+      // LOG(INFO) << "add_access_w_ppm:: context= " << context_to_str();
       if (context.size() == context_size) {
-        // check if current context is present in the tree, if not create, move down and encode access
+        // Check if current context is present in the tree, if not create, move down and encode access
         create__move_cur_on_context(move_cur_on_context(true) );
         
         Vertex leaf_to_go;
@@ -606,7 +664,7 @@ class PrefetchAlgo {
     std::vector<KEY_T> access_vec;
     ParseTree parse_tree;
   public:
-    PrefetchAlgo(bool with_context, size_t context_size);
+    PrefetchAlgo(PREFETCH_T prefetch_t, size_t context_size);
     ~PrefetchAlgo();
     
     std::string parse_tree_to_str();
@@ -626,6 +684,12 @@ class LZAlgo : public PrefetchAlgo {
   public:
     LZAlgo();
     ~LZAlgo();
+};
+
+class ALZAlgo : public PrefetchAlgo {
+  public:
+    ALZAlgo();
+    ~ALZAlgo();
 };
 
 class PPMAlgo : public PrefetchAlgo {

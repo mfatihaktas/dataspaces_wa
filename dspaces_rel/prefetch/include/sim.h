@@ -22,7 +22,7 @@ class WASpace {
     size_t app_context_size;
     
     patch_pre::thread_safe_vector<T> wa_space_vec;
-    patch_pre::thread_safe_map<char, std::vector<T> > ds_id__content_vec_map;
+    patch_pre::thread_safe_map<char, boost::shared_ptr<patch_pre::thread_safe_vector<T> > > ds_id__content_vecp_map;
     std::map<char, boost::shared_ptr<PBuffer> >  ds_id__pbuffer_map;
     
     patch_pre::thread_safe_map<int, char> app_id__ds_id_map;
@@ -38,8 +38,9 @@ class WASpace {
       for (int i = 0; i < num_ds; i++) {
         char ds_id = ds_id_[i];
         
-        std::vector<T> content_vec;
-        ds_id__content_vec_map[ds_id] = content_vec;
+        // std::vector<T> content_vec;
+        // ds_id__content_vecp_map[ds_id] = content_vec;
+        ds_id__content_vecp_map[ds_id] = boost::make_shared<patch_pre::thread_safe_vector<T> >();
         
         ds_id__pbuffer_map[ds_id] = boost::make_shared<PBuffer>(ds_id, pbuffer_size, app_context_size,
                                                                 true, boost::bind(&WASpace::handle_prefetch, this, _1, _2),
@@ -60,9 +61,9 @@ class WASpace {
       //   ss << "\t" << boost::lexical_cast<std::string>(it->first) << " : " << boost::lexical_cast<std::string>(it->second) << "\n";
       // }
       
-      // ss << "ds_id__content_vec_map= \n";
+      // ss << "ds_id__content_vecp_map= \n";
       // typename std::map<char, std::vector<T> >::iterator map_it;
-      // for (map_it = ds_id__content_vec_map.begin(); map_it != ds_id__content_vec_map.end(); map_it++) {
+      // for (map_it = ds_id__content_vecp_map.begin(); map_it != ds_id__content_vecp_map.end(); map_it++) {
       //   ss << "\tds_id= " << boost::lexical_cast<std::string>(map_it->first) << "\n";
       //   for (typename std::vector<T>::iterator vec_it = (map_it->second).begin(); vec_it != (map_it->second).end(); vec_it++) {
       //     ss << "\t\t<" << boost::lexical_cast<std::string>(vec_it->first) << ", "
@@ -82,7 +83,7 @@ class WASpace {
       for (int i = 0; i < num_ds; i++) {
         char ds_id = ds_id_[i];
         
-        std::vector<T> ds_content_vec = ds_id__content_vec_map[ds_id];
+        patch_pre::thread_safe_vector<T>& ds_content_vec = *(ds_id__content_vecp_map[ds_id] );
         std::sort(ds_content_vec.begin(), ds_content_vec.end() );
         
         std::vector<T> pbuffer_content_vec = ds_id__pbuffer_map[ds_id]->get_content_vec();
@@ -121,11 +122,11 @@ class WASpace {
         return 1;
       }
       char ds_id = app_id__ds_id_map[p_id];
-      ds_id__content_vec_map[ds_id].push_back(kv);
+      ds_id__content_vecp_map[ds_id]->push_back(kv);
       // Immediately broadcast it to every ds peer so pbuffers can be updated
-      for (std::map<char, boost::shared_ptr<PBuffer> >::iterator it = ds_id__pbuffer_map.begin(); it != ds_id__pbuffer_map.end(); it++) {
+      for (std::map<char, boost::shared_ptr<PBuffer> >::iterator it = ds_id__pbuffer_map.begin(); it != ds_id__pbuffer_map.end(); it++)
         (it->second)->reg_key_ver(p_id, kv);
-      }
+      
       key_ver__p_id_map[kv] = p_id;
       
       wa_space_vec.push_back(kv);
@@ -157,7 +158,7 @@ class WASpace {
       }
       else { // Remote fetch
         // LOG(INFO) << "get:: remote fetching to ds_id= " << ds_id << ", <key= " << kv.first << ", ver= " << kv.second << ">.";
-        ds_id__content_vec_map[ds_id].push_back(kv);
+        ds_id__content_vecp_map[ds_id]->push_back(kv);
         get_type = 'r';
       }
       
@@ -181,7 +182,7 @@ class WASpace {
       if (ds_id == '*')
         return (std::find(wa_space_vec.begin(), wa_space_vec.end(), kv) != wa_space_vec.end() );
       else {
-        std::vector<key_ver_pair>& content_vec = ds_id__content_vec_map[ds_id];
+        patch_pre::thread_safe_vector<key_ver_pair>& content_vec = *(ds_id__content_vecp_map[ds_id] );
         return (std::find(content_vec.begin(), content_vec.end(), kv) != content_vec.end() ) || ds_id__pbuffer_map[ds_id]->contains(kv);
       }
     }

@@ -113,7 +113,7 @@ void PCSim::sim_p(int p_id)
   int c = 0;
   std::vector<float> inter_arr_time_vec = p_id__inter_arr_time_vec_vec[p_id];
   for (std::vector<float>::iterator it = inter_arr_time_vec.begin(); it != inter_arr_time_vec.end() ; it++) {
-    // LOG(INFO) << "sim_p:: p_id= " << p_id << ", inter_arr_time= " << *it << "\n";
+    LOG(INFO) << "sim_p:: p_id= " << p_id << ", inter_arr_time= " << *it << "\n";
     sleep(*it);
     
     key_ver_pair kv = std::make_pair("d_" + boost::lexical_cast<std::string>(p_id) + "_" + boost::lexical_cast<std::string>(c), 0);
@@ -122,7 +122,7 @@ void PCSim::sim_p(int p_id)
     }
     
     c++;
-    // LOG(INFO) << "sim_p:: p_id= " << p_id << "; put <key= " << kv.first << ", ver= " << kv.second << ">.";
+    LOG(INFO) << "sim_p:: p_id= " << p_id << "; put <key= " << kv.first << ", ver= " << kv.second << ">.";
   }
 }
 
@@ -131,7 +131,7 @@ void PCSim::sim_c(int c_id)
   int c = 0;
   std::vector<float> inter_arr_time_vec = c_id__inter_arr_time_vec_vec[c_id];
   for (std::vector<float>::iterator it = inter_arr_time_vec.begin(); it != inter_arr_time_vec.end() ; it++) {
-    // LOG(INFO) << "sim_c:: c_id= " << c_id << ", inter_arr_time= " << *it << "\n";
+    LOG(INFO) << "sim_c:: c_id= " << c_id << ", inter_arr_time= " << *it << "\n";
     sleep(*it);
     
     key_ver_pair kv = std::make_pair("d_" + boost::lexical_cast<std::string>(c_id) + "_" + boost::lexical_cast<std::string>(c), 0);
@@ -142,6 +142,6 @@ void PCSim::sim_c(int c_id)
     c_id__get_type_vec_map[c_id].push_back(get_type);
     
     c++;
-    // LOG(INFO) << "sim_c:: c_id= " << c_id << "; get <key= " << kv.first << ", ver= " << kv.second << ">.";
+    LOG(INFO) << "sim_c:: c_id= " << c_id << "; get <key= " << kv.first << ", ver= " << kv.second << ">.";
   }
 }

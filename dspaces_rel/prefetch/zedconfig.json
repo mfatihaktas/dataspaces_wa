@@ -3,8 +3,8 @@
         "/default.json"
     ],
     "preferences": {
-        "editorTheme": "kuroir",
-        "fontSize": 12,
+        "editorTheme": "ambiance",
+        "fontSize": 13,
         "tabSize": 2,
         "printMarginColumn": 100
     },

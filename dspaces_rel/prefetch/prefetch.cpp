@@ -8,9 +8,13 @@ PBuffer::PBuffer(char ds_id, size_t buffer_size, size_t app_context_size,
   with_prefetch(with_prefetch),
   _handle_prefetch_cb(_handle_prefetch_cb),
   _handle_del_cb(_handle_del_cb),
-  cache(buffer_size),
-  ppm_algo_to_pick_app(app_context_size)
+  cache(buffer_size)
 {
+  if (app_context_size) 
+    algo_to_pick_app_ = boost::make_shared<PPMAlgo>(app_context_size);
+  else // LZAlgo
+    algo_to_pick_app_ = boost::make_shared<LZAlgo>();
+  
   // 
   LOG(INFO) << "PBuffer:: constructed.";
 }
@@ -57,9 +61,9 @@ std::string PBuffer::to_str()
   
   ss << "cache= \n" << cache.to_str() << "\n";
   
-  ss << "ppm_algo_to_pick_app= \n"
-     << "\t parse_tree_to_pstr= \n" << ppm_algo_to_pick_app.parse_tree_to_pstr()
-     << "\t access_seq_to_str= " << ppm_algo_to_pick_app.access_seq_to_str() << "\n";
+  ss << "algo_to_pick_app_= \n"
+     << "\t parse_tree_to_pstr= \n" << algo_to_pick_app_->parse_tree_to_pstr()
+     << "\t access_seq_to_str= " << algo_to_pick_app_->access_seq_to_str() << "\n";
   
   return ss.str();
 }
@@ -100,8 +104,8 @@ int PBuffer::add_access(int p_id, key_ver_pair kv)
   {// Causes problems while building the parse tree for multi-threaded scenario
     boost::lock_guard<boost::mutex> guard(add_acc_mutex);
     
-    if (ppm_algo_to_pick_app.add_access(p_id) ) {
-      LOG(INFO) << "add_access:: ppm_algo_to_pick_app.add_access failed for p_id= " << p_id;
+    if (algo_to_pick_app_->add_access(p_id) ) {
+      LOG(INFO) << "add_access:: algo_to_pick_app_->add_access failed for p_id= " << p_id;
     }
   
     acced_key_ver_vec.push_back(kv);
@@ -133,20 +137,16 @@ int PBuffer::add_access(int p_id, key_ver_pair kv)
 
 int PBuffer::get_to_prefetch(size_t& num_app, std::vector<key_ver_pair>& key_ver_vec)
 {
-  // LOG(INFO) << "get_to_prefetch:: state= \n" << to_str();
   // Pick app
-  // LOG(INFO) << "get_to_prefetch:: ppm_algo_to_pick_app.parse_tree_to_pstr= \n" << ppm_algo_to_pick_app.parse_tree_to_pstr();
-  // LOG(INFO) << "get_to_prefetch:: ppm_algo_to_pick_app.access_seq_to_str= \n" << ppm_algo_to_pick_app.access_seq_to_str();
-  
   KEY_T* p_id_;
-  ppm_algo_to_pick_app.get_to_prefetch(num_app, p_id_);
+  algo_to_pick_app_->get_to_prefetch(num_app, p_id_);
   // Space acts as FIFO queue for data flow between p-c
   // Note: Here we chose not to fill remaning apps (_num_app - num_app) to let the palgo to decide about
   // 'best' number of keys to prefetch
   if (num_app == 0) { // Pick the app that made the last access
     num_app = 1;
     p_id_ = (KEY_T*)malloc(num_app*sizeof(KEY_T) );
-    p_id_[0] = ppm_algo_to_pick_app.get_access_vec().back();
+    p_id_[0] = algo_to_pick_app_->get_access_vec().back();
     
     // LOG(INFO) << "get_to_prefetch:: num_app == 0; p_id_= " << p_id_[0];
   }

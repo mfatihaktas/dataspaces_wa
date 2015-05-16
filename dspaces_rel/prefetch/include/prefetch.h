@@ -7,6 +7,7 @@
 
 #include "patch_pre.h"
 #include "palgorithm.h"
+#include <boost/make_shared.hpp>
 
 typedef std::pair<std::string, unsigned int> key_ver_pair;
 typedef boost::function<void(char, key_ver_pair)> func_handle_prefetch_cb;
@@ -29,8 +30,7 @@ class PBuffer { //Prefetching Buffer
     
     Cache<key_ver_pair> cache;
     
-    // LZAlgo palgo;
-    PPMAlgo ppm_algo_to_pick_app;
+    boost::shared_ptr<PrefetchAlgo> algo_to_pick_app_;
     boost::mutex add_acc_mutex;
     
     int get_to_prefetch(size_t& num_keys, std::vector<key_ver_pair>& key_ver_vector);

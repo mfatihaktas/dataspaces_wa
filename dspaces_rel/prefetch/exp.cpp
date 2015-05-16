@@ -58,68 +58,60 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
 
 void palgo_test()
 {
-  LZAlgo lz_algo;
-  // PPMAlgo ppm_algo(2);
+  boost::shared_ptr<PrefetchAlgo> palgo_ = boost::make_shared<LZAlgo>();
+  // boost::shared_ptr<PrefetchAlgo> palgo_ = boost::make_shared<ALZAlgo>();
+  // boost::shared_ptr<PrefetchAlgo> palgo_ = boost::make_shared<PPMAlgo>(2);
+  
   // char access_seq_arr[] = {'a','b','a','b','a','b','a','b','a','b','a','b','a','b','a','b','a','b','a','b','a','b',
   //                         'a','b','a','b','a','b','a','b','a','b','a','b','a','b','a','b','a','b','a','b','a','b' };
-  // int access_seq_arr[] = {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0 };
+  int access_seq_arr[] = {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0 };
   // int access_seq_arr[] = {1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0 };
   // int access_seq_arr[] = {1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
   // int access_seq_arr[] = {0, 1, 1, 0, 1, 0, 1, 0, 0, 0 };
   //aaababbbbbaabccddcbaaaa = 00010111110012233210000
-  int access_seq_arr[] = {0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 2, 2, 3, 3, 2, 1, 0, 0, 0, 0 };
+  // int access_seq_arr[] = {0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 2, 2, 3, 3, 2, 1, 0, 0, 0, 0 };
   
+  // /* 
   float hit_rate;
   std::vector<int> access_seq_v(access_seq_arr, access_seq_arr + sizeof(access_seq_arr)/sizeof(*access_seq_arr) );
   std::vector<char> accuracy_seq_v;
   
-  lz_algo.sim_prefetch_accuracy(hit_rate, 2, access_seq_v, accuracy_seq_v);
-  std::cout << "LZ_ALGO:\n";
+  palgo_->sim_prefetch_accuracy(hit_rate, 2, access_seq_v, accuracy_seq_v);
   std::cout << "hit_rate= " << hit_rate << "\n";
-  std::cout << "access_seq= \n" << lz_algo.access_seq_to_str() << "\n";
-  std::cout << "parse_tree_to_str= \n" << lz_algo.parse_tree_to_str() << "\n";
-  std::cout << "parse_tree_to_pstr= \n" << lz_algo.parse_tree_to_pstr() << "\n";
-  
-  // ppm_algo.sim_prefetch_accuracy(hit_rate, 1, access_seq_v, accuracy_seq_v);
-  // std::cout << "PPM_ALGO:\n";
-  // std::cout << "hit_rate= " << hit_rate << "\n";
-  // std::cout << "access_seq= \n" << ppm_algo.access_seq_to_str() << "\n";
-  // std::cout << "parse_tree_to_pstr= \n" << ppm_algo.parse_tree_to_pstr() << "\n";
+  std::cout << "access_seq= \n" << palgo_->access_seq_to_str() << "\n";
+  std::cout << "parse_tree_to_pstr= \n" << palgo_->parse_tree_to_pstr() << "\n";
   
   std::cout << "accuracy_seq= \n";
   for (int i = 0; i < accuracy_seq_v.size(); i++) {
     std::cout << accuracy_seq_v[i] << ",";
   }
   std::cout << "\n";
+  // */
   
   // for (int i = 0; i < sizeof(access_seq_arr)/sizeof(*access_seq_arr); i++) {
-  //   // lz_algo.add_access(access_seq_arr[i]);
-  //   ppm_algo.add_access(access_seq_arr[i]);
+  //   palgo_->add_access(access_seq_arr[i] );
+  //   // ppm_algo.add_access(access_seq_arr[i] );
     
-  //   // std::cout << "parse_tree= \n" << lz_algo.parse_tree_to_pstr();
-  //   // std::cout << "parse_tree= \n" << ppm_algo.parse_tree_to_pstr();
-  //   std::cout << "access_seq= " << ppm_algo.access_seq_to_str();
+  //   std::cout << "access_seq= " << palgo_->access_seq_to_str();
+  //   std::cout << "parse_tree_to_pstr= \n" << palgo_->parse_tree_to_pstr();
     
   //   size_t num_keys = 1;
-  //   char* keys_;
-  //   ppm_algo.get_to_prefetch(num_keys, keys_);
+  //   int* keys_;
+  //   palgo_->get_to_prefetch(num_keys, keys_);
   //   std::cout << "keys_= ";
   //   for (int i = 0; i < num_keys; i++) {
   //     std::cout << keys_[i] << ",";
   //   }
   //   std::cout << "\n";
     
-  //   // std::map<char, float> key_prob_map;
-  //   // // lz_algo.get_key_prob_map_for_prefetch(key_prob_map);
-  //   // ppm_algo.get_key_prob_map_for_prefetch(key_prob_map);
-  //   // std::cout << "key_prob_map= ";
-  //   // for (std::map<char, float>::iterator it = key_prob_map.begin(); it != key_prob_map.end(); it++) {
-  //   //   std::cout << it->first << ": " << it->second << ", ";
-  //   // }
-  //   // std::cout << "\n";
+  //   std::map<int, float> key_prob_map;
+  //   palgo_->get_key_prob_map_for_prefetch(key_prob_map);
+  //   std::cout << "key_prob_map= ";
+  //   for (std::map<int, float>::iterator it = key_prob_map.begin(); it != key_prob_map.end(); it++) {
+  //     std::cout << it->first << ": " << it->second << ", ";
+  //   }
+  //   std::cout << "\n\n";
   // }
-  // std::cout << "parse_tree= \n" << lz_algo.parse_tree_to_pstr();
-  // std::cout << "parse_tree= \n" << ppm_algo.parse_tree_to_pstr();
 }
 
 void handle_prefetch(char ds_id, key_ver_pair kv)
@@ -201,8 +193,9 @@ void prefetch_test()
   std::cout << "pbuffer= \n" << pbuffer.to_str();
 }
 
+#define VARIANCE 2
 void gen_scenario(int num_ds, char*& ds_id_,
-                  int max_num_p, int max_num_c, int num_putget_mean, float put_rate_pseudo_mean, float get_rate_pseudo_mean,
+                  int max_num_p, int max_num_c, int num_putget_mean, float put_rate_mean, float get_rate_mean,
                   int& num_p, int& num_c,
                   std::vector<char>& p_id__ds_id_vec, std::vector<char>& c_id__ds_id_vec,
                   std::vector<int>& p_id__num_put_vec, std::vector<int>& c_id__num_get_vec,
@@ -218,14 +211,18 @@ void gen_scenario(int num_ds, char*& ds_id_,
   
   num_p = 2; // rand() % max_num_p + 1;
   for (int i = 0; i < num_p; i++) {
-    boost::math::normal_distribution<float> num_putget_dist(num_putget_mean, 2);
-    int num_put = quantile(num_putget_dist, (static_cast<float>(rand() ) / static_cast<float>(RAND_MAX) ));
+    boost::math::normal_distribution<float> num_putget_dist(num_putget_mean, VARIANCE);
+    int num_put = abs(quantile(num_putget_dist, (static_cast<float>(rand() ) / static_cast<float>(RAND_MAX) ) ) );
     
     // TODO: may be randomized
     p_id__ds_id_vec.push_back(ds_id_[0] ); 
     
     p_id__num_put_vec.push_back(num_put);
-    p_id__put_rate_vec.push_back((float) (rand() % 10 + 5) * put_rate_pseudo_mean / 10);
+    
+    boost::math::normal_distribution<float> put_rate_dist(put_rate_mean, VARIANCE);
+    p_id__put_rate_vec.push_back(
+      abs(quantile(put_rate_dist, (static_cast<float>(rand() ) / static_cast<float>(RAND_MAX) ) ) )
+    );
   }
   
   num_c = num_p; // rand() % max_num_p + 1;
@@ -236,7 +233,11 @@ void gen_scenario(int num_ds, char*& ds_id_,
     // int num_get = rand() % num_putget_mean + 1;
     // c_id__num_get_vec.push_back(num_get);
     c_id__num_get_vec.push_back(p_id__num_put_vec[i]);
-    c_id__get_rate_vec.push_back((float) (rand() % 10 + 5) * get_rate_pseudo_mean / 10);
+    
+      boost::math::normal_distribution<float> get_rate_dist(get_rate_mean, VARIANCE);
+    c_id__get_rate_vec.push_back(
+      abs(quantile(get_rate_dist, (static_cast<float>(rand() ) / static_cast<float>(RAND_MAX) ) ) )
+    );
   }
   
   // 
@@ -249,13 +250,16 @@ void gen_scenario(int num_ds, char*& ds_id_,
     }
     p_id__inter_arr_time_vec_vec.push_back(inter_arr_time_vec);
   }
-  
+
+  boost::math::normal_distribution<float> inter_arr_time_dist(1, VARIANCE);
   for (int c_id = 0; c_id < num_c; c_id++) {
     std::vector<float> inter_arr_time_vec;
     for (int i = 0; i < c_id__num_get_vec[c_id]; i++) {
       inter_arr_time_vec.push_back(
         // -1 * log(1.0 - (static_cast<float>(rand() ) / static_cast<float>(RAND_MAX) ) ) / c_id__get_rate_vec[p_id] )
-        2 * (1.0 - (float)(rand() % 10) / 10) );
+        // 2 * (1.0 - (float)(rand() % 10) / 10) 
+        abs(quantile(inter_arr_time_dist, (static_cast<float>(rand() ) / static_cast<float>(RAND_MAX) ) ) )
+        );
     }
     c_id__inter_arr_time_vec_vec.push_back(inter_arr_time_vec);
   }
@@ -270,9 +274,15 @@ void sim_test()
   std::vector<std::vector<float> > p_id__inter_arr_time_vec_vec, c_id__inter_arr_time_vec_vec;
   
   int num_ds = 2;
+  int max_num_p = 5;
+  int max_num_c = 5;
+  int num_putget_mean = 20;
+  float put_rate_mean = 5;
+  float get_rate_mean = 0.2;
+  
   char* ds_id_ = (char*) malloc(num_ds*sizeof(char) );
   gen_scenario(num_ds, ds_id_,
-               5, 5, 20, 5, 0.2,
+               max_num_p, max_num_c, num_putget_mean, put_rate_mean, get_rate_mean,
                num_p, num_c,
                p_id__ds_id_vec, c_id__ds_id_vec,
                p_id__num_put_vec, c_id__num_get_vec,
@@ -289,14 +299,14 @@ void sim_test()
   // pc_sim.sim_all();
   
   std::map<int, std::map<int, float> > app_context_size___c_id__get_lperc_map_map;
-  int app_context_size = 4;
-  for (int i = 1; i <= app_context_size; i++) {
+  int app_context_size = 1;
+  for (int i = 0; i <= app_context_size; i++) {
     PCSim pc_sim(num_ds, ds_id_, 20, i,
-                num_p, num_c,
-                p_id__ds_id_vec, c_id__ds_id_vec,
-                p_id__num_put_vec, c_id__num_get_vec,
-                p_id__put_rate_vec, c_id__get_rate_vec,
-                p_id__inter_arr_time_vec_vec, c_id__inter_arr_time_vec_vec );
+                 num_p, num_c,
+                 p_id__ds_id_vec, c_id__ds_id_vec,
+                 p_id__num_put_vec, c_id__num_get_vec,
+                 p_id__put_rate_vec, c_id__get_rate_vec,
+                 p_id__inter_arr_time_vec_vec, c_id__inter_arr_time_vec_vec );
   
     pc_sim.sim_all();
     pc_sim.wait_for_threads();
@@ -304,13 +314,13 @@ void sim_test()
   }
   
   LOG(INFO) << "sim_test:: app_context_size___c_id__get_lperc_map_map= \n";
-  for (int i = 1; i <= app_context_size; i++) {
+  for (int i = 0; i <= app_context_size; i++) {
     std::cout << "\t app_context_size= " << i << ": \n";
     std::map<int, float> c_id__get_lperc_map = app_context_size___c_id__get_lperc_map_map[i];
     for (int c_id = 0; c_id < num_c; c_id++)
       std::cout << "\t\t c_id= " << c_id << ": lperc= " << c_id__get_lperc_map[c_id] << "\n";
   }
-  // free(ds_id_);
+  free(ds_id_);
   
   std::string temp;
   std::cout << "Enter\n";

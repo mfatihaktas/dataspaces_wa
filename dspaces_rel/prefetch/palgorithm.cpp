@@ -1,8 +1,8 @@
 #include "palgorithm.h"
 
 /***************************************  PrefetchAlgo  *******************************************/
-PrefetchAlgo::PrefetchAlgo(bool with_context, size_t context_size)
-: parse_tree(with_context, context_size) {}
+PrefetchAlgo::PrefetchAlgo(PREFETCH_T prefetch_t, size_t context_size)
+: parse_tree(prefetch_t, context_size) {}
   
 PrefetchAlgo::~PrefetchAlgo() {}
 
@@ -80,7 +80,7 @@ int PrefetchAlgo::sim_prefetch_accuracy(float& hit_rate, size_t cache_size, std:
 
 /******************************************  LZAlgo  **********************************************/
 LZAlgo::LZAlgo()
-: PrefetchAlgo(false, 0)
+: PrefetchAlgo(W_LZ, 0)
 {
   // 
   LOG(INFO) << "LZAlgo:: constructed.";
@@ -88,9 +88,19 @@ LZAlgo::LZAlgo()
 
 LZAlgo::~LZAlgo() { LOG(INFO) << "LZAlgo:: destructed."; }
 
+/******************************************  ALZAlgo  **********************************************/
+ALZAlgo::ALZAlgo()
+: PrefetchAlgo(W_ALZ, 0)
+{
+  // 
+  LOG(INFO) << "ALZAlgo:: constructed.";
+}
+
+ALZAlgo::~ALZAlgo() { LOG(INFO) << "ALZAlgo:: destructed."; }
+
 /******************************************  PPMAlgo  *********************************************/
 PPMAlgo::PPMAlgo(size_t context_size)
-: PrefetchAlgo(true, context_size)
+: PrefetchAlgo(W_PPM, context_size)
 {
   // 
   LOG(INFO) << "PPMAlgo:: constructed.";
