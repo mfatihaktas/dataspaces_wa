@@ -237,7 +237,6 @@ class Graph // The graph base class template
       ss << "vertex: \n";
       ss << "\t name= " << v_prop.name << "\n";
       ss << "\t key= " << v_prop.key << "\n";
-      ss << "\t add_rank= " << v_prop.add_rank << "\n";
       ss << "\t num_visit= " << v_prop.num_visit << "\n";
       ss << "\t status= " << v_prop.status << "\n";
       ss << "\t level= " << v_prop.level << "\n";
@@ -309,7 +308,6 @@ typedef int KEY_T;
 struct Vertex_Properties {
   std::string name;
   int key;
-  int add_rank;
   int num_visit;
   char status;
   int level;
@@ -341,21 +339,21 @@ class ParseTree {
     int context_size;
   
     Graph<Vertex_Properties, Edge_Properties> pt_graph;
-    int num_access;
     std::deque<KEY_T> context;
     
+    std::deque<KEY_T> sliding_win;
+    int longest_phrase_length;
   public:
     // Note: context_size matters only for PPM Algo
     ParseTree(PREFETCH_T prefetch_t, int context_size)
     : prefetch_t(prefetch_t), context_size(context_size),
       pt_graph(),
-      num_access(0)
+      longest_phrase_length(0)
     {
       // Note: root level is 0
       Vertex_Properties root_prop;
       root_prop.name = "R";
       root_prop.key = PARSE_TREE_ROOT_KEY;
-      root_prop.add_rank = 0;
       root_prop.num_visit = 0;
       root_prop.status = 'R';
       root_prop.level = 0;
@@ -413,17 +411,20 @@ class ParseTree {
       if (prefetch_t == W_LZ)
         get_key_prob_map_for_prefetch_w_lz(key_prob_map);
       else if (prefetch_t == W_ALZ)
-        get_key_prob_map_for_prefetch_w_alz(key_prob_map);
+        get_key_prob_map_for_prefetch_w_lz(key_prob_map);
+        // get_key_prob_map_for_prefetch_w_alz(key_prob_map);
       else if (prefetch_t == W_PPM)
         get_key_prob_map_for_prefetch_w_ppm(key_prob_map);
     }
     
     int add_access(KEY_T key)
     {
-      if (prefetch_t == W_PPM)
-        add_access_w_ppm(key);
-      else
+      if (prefetch_t == W_LZ)
         add_access_w_lz(key);
+      else if (prefetch_t == W_ALZ)
+        add_access_w_alz(key);
+      else if (prefetch_t == W_PPM)
+        add_access_w_ppm(key);
     }
     
     // ----------------------------------------  with_***lz  -------------------------------------- //
@@ -476,7 +477,7 @@ class ParseTree {
         if (call_index > 0)
           total_num_visit += 1;
       }
-      else {
+      else { 
         if (call_index == 0)
           total_num_visit -= 1;
       }
@@ -523,17 +524,81 @@ class ParseTree {
         move_cur(true, leaf_to_go);
       }
       else {
-        create__connect_leaf(cur_v, key);
+        Vertex leaf = create__connect_leaf(cur_v, key);
         
-        if (cur_prop.status != 'R') {
-          Vertex back_to_root_leaf;
-          if (!does_vertex_have_key_in_adjs(cur_v, BACK_TO_ROOT_LEAF_KEY, back_to_root_leaf) )
-            create__connect_leaf(cur_v, BACK_TO_ROOT_LEAF_KEY);
-        }
+        // if (cur_prop.status != 'R') {
+        //   Vertex back_to_root_leaf;
+        //   if (!does_vertex_have_key_in_adjs(cur_v, BACK_TO_ROOT_LEAF_KEY, back_to_root_leaf) )
+        //     create__connect_leaf(cur_v, BACK_TO_ROOT_LEAF_KEY);
+        // }
+        Vertex back_to_root_leaf;
+        if (!does_vertex_have_key_in_adjs(leaf, BACK_TO_ROOT_LEAF_KEY, back_to_root_leaf) )
+          create__connect_leaf(leaf, BACK_TO_ROOT_LEAF_KEY);
+        
         move_cur(true, pt_graph.get_root() );
       }
       
-      num_access++;
+      return 0;
+    }
+    
+    int add_access_w_alz(KEY_T key)
+    {
+      if (add_access_w_lz(key) )
+        return 1;
+      Vertex _cur_v = pt_graph.get_cur();
+      
+      // Update sliding_win
+      if (sliding_win.size() < 1) // longest_phrase_length
+        sliding_win.push_back(key);
+      else {
+        sliding_win.pop_front();
+        sliding_win.push_back(key);
+      }
+      
+      // Add for all possible phrases from sliding_win
+      // std::cout << "add_access_w_alz:: before updating sliding_win= ";
+      // for (std::deque<KEY_T>::iterator it = sliding_win.begin(); it != sliding_win.end(); it++)
+      //   std::cout << *it << ", ";
+      // std::cout << "\n";
+      
+      // std::deque<KEY_T>::iterator it = sliding_win.begin();
+      // for (int context_size = 1; context_size <= sliding_win.size(); context_size++) {
+      //   move_cur(false, pt_graph.get_root() );
+      //   for (int i = 0; i < context_size; i++) {
+      //     Vertex cur_v = pt_graph.get_cur();
+          
+      //     Vertex leaf_to_go;
+      //     if (does_vertex_have_key_in_adjs(cur_v, *(it + i), leaf_to_go) ) //Go down
+      //       move_cur(false, leaf_to_go);
+      //     else
+      //       move_cur(false, create__connect_leaf(cur_v, *(it + i) ) );
+      //   }
+      // }
+      
+      // if (pt_graph.properties(_cur_v).status == 'R') {
+      if (longest_phrase_length > 1 && pt_graph.properties(_cur_v).status == 'R') {
+        move_cur(true, pt_graph.get_root() );
+        
+        Vertex cur_v = pt_graph.get_cur();
+        for (std::deque<KEY_T>::iterator it = sliding_win.begin(); it != sliding_win.end(); it++) {
+          Vertex leaf_to_go;
+          if (does_vertex_have_key_in_adjs(cur_v, *it, leaf_to_go) ) //Go down
+            move_cur(true, leaf_to_go);
+          else
+            move_cur(false, create__connect_leaf(cur_v, *it) );
+            
+          cur_v = pt_graph.get_cur();
+        }
+        
+        Vertex back_to_root_leaf;
+        if (does_vertex_have_key_in_adjs(cur_v, BACK_TO_ROOT_LEAF_KEY, back_to_root_leaf) )
+          move_cur(true, back_to_root_leaf);
+        else
+          move_cur(false, create__connect_leaf(cur_v, BACK_TO_ROOT_LEAF_KEY) );
+      }
+      
+      move_cur(false, _cur_v);
+      
       return 0;
     }
     
@@ -548,10 +613,11 @@ class ParseTree {
       Vertex_Properties leaf_prop;
       leaf_prop.name = boost::lexical_cast<std::string>(v_prop.name) + boost::lexical_cast<std::string>(leaf_key);
       leaf_prop.key = leaf_key;
-      leaf_prop.add_rank = num_access;
       leaf_prop.num_visit = 1;
       leaf_prop.status = 'L';
       leaf_prop.level = v_prop.level + 1;
+      if (leaf_key != BACK_TO_ROOT_LEAF_KEY && leaf_prop.level > longest_phrase_length)
+        longest_phrase_length = leaf_prop.level;
       Vertex leaf = pt_graph.add_vertex(leaf_prop);
       
       Edge_Properties e_prop;
@@ -639,7 +705,6 @@ class ParseTree {
         Vertex_Properties leaf_prop;
         leaf_prop.name = boost::lexical_cast<std::string>(cur_prop.name) + boost::lexical_cast<std::string>(leaf_key);
         leaf_prop.key = leaf_key;
-        leaf_prop.add_rank = num_access;
         leaf_prop.num_visit = 0;
         if (i != context.size() - 1)
           leaf_prop.status = 'N';
@@ -663,6 +728,8 @@ class PrefetchAlgo {
   protected:
     std::vector<KEY_T> access_vec;
     ParseTree parse_tree;
+    
+    std::map<KEY_T, float> key__last_arr_time_map;
   public:
     PrefetchAlgo(PREFETCH_T prefetch_t, size_t context_size);
     ~PrefetchAlgo();
