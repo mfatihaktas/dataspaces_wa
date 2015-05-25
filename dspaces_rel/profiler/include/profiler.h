@@ -63,7 +63,7 @@ namespace patch_profiler
   };
 }
 
-struct Event 
+struct Event
 {
   private:
     std::string name;

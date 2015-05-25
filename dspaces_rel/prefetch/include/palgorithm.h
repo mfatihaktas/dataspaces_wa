@@ -4,7 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <stdlib.h>     // srand, rand
-#include <time.h>       // time
+#include <sys/time.h>
 #include <boost/lexical_cast.hpp>
 #include <glog/logging.h>
 
@@ -42,9 +42,8 @@ class Cache {
       ss << "cache_size= " << boost::lexical_cast<std::string>(cache_size) << "\n";
       ss << "cache_content= \n";
       typename std::deque<T>::iterator it;
-      for (it = cache.begin(); it != cache.end(); it++) {
+      for (it = cache.begin(); it != cache.end(); it++)
         ss << "<" << boost::lexical_cast<std::string>(it->first) << ", " << boost::lexical_cast<std::string>(it->second) << "> \n";
-      }
       ss << "\n";
       
       return ss.str();
@@ -56,7 +55,7 @@ class Cache {
         // LOG(ERROR) << "push:: already existing key!";
         return 1;
       }
-        
+      
       if (cache.size() == cache_size)
         cache.pop_front();
       
@@ -140,7 +139,7 @@ class Graph // The graph base class template
     }
     
     ~Graph() { LOG(INFO) << "Graph:: destructed.\n"; }
-    // ----------------------------------------  structural  ---------------------------------------- //
+    // --------------------------------------  structural  -------------------------------------- //
     Vertex add_vertex(const VERTEX_PROPERTIES& prop)
     {
       Vertex v = boost::add_vertex(graph);
@@ -321,6 +320,7 @@ typedef int PREFETCH_T;
 #define W_LZ 0
 #define W_ALZ 1
 #define W_PPM 2
+#define W_POISSON 3
 class ParseTree {
   typedef boost::adjacency_list<
     boost::setS, // disallow parallel edges
@@ -343,6 +343,10 @@ class ParseTree {
     
     std::deque<KEY_T> sliding_win;
     int longest_phrase_length;
+    
+    std::map<KEY_T, int> key__num_arr_map;
+    std::map<KEY_T, timeval> key__last_arr_tv_map;
+    std::map<KEY_T, float> key__sum_arr_t_map;
   public:
     // Note: context_size matters only for PPM Algo
     ParseTree(PREFETCH_T prefetch_t, int context_size)
@@ -415,6 +419,8 @@ class ParseTree {
         // get_key_prob_map_for_prefetch_w_alz(key_prob_map);
       else if (prefetch_t == W_PPM)
         get_key_prob_map_for_prefetch_w_ppm(key_prob_map);
+      else if (prefetch_t == W_POISSON)
+        get_key_prob_map_for_prefetch_w_poisson(key_prob_map);
     }
     
     int add_access(KEY_T key)
@@ -425,6 +431,20 @@ class ParseTree {
         add_access_w_alz(key);
       else if (prefetch_t == W_PPM)
         add_access_w_ppm(key);
+      else if (prefetch_t == W_POISSON) {
+        timeval tv;
+        gettimeofday(&tv, NULL);
+        if (key__num_arr_map.count(key) == 0) {
+          key__num_arr_map[key] = 0;
+        }
+        else {
+          // Calculate arr_rate_est for faster prediction computation
+          timeval last_arr_tv = key__last_arr_tv_map[key];
+          key__sum_arr_t_map[key] += ( (last_arr_tv.tv_sec - tv.tv_sec)*1000.0 + (last_arr_tv.tv_usec - tv.tv_usec)/1000.0 )/1000.0;
+        }
+        key__num_arr_map[key] += 1;
+        key__last_arr_tv_map[key] = tv;
+      }
     }
     
     // ----------------------------------------  with_***lz  -------------------------------------- //
@@ -722,14 +742,27 @@ class ParseTree {
         cur_prop = pt_graph.properties(cur_v);
       }
     }
+    
+    // --------------------------------------  with_poisson  ------------------------------------ //
+    int get_key_prob_map_for_prefetch_w_poisson(std::map<KEY_T, float>& key_prob_map)
+    {
+      float sum_of_arr_rates = 0;
+      for (std::map<KEY_T, int>::iterator it = key__num_arr_map.begin(); it != key__num_arr_map.end(); it++)
+        sum_of_arr_rates += (float)it->second / key__sum_arr_t_map[it->first];
+      
+      for (std::map<KEY_T, int>::iterator it = key__num_arr_map.begin(); it != key__num_arr_map.end(); it++)
+        key_prob_map[it->first] = (float)it->second / key__sum_arr_t_map[it->first] / sum_of_arr_rates;
+      
+      return 0;
+    }
 };
 
+typedef std::pair<KEY_T, int> acc_step_pair;
 class PrefetchAlgo {
   protected:
     std::vector<KEY_T> access_vec;
     ParseTree parse_tree;
     
-    std::map<KEY_T, float> key__last_arr_time_map;
   public:
     PrefetchAlgo(PREFETCH_T prefetch_t, size_t context_size);
     ~PrefetchAlgo();
@@ -743,8 +776,8 @@ class PrefetchAlgo {
     int add_access(KEY_T key);
     // TODO: will be deprecated
     int get_key_prob_map_for_prefetch(std::map<KEY_T, float>& key_prob_map);
-    int get_to_prefetch(size_t& num_keys, KEY_T*& keys_);
-    int sim_prefetch_accuracy(float& hit_rate, size_t cache_size, std::vector<KEY_T> access_seq_v, std::vector<char>& accuracy_seq_v);
+    int get_to_prefetch(size_t& num_acc, KEY_T*& acc_);
+    int sim_prefetch_accuracy(float& hit_rate, size_t cache_size, std::vector<acc_step_pair> access_seq_v, std::vector<char>& accuracy_seq_v);
 };
 
 class LZAlgo : public PrefetchAlgo {
@@ -763,6 +796,12 @@ class PPMAlgo : public PrefetchAlgo {
   public:
     PPMAlgo(size_t context_size);
     ~PPMAlgo();
+};
+
+class POAlgo : public PrefetchAlgo {
+  public:
+    POAlgo();
+    ~POAlgo();
 };
 
 #endif // _PALGORITHM_H_

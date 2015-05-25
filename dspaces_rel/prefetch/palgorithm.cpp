@@ -37,43 +37,52 @@ int PrefetchAlgo::get_key_prob_map_for_prefetch(std::map<KEY_T, float>& key_prob
   return parse_tree.get_key_prob_map_for_prefetch(key_prob_map);
 }
 
-int PrefetchAlgo::get_to_prefetch(size_t& num_keys, KEY_T*& keys_)
+int PrefetchAlgo::get_to_prefetch(size_t& num_acc, KEY_T*& acc_)
 {
-  return parse_tree.get_to_prefetch(num_keys, keys_);
+  return parse_tree.get_to_prefetch(num_acc, acc_);
 }
 
-int PrefetchAlgo::sim_prefetch_accuracy(float& hit_rate, size_t cache_size, std::vector<KEY_T> access_seq_v, 
-                                        std::vector<char>& accuracy_seq_v )
+int PrefetchAlgo::sim_prefetch_accuracy(float& hit_rate, size_t cache_size, 
+                                        std::vector<acc_step_pair> acc_step_v, std::vector<char>& accuracy_v )
 {
-  Cache<KEY_T> cache(cache_size);
+  Cache<acc_step_pair> cache(cache_size);
   int num_miss = 0;
+  std::map<KEY_T, int> acc_step_map;
   
-  for (std::vector<KEY_T>::iterator it = access_seq_v.begin(); it != access_seq_v.end(); it++) {
+  for (std::vector<acc_step_pair>::iterator it = acc_step_v.begin(); it != acc_step_v.end(); it++) {
+    std::cout << "sim_prefetch_accuracy:: is <" << it->first << ", " << it->second << ">"
+              << "in the cache= \n" << cache.to_str() << "\n";
+    
     if (!cache.contains(*it) ) {
-      accuracy_seq_v.push_back('f');
+      accuracy_v.push_back('f');
       num_miss++;
     }
-    else {
-      accuracy_seq_v.push_back('-');
-    }
+    else
+      accuracy_v.push_back('-');
     
-    add_access(*it);
+    // In wA-dataspaces scenario data is used only once
+    cache.del(*it);
     
-    size_t num_keys = 1; //cache_size;
-    KEY_T* keys_;
-    get_to_prefetch(num_keys, keys_);
+    add_access(it->first); // Reg only the acc
+    
+    size_t num_acc = 1; //cache_size;
+    KEY_T* acc_;
+    get_to_prefetch(num_acc, acc_);
     // Update cache
-    for (int i = 0; i < num_keys; i++) {
-      KEY_T key = keys_[i];
-      if (cache.contains(key) )
-        continue;
+    for (int i = 0; i < num_acc; i++) {
+      KEY_T acc = acc_[i];
+      // if (cache.contains(acc) )
+      //   continue;
+      if (acc_step_map.count(acc) == 0)
+        acc_step_map[acc] = 0;
       
-      cache.push(key);
+      cache.push(std::make_pair(acc, acc_step_map[acc]) );
+      acc_step_map[acc] += 1;
     }
-    free(keys_);
+    free(acc_);
   }
   
-  hit_rate = 1.0 - (float)num_miss/access_seq_v.size();
+  hit_rate = 1.0 - (float)num_miss / acc_step_v.size();
   
   return 0;
 }
@@ -108,3 +117,12 @@ PPMAlgo::PPMAlgo(size_t context_size)
 
 PPMAlgo::~PPMAlgo() { LOG(INFO) << "PPMAlgo:: destructed."; }
 
+/******************************************  POAlgo  **********************************************/
+POAlgo::POAlgo()
+: PrefetchAlgo(W_POISSON, 0)
+{
+  // 
+  LOG(INFO) << "POAlgo:: constructed.";
+}
+
+POAlgo::~POAlgo() { LOG(INFO) << "POAlgo:: destructed."; }

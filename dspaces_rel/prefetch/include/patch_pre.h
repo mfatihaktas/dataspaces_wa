@@ -21,6 +21,26 @@ namespace patch_pre {
     return ss.str();
   };
   
+  template<typename Tk, typename Tv>
+  std::string map_to_str(std::map<Tk, Tv> m)
+  {
+    std::stringstream ss;
+    for (typename std::map<Tk, Tv>::iterator it = m.begin(); it != m.end(); it++)
+      ss << "\t" << boost::lexical_cast<std::string>(it->first) << " : " << boost::lexical_cast<std::string>(it->second) << "\n";
+    
+    return ss.str();
+  }
+  
+  template <typename T>
+  std::string arr_to_str(size_t size, T* arr_)
+  {
+    std::stringstream ss;
+    for (int i = 0; i < size; i++)
+      ss << boost::lexical_cast<std::string>(arr_[i] ) << ", ";
+    
+    return ss.str();
+  }
+  
   template <typename T>
   struct thread_safe_vector
   {
@@ -76,7 +96,6 @@ namespace patch_pre {
     private:
       boost::mutex mutex;
       typename std::map<Tk, Tv> map;
-      typename std::map<Tk, Tv>::iterator map_it;
     public:
       thread_safe_map() {};
       ~thread_safe_map() {};
@@ -89,8 +108,7 @@ namespace patch_pre {
       int del(Tk k)
       {
         boost::lock_guard<boost::mutex> guard(this->mutex);
-        map_it = map.find(k);
-        map.erase(map_it);
+        map.erase(map.find(k) );
       };
       
       bool contains(Tk k)
