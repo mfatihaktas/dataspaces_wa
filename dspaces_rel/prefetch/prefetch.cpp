@@ -62,8 +62,7 @@ std::string PBuffer::to_str()
   ss << "cache= \n" << cache.to_str() << "\n";
   
   ss << "algo_to_pick_app_= \n"
-     << "\t parse_tree_to_pstr= \n" << algo_to_pick_app_->parse_tree_to_pstr()
-     << "\t access_seq_to_str= " << algo_to_pick_app_->access_seq_to_str() << "\n";
+     << "\t parse_tree_to_pstr= \n" << algo_to_pick_app_->parse_tree_to_pstr() << "\n";
   
   return ss.str();
 }
@@ -139,24 +138,24 @@ int PBuffer::get_to_prefetch(size_t& num_app, std::vector<key_ver_pair>& key_ver
 {
   // Pick app
   KEY_T* p_id_;
-  algo_to_pick_app_->get_to_prefetch(num_app, p_id_);
+  std::vector<KEY_T> ep_id_v;
+  algo_to_pick_app_->get_to_prefetch(num_app, p_id_, std::vector<KEY_T>(), ep_id_v);
   // Space acts as FIFO queue for data flow between p-c
   // Note: Here we chose not to fill remaning apps (_num_app - num_app) to let the palgo to decide about
   // 'best' number of keys to prefetch
   if (num_app == 0) { // Pick the app that made the last access
     num_app = 1;
     p_id_ = (KEY_T*)malloc(num_app*sizeof(KEY_T) );
-    p_id_[0] = algo_to_pick_app_->get_access_vec().back();
+    p_id_[0] = algo_to_pick_app_->get_acc_v().back();
     
     // LOG(INFO) << "get_to_prefetch:: num_app == 0; p_id_= " << p_id_[0];
   }
   
   for (int i = 0; i < num_app; i++) {
     std::deque<key_ver_pair>& key_ver_deq = p_id__key_ver_deq_map[p_id_[i] ];
-    if (key_ver_deq.empty() ) {
+    if (key_ver_deq.empty() )
       break;
-    }
-      
+    
     key_ver_vec.push_back(key_ver_deq.front() );
     key_ver_deq.pop_front();
   }
@@ -170,5 +169,5 @@ bool PBuffer::contains(key_ver_pair kv)
 
 std::vector<key_ver_pair> PBuffer::get_content_vec()
 {
-  return cache.get_content_vec();
+  return cache.get_content_v();
 }

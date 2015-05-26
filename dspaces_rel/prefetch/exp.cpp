@@ -72,21 +72,21 @@ void palgo_test()
   // int acc_[] = {0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 2, 2, 3, 3, 2, 1, 0, 0, 0, 0 };
   // int acc_[] = {0, 0, 0, 1, 0, 1, 1 };
   // /* 
-  size_t alphabet_size = 3;
-  size_t acc_size = 100; //sizeof(acc_)/sizeof(*acc_);
+  size_t alphabet_size = 10;
+  size_t acc_size = 1000; //sizeof(acc_)/sizeof(*acc_);
   int* acc_ = NULL;
-  std::map<KEY_T, float> acc__arr_rate_map;
-  for (KEY_T k = 0; k < alphabet_size; k++)
-    acc__arr_rate_map[k] = static_cast<float>(rand() ) / static_cast<float>(RAND_MAX); // (float) 1 / alphabet_size;
+  std::map<ACC_T, float> acc__arr_rate_map;
+  for (ACC_T a = 0; a < alphabet_size; a++)
+    acc__arr_rate_map[a] = static_cast<float>(rand() ) / static_cast<float>(RAND_MAX); // (float) 1 / alphabet_size;
   
   // gen_random_acc_seq(alphabet_size, acc_size, acc_);
   // gen_semirandom_acc_seq(alphabet_size, 1, acc_size, acc_);
   gen_poisson_acc_seq(alphabet_size, acc_size, acc__arr_rate_map, acc_);
   // gen_intermittent_poisson_acc_seq(alphabet_size, acc_size, acc__arr_rate_map, acc_);
   
-  std::map<KEY_T, float> acc__emp_prob_map;
+  std::map<ACC_T, float> acc__emp_prob_map;
   get_emprical_dist(alphabet_size, acc_size, acc_, acc__emp_prob_map);
-  std::cout << "palgo_test:: acc__emp_prob_map= \n" << patch_pre::map_to_str<KEY_T, float>(acc__emp_prob_map);
+  std::cout << "palgo_test:: acc__emp_prob_map= \n" << patch_pre::map_to_str<ACC_T, float>(acc__emp_prob_map);
   std::vector<int> acc_v(acc_, acc_ + acc_size);
   std::cout << "palgo_test:: acc_= \n" << patch_pre::arr_to_str(acc_size, acc_) << "\n";
   
@@ -98,7 +98,7 @@ void palgo_test()
   // std::cout << "hit_rate= " << hit_rate << "\n";
   // std::cout << "access_seq= \n" << palgo_->access_seq_to_str() << "\n";
   // std::cout << "parse_tree_to_pstr= \n" << palgo_->parse_tree_to_pstr() << "\n";
-  size_t cache_size = 3;
+  size_t cache_size = 9;
   
   boost::shared_ptr<PrefetchAlgo> lz_algo_ = boost::make_shared<LZAlgo>();
   float lz_hit_rate;
@@ -108,7 +108,7 @@ void palgo_test()
   std::cout << "hit_rate= " << lz_hit_rate << "\n";
   // std::cout << "access_seq= \n" << lz_algo_->access_seq_to_str() << "\n";
   // std::cout << "parse_tree_to_pstr= \n" << lz_algo_->parse_tree_to_pstr() << "\n";
-  std::cout << "accuracy_seq= \n" << patch_pre::vector_to_str<char>(accuracy_v) << "\n";
+  std::cout << "accuracy_v= \n" << patch_pre::vector_to_str<char>(accuracy_v) << "\n";
   
   // boost::shared_ptr<PrefetchAlgo> alz_algo_ = boost::make_shared<ALZAlgo>();
   // float alz_hit_rate;
@@ -116,7 +116,6 @@ void palgo_test()
   // alz_algo_->sim_prefetch_accuracy(alz_hit_rate, cache_size, acc_step_v, accuracy_v);
   // std::cout << "ALZ_ALGO:\n";
   // std::cout << "hit_rate= " << alz_hit_rate << "\n";
-  // // std::cout << "access_seq= \n" << alz_algo_->access_seq_to_str() << "\n";
   // // std::cout << "parse_tree_to_pstr= \n" << alz_algo_->parse_tree_to_pstr() << "\n";
   // std::cout << "accuracy_seq= \n" << patch_pre::vector_to_str<char>(accuracy_v) << "\n";
   
@@ -126,7 +125,6 @@ void palgo_test()
   // ppm_algo_->sim_prefetch_accuracy(ppm_hit_rate, cache_size, acc_step_v, accuracy_v);
   // std::cout << "PPM_ALGO:\n";
   // std::cout << "hit_rate= " << ppm_hit_rate << "\n";
-  // // std::cout << "access_seq= \n" << ppm_algo_->access_seq_to_str() << "\n";
   // // std::cout << "parse_tree_to_pstr= \n" << ppm_algo_->parse_tree_to_pstr() << "\n";
   // std::cout << "accuracy_seq= \n" << patch_pre::vector_to_str<char>(accuracy_v) << "\n";
   
@@ -136,7 +134,6 @@ void palgo_test()
   // po_algo_->sim_prefetch_accuracy(po_hit_rate, cache_size, acc_step_v, accuracy_v);
   // std::cout << "PO_ALGO:\n";
   // std::cout << "hit_rate= " << po_hit_rate << "\n";
-  // // std::cout << "access_seq= \n" << po_algo_->access_seq_to_str() << "\n";
   // // std::cout << "parse_tree_to_pstr= \n" << po_algo_->parse_tree_to_pstr() << "\n";
   // std::cout << "accuracy_seq= \n" << patch_pre::vector_to_str<char>(accuracy_v) << "\n";
   
@@ -156,9 +153,9 @@ void palgo_test()
     std::cout << "parse_tree_to_pstr= \n" << palgo_->parse_tree_to_pstr();
     
     size_t num_acc = 1;
-    KEY_T* keys_;
-    palgo_->get_to_prefetch(num_acc, keys_);
-    std::cout << "keys_= " << patch_pre::arr_to_str<KEY_T>(num_acc, keys_) << "\n";
+    ACC_T* keys_;
+    palgo_->get_to_prefetch(num_acc, keys_, std::vector<ACC_T>(), std::vector<ACC_T>() );
+    std::cout << "keys_= " << patch_pre::arr_to_str<ACC_T>(num_acc, keys_) << "\n";
     
     // std::map<int, float> acc__emp_prob_map;
     // palgo_->get_acc__emp_prob_map_for_prefetch(acc__emp_prob_map);
@@ -208,9 +205,8 @@ void prefetch_test()
   srand(time(NULL) );
   int num_acc = 30 * (rand() % 10) / 10;
   int acced_p_id_[num_acc];
-  for (int i = 0; i < num_acc; i++) {
+  for (int i = 0; i < num_acc; i++)
     acced_p_id_[i] = rand() % num_p;
-  }
   
   std::map<int, int> p_id__last_i_map;
   
@@ -228,12 +224,11 @@ void prefetch_test()
   
   // size_t num_acc = 1;
   // std::vector<key_ver_pair> key_ver_vector;
-  // pbuffer.get_to_prefetch(num_acc, key_ver_vector);
-  // std::cout << "get_to_prefetch returns:\n";
-  // for (int i = 0; i < num_acc; i++) {
+  // pbuffer.get_to_prefetch(num_acc, key_ver_vector, std::vector<ACC_T>(), std::vector<ACC_T>() );
+  // std::cout << "get_to_prefetch returns= \n";
+  // for (int i = 0; i < num_acc; i++)
   //   std::cout << "<key= " << key_ver_vector[i].first << ", ver= " << key_ver_vector[i].second << "> \n";
-  // }
-  // 
+  
   std::string temp;
   std::cout << "Enter\n";
   getline(std::cin, temp);

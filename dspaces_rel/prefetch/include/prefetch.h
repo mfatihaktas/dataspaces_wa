@@ -28,7 +28,7 @@ class PBuffer { //Prefetching Buffer
     patch_pre::thread_safe_vector<key_ver_pair> acced_key_ver_vec;
     patch_pre::thread_safe_map<int, std::vector<key_ver_pair> > p_id__acced_key_ver_vec_map;
     
-    Cache<key_ver_pair> cache;
+    Cache<std::string, key_ver_pair> cache;
     
     boost::shared_ptr<PrefetchAlgo> algo_to_pick_app_;
     boost::mutex add_acc_mutex;

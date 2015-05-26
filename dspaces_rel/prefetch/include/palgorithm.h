@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <set>
 #include <stdlib.h>     // srand, rand
 #include <sys/time.h>
 #include <boost/lexical_cast.hpp>
@@ -21,11 +22,14 @@
 #include <boost/property_map/property_map.hpp>
 #include <boost/static_assert.hpp>
 
+#include "patch_pre.h"
+
 /********************************************  Cache  **********************************************/
-template <typename T>
+template <typename ACC_T, typename T>
 class Cache {
   private:
     size_t cache_size;
+    std::map<ACC_T, int> key_num_map;
     std::deque<T> cache;
   public:
     Cache(size_t cache_size) 
@@ -40,55 +44,68 @@ class Cache {
     {
       std::stringstream ss;
       ss << "cache_size= " << boost::lexical_cast<std::string>(cache_size) << "\n";
+      ss << "key_num_map= \n" << patch_pre::map_to_str<ACC_T, int>(key_num_map) << "\n";
       ss << "cache_content= \n";
-      typename std::deque<T>::iterator it;
-      for (it = cache.begin(); it != cache.end(); it++)
-        ss << "<" << boost::lexical_cast<std::string>(it->first) << ", " << boost::lexical_cast<std::string>(it->second) << "> \n";
+      for (typename std::deque<T>::iterator it = cache.begin(); it != cache.end(); it++)
+        ss << "\t <" << boost::lexical_cast<std::string>(it->first) << ", " << boost::lexical_cast<std::string>(it->second) << "> \n";
       ss << "\n";
       
       return ss.str();
     }
     
-    int push(T key)
+    int push(T e)
     {
-      if (contains(key) ) {
-        // LOG(ERROR) << "push:: already existing key!";
+      if (contains(e) )
         return 1;
-      }
+      
+      ACC_T key = e.first;
+      if (key_num_map.count(key) == 0)
+        key_num_map[key] = 0;
+      key_num_map[key] += 1;
       
       if (cache.size() == cache_size)
         cache.pop_front();
-      
-      cache.push_back(key);
+      cache.push_back(e);
       
       return 0;
     }
     
-    int del(T key)
+    int del(T e)
     {
-      if (!contains(key) ) {
-        // LOG(ERROR) << "del:: non-existing key!";
+      if (!contains(e) )
         return 1;
-      }
-      cache.erase(std::find(cache.begin(), cache.end(), key) );
+      
+      key_num_map[e.first] -= 1;
+      cache.erase(std::find(cache.begin(), cache.end(), e) );
       
       return 0;
     }
     
-    bool contains(T key)
+    bool contains(T e)
     {
-      return (std::find(cache.begin(), cache.end(), key) != cache.end() );
+      return (std::find(cache.begin(), cache.end(), e) != cache.end() );
     }
     
     size_t size() { return cache.size(); }
     
-    std::vector<T> get_content_vec()
+    std::vector<T> get_content_v()
     {
-      std::vector<T> content_vec;
+      std::vector<T> v;
       for (typename std::deque<T>::iterator it = cache.begin(); it != cache.end(); it++)
-        content_vec.push_back(*it);
-        
-      return content_vec;
+        v.push_back(*it);
+      
+      return v;
+    }
+    
+    std::vector<ACC_T> get_cached_acc_v()
+    {
+      std::vector<ACC_T> acc_v;
+      for (typename std::map<ACC_T, int>::iterator it = key_num_map.begin(); it != key_num_map.end(); it++) {
+        if (it->second > 0)
+          acc_v.push_back(it->first);
+      }
+      
+      return acc_v;
     }
 };
 
@@ -434,9 +451,8 @@ class ParseTree {
       else if (prefetch_t == W_POISSON) {
         timeval tv;
         gettimeofday(&tv, NULL);
-        if (key__num_arr_map.count(key) == 0) {
+        if (key__num_arr_map.count(key) == 0)
           key__num_arr_map[key] = 0;
-        }
         else {
           // Calculate arr_rate_est for faster prediction computation
           timeval last_arr_tv = key__last_arr_tv_map[key];
@@ -757,10 +773,12 @@ class ParseTree {
     }
 };
 
-typedef std::pair<KEY_T, int> acc_step_pair;
+typedef KEY_T ACC_T;
+typedef std::pair<ACC_T, int> acc_step_pair;
 class PrefetchAlgo {
   protected:
-    std::vector<KEY_T> access_vec;
+    std::set<ACC_T> acc_s;
+    std::vector<ACC_T> acc_v;
     ParseTree parse_tree;
     
   public:
@@ -770,13 +788,13 @@ class PrefetchAlgo {
     std::string parse_tree_to_str();
     std::string parse_tree_to_pstr();
     
-    std::string access_seq_to_str();
-    std::vector<KEY_T> get_access_vec();
+    std::vector<ACC_T> get_acc_v();
     
-    int add_access(KEY_T key);
+    int add_access(ACC_T acc);
     // TODO: will be deprecated
-    int get_key_prob_map_for_prefetch(std::map<KEY_T, float>& key_prob_map);
-    int get_to_prefetch(size_t& num_acc, KEY_T*& acc_);
+    int get_acc_prob_map_for_prefetch(std::map<ACC_T, float>& acc_prob_map);
+    int get_to_prefetch(size_t& num_acc, ACC_T*& acc_,
+                        const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v);
     int sim_prefetch_accuracy(float& hit_rate, size_t cache_size, std::vector<acc_step_pair> access_seq_v, std::vector<char>& accuracy_seq_v);
 };
 

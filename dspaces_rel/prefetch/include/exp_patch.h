@@ -87,7 +87,7 @@ void gen_intermittent_poisson_acc_seq(size_t alphabet_size, size_t acc_size,
   
   std::vector<KEY_T> intermittent_acc_v;
   intermittent_acc_v.push_back(alphabet_size - 1);
-  intermittent_acc_v.push_back(alphabet_size - 2);
+  // intermittent_acc_v.push_back(alphabet_size - 2);
   
   std::map<KEY_T, float> acc__arr_rate_map_;
   for (std::map<KEY_T, float>::iterator it = acc__arr_rate_map.begin(); it != acc__arr_rate_map.end(); it++) {
