@@ -9,7 +9,7 @@
 
 namespace patch_pre {
   template<typename T>
-  std::string vector_to_str(std::vector<T> v)
+  std::string vec_to_str(std::vector<T> v)
   {
     std::stringstream ss;
     for (typename std::vector<T>::iterator it = v.begin(); it != v.end(); it++) {
@@ -17,6 +17,29 @@ namespace patch_pre {
       if (it != (v.end() - 1) )
         ss << ", ";
     }
+    
+    return ss.str();
+  };
+  
+  template<typename T>
+  std::string set_to_str(std::set<T> s)
+  {
+    std::stringstream ss;
+    for (typename std::set<T>::iterator it = s.begin(); it != s.end(); it++) {
+      ss << boost::lexical_cast<std::string>(*it);
+      if (it != (s.end() - 1) )
+        ss << ", ";
+    }
+    
+    return ss.str();
+  };
+  
+  template<typename PAIR_T>
+  std::string pvec_to_str(std::vector<PAIR_T> v)
+  {
+    std::stringstream ss;
+    for (typename std::vector<PAIR_T>::iterator it = v.begin(); it != v.end(); it++)
+      ss << "<" << boost::lexical_cast<std::string>(it->first) << ", " << boost::lexical_cast<std::string>(it->second) << ">\n";
     
     return ss.str();
   };

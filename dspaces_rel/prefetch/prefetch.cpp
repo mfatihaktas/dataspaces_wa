@@ -1,20 +1,22 @@
 #include "prefetch.h"
 
-PBuffer::PBuffer(char ds_id, size_t buffer_size, size_t app_context_size,
-                 bool with_prefetch, func_handle_prefetch_cb _handle_prefetch_cb,
+PBuffer::PBuffer(char ds_id, size_t buffer_size, PREFETCH_T prefetch_t,
+                 bool w_prefetch, func_handle_prefetch_cb _handle_prefetch_cb,
                  func_handle_del_cb _handle_del_cb )
 : ds_id(ds_id), buffer_size(buffer_size),
-  app_context_size(app_context_size),
-  with_prefetch(with_prefetch),
+  w_prefetch(w_prefetch),
   _handle_prefetch_cb(_handle_prefetch_cb),
   _handle_del_cb(_handle_del_cb),
-  cache(buffer_size)
+  cache(buffer_size, _handle_del_cb)
 {
-  if (app_context_size) 
-    algo_to_pick_app_ = boost::make_shared<PPMAlgo>(app_context_size);
-  else // LZAlgo
+  if (prefetch_t == W_LZ)
     algo_to_pick_app_ = boost::make_shared<LZAlgo>();
-  
+  else if (prefetch_t == W_ALZ)
+    algo_to_pick_app_ = boost::make_shared<ALZAlgo>();
+  else if (prefetch_t == W_PPM)
+    algo_to_pick_app_ = boost::make_shared<PPMAlgo>(2);
+  else if (prefetch_t == W_PO)
+    algo_to_pick_app_ = boost::make_shared<POAlgo>();
   // 
   LOG(INFO) << "PBuffer:: constructed.";
 }
@@ -24,24 +26,23 @@ PBuffer::~PBuffer() { LOG(INFO) << "PBuffer:: destructed."; }
 std::string PBuffer::to_str()
 {
   std::stringstream ss;
-  ss << "with_prefetch= " << boost::lexical_cast<std::string>(with_prefetch) << "\n";
+  ss << "w_prefetch= " << boost::lexical_cast<std::string>(w_prefetch) << "\n";
   ss << "buffer_size= " << boost::lexical_cast<std::string>(buffer_size) << "\n";
-  ss << "app_context_size= " << boost::lexical_cast<std::string>(app_context_size) << "\n";
-  // ss << "reged_key_ver_vec= \n";
-  // for (std::vector<key_ver_pair>::iterator it = reged_key_ver_vec.begin();
-  //     it != reged_key_ver_vec.end(); it++) {
+  // ss << "reged_key_ver_v= \n";
+  // for (std::vector<key_ver_pair>::iterator it = reged_key_ver_v.begin();
+  //     it != reged_key_ver_v.end(); it++) {
   //   ss << "\t <" << boost::lexical_cast<std::string>(it->first) << ", " << boost::lexical_cast<std::string>(it->second) << ">\n";
   // }
   
-  // ss << "acced_key_ver_vec= \n";
-  // for (std::vector<key_ver_pair>::iterator it = acced_key_ver_vec.begin();
-  //     it != acced_key_ver_vec.end(); it++) {
+  // ss << "acced_key_ver_v= \n";
+  // for (std::vector<key_ver_pair>::iterator it = acced_key_ver_v.begin();
+  //     it != acced_key_ver_v.end(); it++) {
   //   ss << "\t <" << boost::lexical_cast<std::string>(it->first) << ", " << boost::lexical_cast<std::string>(it->second) << ">\n";
   // }
   
-  // ss << "p_id__acced_key_ver_vec_map= \n";
-  // for (std::map<int, std::vector<key_ver_pair> >::iterator map_it = p_id__acced_key_ver_vec_map.begin(); 
-  //     map_it != p_id__acced_key_ver_vec_map.end(); map_it++) {
+  // ss << "p_id__acced_key_ver_v_map= \n";
+  // for (std::map<int, std::vector<key_ver_pair> >::iterator map_it = p_id__acced_key_ver_v_map.begin();
+  //     map_it != p_id__acced_key_ver_v_map.end(); map_it++) {
   //   ss << "\t p_id= " << boost::lexical_cast<std::string>(map_it->first) << ":\n";
   //   for (std::vector<key_ver_pair>::iterator kv_it = (map_it->second).begin();
   //       kv_it != (map_it->second).end(); kv_it++) {
@@ -49,9 +50,9 @@ std::string PBuffer::to_str()
   //   }
   // }
   
-  // ss << "p_id__key_ver_deq_map= \n";
-  // for (std::map<int, std::deque<key_ver_pair> >::iterator map_it = p_id__key_ver_deq_map.begin(); 
-  //     map_it != p_id__key_ver_deq_map.end(); map_it++) {
+  // ss << "p_id__reged_key_ver_deq_map= \n";
+  // for (std::map<int, std::deque<key_ver_pair> >::iterator map_it = p_id__reged_key_ver_deq_map.begin(); 
+  //     map_it != p_id__reged_key_ver_deq_map.end(); map_it++) {
   //   ss << "\t p_id= " << boost::lexical_cast<std::string>(map_it->first) << ":\n";
   //   for (std::deque<key_ver_pair>::iterator kv_it = (map_it->second).begin();
   //       kv_it != (map_it->second).end(); kv_it++) {
@@ -62,7 +63,7 @@ std::string PBuffer::to_str()
   ss << "cache= \n" << cache.to_str() << "\n";
   
   ss << "algo_to_pick_app_= \n"
-     << "\t parse_tree_to_pstr= \n" << algo_to_pick_app_->parse_tree_to_pstr() << "\n";
+    << "\t parse_tree_to_pstr= \n" << algo_to_pick_app_->parse_tree_to_pstr() << "\n";
   
   return ss.str();
 }
@@ -70,96 +71,150 @@ std::string PBuffer::to_str()
 // ****************************************  state rel  ***************************************** //
 int PBuffer::reg_key_ver(int p_id, key_ver_pair kv)
 {
-  if (reged_key_ver_vec.contains(kv) ) {
+  if (reged_key_ver_v.contains(kv) ) {
     LOG(ERROR) << "reg_key_ver:: already registered! <key= " << kv.first << ", ver= " << kv.second << ">.";
     return 1;
   }
-  reged_key_ver_vec.push_back(kv);
+  reged_key_ver_v.push_back(kv);
   // 
-  if (p_id__key_ver_deq_map.contains(p_id) ) {
-    p_id__key_ver_deq_map[p_id].push_back(kv);
-  }
+  if (p_id__reged_key_ver_deq_map.contains(p_id) )
+    p_id__reged_key_ver_deq_map[p_id].push_back(kv);
   else {
     std::deque<key_ver_pair> key_ver_deq;
     key_ver_deq.push_back(kv);
-    p_id__key_ver_deq_map[p_id] = key_ver_deq;
+    p_id__reged_key_ver_deq_map[p_id] = key_ver_deq;
+    p_id__front_step_in_deq_map[p_id] = 0;
   }
 }
 
 // ****************************************  operational  *************************************** //
+void PBuffer::sim_prefetch_accuracy(std::vector<int> p_id_v, std::vector<key_ver_pair> key_ver_v, 
+                                    float& hit_rate, std::vector<char>& accuracy_v)
+{
+  int num_miss = 0;
+  
+  std::vector<int>::iterator pid_it;
+  std::vector<key_ver_pair>::iterator kv_it;
+  for (pid_it = p_id_v.begin() , kv_it = key_ver_v.begin(); pid_it != p_id_v.end(), kv_it != key_ver_v.end(); pid_it++, kv_it++)
+    reg_key_ver(*pid_it, *kv_it);
+  
+  for (pid_it = p_id_v.begin() , kv_it = key_ver_v.begin(); pid_it != p_id_v.end(), kv_it != key_ver_v.end(); pid_it++, kv_it++) {
+    std::cout << "sim_prefetch_accuracy:: is <" << kv_it->first << ", " << kv_it->second << ">"
+              << " in the cache= \n" << cache.to_str() << "\n";
+  
+    if (!cache.contains(*kv_it) ) {
+      accuracy_v.push_back('f');
+      num_miss++;
+    }
+    else
+      accuracy_v.push_back('-');
+    
+    add_access(*pid_it, *kv_it);
+  }
+  
+  hit_rate = 1.0 - (float)num_miss / key_ver_v.size();
+}
+
 int PBuffer::add_access(int p_id, key_ver_pair kv)
 {
-  if (!reged_key_ver_vec.contains(kv) ) {
+  if (!reged_key_ver_v.contains(kv) ) {
     LOG(WARNING) << "add_access:: non-registered <key= " << kv.first << ", ver= " << kv.second << ">.";
     return 1;
   }
   
-  if (!cache.del(kv) )
+  if (!cache.del(p_id, kv) )
     _handle_del_cb(kv);
+  // 
+  // acced_key_ver_v.push_back(kv);
+  // p_id__acced_key_ver_v_map[p_id].push_back(kv);
   
-  
+  if (!p_id__last_acced_step_map.contains(p_id) )
+    p_id__last_acced_step_map[p_id] = 0;
+  else
+    p_id__last_acced_step_map[p_id] += 1;
+  // 
   size_t num_app = 1;
-  std::vector<key_ver_pair> key_ver_vec;
+  std::vector<key_ver_pair> key_ver_v;
   {// Causes problems while building the parse tree for multi-threaded scenario
     boost::lock_guard<boost::mutex> guard(add_acc_mutex);
     
-    if (algo_to_pick_app_->add_access(p_id) ) {
-      LOG(INFO) << "add_access:: algo_to_pick_app_->add_access failed for p_id= " << p_id;
-    }
+    if (algo_to_pick_app_->add_access(p_id) )
+      LOG(ERROR) << "add_access:: algo_to_pick_app_->add_access failed for p_id= " << p_id;
   
-    acced_key_ver_vec.push_back(kv);
-    p_id__acced_key_ver_vec_map[p_id].push_back(kv);
-    // Update app data FIFO queue before giving prefetching decision
-    std::deque<key_ver_pair>& key_ver_deq = p_id__key_ver_deq_map[p_id];
-    for (std::deque<key_ver_pair>::iterator it = key_ver_deq.begin(); it != key_ver_deq.end(); it++) {
-      if (*it == kv) {
-        while (key_ver_deq.front() != kv)
-          key_ver_deq.pop_front();
-        key_ver_deq.pop_front();
-      }
-    }
-    
-    get_to_prefetch(num_app, key_ver_vec);
+    get_to_prefetch(num_app, key_ver_v);
+    LOG(INFO) << "add_access:: get_to_prefetch returned key_ver_v= " << patch_pre::pvec_to_str<key_ver_pair>(key_ver_v) << "\n";
     // To avoid remote fetching while a kv is being prefetched -- assuming prefetching will never fail
-    for (std::vector<key_ver_pair>::iterator it = key_ver_vec.begin(); it != key_ver_vec.end(); it++)
-      cache.push(*it);
+    for (std::vector<key_ver_pair>::iterator it = key_ver_v.begin(); it != key_ver_v.end(); it++)
+      cache.push(p_id, *it);
   }
   
   // Call for prefetching per access
-  if (with_prefetch) {
-    for (std::vector<key_ver_pair>::iterator it = key_ver_vec.begin(); it != key_ver_vec.end(); it++)
+  if (w_prefetch) {
+    for (std::vector<key_ver_pair>::iterator it = key_ver_v.begin(); it != key_ver_v.end(); it++)
       _handle_prefetch_cb(ds_id, *it);
   }
     
   return 0;
 }
 
-int PBuffer::get_to_prefetch(size_t& num_app, std::vector<key_ver_pair>& key_ver_vec)
+int PBuffer::get_to_prefetch(size_t& num_app, std::vector<key_ver_pair>& key_ver_v)
 {
   // Pick app
-  KEY_T* p_id_;
-  std::vector<KEY_T> ep_id_v;
-  algo_to_pick_app_->get_to_prefetch(num_app, p_id_, std::vector<KEY_T>(), ep_id_v);
-  // Space acts as FIFO queue for data flow between p-c
-  // Note: Here we chose not to fill remaning apps (_num_app - num_app) to let the palgo to decide about
-  // 'best' number of keys to prefetch
-  if (num_app == 0) { // Pick the app that made the last access
-    num_app = 1;
-    p_id_ = (KEY_T*)malloc(num_app*sizeof(KEY_T) );
-    p_id_[0] = algo_to_pick_app_->get_acc_v().back();
-    
-    // LOG(INFO) << "get_to_prefetch:: num_app == 0; p_id_= " << p_id_[0];
-  }
+  std::vector<ACC_T> p_id_v, ep_id_v;
+  algo_to_pick_app_->get_to_prefetch(num_app, p_id_v, cache.get_cached_acc_v(), ep_id_v);
+  std::cout << ">>> algo_to_pick_app_->get_to_prefetch returned: \n"
+            << "p_id_v= " << patch_pre::vec_to_str<ACC_T>(p_id_v) << "\n"
+            << "ep_id_v= " << patch_pre::vec_to_str<ACC_T>(ep_id_v) << "\n";
   
-  for (int i = 0; i < num_app; i++) {
-    std::deque<key_ver_pair>& key_ver_deq = p_id__key_ver_deq_map[p_id_[i] ];
-    if (key_ver_deq.empty() )
-      break;
+  // int i;
+  std::vector<ACC_T>::iterator jt;
+  // for (jt = ep_id_v.begin(), i = 0; i < buffer_size - num_app - cache.size(), jt != ep_id_v.end(); i++, jt++)
+  for (jt = ep_id_v.begin(); jt != ep_id_v.end(); jt++)
+    p_id_v.push_back(*jt);
+  
+  std::cout << "----------------------------------------\n";
+  std::cout << "p_id_v= " << patch_pre::vec_to_str<ACC_T>(p_id_v) << "\n";
+  // 
+  for (std::vector<ACC_T>::iterator it = p_id_v.begin(); it != p_id_v.end(); it++) {
+    if (!p_id__last_cached_step_map.contains(*it) )
+      p_id__last_cached_step_map[*it] = -1;
+
+    std::cout << "for p_id= " << *it << ":\n"
+              << "\t p_id__last_cached_step_map= " << p_id__last_cached_step_map[*it] << "\n"
+              << "\t p_id__last_acced_step_map= " << p_id__last_acced_step_map[*it] << "\n";
+    if (p_id__last_cached_step_map[*it] < p_id__last_acced_step_map[*it] ) {
+      p_id__last_cached_step_map[*it] = p_id__last_acced_step_map[*it];
+    }
+    else if (p_id__last_cached_step_map[*it] > p_id__last_acced_step_map[*it] )
+      continue;
+    // 
+    ACC_T step_to_prefetch = p_id__last_cached_step_map[*it] + 1;
+    std::cout << "step_to_prefetch= " << step_to_prefetch << "\n";
+    std::deque<key_ver_pair>& key_ver_deq = p_id__reged_key_ver_deq_map[*it];
+    std::cout << "p_id = " << *it << ", key_ver_deq= \n";
+    for (std::deque<key_ver_pair>::iterator dit = key_ver_deq.begin(); dit != key_ver_deq.end(); dit++)
+      std::cout << "\t <" << dit->first << "," << dit->second << "> \n";
     
-    key_ver_vec.push_back(key_ver_deq.front() );
+    ACC_T front_step_in_deq = p_id__front_step_in_deq_map[*it];
+    std::cout << "front_step_in_deq= " << front_step_in_deq << "\n";
+    while (!key_ver_deq.empty() && front_step_in_deq < step_to_prefetch) {
+      key_ver_deq.pop_front();
+      front_step_in_deq++;
+    }
+    
+    if (key_ver_deq.empty() )
+      continue;
+    
+    key_ver_pair kv = key_ver_deq.front();
+    LOG(INFO) << "will key_ver_v.push_back <" << kv.first << ", " << kv.second << ">";
+    key_ver_v.push_back(key_ver_deq.front() );
     key_ver_deq.pop_front();
+    front_step_in_deq++;
+    
+    p_id__last_cached_step_map[*it] = step_to_prefetch;
+    p_id__front_step_in_deq_map[*it] = front_step_in_deq;
   }
-  free(p_id_);
+  std::cout << "***** \n";
 }
 
 bool PBuffer::contains(key_ver_pair kv)

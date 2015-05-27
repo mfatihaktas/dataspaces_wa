@@ -39,14 +39,14 @@ std::string PCSim::to_str()
 {
   std::stringstream ss;
   ss << "num_p= " << boost::lexical_cast<std::string>(num_p) << "\n";
-  ss << "p_id__ds_id_vec= " << patch_pre::vector_to_str<char>(p_id__ds_id_vec) << "\n";
-  ss << "p_id__num_put_vec= " << patch_pre::vector_to_str<int>(p_id__num_put_vec) << "\n";
-  ss << "p_id__put_rate_vec= " << patch_pre::vector_to_str<float>(p_id__put_rate_vec) << "\n";
+  ss << "p_id__ds_id_vec= " << patch_pre::vec_to_str<char>(p_id__ds_id_vec) << "\n";
+  ss << "p_id__num_put_vec= " << patch_pre::vec_to_str<int>(p_id__num_put_vec) << "\n";
+  ss << "p_id__put_rate_vec= " << patch_pre::vec_to_str<float>(p_id__put_rate_vec) << "\n";
   
   ss << "num_c= " << boost::lexical_cast<std::string>(num_c) << "\n";
-  ss << "c_id__ds_id_vec= " << patch_pre::vector_to_str<char>(c_id__ds_id_vec) << "\n";
-  ss << "c_id__num_get_vec= " << patch_pre::vector_to_str<int>(c_id__num_get_vec) << "\n";
-  ss << "c_id__get_rate_vec= " << patch_pre::vector_to_str<float>(c_id__get_rate_vec) << "\n";
+  ss << "c_id__ds_id_vec= " << patch_pre::vec_to_str<char>(c_id__ds_id_vec) << "\n";
+  ss << "c_id__num_get_vec= " << patch_pre::vec_to_str<int>(c_id__num_get_vec) << "\n";
+  ss << "c_id__get_rate_vec= " << patch_pre::vec_to_str<float>(c_id__get_rate_vec) << "\n";
   
   return ss.str();
 }

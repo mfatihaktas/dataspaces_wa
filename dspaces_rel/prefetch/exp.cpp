@@ -72,8 +72,8 @@ void palgo_test()
   // int acc_[] = {0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 2, 2, 3, 3, 2, 1, 0, 0, 0, 0 };
   // int acc_[] = {0, 0, 0, 1, 0, 1, 1 };
   // /* 
-  size_t alphabet_size = 10;
-  size_t acc_size = 1000; //sizeof(acc_)/sizeof(*acc_);
+  size_t alphabet_size = 3;
+  size_t acc_size = 100; //sizeof(acc_)/sizeof(*acc_);
   int* acc_ = NULL;
   std::map<ACC_T, float> acc__arr_rate_map;
   for (ACC_T a = 0; a < alphabet_size; a++)
@@ -98,7 +98,7 @@ void palgo_test()
   // std::cout << "hit_rate= " << hit_rate << "\n";
   // std::cout << "access_seq= \n" << palgo_->access_seq_to_str() << "\n";
   // std::cout << "parse_tree_to_pstr= \n" << palgo_->parse_tree_to_pstr() << "\n";
-  size_t cache_size = 9;
+  size_t cache_size = 3;
   
   boost::shared_ptr<PrefetchAlgo> lz_algo_ = boost::make_shared<LZAlgo>();
   float lz_hit_rate;
@@ -108,7 +108,7 @@ void palgo_test()
   std::cout << "hit_rate= " << lz_hit_rate << "\n";
   // std::cout << "access_seq= \n" << lz_algo_->access_seq_to_str() << "\n";
   // std::cout << "parse_tree_to_pstr= \n" << lz_algo_->parse_tree_to_pstr() << "\n";
-  std::cout << "accuracy_v= \n" << patch_pre::vector_to_str<char>(accuracy_v) << "\n";
+  std::cout << "accuracy_v= \n" << patch_pre::vec_to_str<char>(accuracy_v) << "\n";
   
   // boost::shared_ptr<PrefetchAlgo> alz_algo_ = boost::make_shared<ALZAlgo>();
   // float alz_hit_rate;
@@ -117,7 +117,7 @@ void palgo_test()
   // std::cout << "ALZ_ALGO:\n";
   // std::cout << "hit_rate= " << alz_hit_rate << "\n";
   // // std::cout << "parse_tree_to_pstr= \n" << alz_algo_->parse_tree_to_pstr() << "\n";
-  // std::cout << "accuracy_seq= \n" << patch_pre::vector_to_str<char>(accuracy_v) << "\n";
+  // std::cout << "accuracy_seq= \n" << patch_pre::vec_to_str<char>(accuracy_v) << "\n";
   
   // boost::shared_ptr<PrefetchAlgo> ppm_algo_ = boost::make_shared<PPMAlgo>(2);
   // float ppm_hit_rate;
@@ -126,7 +126,7 @@ void palgo_test()
   // std::cout << "PPM_ALGO:\n";
   // std::cout << "hit_rate= " << ppm_hit_rate << "\n";
   // // std::cout << "parse_tree_to_pstr= \n" << ppm_algo_->parse_tree_to_pstr() << "\n";
-  // std::cout << "accuracy_seq= \n" << patch_pre::vector_to_str<char>(accuracy_v) << "\n";
+  // std::cout << "accuracy_seq= \n" << patch_pre::vec_to_str<char>(accuracy_v) << "\n";
   
   // boost::shared_ptr<PrefetchAlgo> po_algo_ = boost::make_shared<POAlgo>();
   // float po_hit_rate;
@@ -135,7 +135,7 @@ void palgo_test()
   // std::cout << "PO_ALGO:\n";
   // std::cout << "hit_rate= " << po_hit_rate << "\n";
   // // std::cout << "parse_tree_to_pstr= \n" << po_algo_->parse_tree_to_pstr() << "\n";
-  // std::cout << "accuracy_seq= \n" << patch_pre::vector_to_str<char>(accuracy_v) << "\n";
+  // std::cout << "accuracy_seq= \n" << patch_pre::vec_to_str<char>(accuracy_v) << "\n";
   
   // std::cout << "lz_hit_rate= " << lz_hit_rate << "\n"
   //           << "alz_hit_rate= " << alz_hit_rate << "\n"
@@ -153,9 +153,9 @@ void palgo_test()
     std::cout << "parse_tree_to_pstr= \n" << palgo_->parse_tree_to_pstr();
     
     size_t num_acc = 1;
-    ACC_T* keys_;
-    palgo_->get_to_prefetch(num_acc, keys_, std::vector<ACC_T>(), std::vector<ACC_T>() );
-    std::cout << "keys_= " << patch_pre::arr_to_str<ACC_T>(num_acc, keys_) << "\n";
+    std::vector<ACC_T> keys_v;
+    palgo_->get_to_prefetch(num_acc, keys_v, std::vector<ACC_T>(), std::vector<ACC_T>() );
+    std::cout << "keys_v= " << patch_pre::vec_to_str<ACC_T>(keys_v) << "\n";
     
     // std::map<int, float> acc__emp_prob_map;
     // palgo_->get_acc__emp_prob_map_for_prefetch(acc__emp_prob_map);
@@ -166,69 +166,64 @@ void palgo_test()
 
 void handle_prefetch(char ds_id, key_ver_pair kv)
 {
-  LOG(INFO) << "handle_prefetch:: ds_id= " << ds_id << ", <key= " << kv.first << ", ver= " << kv.second << ">.";
+  // LOG(INFO) << "handle_prefetch:: ds_id= " << ds_id << ", <key= " << kv.first << ", ver= " << kv.second << ">.";
 }
 
 void handle_del(key_ver_pair kv)
 {
-  LOG(INFO) << "handle_del:: <key= " << kv.first << ", ver= " << kv.second << ">.";
+  // LOG(INFO) << "handle_del:: <key= " << kv.first << ", ver= " << kv.second << ">.";
 }
 
-void add_access(PBuffer* pbuffer, int p_id, int c)
+void add_access(PBuffer* pbuffer, int p_id, key_ver_pair kv)
 {
-  pbuffer->add_access(p_id, std::make_pair("d_" + boost::lexical_cast<std::string>(p_id) + "_" + boost::lexical_cast<std::string>(c), 0) );
+  pbuffer->add_access(p_id, kv);
 }
 
 void prefetch_test()
 {
-  size_t buffer_size = 2;
-  size_t app_context_size = 2;
-  
-  PBuffer pbuffer('a', buffer_size, app_context_size,
+  size_t buffer_size = 4;
+  PBuffer pbuffer('a', buffer_size, W_LZ,
                   true, boost::bind(handle_prefetch, _1, _2),
                   boost::bind(handle_del, _1) );
   
-  int p_id_[] = {0, 1};
+  int p_id_[] = {0, 1, 2, 3};
   int num_p = sizeof(p_id_)/sizeof(*p_id_);
-  int num_put = 20;
+  // int num_put = 20;
   
-  for (int i = 0; i < num_p; i++) {
-    int p_id = p_id_[i];
-    for (int j = 0; j < num_put; j++)
-      pbuffer.reg_key_ver(p_id, std::make_pair("d_" + boost::lexical_cast<std::string>(p_id) + "_" + boost::lexical_cast<std::string>(j), 0) );
-  }
-  
-  // int acced_p_id_[] = {0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0};
-  // int acced_p_id_[] = {0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,1,1,1,1,1};
-  // int acced_p_id_[] = {0,0,0,1,0,1,0,1,0,0,1,0,0,0,0};
-  // int num_acc = sizeof(acced_p_id_)/sizeof(*acced_p_id_);
   srand(time(NULL) );
-  int num_acc = 30 * (rand() % 10) / 10;
-  int acced_p_id_[num_acc];
-  for (int i = 0; i < num_acc; i++)
-    acced_p_id_[i] = rand() % num_p;
-  
-  std::map<int, int> p_id__last_i_map;
-  
+  int num_acc = 100; // 30 * (rand() % 10) / 10;
+  std::vector<int> p_id_v;
+  std::vector<key_ver_pair> key_ver_v;
+  std::map<int, int> p_id__last_step_map;
   for (int i = 0; i < num_acc; i++) {
-    int p_id = acced_p_id_[i];
-    if (p_id__last_i_map.count(p_id) == 0)
-      p_id__last_i_map[p_id] = 0;
+    int p_id = rand() % num_p;
+    p_id_v.push_back(p_id);
     
-    // pbuffer.add_access(p_id, std::make_pair("d_" + boost::lexical_cast<std::string>(p_id) + "_" + boost::lexical_cast<std::string>(p_id__last_i_map[p_id] ), 0) );
-    boost::thread t(add_access, &pbuffer, p_id, p_id__last_i_map[p_id] );
-    // add_access(&pbuffer, p_id, p_id__last_i_map[p_id]);
+    if (p_id__last_step_map.count(p_id) == 0)
+      p_id__last_step_map[p_id] = -1;
     
-    p_id__last_i_map[p_id]++;
+    key_ver_v.push_back( std::make_pair("d_" + boost::lexical_cast<std::string>(p_id) + "_" + boost::lexical_cast<std::string>(p_id__last_step_map[p_id] + 1), 0) );
+    p_id__last_step_map[p_id] += 1;
   }
   
-  // size_t num_acc = 1;
-  // std::vector<key_ver_pair> key_ver_vector;
-  // pbuffer.get_to_prefetch(num_acc, key_ver_vector, std::vector<ACC_T>(), std::vector<ACC_T>() );
-  // std::cout << "get_to_prefetch returns= \n";
-  // for (int i = 0; i < num_acc; i++)
-  //   std::cout << "<key= " << key_ver_vector[i].first << ", ver= " << key_ver_vector[i].second << "> \n";
+  // std::vector<int>::iterator pid_it;
+  // std::vector<key_ver_pair>::iterator kv_it;
+  // for (pid_it = p_id_v.begin(), kv_it = key_ver_v.begin(); pid_it != p_id_v.end(), kv_it != key_ver_v.end(); pid_it++, kv_it++)
+  //   pbuffer.reg_key_ver(*pid_it, *kv_it);
+  // for (pid_it = p_id_v.begin(), kv_it = key_ver_v.begin(); pid_it != p_id_v.end(), kv_it != key_ver_v.end(); pid_it++, kv_it++) {
+  //   // boost::thread t(add_access, &pbuffer, p_id, p_id__last_step_map[p_id] );
+  //   add_access(&pbuffer, *pid_it, *kv_it);
+  // }
+  // std::cout << "prefetch_test:: p_id_v= " << patch_pre::vec_to_str<int>(p_id_v) << "\n";
+  // std::cout << "prefetch_test:: key_ver_v= \n" << patch_pre::pvec_to_str<key_ver_pair>(key_ver_v) << "\n";
   
+  float hit_rate;
+  std::vector<char> accuracy_v;
+  pbuffer.sim_prefetch_accuracy(p_id_v, key_ver_v, hit_rate, accuracy_v);
+  std::cout << "accuracy_v= " << patch_pre::vec_to_str<char>(accuracy_v) << "\n";
+  std::cout << "hit_rate= " << hit_rate << "\n";
+  
+  // 
   std::string temp;
   std::cout << "Enter\n";
   getline(std::cin, temp);
@@ -304,8 +299,8 @@ int main(int argc , char **argv)
   google::InitGoogleLogging("exp");
   // 
   std::map<char*, char*> opt_map = parse_opts(argc, argv);
-  palgo_test();
-  // prefetch_test();
+  // palgo_test();
+  prefetch_test();
   // sim_test();
   
   // srand(time(NULL) );

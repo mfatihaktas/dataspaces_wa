@@ -27,13 +27,19 @@
 /********************************************  Cache  **********************************************/
 template <typename ACC_T, typename T>
 class Cache {
+  typedef boost::function<void(T)> func_handle_del_cb;
   private:
     size_t cache_size;
-    std::map<ACC_T, int> key_num_map;
     std::deque<T> cache;
+    
+    std::map<T, ACC_T> e_acc_map;
+    std::map<ACC_T, int> acc_num_map;
+    
+    func_handle_del_cb _handle_del_cb;
   public:
-    Cache(size_t cache_size) 
-    : cache_size(cache_size)
+    Cache(size_t cache_size, func_handle_del_cb _handle_del_cb)
+    : cache_size(cache_size),
+      _handle_del_cb(_handle_del_cb)
     {
       LOG(INFO) << "Cache:: constructed.";
     }
@@ -44,7 +50,7 @@ class Cache {
     {
       std::stringstream ss;
       ss << "cache_size= " << boost::lexical_cast<std::string>(cache_size) << "\n";
-      ss << "key_num_map= \n" << patch_pre::map_to_str<ACC_T, int>(key_num_map) << "\n";
+      ss << "acc_num_map= \n" << patch_pre::map_to_str<ACC_T, int>(acc_num_map) << "\n";
       ss << "cache_content= \n";
       for (typename std::deque<T>::iterator it = cache.begin(); it != cache.end(); it++)
         ss << "\t <" << boost::lexical_cast<std::string>(it->first) << ", " << boost::lexical_cast<std::string>(it->second) << "> \n";
@@ -53,29 +59,34 @@ class Cache {
       return ss.str();
     }
     
-    int push(T e)
+    int push(ACC_T acc, T e)
     {
       if (contains(e) )
         return 1;
       
-      ACC_T key = e.first;
-      if (key_num_map.count(key) == 0)
-        key_num_map[key] = 0;
-      key_num_map[key] += 1;
+      if (acc_num_map.count(acc) == 0)
+        acc_num_map[acc] = 0;
+      acc_num_map[acc] += 1;
       
-      if (cache.size() == cache_size)
-        cache.pop_front();
+      e_acc_map[e] = acc;
+      
+      if (cache.size() == cache_size) {
+        T e_to_del = cache.front();
+        _handle_del_cb(e_to_del);
+        del(e_acc_map[e_to_del], e_to_del);
+      }
       cache.push_back(e);
       
       return 0;
     }
     
-    int del(T e)
+    int del(ACC_T acc, T e)
     {
       if (!contains(e) )
         return 1;
       
-      key_num_map[e.first] -= 1;
+      acc_num_map[acc] -= 1;
+      e_acc_map.erase(e_acc_map.find(e) );
       cache.erase(std::find(cache.begin(), cache.end(), e) );
       
       return 0;
@@ -100,7 +111,7 @@ class Cache {
     std::vector<ACC_T> get_cached_acc_v()
     {
       std::vector<ACC_T> acc_v;
-      for (typename std::map<ACC_T, int>::iterator it = key_num_map.begin(); it != key_num_map.end(); it++) {
+      for (typename std::map<ACC_T, int>::iterator it = acc_num_map.begin(); it != acc_num_map.end(); it++) {
         if (it->second > 0)
           acc_v.push_back(it->first);
       }
@@ -316,7 +327,6 @@ class Graph // The graph base class template
 };
 
 // Note: has to change key type to whatever KEY_T set for ParseTree, making these properties template does not work with boost::property
-// typedef char KEY_T
 typedef int KEY_T;
 #define PARSE_TREE_ROOT_KEY -2
 #define BACK_TO_ROOT_LEAF_KEY -1
@@ -337,7 +347,7 @@ typedef int PREFETCH_T;
 #define W_LZ 0
 #define W_ALZ 1
 #define W_PPM 2
-#define W_POISSON 3
+#define W_PO 3
 class ParseTree {
   typedef boost::adjacency_list<
     boost::setS, // disallow parallel edges
@@ -402,27 +412,22 @@ class ParseTree {
       return false;
     }
     
-    int get_to_prefetch(size_t& num_keys, KEY_T*& keys_)
+    int get_to_prefetch(size_t& num_keys, std::vector<KEY_T>& key_v)
     {
       std::map<KEY_T, float> key_prob_map;
       get_key_prob_map_for_prefetch(key_prob_map);
       
-      if (num_keys > key_prob_map.size() ) {
-        // LOG(WARNING) << "get_to_prefetch:: num_keys= " << num_keys << " > key_prob_map.size()= " 
-        //             << key_prob_map.size() << "! Updating num_keys= " << key_prob_map.size();
-        num_keys = key_prob_map.size();
-      }
       // Note: std::map is ordered -- either aphabetical or numerical with keys
       std::map<float, KEY_T> prob_key_map;
       for (std::map<KEY_T, float>::iterator it = key_prob_map.begin(); it != key_prob_map.end(); it++)
         prob_key_map[it->second] = it->first;
       
-      keys_ = (KEY_T*) malloc(num_keys*sizeof(KEY_T) );
-      std::map<float, KEY_T>::reverse_iterator rit = prob_key_map.rbegin();
-      for (int i = 0; i < num_keys; i++) {
-        keys_[i] = rit->second;
-        rit++;
-      }
+      int i;
+      std::map<float, KEY_T>::reverse_iterator rit;
+      for (rit = prob_key_map.rbegin(), i = 0; rit != prob_key_map.rend(), i < num_keys; rit++, i++)
+        key_v.push_back(rit->second);
+      
+      num_keys = key_v.size();
       
       return 0;
     }
@@ -436,7 +441,7 @@ class ParseTree {
         // get_key_prob_map_for_prefetch_w_alz(key_prob_map);
       else if (prefetch_t == W_PPM)
         get_key_prob_map_for_prefetch_w_ppm(key_prob_map);
-      else if (prefetch_t == W_POISSON)
+      else if (prefetch_t == W_PO)
         get_key_prob_map_for_prefetch_w_poisson(key_prob_map);
     }
     
@@ -448,7 +453,7 @@ class ParseTree {
         add_access_w_alz(key);
       else if (prefetch_t == W_PPM)
         add_access_w_ppm(key);
-      else if (prefetch_t == W_POISSON) {
+      else if (prefetch_t == W_PO) {
         timeval tv;
         gettimeofday(&tv, NULL);
         if (key__num_arr_map.count(key) == 0)
@@ -791,11 +796,10 @@ class PrefetchAlgo {
     std::vector<ACC_T> get_acc_v();
     
     int add_access(ACC_T acc);
-    // TODO: will be deprecated
-    int get_acc_prob_map_for_prefetch(std::map<ACC_T, float>& acc_prob_map);
-    int get_to_prefetch(size_t& num_acc, ACC_T*& acc_,
+    int get_acc_prob_map_for_prefetch(std::map<ACC_T, float>& acc_prob_map); // TODO: will be deprecated
+    int get_to_prefetch(size_t& num_acc, std::vector<ACC_T>& acc_v,
                         const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v);
-    int sim_prefetch_accuracy(float& hit_rate, size_t cache_size, std::vector<acc_step_pair> access_seq_v, std::vector<char>& accuracy_seq_v);
+    void sim_prefetch_accuracy(float& hit_rate, size_t cache_size, std::vector<acc_step_pair> access_seq_v, std::vector<char>& accuracy_seq_v);
 };
 
 class LZAlgo : public PrefetchAlgo {
