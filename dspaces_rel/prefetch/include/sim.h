@@ -19,7 +19,7 @@ class WASpace {
   private:
     int num_ds;
     char* ds_id_;
-    size_t app_context_size;
+    int app_context_size;
     
     patch_pre::thread_safe_vector<T> wa_space_vec;
     patch_pre::thread_safe_map<char, boost::shared_ptr<patch_pre::thread_safe_vector<T> > > ds_id__content_vecp_map;
@@ -31,7 +31,7 @@ class WASpace {
     
     patch_pre::syncer<T> putget_syncer;
   public:
-    WASpace(int num_ds, char* ds_id_, size_t pbuffer_size, size_t app_context_size)
+    WASpace(int num_ds, char* ds_id_, int pbuffer_size, int app_context_size)
     : num_ds(num_ds), ds_id_(ds_id_),
       app_context_size(app_context_size)
     { 
@@ -210,7 +210,7 @@ class PCSim { // Prefetching Simulator
     void sim_p(int p_id);
     void sim_c(int c_id);
   public:
-    PCSim(int num_ds, char* ds_id_, size_t pbuffer_size, size_t app_context_size,
+    PCSim(int num_ds, char* ds_id_, int pbuffer_size, int app_context_size,
           int num_p, int num_c,
           std::vector<char> p_id__ds_id_vec, std::vector<char> c_id__ds_id_vec,
           std::vector<int> p_id__num_put_vec, std::vector<int> c_id__num_get_vec,

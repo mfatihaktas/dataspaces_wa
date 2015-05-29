@@ -55,7 +55,7 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
 }
 
 template<typename T>
-std::string vector_to_str(std::vector<T> v)
+std::string vec_to_str(std::vector<T> v)
 {
   std::stringstream ss;
   for (typename std::vector<T>::iterator it = v.begin(); it != v.end(); it++) {
@@ -66,7 +66,7 @@ std::string vector_to_str(std::vector<T> v)
 }
 
 template<typename T>
-void array_to_vector(int length, T* array, std::vector<T>& vector)
+void arr_to_vec(int length, T* array, std::vector<T>& vector)
 {
   for (int i = 0; i < length; i++) {
     vector.push_back(array[i] );
@@ -148,20 +148,20 @@ int main(int argc , char **argv)
   float y2_[] = {11.5, 11.7, 12.7, 20.2, 73.7};
   
   std::vector<float> x1_v;
-  array_to_vector<float>(sizeof(x1_) / sizeof(*x1_), x1_, x1_v);
-  std::cout << "x1_v= " << vector_to_str(x1_v) << "\n";
+  arr_to_vec<float>(sizeof(x1_) / sizeof(*x1_), x1_, x1_v);
+  std::cout << "x1_v= " << vec_to_str(x1_v) << "\n";
   
   std::vector<float> y1_v;
-  array_to_vector<float>(sizeof(y1_) / sizeof(*y1_), y1_, y1_v);
-  std::cout << "y1_v= " << vector_to_str(y1_v) << "\n";
+  arr_to_vec<float>(sizeof(y1_) / sizeof(*y1_), y1_, y1_v);
+  std::cout << "y1_v= " << vec_to_str(y1_v) << "\n";
   
   std::vector<float> x2_v;
-  array_to_vector<float>(sizeof(x2_) / sizeof(*x2_), x2_, x2_v);
-  std::cout << "x2_v= " << vector_to_str(x2_v) << "\n";
+  arr_to_vec<float>(sizeof(x2_) / sizeof(*x2_), x2_, x2_v);
+  std::cout << "x2_v= " << vec_to_str(x2_v) << "\n";
   
   std::vector<float> y2_v;
-  array_to_vector<float>(sizeof(y2_) / sizeof(*y2_), y2_, y2_v);
-  std::cout << "y2_v= " << vector_to_str(y2_v) << "\n";
+  arr_to_vec<float>(sizeof(y2_) / sizeof(*y2_), y2_, y2_v);
+  std::cout << "y2_v= " << vec_to_str(y2_v) << "\n";
   
   std::string out_url = "/cac/u01/mfa51/Desktop/dataspaces_wa/plot/pngs/fig_lan_exp_w_slack.png";
   

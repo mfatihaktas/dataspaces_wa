@@ -1,7 +1,7 @@
 #include "sim.h"
 
 /***********************************************  PCSim  ************************************************/
-PCSim::PCSim(int num_ds, char* ds_id_, size_t pbuffer_size, size_t app_context_size,
+PCSim::PCSim(int num_ds, char* ds_id_, int pbuffer_size, int app_context_size,
              int num_p, int num_c,
              std::vector<char> p_id__ds_id_vec, std::vector<char> c_id__ds_id_vec,
              std::vector<int> p_id__num_put_vec, std::vector<int> c_id__num_get_vec,

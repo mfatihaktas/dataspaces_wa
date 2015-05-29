@@ -19,8 +19,8 @@ typedef boost::function<void(key_ver_pair)> func_handle_del_cb;
 class PBuffer { //Prefetching Buffer
   private:
     char ds_id;
-    size_t buffer_size; // # of <key, ver>
-    size_t app_context_size;
+    int buffer_size; // # of <key, ver>
+    int app_context_size;
     bool w_prefetch;
     func_handle_prefetch_cb _handle_prefetch_cb;
     func_handle_del_cb _handle_del_cb;
@@ -40,9 +40,9 @@ class PBuffer { //Prefetching Buffer
     boost::shared_ptr<PrefetchAlgo> algo_to_pick_app_;
     boost::mutex add_acc_mutex;
     
-    int get_to_prefetch(size_t& num_keys, std::vector<key_ver_pair>& key_ver_vector);
+    int get_to_prefetch(int& num_keys, std::vector<key_ver_pair>& key_ver_vector);
   public:
-    PBuffer(char ds_id, size_t buffer_size, PREFETCH_T prefetch_t,
+    PBuffer(char ds_id, int buffer_size, PREFETCH_T prefetch_t,
             bool w_prefetch, func_handle_prefetch_cb _handle_prefetch_cb,
             func_handle_del_cb _handle_del_cb);
     ~PBuffer();

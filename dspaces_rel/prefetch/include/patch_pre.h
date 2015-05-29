@@ -25,11 +25,8 @@ namespace patch_pre {
   std::string set_to_str(std::set<T> s)
   {
     std::stringstream ss;
-    for (typename std::set<T>::iterator it = s.begin(); it != s.end(); it++) {
-      ss << boost::lexical_cast<std::string>(*it);
-      if (it != (s.end() - 1) )
-        ss << ", ";
-    }
+    for (typename std::set<T>::iterator it = s.begin(); it != s.end(); it++)
+      ss << boost::lexical_cast<std::string>(*it) << ", ";
     
     return ss.str();
   };

@@ -10,11 +10,10 @@
 #include <glog/logging.h>
 
 #include <utility>                   // std::pair
-#include <algorithm>                 // std::for_each
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/adjacency_list.hpp>
 // #include <boost/graph/dijkstra_shortest_paths.hpp>
-
+#include <boost/make_shared.hpp>
 #include <boost/config.hpp>
 #include <boost/version.hpp>
 #include <boost/graph/graph_utility.hpp>
@@ -29,7 +28,7 @@ template <typename ACC_T, typename T>
 class Cache {
   typedef boost::function<void(T)> func_handle_del_cb;
   private:
-    size_t cache_size;
+    int cache_size;
     std::deque<T> cache;
     
     std::map<T, ACC_T> e_acc_map;
@@ -37,7 +36,7 @@ class Cache {
     
     func_handle_del_cb _handle_del_cb;
   public:
-    Cache(size_t cache_size, func_handle_del_cb _handle_del_cb)
+    Cache(int cache_size, func_handle_del_cb _handle_del_cb = 0)
     : cache_size(cache_size),
       _handle_del_cb(_handle_del_cb)
     {
@@ -72,7 +71,8 @@ class Cache {
       
       if (cache.size() == cache_size) {
         T e_to_del = cache.front();
-        _handle_del_cb(e_to_del);
+        if (_handle_del_cb != 0)
+          _handle_del_cb(e_to_del);
         del(e_acc_map[e_to_del], e_to_del);
       }
       cache.push_back(e);
@@ -97,7 +97,7 @@ class Cache {
       return (std::find(cache.begin(), cache.end(), e) != cache.end() );
     }
     
-    size_t size() { return cache.size(); }
+    int size() { return cache.size(); }
     
     std::vector<T> get_content_v()
     {
@@ -375,6 +375,29 @@ class ParseTree {
     std::map<KEY_T, timeval> key__last_arr_tv_map;
     std::map<KEY_T, float> key__sum_arr_t_map;
   public:
+    ParseTree(PREFETCH_T prefetch_t)
+    : prefetch_t(prefetch_t),
+      pt_graph(),
+      longest_phrase_length(0)
+    {
+      if (prefetch_t == W_PPM)
+        context_size = 2;
+      else
+        context_size = 0;
+        
+      // Note: root level is 0
+      Vertex_Properties root_prop;
+      root_prop.name = "R";
+      root_prop.key = PARSE_TREE_ROOT_KEY;
+      root_prop.num_visit = 0;
+      root_prop.status = 'R';
+      root_prop.level = 0;
+      pt_graph.add_vertex(root_prop);
+      // pt_graph.print();
+      // 
+      LOG(INFO) << "ParseTree:: constructed.";
+    }
+    
     // Note: context_size matters only for PPM Algo
     ParseTree(PREFETCH_T prefetch_t, int context_size)
     : prefetch_t(prefetch_t), context_size(context_size),
@@ -412,7 +435,7 @@ class ParseTree {
       return false;
     }
     
-    int get_to_prefetch(size_t& num_keys, std::vector<KEY_T>& key_v)
+    int get_to_prefetch(int& num_keys, std::vector<KEY_T>& key_v)
     {
       std::map<KEY_T, float> key_prob_map;
       get_key_prob_map_for_prefetch(key_prob_map);
@@ -422,11 +445,11 @@ class ParseTree {
       for (std::map<KEY_T, float>::iterator it = key_prob_map.begin(); it != key_prob_map.end(); it++)
         prob_key_map[it->second] = it->first;
       
-      int i;
-      std::map<float, KEY_T>::reverse_iterator rit;
-      for (rit = prob_key_map.rbegin(), i = 0; rit != prob_key_map.rend(), i < num_keys; rit++, i++)
+      for (std::map<float, KEY_T>::reverse_iterator rit = prob_key_map.rbegin(); rit != prob_key_map.rend(); rit++) {
         key_v.push_back(rit->second);
-      
+        if (key_v.size() == num_keys)
+          break;
+      }
       num_keys = key_v.size();
       
       return 0;
@@ -459,7 +482,7 @@ class ParseTree {
         if (key__num_arr_map.count(key) == 0)
           key__num_arr_map[key] = 0;
         else {
-          // Calculate arr_rate_est for faster prediction computation
+          // Calculate arr_rate_est to compute the prediction faster
           timeval last_arr_tv = key__last_arr_tv_map[key];
           key__sum_arr_t_map[key] += ( (last_arr_tv.tv_sec - tv.tv_sec)*1000.0 + (last_arr_tv.tv_usec - tv.tv_usec)/1000.0 )/1000.0;
         }
@@ -473,7 +496,7 @@ class ParseTree {
     {
       Vertex& cur_v = pt_graph.get_cur();
       int total_num_visit = pt_graph.properties(cur_v).num_visit;
-      if (pt_graph.properties(cur_v).status != 'R')
+      if (pt_graph.properties(cur_v).status != 'R' && prefetch_t != W_PPM)
         total_num_visit -= 1;
       
       srand(time(NULL) );
@@ -717,24 +740,6 @@ class ParseTree {
       return ss.str();
     }
     
-    int move_cur_on_context(bool inc_num_visit)
-    {
-      int walked_upto_index_on_context = 0;
-      for (int i = 0; i < context.size(); i++) {
-        Vertex leaf_to_go;
-        if (does_vertex_have_key_in_adjs(pt_graph.get_cur(), context[i], leaf_to_go) ) { //go down
-          move_cur(inc_num_visit, leaf_to_go);
-          walked_upto_index_on_context++;
-        }
-        else {
-          // LOG(INFO) << "move_cur_on_context:: could not walk on context= " << context_to_str();
-          return walked_upto_index_on_context;
-        }
-      }
-      // LOG(INFO) << "move_cur_on_context:: could walk on context= " << context_to_str();
-      return walked_upto_index_on_context;
-    }
-    
     void create__move_cur_on_context(int walked_upto_index_on_context)
     {
       Vertex cur_v = pt_graph.get_cur();
@@ -764,6 +769,24 @@ class ParseTree {
       }
     }
     
+    int move_cur_on_context(bool inc_num_visit)
+    {
+      int walked_upto_index_on_context = 0;
+      
+      for (int i = 0; i < context.size(); i++) {
+        Vertex leaf_to_go;
+        if (does_vertex_have_key_in_adjs(pt_graph.get_cur(), context[i], leaf_to_go) ) { //go down
+          move_cur(inc_num_visit, leaf_to_go);
+          walked_upto_index_on_context++;
+        }
+        else {
+          // LOG(INFO) << "move_cur_on_context:: could not walk on context= " << context_to_str();
+          return walked_upto_index_on_context;
+        }
+      }
+      // LOG(INFO) << "move_cur_on_context:: could walk on context= " << context_to_str();
+      return walked_upto_index_on_context;
+    }
     // --------------------------------------  with_poisson  ------------------------------------ //
     int get_key_prob_map_for_prefetch_w_poisson(std::map<KEY_T, float>& key_prob_map)
     {
@@ -780,6 +803,34 @@ class ParseTree {
 
 typedef KEY_T ACC_T;
 typedef std::pair<ACC_T, int> acc_step_pair;
+
+typedef int M_PREFETCH_T;
+#define MP_W_WEIGHT 0
+#define MP_W_MAX 1
+class MPrefetchAlgo { // Mixed
+  private:
+    M_PREFETCH_T m_prefetch_t;
+    std::map<PREFETCH_T, float> prefetch_t__weight_map;
+    
+    std::set<ACC_T> acc_s;
+    std::vector<ACC_T> acc_v;
+    std::vector<boost::shared_ptr<ParseTree> > parse_tree_v;
+    std::map<int, float> pt_id__weight_map;
+  public:
+    MPrefetchAlgo(M_PREFETCH_T m_prefetch_t,
+                  std::map<PREFETCH_T, float> prefetch_t__weight_map);
+    ~MPrefetchAlgo();
+    
+    std::vector<ACC_T> get_acc_v();
+    
+    int add_access(ACC_T acc);
+    int get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
+                        const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v);
+    
+    int get_to_prefetch_w_max(int& num_acc, std::vector<ACC_T>& acc_v);
+    int get_to_prefetch_w_weight(int& num_acc, std::vector<ACC_T>& acc_v);
+};
+
 class PrefetchAlgo {
   protected:
     std::set<ACC_T> acc_s;
@@ -787,19 +838,16 @@ class PrefetchAlgo {
     ParseTree parse_tree;
     
   public:
-    PrefetchAlgo(PREFETCH_T prefetch_t, size_t context_size);
+    PrefetchAlgo(PREFETCH_T prefetch_t, int context_size);
     ~PrefetchAlgo();
     
-    std::string parse_tree_to_str();
     std::string parse_tree_to_pstr();
-    
     std::vector<ACC_T> get_acc_v();
     
     int add_access(ACC_T acc);
     int get_acc_prob_map_for_prefetch(std::map<ACC_T, float>& acc_prob_map); // TODO: will be deprecated
-    int get_to_prefetch(size_t& num_acc, std::vector<ACC_T>& acc_v,
+    int get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
                         const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v);
-    void sim_prefetch_accuracy(float& hit_rate, size_t cache_size, std::vector<acc_step_pair> access_seq_v, std::vector<char>& accuracy_seq_v);
 };
 
 class LZAlgo : public PrefetchAlgo {
@@ -816,7 +864,7 @@ class ALZAlgo : public PrefetchAlgo {
 
 class PPMAlgo : public PrefetchAlgo {
   public:
-    PPMAlgo(size_t context_size);
+    PPMAlgo(int context_size);
     ~PPMAlgo();
 };
 
@@ -825,5 +873,44 @@ class POAlgo : public PrefetchAlgo {
     POAlgo();
     ~POAlgo();
 };
+
+template <typename PALGO_T>
+void sim_prefetch_accuracy(PALGO_T& palgo,
+                           int cache_size, std::vector<acc_step_pair> acc_step_v, 
+                           float& hit_rate, std::vector<char>& accuracy_v )
+{
+  Cache<ACC_T, acc_step_pair> cache(cache_size, boost::function<void(acc_step_pair)>() );
+  int num_miss = 0;
+  
+  std::map<ACC_T, int> acc__last_acced_step_map;
+  
+  for (std::vector<acc_step_pair>::iterator it = acc_step_v.begin(); it != acc_step_v.end(); it++) {
+    // std::cout << "sim_prefetch_accuracy:: is <" << it->first << ", " << it->second << ">"
+    //           << " in the cache= \n" << cache.to_str() << "\n";
+    acc__last_acced_step_map[it->first] = it->second;
+    
+    if (!cache.contains(*it) ) {
+      accuracy_v.push_back('f');
+      num_miss++;
+    }
+    else
+      accuracy_v.push_back('-');
+    
+    // In wa-dataspaces scenario data is used only once
+    cache.del(it->first, *it);
+    
+    palgo.add_access(it->first); // Reg only the acc
+    
+    int num_acc = 1; //cache_size;
+    std::vector<ACC_T> acc_v, eacc_v;
+    palgo.get_to_prefetch(num_acc, acc_v, std::vector<ACC_T>(), eacc_v);
+    
+    // Update cache
+    for (std::vector<ACC_T>::iterator iit = acc_v.begin(); iit != acc_v.end(); iit++)
+      cache.push(*iit, std::make_pair(*iit, acc__last_acced_step_map[*iit] + 1) );
+  }
+  
+  hit_rate = 1.0 - (float)num_miss / acc_step_v.size();
+}
 
 #endif // _PALGORITHM_H_
