@@ -1,17 +1,11 @@
 #include "prefetch.h"
 #include "sim.h"
 
-#include <iostream>
-#include <string>
-#include <stdio.h>
-#include <stdlib.h>
 #include <getopt.h>
 
-#include <iostream>
-#include <functional>
-#include <string>
-
 #include "patch_exp.h"
+
+#include <algorithm>
 
 std::map<char*, char*> parse_opts(int argc, char** argv)
 {
@@ -56,65 +50,203 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
   return opt_map;
 }
 
-void plot_palgo_stats()
+void test_rand_shuffle_train()
 {
   std::vector<std::string> title_v;
   
   std::vector<boost::shared_ptr<PrefetchAlgo> > palgo_v;
   palgo_v.push_back(boost::make_shared<LZAlgo>() );
   title_v.push_back("lz");
+  // palgo_v.push_back(boost::make_shared<PPMAlgo>(1) );
+  // title_v.push_back("ppm_1");
   palgo_v.push_back(boost::make_shared<PPMAlgo>(2) );
   title_v.push_back("ppm_2");
-  palgo_v.push_back(boost::make_shared<PPMAlgo>(3) );
-  title_v.push_back("ppm_3");
-  palgo_v.push_back(boost::make_shared<POAlgo>() );
-  title_v.push_back("po");
+  // palgo_v.push_back(boost::make_shared<PPMAlgo>(3) );
+  // title_v.push_back("ppm_3");
+  palgo_v.push_back(boost::make_shared<PPMAlgo>(4) );
+  title_v.push_back("ppm_4");
+  palgo_v.push_back(boost::make_shared<PPMAlgo>(5) );
+  title_v.push_back("ppm_5");
+  palgo_v.push_back(boost::make_shared<PPMAlgo>(6) );
+  title_v.push_back("ppm_6");
+  palgo_v.push_back(boost::make_shared<PPMAlgo>(8) );
+  title_v.push_back("ppm_8");
+  // palgo_v.push_back(boost::make_shared<PPMAlgo>(12) );
+  // title_v.push_back("ppm_12");
+  // palgo_v.push_back(boost::make_shared<POAlgo>() );
+  // title_v.push_back("po");
   
   std::vector<boost::shared_ptr<MPrefetchAlgo> > mpalgo_v;
   std::map<PREFETCH_T, float> prefetch_t__weight_map;
   prefetch_t__weight_map[W_LZ] = 0.33;
   prefetch_t__weight_map[W_PPM] = 0.33;
   prefetch_t__weight_map[W_PO] = 0.33;
-  mpalgo_v.push_back(boost::make_shared<MPrefetchAlgo>(MP_W_WEIGHT, prefetch_t__weight_map) );
-  title_v.push_back("mp_w_weight");
-  mpalgo_v.push_back(boost::make_shared<MPrefetchAlgo>(MP_W_MAX, prefetch_t__weight_map) );
+  // mpalgo_v.push_back(boost::make_shared<MPrefetchAlgo>(W_MP_WEIGHT, prefetch_t__weight_map) );
+  // title_v.push_back("mp_w_weight");
+  // mpalgo_v.push_back(boost::make_shared<MPrefetchAlgo>(W_MP_MAX, prefetch_t__weight_map) );
+  // title_v.push_back("mp_w_max");
+  
+  int num_algo = palgo_v.size() + mpalgo_v.size();
+  
+  int alphabet_size = 10;
+  int num_acc = 100;
+  std::vector<int> acc_v;
+  std::vector<acc_step_pair> acc_step_v;
+  std::map<ACC_T, float> acc__arr_rate_map;
+  // 
+  for (ACC_T a = 0; a < alphabet_size; a++)
+    acc__arr_rate_map[a] = 1 + static_cast<float>(rand() ) / static_cast<float>(RAND_MAX); // (float) 1 / alphabet_size;
+  gen_poisson_acc_seq(alphabet_size, num_acc, acc__arr_rate_map, acc_v);
+  // for (int i = 0; i < num_acc; i++)
+  //   acc_v.push_back(i % alphabet_size);
+  std::cout << "acc_v= " << patch_pre::vec_to_str<>(acc_v) << "\n";
+  // acc_v_to_acc_step_v(acc_v, acc_step_v);
+  
+  int shuffle_width = 2;
+  float shuffle_prob = 0.5;
+  std::vector<int> shuffle_indices;
+  // for (int i = shuffle_width; i < num_acc; i += (2*shuffle_width + 1) )
+  for (int i = 0; i < num_acc/10; i++)
+    shuffle_indices.push_back(rand() % num_acc);
+    // shuffle_indices.push_back(i);
+  // 
+  std::vector<std::vector<float> > run_i_v_v(num_algo);
+  std::vector<std::vector<float> > hit_rate_v_v(num_algo);
+  
+  float hit_rate;
+  std::vector<char> accuracy_v;
+  
+  int num_run = 50;
+  for (int i = 1; i <= num_run; i++) {
+    for (int j = 0; j < num_run; j++) {
+      random_partial_shuffle<ACC_T>(shuffle_prob, shuffle_width, shuffle_indices, acc_v);
+      // std::cout << "for training; acc_v= " << patch_pre::vec_to_str<>(acc_v) << "\n";
+      
+      for (std::vector<boost::shared_ptr<PrefetchAlgo> >::iterator it = palgo_v.begin(); it != palgo_v.end(); it++)
+        (*it)->train(acc_v);
+      for (std::vector<boost::shared_ptr<MPrefetchAlgo> >::iterator it = mpalgo_v.begin(); it != mpalgo_v.end(); it++)
+        (*it)->train(acc_v);
+    }
+    // std::random_shuffle(acc_v_.begin(), acc_v_.end() );
+    // for (std::vector<boost::shared_ptr<PrefetchAlgo> >::iterator it = palgo_v.begin(); it != palgo_v.end(); it++)
+    //   (*it)->train(acc_v_);
+    // for (std::vector<boost::shared_ptr<MPrefetchAlgo> >::iterator it = mpalgo_v.begin(); it != mpalgo_v.end(); it++)
+    //   (*it)->train(acc_v_);
+    
+    // std::random_shuffle(acc_v.begin(), acc_v.end() );
+    random_partial_shuffle<ACC_T>(shuffle_prob, shuffle_width, shuffle_indices, acc_v);
+    acc_step_v.clear();
+    acc_v_to_acc_step_v(acc_v, acc_step_v);
+    std::cout << "for prediction; acc_v= " << patch_pre::vec_to_str<>(acc_v) << "\n";
+    
+    int algo_id = 0;
+    for (std::vector<boost::shared_ptr<PrefetchAlgo> >::iterator it = palgo_v.begin(); it != palgo_v.end(); it++, algo_id++) {
+      accuracy_v.clear();
+      sim_prefetch_accuracy<PrefetchAlgo>(**it, 1, acc_step_v, hit_rate, accuracy_v);
+      hit_rate_v_v[algo_id].push_back(hit_rate);
+      run_i_v_v[algo_id].push_back(i);
+      // (*it)->reset();
+    }
+  
+    for (std::vector<boost::shared_ptr<MPrefetchAlgo> >::iterator it = mpalgo_v.begin(); it != mpalgo_v.end(); it++, algo_id++) {
+      accuracy_v.clear();
+      sim_prefetch_accuracy<MPrefetchAlgo>(**it, 1, acc_step_v, hit_rate, accuracy_v);
+      hit_rate_v_v[algo_id].push_back(hit_rate);
+      run_i_v_v[algo_id].push_back(i);
+      // (*it)->reset();
+    }
+  }
+  
+  std::stringstream plot_title_ss;
+  plot_title_ss << "Hit rate after rand_shuffle training for various palgo "
+                << "alph_size= " << boost::lexical_cast<std::string>(alphabet_size)
+                << ", num_acc= " << boost::lexical_cast<std::string>(num_acc);
+  
+  std::string out_url = ""; // "/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/prefetch/img/fig_rand_shuffle.png";
+  make_plot<float>(run_i_v_v, hit_rate_v_v, title_v,
+                   "Run index", "Hit rate",
+                   plot_title_ss.str(), out_url);
+}
+
+void plot_palgo_comparison()
+{
+  std::vector<std::string> title_v;
+  
+  std::vector<boost::shared_ptr<PrefetchAlgo> > palgo_v;
+  palgo_v.push_back(boost::make_shared<LZAlgo>() );
+  title_v.push_back("lz");
+  palgo_v.push_back(boost::make_shared<PPMAlgo>(1) );
+  title_v.push_back("ppm_1");
+  palgo_v.push_back(boost::make_shared<PPMAlgo>(2) );
+  title_v.push_back("ppm_2");
+  palgo_v.push_back(boost::make_shared<PPMAlgo>(3) );
+  title_v.push_back("ppm_3");
+  palgo_v.push_back(boost::make_shared<PPMAlgo>(4) );
+  title_v.push_back("ppm_4");
+  // palgo_v.push_back(boost::make_shared<PPMAlgo>(4) );
+  // title_v.push_back("ppm_4");
+  // palgo_v.push_back(boost::make_shared<POAlgo>() );
+  // title_v.push_back("po");
+  
+  std::vector<boost::shared_ptr<MPrefetchAlgo> > mpalgo_v;
+  std::map<PREFETCH_T, float> prefetch_t__weight_map;
+  prefetch_t__weight_map[W_LZ] = 0.33;
+  prefetch_t__weight_map[W_PPM] = 0.33;
+  prefetch_t__weight_map[W_PO] = 0.33;
+  // mpalgo_v.push_back(boost::make_shared<MPrefetchAlgo>(W_MP_WEIGHT, prefetch_t__weight_map) );
+  // title_v.push_back("mp_w_weight");
+  mpalgo_v.push_back(boost::make_shared<MPrefetchAlgo>(W_MP_MAX, prefetch_t__weight_map) );
   title_v.push_back("mp_w_max");
   
   int num_algo = palgo_v.size() + mpalgo_v.size();
   
   int alphabet_size = 4;
-  int num_acc = 50;
+  int num_acc = 1000;
+  std::vector<int> acc_v;
+  std::vector<acc_step_pair> acc_step_v;
   std::map<ACC_T, float> acc__arr_rate_map;
+  // 
   for (ACC_T a = 0; a < alphabet_size; a++)
-    acc__arr_rate_map[a] = static_cast<float>(rand() ) / static_cast<float>(RAND_MAX); // (float) 1 / alphabet_size;
-  
+    acc__arr_rate_map[a] = 1 + static_cast<float>(rand() ) / static_cast<float>(RAND_MAX); // (float) 1 / alphabet_size;
+  gen_poisson_acc_seq(alphabet_size, num_acc, acc__arr_rate_map, acc_v);
+  acc_v_to_acc_step_v(acc_v, acc_step_v);
   // 
   std::vector<std::vector<float> > run_i_v_v(num_algo);
   std::vector<std::vector<float> > hit_rate_v_v(num_algo);
   
-  std::vector<int> acc_v;
-  std::vector<acc_step_pair> acc_step_v;
   float hit_rate;
   std::vector<char> accuracy_v;
   
-  int num_run = 5;
+  int num_run = 150;
   for (int i = 1; i <= num_run; i++) {
-    acc_v.clear();
-    acc_step_v.clear();
+    // acc_v.clear();
+    // acc_step_v.clear();
+    
+    // acc__arr_rate_map.clear();
+    // for (ACC_T a = 0; a < alphabet_size; a++)
+    //   acc__arr_rate_map[a] = 1 + static_cast<float>(rand() ) / static_cast<float>(RAND_MAX); // (float) 1 / alphabet_size;
+    
     // gen_poisson_acc_seq(alphabet_size, num_acc, acc__arr_rate_map, acc_v);
-    gen_intermittent_poisson_acc_seq(alphabet_size, num_acc, acc__arr_rate_map, acc_v);
-    acc_v_to_acc_step_v(acc_v, acc_step_v);
+    // gen_intermittent_poisson_acc_seq(alphabet_size, num_acc, acc__arr_rate_map, acc_v);
+    std::map<ACC_T, float> acc__emp_prob_map;
+    get_emprical_dist(alphabet_size, acc_v, acc__emp_prob_map);
+    std::cout << "run_i= " << i << ", acc__emp_prob_map= \n" << patch_pre::map_to_str<ACC_T, float>(acc__emp_prob_map) << "\n";
+    
+    // std::cout << "acc_v= \n" << patch_pre::vec_to_str(acc_v) << "\n";
+    // acc_v_to_acc_step_v(acc_v, acc_step_v);
     
     int algo_id = 0;
     for (std::vector<boost::shared_ptr<PrefetchAlgo> >::iterator it = palgo_v.begin(); it != palgo_v.end(); it++, algo_id++) {
+      // (*it)->reset();
       accuracy_v.clear();
       sim_prefetch_accuracy<PrefetchAlgo>(**it, 1, acc_step_v, hit_rate, accuracy_v);
       // std::cout << "title= " << title_v[algo_id] << ", hit_rate= " << hit_rate << "\n";
       hit_rate_v_v[algo_id].push_back(hit_rate);
       run_i_v_v[algo_id].push_back(i);
     }
-    
+
     for (std::vector<boost::shared_ptr<MPrefetchAlgo> >::iterator it = mpalgo_v.begin(); it != mpalgo_v.end(); it++, algo_id++) {
+      // (*it)->reset();
       accuracy_v.clear();
       sim_prefetch_accuracy<MPrefetchAlgo>(**it, 1, acc_step_v, hit_rate, accuracy_v);
       // std::cout << "title= " << title_v[algo_id] << ", hit_rate= " << hit_rate << "\n";
@@ -124,28 +256,28 @@ void plot_palgo_stats()
   }
   
   std::stringstream plot_title_ss;
-  plot_title_ss << "Hit rate for various palgo's \n"
+  plot_title_ss << "Hit rate for various palgo "
                 << "alph_size= " << boost::lexical_cast<std::string>(alphabet_size)
                 << ", num_acc= " << boost::lexical_cast<std::string>(num_acc);
   
-  // std::string out_url = "/cac/u01/mfa51/Desktop/dataspaces_wa/plot/pngs/fig_lan_exp_w_slack.png";
+  std::string out_url = ""; //"/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/prefetch/img/fig_hit_rate_sim.png";
   make_plot<float>(run_i_v_v, hit_rate_v_v, title_v,
                    "Run index", "Hit rate",
-                   plot_title_ss.str(), "");
+                   plot_title_ss.str(), out_url);
 }
 
 void palgo_test()
 {
   // boost::shared_ptr<PrefetchAlgo> palgo_ = boost::make_shared<LZAlgo>();
   // boost::shared_ptr<PrefetchAlgo> palgo_ = boost::make_shared<ALZAlgo>();
-  // boost::shared_ptr<PrefetchAlgo> palgo_ = boost::make_shared<PPMAlgo>(2);
+  // boost::shared_ptr<PrefetchAlgo> palgo_ = boost::make_shared<PPMAlgo>(4);
   // boost::shared_ptr<PrefetchAlgo> palgo_ = boost::make_shared<POAlgo>();
   
   // std::map<PREFETCH_T, float> prefetch_t__weight_map;
   // prefetch_t__weight_map[W_LZ] = 0.5;
   // prefetch_t__weight_map[W_PPM] = 0.5;
-  // boost::shared_ptr<MPrefetchAlgo> palgo_ = boost::make_shared<MPrefetchAlgo>(MP_W_WEIGHT, prefetch_t__weight_map);
-  // boost::shared_ptr<MPrefetchAlgo> palgo_ = boost::make_shared<MPrefetchAlgo>(MP_W_MAX, prefetch_t__weight_map);
+  // boost::shared_ptr<MPrefetchAlgo> palgo_ = boost::make_shared<MPrefetchAlgo>(W_MP_WEIGHT, prefetch_t__weight_map);
+  // boost::shared_ptr<MPrefetchAlgo> palgo_ = boost::make_shared<MPrefetchAlgo>(W_MP_MAX, prefetch_t__weight_map);
   
   // int acc_[] = {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
   //                   1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0 };
@@ -181,63 +313,83 @@ void palgo_test()
   boost::shared_ptr<PrefetchAlgo> lz_algo_ = boost::make_shared<LZAlgo>();
   float lz_hit_rate;
   sim_prefetch_accuracy<PrefetchAlgo>(*lz_algo_, cache_size, acc_step_v, lz_hit_rate, accuracy_v);
-  std::cout << "LZ_ALGO:\n";
+  std::cout << "LZ_ALGO: \n";
   std::cout << "hit_rate= " << lz_hit_rate << "\n";
   // // std::cout << "parse_tree_to_pstr= \n" << lz_algo_->parse_tree_to_pstr() << "\n";
-  std::cout << "accuracy_v= \n" << patch_pre::vec_to_str<char>(accuracy_v) << "\n";
+  // std::cout << "accuracy_v= \n" << patch_pre::vec_to_str<char>(accuracy_v) << "\n";
   
   boost::shared_ptr<PrefetchAlgo> alz_algo_ = boost::make_shared<ALZAlgo>();
   float alz_hit_rate;
   accuracy_v.clear();
   sim_prefetch_accuracy<PrefetchAlgo>(*alz_algo_, cache_size, acc_step_v, alz_hit_rate, accuracy_v);
-  std::cout << "ALZ_ALGO:\n";
+  std::cout << "ALZ_ALGO: \n";
   std::cout << "hit_rate= " << alz_hit_rate << "\n";
   // // std::cout << "parse_tree_to_pstr= \n" << alz_algo_->parse_tree_to_pstr() << "\n";
-  std::cout << "accuracy_seq= \n" << patch_pre::vec_to_str<char>(accuracy_v) << "\n";
+  // std::cout << "accuracy_seq= \n" << patch_pre::vec_to_str<char>(accuracy_v) << "\n";
   
-  boost::shared_ptr<PrefetchAlgo> ppm_algo_ = boost::make_shared<PPMAlgo>(2);
-  float ppm_hit_rate;
+  boost::shared_ptr<PrefetchAlgo> ppm_1_algo_ = boost::make_shared<PPMAlgo>(1);
+  float ppm_1_hit_rate;
   accuracy_v.clear();
-  sim_prefetch_accuracy<PrefetchAlgo>(*ppm_algo_, cache_size, acc_step_v, ppm_hit_rate, accuracy_v);
-  std::cout << "PPM_ALGO:\n";
-  std::cout << "hit_rate= " << ppm_hit_rate << "\n";
-  // // std::cout << "parse_tree_to_pstr= \n" << ppm_algo_->parse_tree_to_pstr() << "\n";
-  std::cout << "accuracy_seq= \n" << patch_pre::vec_to_str<char>(accuracy_v) << "\n";
+  sim_prefetch_accuracy<PrefetchAlgo>(*ppm_1_algo_, cache_size, acc_step_v, ppm_1_hit_rate, accuracy_v);
+  std::cout << "PPM_1_ALGO: \n";
+  std::cout << "hit_rate= " << ppm_1_hit_rate << "\n";
+  // // std::cout << "parse_tree_to_pstr= \n" << ppm_1_algo_->parse_tree_to_pstr() << "\n";
+  // std::cout << "accuracy_seq= \n" << patch_pre::vec_to_str<char>(accuracy_v) << "\n";
+  
+  boost::shared_ptr<PrefetchAlgo> ppm_2_algo_ = boost::make_shared<PPMAlgo>(2);
+  float ppm_2_hit_rate;
+  accuracy_v.clear();
+  sim_prefetch_accuracy<PrefetchAlgo>(*ppm_2_algo_, cache_size, acc_step_v, ppm_2_hit_rate, accuracy_v);
+  std::cout << "PPM_2_ALGO: \n";
+  std::cout << "hit_rate= " << ppm_2_hit_rate << "\n";
+  // // std::cout << "parse_tree_to_pstr= \n" << ppm_2_algo_->parse_tree_to_pstr() << "\n";
+  // std::cout << "accuracy_seq= \n" << patch_pre::vec_to_str<char>(accuracy_v) << "\n";
+  
+  boost::shared_ptr<PrefetchAlgo> ppm_3_algo_ = boost::make_shared<PPMAlgo>(3);
+  float ppm_3_hit_rate;
+  accuracy_v.clear();
+  sim_prefetch_accuracy<PrefetchAlgo>(*ppm_3_algo_, cache_size, acc_step_v, ppm_3_hit_rate, accuracy_v);
+  std::cout << "PPM_3_ALGO: \n";
+  std::cout << "hit_rate= " << ppm_3_hit_rate << "\n";
+  // // std::cout << "parse_tree_to_pstr= \n" << ppm_3_algo_->parse_tree_to_pstr() << "\n";
+  // std::cout << "accuracy_seq= \n" << patch_pre::vec_to_str<char>(accuracy_v) << "\n";
   
   boost::shared_ptr<PrefetchAlgo> po_algo_ = boost::make_shared<POAlgo>();
   float po_hit_rate;
   accuracy_v.clear();
   sim_prefetch_accuracy<PrefetchAlgo>(*po_algo_, cache_size, acc_step_v, po_hit_rate, accuracy_v);
-  std::cout << "PO_ALGO:\n";
+  std::cout << "PO_ALGO: \n";
   std::cout << "hit_rate= " << po_hit_rate << "\n";
   // // std::cout << "parse_tree_to_pstr= \n" << po_algo_->parse_tree_to_pstr() << "\n";
-  std::cout << "accuracy_seq= \n" << patch_pre::vec_to_str<char>(accuracy_v) << "\n";
+  // std::cout << "accuracy_seq= \n" << patch_pre::vec_to_str<char>(accuracy_v) << "\n";
   
   std::map<PREFETCH_T, float> prefetch_t__weight_map;
   prefetch_t__weight_map[W_LZ] = 0.33;
   prefetch_t__weight_map[W_PPM] = 0.33;
   prefetch_t__weight_map[W_PO] = 0.33;
-  boost::shared_ptr<MPrefetchAlgo> mp_w_weight_algo_ = boost::make_shared<MPrefetchAlgo>(MP_W_WEIGHT, prefetch_t__weight_map);
+  boost::shared_ptr<MPrefetchAlgo> mp_w_weight_algo_ = boost::make_shared<MPrefetchAlgo>(W_MP_WEIGHT, prefetch_t__weight_map);
   float mp_w_weight_hit_rate;
   accuracy_v.clear();
   sim_prefetch_accuracy<MPrefetchAlgo>(*mp_w_weight_algo_, cache_size, acc_step_v, mp_w_weight_hit_rate, accuracy_v);
-  std::cout << "MP_W_WEIGHT_ALGO:\n";
+  std::cout << "W_MP_WEIGHT_ALGO: \n";
   std::cout << "hit_rate= " << mp_w_weight_hit_rate << "\n";
   // // std::cout << "parse_tree_to_pstr= \n" << po_algo_->parse_tree_to_pstr() << "\n";
-  std::cout << "accuracy_seq= \n" << patch_pre::vec_to_str<char>(accuracy_v) << "\n";
+  // std::cout << "accuracy_seq= \n" << patch_pre::vec_to_str<char>(accuracy_v) << "\n";
   
-  boost::shared_ptr<MPrefetchAlgo> mp_w_max_algo_ = boost::make_shared<MPrefetchAlgo>(MP_W_MAX, prefetch_t__weight_map);
+  boost::shared_ptr<MPrefetchAlgo> mp_w_max_algo_ = boost::make_shared<MPrefetchAlgo>(W_MP_MAX, prefetch_t__weight_map);
   float mp_w_max_hit_rate;
   accuracy_v.clear();
   sim_prefetch_accuracy<MPrefetchAlgo>(*mp_w_max_algo_, cache_size, acc_step_v, mp_w_max_hit_rate, accuracy_v);
-  std::cout << "MP_W_MAX_ALGO:\n";
+  std::cout << "W_MP_MAX_ALGO: \n";
   std::cout << "hit_rate= " << mp_w_max_hit_rate << "\n";
   // // std::cout << "parse_tree_to_pstr= \n" << po_algo_->parse_tree_to_pstr() << "\n";
-  std::cout << "accuracy_seq= \n" << patch_pre::vec_to_str<char>(accuracy_v) << "\n";
+  // std::cout << "accuracy_seq= \n" << patch_pre::vec_to_str<char>(accuracy_v) << "\n";
   
   std::cout << "lz_hit_rate= " << lz_hit_rate << "\n"
             << "alz_hit_rate= " << alz_hit_rate << "\n"
-            << "ppm_hit_rate= " << ppm_hit_rate << "\n"
+            << "ppm_1_hit_rate= " << ppm_1_hit_rate << "\n"
+            << "ppm_2_hit_rate= " << ppm_2_hit_rate << "\n"
+            << "ppm_3_hit_rate= " << ppm_3_hit_rate << "\n"
             << "po_hit_rate= " << po_hit_rate << "\n"
             << "mp_w_weight_hit_rate= " << mp_w_weight_hit_rate << "\n"
             << "mp_w_max_hit_rate= " << mp_w_max_hit_rate << "\n";
@@ -285,8 +437,8 @@ void add_access(PBuffer* pbuffer, int p_id, key_ver_pair kv)
 
 void prefetch_test()
 {
-  int buffer_size = 5;
-  PBuffer pbuffer('a', buffer_size, W_LZ,
+  int buffer_size = 10;
+  PBuffer pbuffer('a', buffer_size, W_PPM, //W_MP_MAX, // W_LZ
                   true, boost::bind(handle_prefetch, _1, _2),
                   boost::bind(handle_del, _1) );
   
@@ -294,8 +446,7 @@ void prefetch_test()
   int num_p = sizeof(p_id_)/sizeof(*p_id_);
   // int num_put = 20;
   
-  srand(time(NULL) );
-  int num_acc = 10000; // 30 * (rand() % 10) / 10;
+  int num_acc = 100; // 30 * (rand() % 10) / 10;
   std::vector<int> p_id_v;
   std::vector<key_ver_pair> key_ver_v;
   std::map<int, int> p_id__last_step_map;
@@ -350,8 +501,8 @@ void sim_test()
   float put_rate_mean = 5;
   float get_rate_mean = 0.2;
   
-  char* ds_id_ = (char*) malloc(num_ds*sizeof(char) );
-  gen_scenario(num_ds, ds_id_,
+  std::vector<char> ds_id_v;
+  gen_scenario(num_ds, ds_id_v,
               max_num_p, max_num_c, num_putget_mean, put_rate_mean, get_rate_mean,
               num_p, num_c,
               p_id__ds_id_vec, c_id__ds_id_vec,
@@ -359,39 +510,15 @@ void sim_test()
               p_id__put_rate_vec, c_id__get_rate_vec,
               p_id__inter_arr_time_vec_vec, c_id__inter_arr_time_vec_vec);
   
-  // PCSim pc_sim(num_ds, ds_id_, 20, 2,
-  //             num_p, num_c,
-  //             p_id__ds_id_vec, c_id__ds_id_vec,
-  //             p_id__num_put_vec, c_id__num_get_vec,
-  //             p_id__put_rate_vec, c_id__get_rate_vec,
-  //             p_id__inter_arr_time_vec_vec, c_id__inter_arr_time_vec_vec );
+  PCSim pc_sim(ds_id_v, max_num_p, W_PPM,
+              num_p, num_c,
+              p_id__ds_id_vec, c_id__ds_id_vec,
+              p_id__num_put_vec, c_id__num_get_vec,
+              p_id__put_rate_vec, c_id__get_rate_vec,
+              p_id__inter_arr_time_vec_vec, c_id__inter_arr_time_vec_vec );
   
-  // pc_sim.sim_all();
-  
-  std::map<int, std::map<int, float> > app_context_size___c_id__get_lperc_map_map;
-  int app_context_size = 1;
-  for (int i = 0; i <= app_context_size; i++) {
-    PCSim pc_sim(num_ds, ds_id_, 20, i,
-                num_p, num_c,
-                p_id__ds_id_vec, c_id__ds_id_vec,
-                p_id__num_put_vec, c_id__num_get_vec,
-                p_id__put_rate_vec, c_id__get_rate_vec,
-                p_id__inter_arr_time_vec_vec, c_id__inter_arr_time_vec_vec );
-  
-    pc_sim.sim_all();
-    pc_sim.wait_for_threads();
-    app_context_size___c_id__get_lperc_map_map[i] = pc_sim.get_c_id__get_lperc_map();
-  }
-  
-  LOG(INFO) << "sim_test:: app_context_size___c_id__get_lperc_map_map= \n";
-  for (int i = 0; i <= app_context_size; i++) {
-    std::cout << "\t app_context_size= " << i << ": \n";
-    std::map<int, float> c_id__get_lperc_map = app_context_size___c_id__get_lperc_map_map[i];
-    for (int c_id = 0; c_id < num_c; c_id++)
-      std::cout << "\t\t c_id= " << c_id << ": lperc= " << c_id__get_lperc_map[c_id] << "\n";
-  }
-  free(ds_id_);
-  
+  pc_sim.sim_all();
+  // 
   std::string temp;
   std::cout << "Enter\n";
   getline(std::cin, temp);
@@ -403,15 +530,27 @@ int main(int argc , char **argv)
   google::InitGoogleLogging("exp");
   // 
   std::map<char*, char*> opt_map = parse_opts(argc, argv);
-  plot_palgo_stats();
+  srand(time(NULL) );
+  
+  // test_rand_shuffle_train();
+  // plot_palgo_comparison();
   // palgo_test();
   // prefetch_test();
-  // sim_test();
+  sim_test();
   
-  // srand(time(NULL) );
+  // validate_random_shuffle();
+  
+  // std::vector<int> v;
+  // for (int i = 1; i < 10; i++)
+  //   v.push_back(i);
+
+  // std::random_shuffle(v.begin(), v.end() );
+  // std::cout << "shuffled v= " << patch_pre::vec_to_str<int>(v) << "\n";
+  
   // float lambda = 0.1;
   // int num_exp = 1000;
   // float sum = 0;
+  // srand(time(NULL) );
   // for (int i = 0; i < num_exp; i++) {
   //   // std::cout << "main:: random number= " << static_cast<float>(rand() ) / static_cast<float>(RAND_MAX) << "\n";
   //   sum += -1 * log(1.0 - (static_cast<float>(rand() ) / static_cast<float>(RAND_MAX) ) ) / lambda;

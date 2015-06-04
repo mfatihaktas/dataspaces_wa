@@ -2,8 +2,8 @@
 #define _SIM_H_
 
 // #include <boost/math/distributions/exponential.hpp>
-#include <math.h>
-#include <stdlib.h>
+// #include <math.h>
+#include <cstdlib>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
@@ -17,12 +17,11 @@
 template <typename T>
 class WASpace {
   private:
-    int num_ds;
-    char* ds_id_;
-    int app_context_size;
+    std::vector<char> ds_id_v;
+    PREFETCH_T prefetch_t;
     
-    patch_pre::thread_safe_vector<T> wa_space_vec;
-    patch_pre::thread_safe_map<char, boost::shared_ptr<patch_pre::thread_safe_vector<T> > > ds_id__content_vecp_map;
+    patch_pre::thread_safe_vector<T> wa_content_v;
+    patch_pre::thread_safe_map<char, boost::shared_ptr<patch_pre::thread_safe_vector<T> > > ds_id__content_vp_map;
     std::map<char, boost::shared_ptr<PBuffer> >  ds_id__pbuffer_map;
     
     patch_pre::thread_safe_map<int, char> app_id__ds_id_map;
@@ -31,21 +30,18 @@ class WASpace {
     
     patch_pre::syncer<T> putget_syncer;
   public:
-    WASpace(int num_ds, char* ds_id_, int pbuffer_size, int app_context_size)
-    : num_ds(num_ds), ds_id_(ds_id_),
-      app_context_size(app_context_size)
+    WASpace(std::vector<char> ds_id_v, int pbuffer_size, PREFETCH_T prefetch_t)
+    : ds_id_v(ds_id_v),
+      prefetch_t(prefetch_t)
     { 
-      for (int i = 0; i < num_ds; i++) {
-        char ds_id = ds_id_[i];
+      for (std::vector<char>::iterator it = ds_id_v.begin(); it != ds_id_v.end(); it++) {
+        // std::vector<T> content_v;
+        // ds_id__content_vp_map[*it] = content_v;
+        ds_id__content_vp_map[*it] = boost::make_shared<patch_pre::thread_safe_vector<T> >();
         
-        // std::vector<T> content_vec;
-        // ds_id__content_vecp_map[ds_id] = content_vec;
-        ds_id__content_vecp_map[ds_id] = boost::make_shared<patch_pre::thread_safe_vector<T> >();
-        
-        ds_id__pbuffer_map[ds_id] = boost::make_shared<PBuffer>(ds_id, pbuffer_size, app_context_size,
-                                                                true, boost::bind(&WASpace::handle_prefetch, this, _1, _2),
-                                                                boost::bind(&WASpace::handle_del, this, _1) );
-      
+        ds_id__pbuffer_map[*it] = boost::make_shared<PBuffer>(*it, pbuffer_size, prefetch_t,
+                                                              true, boost::bind(&WASpace::handle_prefetch, this, _1, _2),
+                                                              boost::bind(&WASpace::handle_del, this, _1) );
       }
       // 
       LOG(INFO) << "WASpace:: constructed."; 
@@ -61,9 +57,9 @@ class WASpace {
       //   ss << "\t" << boost::lexical_cast<std::string>(it->first) << " : " << boost::lexical_cast<std::string>(it->second) << "\n";
       // }
       
-      // ss << "ds_id__content_vecp_map= \n";
+      // ss << "ds_id__content_vp_map= \n";
       // typename std::map<char, std::vector<T> >::iterator map_it;
-      // for (map_it = ds_id__content_vecp_map.begin(); map_it != ds_id__content_vecp_map.end(); map_it++) {
+      // for (map_it = ds_id__content_vp_map.begin(); map_it != ds_id__content_vp_map.end(); map_it++) {
       //   ss << "\tds_id= " << boost::lexical_cast<std::string>(map_it->first) << "\n";
       //   for (typename std::vector<T>::iterator vec_it = (map_it->second).begin(); vec_it != (map_it->second).end(); vec_it++) {
       //     ss << "\t\t<" << boost::lexical_cast<std::string>(vec_it->first) << ", "
@@ -72,29 +68,26 @@ class WASpace {
       //   ss << "\n";
       // }
       
-      ss << "app_context_size= " << boost::lexical_cast<std::string>(app_context_size) << "\n";
       ss << "ds_id__pbuffer_map= \n";
       for (std::map<char, boost::shared_ptr<PBuffer> >::iterator map_it = ds_id__pbuffer_map.begin(); map_it != ds_id__pbuffer_map.end(); map_it++) {
         ss << "*** ds_id= " << boost::lexical_cast<std::string>(map_it->first) << "\n"
-          << "pbuffer= \n" << (map_it->second)->to_str();
+           << "pbuffer= \n" << (map_it->second)->to_str();
       }
       
       std::vector<T> intersect_v;
-      for (int i = 0; i < num_ds; i++) {
-        char ds_id = ds_id_[i];
+      for (std::vector<char>::iterator it = ds_id_v.begin(); it != ds_id_v.end(); it++) {
+        patch_pre::thread_safe_vector<T>& ds_content_v = *(ds_id__content_vp_map[*it] );
+        std::sort(ds_content_v.begin(), ds_content_v.end() );
         
-        patch_pre::thread_safe_vector<T>& ds_content_vec = *(ds_id__content_vecp_map[ds_id] );
-        std::sort(ds_content_vec.begin(), ds_content_vec.end() );
-        
-        std::vector<T> pbuffer_content_vec = ds_id__pbuffer_map[ds_id]->get_content_vec();
-        std::sort(pbuffer_content_vec.begin(), pbuffer_content_vec.end() );
+        std::vector<T> pbuffer_content_v = ds_id__pbuffer_map[*it]->get_content_v();
+        std::sort(pbuffer_content_v.begin(), pbuffer_content_v.end() );
         
         std::vector<T> intersect_vec;
-        std::set_intersection(ds_content_vec.begin(), ds_content_vec.end(),
-                              pbuffer_content_vec.begin(), pbuffer_content_vec.end(), 
+        std::set_intersection(ds_content_v.begin(), ds_content_v.end(),
+                              pbuffer_content_v.begin(), pbuffer_content_v.end(), 
                               back_inserter(intersect_vec) );
         
-        ss << "ds_id= " << boost::lexical_cast<std::string>(ds_id) << "; ";
+        ss << "ds_id= " << boost::lexical_cast<std::string>(*it) << "; ";
         if (intersect_vec.empty() )
           ss << "No intersection between ds and pbuffer.\n";
         else
@@ -122,14 +115,14 @@ class WASpace {
         return 1;
       }
       char ds_id = app_id__ds_id_map[p_id];
-      ds_id__content_vecp_map[ds_id]->push_back(kv);
+      ds_id__content_vp_map[ds_id]->push_back(kv);
       // Immediately broadcast it to every ds peer so pbuffers can be updated
       for (std::map<char, boost::shared_ptr<PBuffer> >::iterator it = ds_id__pbuffer_map.begin(); it != ds_id__pbuffer_map.end(); it++)
         (it->second)->reg_key_ver(p_id, kv);
       
       key_ver__p_id_map[kv] = p_id;
       
-      wa_space_vec.push_back(kv);
+      wa_content_v.push_back(kv);
       putget_syncer.notify(kv);
       // LOG(INFO) << "put:: notified <key= " << kv.first << ", ver= " << kv.second << ">.";
       
@@ -138,6 +131,7 @@ class WASpace {
     
     int get(bool blocking, int c_id, T kv, char& get_type)
     {
+      bool waited = false;
       if (!contains('*', kv) ) {
         if (blocking) {
           putget_syncer.add_sync_point(kv, 1);
@@ -145,6 +139,7 @@ class WASpace {
           putget_syncer.wait(kv);
           // LOG(INFO) << "get:: done waiting for <key= " << kv.first << ", ver= " << kv.second << ">.";
           putget_syncer.del_sync_point(kv);
+          waited = true;
         }
         else {
           LOG(WARNING) << "get:: wa_space does not contain <key= " << kv.first << ", ver= " << kv.second << ">.";
@@ -158,8 +153,11 @@ class WASpace {
       }
       else { // Remote fetch
         // LOG(INFO) << "get:: remote fetching to ds_id= " << ds_id << ", <key= " << kv.first << ", ver= " << kv.second << ">.";
-        ds_id__content_vecp_map[ds_id]->push_back(kv);
-        get_type = 'r';
+        ds_id__content_vp_map[ds_id]->push_back(kv);
+        if (waited)
+          get_type = 'w';
+        else
+          get_type = 'r';
       }
       
       ds_id__pbuffer_map[ds_id]->add_access(key_ver__p_id_map[kv], kv);
@@ -180,10 +178,10 @@ class WASpace {
     bool contains(char ds_id, T kv)
     {
       if (ds_id == '*')
-        return (std::find(wa_space_vec.begin(), wa_space_vec.end(), kv) != wa_space_vec.end() );
+        return (std::find(wa_content_v.begin(), wa_content_v.end(), kv) != wa_content_v.end() );
       else {
-        patch_pre::thread_safe_vector<key_ver_pair>& content_vec = *(ds_id__content_vecp_map[ds_id] );
-        return (std::find(content_vec.begin(), content_vec.end(), kv) != content_vec.end() ) || ds_id__pbuffer_map[ds_id]->contains(kv);
+        patch_pre::thread_safe_vector<key_ver_pair>& content_v = *(ds_id__content_vp_map[ds_id] );
+        return (std::find(content_v.begin(), content_v.end(), kv) != content_v.end() ) || ds_id__pbuffer_map[ds_id]->contains(kv);
       }
     }
 };
@@ -195,27 +193,27 @@ typedef std::pair<std::string, unsigned int> key_ver_pair;
 class PCSim { // Prefetching Simulator
   private:
     int num_p, num_c;
-    std::vector<char> p_id__ds_id_vec, c_id__ds_id_vec;
-    std::vector<int> p_id__num_put_vec, c_id__num_get_vec;
-    std::vector<float> p_id__put_rate_vec, c_id__get_rate_vec;
-    std::vector<std::vector<float> > p_id__inter_arr_time_vec_vec, c_id__inter_arr_time_vec_vec;
+    std::vector<char> p_id__ds_id_v, c_id__ds_id_v;
+    std::vector<int> p_id__num_put_v, c_id__num_get_v;
+    std::vector<float> p_id__put_rate_v, c_id__get_rate_v;
+    std::vector<std::vector<float> > p_id__inter_arr_time_v_v, c_id__inter_arr_time_v_v;
     
     boost::shared_ptr<WASpace<key_ver_pair> > wa_space_;
     
-    std::map<int, std::vector<char> > c_id__get_type_vec_map;
+    std::map<int, std::vector<char> > c_id__get_type_v_map;
     std::map<int, float> c_id__get_lperc_map;
-    std::vector<boost::shared_ptr<boost::thread> > thread_vec;
+    std::vector<boost::shared_ptr<boost::thread> > thread_v;
     
     
     void sim_p(int p_id);
     void sim_c(int c_id);
   public:
-    PCSim(int num_ds, char* ds_id_, int pbuffer_size, int app_context_size,
+    PCSim(std::vector<char> ds_id_v, int pbuffer_size, PREFETCH_T prefetch_t,
           int num_p, int num_c,
-          std::vector<char> p_id__ds_id_vec, std::vector<char> c_id__ds_id_vec,
-          std::vector<int> p_id__num_put_vec, std::vector<int> c_id__num_get_vec,
-          std::vector<float> p_id__put_rate_vec, std::vector<float> c_id__get_rate_vec,
-          std::vector<std::vector<float> > p_id__inter_arr_time_vec_vec, std::vector<std::vector<float> > c_id__inter_arr_time_vec_vec );
+          std::vector<char> p_id__ds_id_v, std::vector<char> c_id__ds_id_v,
+          std::vector<int> p_id__num_put_v, std::vector<int> c_id__num_get_v,
+          std::vector<float> p_id__put_rate_v, std::vector<float> c_id__get_rate_v,
+          std::vector<std::vector<float> > p_id__inter_arr_time_v_v, std::vector<std::vector<float> > c_id__inter_arr_time_v_v );
     ~PCSim();
     std::string to_str();
     std::string to_str_end();

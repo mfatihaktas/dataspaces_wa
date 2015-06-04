@@ -2,7 +2,7 @@
 #define _PREFETCH_H_
 
 #include <deque>
-#include <stdlib.h>
+#include <cstdlib>
 #include <algorithm>
 
 #include "patch_pre.h"
@@ -37,7 +37,8 @@ class PBuffer { //Prefetching Buffer
     
     Cache<ACC_T, key_ver_pair> cache;
     
-    boost::shared_ptr<PrefetchAlgo> algo_to_pick_app_;
+    boost::shared_ptr<PrefetchAlgo> palgo_to_pick_app_;
+    // boost::shared_ptr<MPrefetchAlgo> palgo_to_pick_app_;
     boost::mutex add_acc_mutex;
     
     int get_to_prefetch(int& num_keys, std::vector<key_ver_pair>& key_ver_vector);
@@ -51,7 +52,7 @@ class PBuffer { //Prefetching Buffer
     int reg_key_ver(int p_id, key_ver_pair kv);
     int add_access(int p_id, key_ver_pair kv);
     bool contains(key_ver_pair kv);
-    std::vector<key_ver_pair> get_content_vec();
+    std::vector<key_ver_pair> get_content_v();
     
     void sim_prefetch_accuracy(std::vector<int> p_id_v, std::vector<key_ver_pair> key_ver_v, 
                                float& hit_rate, std::vector<char>& accuracy_v);

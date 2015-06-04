@@ -4,8 +4,8 @@
 #include <iostream>
 #include <vector>
 #include <set>
-#include <stdlib.h>     // srand, rand
-#include <sys/time.h>
+#include <cstdlib>
+#include <ctime>
 #include <boost/lexical_cast.hpp>
 #include <glog/logging.h>
 
@@ -167,6 +167,20 @@ class Graph // The graph base class template
     }
     
     ~Graph() { LOG(INFO) << "Graph:: destructed.\n"; }
+    
+    void clear()
+    {
+      std::vector<Vertex> vertex_to_rm_v;
+      
+      vertex_iter_pair_t vertices = boost::vertices(graph);
+      for (vertex_iter i = vertices.first; i != vertices.second; i++)
+        vertex_to_rm_v.push_back(*i);
+      
+      for (typename std::vector<Vertex>::iterator it = vertex_to_rm_v.begin(); it != vertex_to_rm_v.end(); it++)
+        rm_vertex(*it);
+      // 
+      num_vertices = 0;
+    }
     // --------------------------------------  structural  -------------------------------------- //
     Vertex add_vertex(const VERTEX_PROPERTIES& prop)
     {
@@ -418,6 +432,28 @@ class ParseTree {
     }
     ~ParseTree() { LOG(INFO) << "ParseTree:: destructed."; }
     
+    void reset()
+    {
+      pt_graph.clear();
+      
+      Vertex_Properties root_prop;
+      root_prop.name = "R";
+      root_prop.key = PARSE_TREE_ROOT_KEY;
+      root_prop.num_visit = 0;
+      root_prop.status = 'R';
+      root_prop.level = 0;
+      pt_graph.add_vertex(root_prop);
+      // 
+      context.clear();
+      sliding_win.clear();
+      longest_phrase_length = 0;
+      key__num_arr_map.clear();
+      key__last_arr_tv_map.clear();
+      key__sum_arr_t_map.clear();
+    }
+    
+    PREFETCH_T get_prefetch_t() { return prefetch_t; }
+    
     std::string to_str() { return pt_graph.to_str(); }
     
     std::string to_pretty_str() { return pt_graph.to_pretty_str(); }
@@ -471,11 +507,11 @@ class ParseTree {
     int add_access(KEY_T key)
     {
       if (prefetch_t == W_LZ)
-        add_access_w_lz(key);
+        return add_access_w_lz(key);
       else if (prefetch_t == W_ALZ)
-        add_access_w_alz(key);
+        return add_access_w_alz(key);
       else if (prefetch_t == W_PPM)
-        add_access_w_ppm(key);
+        return add_access_w_ppm(key);
       else if (prefetch_t == W_PO) {
         timeval tv;
         gettimeofday(&tv, NULL);
@@ -488,6 +524,8 @@ class ParseTree {
         }
         key__num_arr_map[key] += 1;
         key__last_arr_tv_map[key] = tv;
+        
+        return 0;
       }
     }
     
@@ -499,7 +537,6 @@ class ParseTree {
       if (pt_graph.properties(cur_v).status != 'R' && prefetch_t != W_PPM)
         total_num_visit -= 1;
       
-      srand(time(NULL) );
       adjacency_iter_pair_t ai_pair = pt_graph.get_adj_vertices(cur_v);
       for (adjacency_iter ai = ai_pair.first;  ai != ai_pair.second; ai++) {
         Vertex_Properties adj_prop = pt_graph.properties(*ai);
@@ -527,7 +564,6 @@ class ParseTree {
     
     int get_key_prob_map_for_prefetch_w_alz(std::map<KEY_T, float>& key_prob_map)
     {
-      srand(time(NULL) );
       get_key__blended_prob_map(pt_graph.get_cur(), 0, 1.0, key_prob_map);
       
       return 0;
@@ -805,24 +841,26 @@ typedef KEY_T ACC_T;
 typedef std::pair<ACC_T, int> acc_step_pair;
 
 typedef int M_PREFETCH_T;
-#define MP_W_WEIGHT 0
-#define MP_W_MAX 1
+#define W_MP_WEIGHT 0
+#define W_MP_MAX 1
 class MPrefetchAlgo { // Mixed
   private:
     M_PREFETCH_T m_prefetch_t;
     std::map<PREFETCH_T, float> prefetch_t__weight_map;
     
-    std::set<ACC_T> acc_s;
-    std::vector<ACC_T> acc_v;
     std::vector<boost::shared_ptr<ParseTree> > parse_tree_v;
     std::map<int, float> pt_id__weight_map;
+    
+    std::set<ACC_T> acc_s;
+    std::vector<ACC_T> acc_v;
   public:
     MPrefetchAlgo(M_PREFETCH_T m_prefetch_t,
                   std::map<PREFETCH_T, float> prefetch_t__weight_map);
     ~MPrefetchAlgo();
+    void reset();
     
     std::vector<ACC_T> get_acc_v();
-    
+    int train(std::vector<ACC_T> acc_v);
     int add_access(ACC_T acc);
     int get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
                         const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v);
@@ -833,17 +871,18 @@ class MPrefetchAlgo { // Mixed
 
 class PrefetchAlgo {
   protected:
+    ParseTree parse_tree;
     std::set<ACC_T> acc_s;
     std::vector<ACC_T> acc_v;
-    ParseTree parse_tree;
     
   public:
     PrefetchAlgo(PREFETCH_T prefetch_t, int context_size);
     ~PrefetchAlgo();
+    void reset();
     
     std::string parse_tree_to_pstr();
     std::vector<ACC_T> get_acc_v();
-    
+    int train(std::vector<ACC_T> acc_v);
     int add_access(ACC_T acc);
     int get_acc_prob_map_for_prefetch(std::map<ACC_T, float>& acc_prob_map); // TODO: will be deprecated
     int get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,

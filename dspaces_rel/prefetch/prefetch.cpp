@@ -10,13 +10,20 @@ PBuffer::PBuffer(char ds_id, int buffer_size, PREFETCH_T prefetch_t,
   cache(buffer_size, _handle_del_cb)
 {
   if (prefetch_t == W_LZ)
-    algo_to_pick_app_ = boost::make_shared<LZAlgo>();
+    palgo_to_pick_app_ = boost::make_shared<LZAlgo>();
   else if (prefetch_t == W_ALZ)
-    algo_to_pick_app_ = boost::make_shared<ALZAlgo>();
+    palgo_to_pick_app_ = boost::make_shared<ALZAlgo>();
   else if (prefetch_t == W_PPM)
-    algo_to_pick_app_ = boost::make_shared<PPMAlgo>(2);
+    palgo_to_pick_app_ = boost::make_shared<PPMAlgo>(2);
   else if (prefetch_t == W_PO)
-    algo_to_pick_app_ = boost::make_shared<POAlgo>();
+    palgo_to_pick_app_ = boost::make_shared<POAlgo>();
+  
+  // std::map<PREFETCH_T, float> prefetch_t__weight_map;
+  // prefetch_t__weight_map[W_LZ] = 0.5;
+  // prefetch_t__weight_map[W_PPM] = 0.5;
+  // prefetch_t__weight_map[W_PO] = 0.33;
+  // palgo_to_pick_app_ = boost::make_shared<MPrefetchAlgo>(prefetch_t, prefetch_t__weight_map);
+  
   // 
   LOG(INFO) << "PBuffer:: constructed.";
 }
@@ -62,8 +69,8 @@ std::string PBuffer::to_str()
   
   ss << "cache= \n" << cache.to_str() << "\n";
   
-  // ss << "algo_to_pick_app_= \n"
-  //   << "\t parse_tree_to_pstr= \n" << algo_to_pick_app_->parse_tree_to_pstr() << "\n";
+  // ss << "palgo_to_pick_app_= \n"
+  //   << "\t parse_tree_to_pstr= \n" << palgo_to_pick_app_->parse_tree_to_pstr() << "\n";
   
   return ss.str();
 }
@@ -137,8 +144,8 @@ int PBuffer::add_access(int p_id, key_ver_pair kv)
   {// Causes problems while building the parse tree for multi-threaded scenario
     boost::lock_guard<boost::mutex> guard(add_acc_mutex);
     
-    if (algo_to_pick_app_->add_access(p_id) )
-      LOG(ERROR) << "add_access:: algo_to_pick_app_->add_access failed for p_id= " << p_id;
+    if (palgo_to_pick_app_->add_access(p_id) )
+      LOG(ERROR) << "add_access:: palgo_to_pick_app_->add_access failed for p_id= " << p_id;
   
     get_to_prefetch(num_app, key_ver_v);
     // LOG(INFO) << "add_access:: get_to_prefetch returned key_ver_v= " << patch_pre::pvec_to_str<key_ver_pair>(key_ver_v) << "\n";
@@ -160,8 +167,8 @@ int PBuffer::get_to_prefetch(int& num_app, std::vector<key_ver_pair>& key_ver_v)
 {
   // Pick app
   std::vector<ACC_T> p_id_v, ep_id_v;
-  algo_to_pick_app_->get_to_prefetch(num_app, p_id_v, cache.get_cached_acc_v(), ep_id_v);
-  // std::cout << ">>> algo_to_pick_app_->get_to_prefetch returned: \n"
+  palgo_to_pick_app_->get_to_prefetch(num_app, p_id_v, cache.get_cached_acc_v(), ep_id_v);
+  // std::cout << ">>> palgo_to_pick_app_->get_to_prefetch returned: \n"
   //           << "p_id_v= " << patch_pre::vec_to_str<ACC_T>(p_id_v) << "\n"
   //           << "ep_id_v= " << patch_pre::vec_to_str<ACC_T>(ep_id_v) << "\n";
   
@@ -221,7 +228,7 @@ bool PBuffer::contains(key_ver_pair kv)
   return cache.contains(kv);
 }
 
-std::vector<key_ver_pair> PBuffer::get_content_vec()
+std::vector<key_ver_pair> PBuffer::get_content_v()
 {
   return cache.get_content_v();
 }

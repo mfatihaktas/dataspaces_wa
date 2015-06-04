@@ -7,8 +7,8 @@ MPrefetchAlgo::MPrefetchAlgo(M_PREFETCH_T m_prefetch_t,
   prefetch_t__weight_map(prefetch_t__weight_map)
 {
   for (std::map<PREFETCH_T, float>::iterator it = prefetch_t__weight_map.begin(); it != prefetch_t__weight_map.end(); it++) {
-      parse_tree_v.push_back(boost::make_shared<ParseTree>(it->first) );
-    if (m_prefetch_t == MP_W_WEIGHT)
+    parse_tree_v.push_back(boost::make_shared<ParseTree>(it->first) );
+    if (m_prefetch_t == W_MP_WEIGHT)
       pt_id__weight_map[parse_tree_v.size() - 1] = it->second;
   }
   // 
@@ -17,9 +17,28 @@ MPrefetchAlgo::MPrefetchAlgo(M_PREFETCH_T m_prefetch_t,
 
 MPrefetchAlgo::~MPrefetchAlgo() { LOG(INFO) << "MPrefetchAlgo:: destructed."; }
 
+void MPrefetchAlgo::reset()
+{
+  for (std::vector<boost::shared_ptr<ParseTree> >::iterator parse_tree__ = parse_tree_v.begin(); parse_tree__ != parse_tree_v.end(); parse_tree__++)
+    (*parse_tree__)->reset();
+    
+  acc_s.clear();
+  acc_v.clear();
+}
+
 std::vector<ACC_T> MPrefetchAlgo::get_acc_v()
 {
   return acc_v;
+}
+
+int MPrefetchAlgo::train(std::vector<ACC_T> acc_v)
+{
+  for (std::vector<ACC_T>::iterator it = acc_v.begin(); it != acc_v.end(); it++) {
+    if (add_access(*it) )
+      return 1;
+  }
+  
+  return 0;
 }
 
 int MPrefetchAlgo::add_access(ACC_T acc)
@@ -27,9 +46,11 @@ int MPrefetchAlgo::add_access(ACC_T acc)
   acc_s.insert(acc);
   acc_v.push_back(acc);
   
-  for (std::vector<boost::shared_ptr<ParseTree> >::iterator parse_tree_ = parse_tree_v.begin(); parse_tree_ != parse_tree_v.end(); parse_tree_++) {
-    if ( (*parse_tree_)->add_access(acc) )
+  for (std::vector<boost::shared_ptr<ParseTree> >::iterator parse_tree__ = parse_tree_v.begin(); parse_tree__ != parse_tree_v.end(); parse_tree__++) {
+    if ( (*parse_tree__)->add_access(acc) ) {
+      LOG(INFO) << "add_access:: (*parse_tree__)->add_access for prefetch_t= " << (*parse_tree__)->get_prefetch_t();
       return 1;
+    }
   }
   
   return 0;
@@ -38,12 +59,22 @@ int MPrefetchAlgo::add_access(ACC_T acc)
 int MPrefetchAlgo::get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
                                    const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v)
 {
-  if (m_prefetch_t == MP_W_WEIGHT)
-    get_to_prefetch_w_weight(num_acc, acc_v);
-  else if (m_prefetch_t == MP_W_MAX)
-    get_to_prefetch_w_max(num_acc, acc_v);
+  if (m_prefetch_t == W_MP_WEIGHT) {
+    if (get_to_prefetch_w_weight(num_acc, acc_v) )
+      return 1;
+  }
+  else if (m_prefetch_t == W_MP_MAX) {
+    if (get_to_prefetch_w_max(num_acc, acc_v) )
+      return 1;
+  }
+    
+  for (std::set<ACC_T>::iterator it = acc_s.begin(); it != acc_s.end(); it++) {
+    if (std::find(cached_acc_v.begin(), cached_acc_v.end(), *it) == cached_acc_v.end() && 
+        std::find(acc_v.begin(), acc_v.end(), *it) == acc_v.end() )
+      eacc_v.push_back(*it);
+  }
   
-  return 0;  
+  return 0;
 }
 
 int MPrefetchAlgo::get_to_prefetch_w_max(int& num_acc, std::vector<ACC_T>& acc_v)
@@ -132,11 +163,29 @@ PrefetchAlgo::PrefetchAlgo(PREFETCH_T prefetch_t, int context_size)
   
 PrefetchAlgo::~PrefetchAlgo() {}
 
+void PrefetchAlgo::reset()
+{
+  parse_tree.reset();
+  
+  acc_s.clear();
+  acc_v.clear();
+}
+
 std::string PrefetchAlgo::parse_tree_to_pstr() { return parse_tree.to_pretty_str(); }
 
 std::vector<ACC_T> PrefetchAlgo::get_acc_v()
 {
   return acc_v;
+}
+
+int PrefetchAlgo::train(std::vector<ACC_T> acc_v)
+{
+  for (std::vector<ACC_T>::iterator it = acc_v.begin(); it != acc_v.end(); it++) {
+    if (add_access(*it) )
+      return 1;
+  }
+  
+  return 0;
 }
 
 int PrefetchAlgo::add_access(ACC_T acc)
