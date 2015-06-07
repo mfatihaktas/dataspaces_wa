@@ -42,7 +42,7 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
       printf ("%s ", argv[optind++]);
     putchar ('\n');
   }
-  // 
+  //  
   std::cout << "opt_map=\n";
   for (std::map<char*, char*>::iterator it = opt_map.begin(); it != opt_map.end(); ++it) {
     std::cout << it->first << " => " << it->second << '\n';
@@ -489,10 +489,10 @@ void prefetch_test()
 void sim_test()
 {
   int num_p, num_c;
-  std::vector<char> p_id__ds_id_vec, c_id__ds_id_vec;
-  std::vector<int> p_id__num_put_vec, c_id__num_get_vec;
-  std::vector<float> p_id__put_rate_vec, c_id__get_rate_vec;
-  std::vector<std::vector<float> > p_id__inter_arr_time_vec_vec, c_id__inter_arr_time_vec_vec;
+  std::vector<char> p_id__ds_id_v, c_id__ds_id_v;
+  std::vector<int> p_id__num_put_v, c_id__num_get_v;
+  std::vector<float> p_id__put_rate_v, c_id__get_rate_v;
+  std::vector<std::vector<float> > p_id__inter_arr_time_v_v, c_id__inter_arr_time_v_v;
   
   int num_ds = 2;
   int max_num_p = 5;
@@ -505,17 +505,17 @@ void sim_test()
   gen_scenario(num_ds, ds_id_v,
               max_num_p, max_num_c, num_putget_mean, put_rate_mean, get_rate_mean,
               num_p, num_c,
-              p_id__ds_id_vec, c_id__ds_id_vec,
-              p_id__num_put_vec, c_id__num_get_vec,
-              p_id__put_rate_vec, c_id__get_rate_vec,
-              p_id__inter_arr_time_vec_vec, c_id__inter_arr_time_vec_vec);
+              p_id__ds_id_v, c_id__ds_id_v,
+              p_id__num_put_v, c_id__num_get_v,
+              p_id__put_rate_v, c_id__get_rate_v,
+              p_id__inter_arr_time_v_v, c_id__inter_arr_time_v_v);
   
-  PCSim pc_sim(ds_id_v, max_num_p, W_PPM,
+  PCSim pc_sim(ds_id_v, max_num_p + 1, W_PPM,
               num_p, num_c,
-              p_id__ds_id_vec, c_id__ds_id_vec,
-              p_id__num_put_vec, c_id__num_get_vec,
-              p_id__put_rate_vec, c_id__get_rate_vec,
-              p_id__inter_arr_time_vec_vec, c_id__inter_arr_time_vec_vec );
+              p_id__ds_id_v, c_id__ds_id_v,
+              p_id__num_put_v, c_id__num_get_v,
+              p_id__put_rate_v, c_id__get_rate_v,
+              p_id__inter_arr_time_v_v, c_id__inter_arr_time_v_v );
   
   pc_sim.sim_all();
   // 

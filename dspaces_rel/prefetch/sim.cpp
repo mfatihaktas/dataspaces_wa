@@ -125,7 +125,7 @@ void PCSim::sim_c(int c_id)
 {
   int c = 0;
   std::vector<float> inter_arr_time_vec = c_id__inter_arr_time_v_v[c_id];
-  for (std::vector<float>::iterator it = inter_arr_time_vec.begin(); it != inter_arr_time_vec.end() ; it++, c++) {
+  for (std::vector<float>::iterator it = inter_arr_time_vec.begin(); it != inter_arr_time_vec.end(); it++, c++) {
     // LOG(INFO) << "sim_c:: c_id= " << c_id << ", inter_arr_time= " << *it << "\n";
     sleep(*it);
     
@@ -136,6 +136,11 @@ void PCSim::sim_c(int c_id)
     
     c_id__get_type_v_map[c_id].push_back(get_type);
     
-    LOG(INFO) << "sim_c:: c_id= " << c_id << "; GET <key= " << kv.first << ", ver= " << kv.second << ">.";
+    LOG(INFO) << "sim_c:: c_id= " << c_id << "; GOT <key= " << kv.first << ", ver= " << kv.second << ">.";
+    
+    if (get_type == 'r') {
+      std::cout << "sim_c:: <" << kv.first << ", " << kv.second << "> is in remote \n"
+                << "wa_space= \n" << wa_space_->to_str() << "\n";
+    }
   }
 }

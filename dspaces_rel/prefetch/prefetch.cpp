@@ -150,8 +150,16 @@ int PBuffer::add_access(int p_id, key_ver_pair kv)
     get_to_prefetch(num_app, key_ver_v);
     // LOG(INFO) << "add_access:: get_to_prefetch returned key_ver_v= " << patch_pre::pvec_to_str<key_ver_pair>(key_ver_v) << "\n";
     // To avoid remote fetching while a kv is being prefetched -- assuming prefetching will never fail
-    for (std::vector<key_ver_pair>::iterator it = key_ver_v.begin(); it != key_ver_v.end(); it++)
-      cache.push(p_id, *it);
+    if (cache.size() + key_ver_v.size() != buffer_size)
+      std::cout << "ADD_ACCESS:: <" << kv.first << ", " << kv.second << "> \n"
+                << "\t cache= \n" << patch_pre::pvec_to_str<key_ver_pair>(cache.get_content_v() ) << "\n"
+                << "\t will prefetch key_ver_v= \n" << patch_pre::pvec_to_str<key_ver_pair>(key_ver_v) << "\n";
+    
+    for (std::vector<key_ver_pair>::iterator it = key_ver_v.begin(); it != key_ver_v.end(); it++) {
+      if (cache.push(p_id, *it) )
+        LOG(ERROR) << "add_access:: cache.push failed for <" << it->first << ", " << it->second << "> \n"
+                   << "\t cache= \n" << patch_pre::pvec_to_str<key_ver_pair>(cache.get_content_v() );
+    }
   }
   
   // Call for prefetching per access
@@ -168,9 +176,11 @@ int PBuffer::get_to_prefetch(int& num_app, std::vector<key_ver_pair>& key_ver_v)
   // Pick app
   std::vector<ACC_T> p_id_v, ep_id_v;
   palgo_to_pick_app_->get_to_prefetch(num_app, p_id_v, cache.get_cached_acc_v(), ep_id_v);
-  // std::cout << ">>> palgo_to_pick_app_->get_to_prefetch returned: \n"
-  //           << "p_id_v= " << patch_pre::vec_to_str<ACC_T>(p_id_v) << "\n"
-  //           << "ep_id_v= " << patch_pre::vec_to_str<ACC_T>(ep_id_v) << "\n";
+  std::cout << "-------------------------------------------------\n"
+            << "GET_TO_PREFETCH:: \n"
+            << "p_id_v= " << patch_pre::vec_to_str<ACC_T>(p_id_v) << "\n"
+            << "ep_id_v= " << patch_pre::vec_to_str<ACC_T>(ep_id_v) << "\n"
+            << "\t cache= " << patch_pre::vec_to_str<>(cache.get_cached_acc_v() ) << "\n";
   
   // int i;
   std::vector<ACC_T>::iterator jt;
@@ -188,9 +198,8 @@ int PBuffer::get_to_prefetch(int& num_app, std::vector<key_ver_pair>& key_ver_v)
     // std::cout << "for p_id= " << *it << ":\n"
     //           << "\t p_id__last_cached_step_map= " << p_id__last_cached_step_map[*it] << "\n"
     //           << "\t p_id__last_acced_step_map= " << p_id__last_acced_step_map[*it] << "\n";
-    if (p_id__last_cached_step_map[*it] < p_id__last_acced_step_map[*it] ) {
+    if (p_id__last_cached_step_map[*it] < p_id__last_acced_step_map[*it] )
       p_id__last_cached_step_map[*it] = p_id__last_acced_step_map[*it];
-    }
     else if (p_id__last_cached_step_map[*it] > p_id__last_acced_step_map[*it] )
       continue;
     // 
@@ -220,7 +229,6 @@ int PBuffer::get_to_prefetch(int& num_app, std::vector<key_ver_pair>& key_ver_v)
     p_id__last_cached_step_map[*it] = step_to_prefetch;
     p_id__front_step_in_deq_map[*it] = front_step_in_deq;
   }
-  // std::cout << "***** \n";
 }
 
 bool PBuffer::contains(key_ver_pair kv)

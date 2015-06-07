@@ -29,6 +29,8 @@ class WASpace {
     patch_pre::thread_safe_map<key_ver_pair, int> key_ver__p_id_map;
     
     patch_pre::syncer<T> putget_syncer;
+    
+    boost::mutex get_mutex;
   public:
     WASpace(std::vector<char> ds_id_v, int pbuffer_size, PREFETCH_T prefetch_t)
     : ds_id_v(ds_id_v),
@@ -147,41 +149,46 @@ class WASpace {
         }
       }
       
-      char ds_id = app_id__ds_id_map[c_id];
-      if (contains(ds_id, kv) ) {
-        get_type = 'l';
+      {
+        boost::lock_guard<boost::mutex> guard(get_mutex);
+        
+        char ds_id = app_id__ds_id_map[c_id];
+        if (contains(ds_id, kv) )
+          get_type = 'l';
+        else { // Remote fetch
+          // LOG(INFO) << "get:: remote fetching to ds_id= " << ds_id << ", <key= " << kv.first << ", ver= " << kv.second << ">.";
+          ds_id__content_vp_map[ds_id]->push_back(kv);
+          if (waited)
+            get_type = 'w';
+          else
+            get_type = 'r';
+        }
+        
+        ds_id__pbuffer_map[ds_id]->add_access(key_ver__p_id_map[kv], kv);
       }
-      else { // Remote fetch
-        // LOG(INFO) << "get:: remote fetching to ds_id= " << ds_id << ", <key= " << kv.first << ", ver= " << kv.second << ">.";
-        ds_id__content_vp_map[ds_id]->push_back(kv);
-        if (waited)
-          get_type = 'w';
-        else
-          get_type = 'r';
-      }
-      
-      ds_id__pbuffer_map[ds_id]->add_access(key_ver__p_id_map[kv], kv);
       
       return 0;
     }
     
     void handle_prefetch(char ds_id, T kv)
     {
-      // LOG(INFO) << "handle_prefetch:: prefetched to ds_id= " << ds_id << ", <key= " << kv.first << ", ver= " << kv.second << ">.";
+      LOG(INFO) << "handle_prefetch:: prefetched to ds_id= " << ds_id << ", <key= " << kv.first << ", ver= " << kv.second << ">.";
     }
     
     void handle_del(T kv)
     {
-      // LOG(INFO) << "handle_del:: deleted <key= " << kv.first << ", ver= " << kv.second << ">.";
+      LOG(INFO) << "handle_del:: deleted <key= " << kv.first << ", ver= " << kv.second << ">.";
     }
     
     bool contains(char ds_id, T kv)
     {
       if (ds_id == '*')
-        return (std::find(wa_content_v.begin(), wa_content_v.end(), kv) != wa_content_v.end() );
+        return wa_content_v.contains(kv);
+        // return (std::find(wa_content_v.begin(), wa_content_v.end(), kv) != wa_content_v.end() );
       else {
-        patch_pre::thread_safe_vector<key_ver_pair>& content_v = *(ds_id__content_vp_map[ds_id] );
-        return (std::find(content_v.begin(), content_v.end(), kv) != content_v.end() ) || ds_id__pbuffer_map[ds_id]->contains(kv);
+        // patch_pre::thread_safe_vector<key_ver_pair>& content_v = *(ds_id__content_vp_map[ds_id] );
+        return ds_id__content_vp_map[ds_id]->contains(kv) || ds_id__pbuffer_map[ds_id]->contains(kv);
+        // return (std::find(content_v.begin(), content_v.end(), kv) != content_v.end() ) || ds_id__pbuffer_map[ds_id]->contains(kv);
       }
     }
 };

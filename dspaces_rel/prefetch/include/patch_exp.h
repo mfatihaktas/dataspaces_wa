@@ -314,8 +314,7 @@ void gen_scenario(int num_ds, std::vector<char>& ds_id_v,
       inter_arr_time_vec.push_back(
         // -1 * log(1.0 - (static_cast<float>(rand() ) / static_cast<float>(RAND_MAX) ) ) / c_id__get_rate_v[p_id] )
         // 2 * (1.0 - (float)(rand() % 10) / 10) 
-        // abs(quantile(inter_arr_time_dist, (static_cast<float>(rand() ) / static_cast<float>(RAND_MAX) ) ) )
-        1.5
+        abs(quantile(inter_arr_time_dist, (static_cast<float>(rand() ) / static_cast<float>(RAND_MAX) ) ) )
       );
     }
     c_id__inter_arr_time_v_v.push_back(inter_arr_time_vec);

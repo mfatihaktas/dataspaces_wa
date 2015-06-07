@@ -66,47 +66,57 @@ namespace patch_pre {
   {
     private:
       boost::mutex mutex;
-      typename std::vector<T> vector;
-      typename std::vector<T>::iterator it;
+      typename std::vector<T> v;
     public:
       thread_safe_vector() {};
       ~thread_safe_vector() {};
       
       T& operator[](int i) {
         boost::lock_guard<boost::mutex> guard(this->mutex);
-        return vector[i];
+        return v[i];
       };
       
       void push_back(T e)
       {
         boost::lock_guard<boost::mutex> guard(this->mutex);
-        vector.push_back(e);
+        v.push_back(e);
       }
       
       int del(T e)
       {
         boost::lock_guard<boost::mutex> guard(this->mutex);
-        it = std::find(vector.begin(), vector.end(), e);
-        vector.erase(it);
+        v.erase(std::find(v.begin(), v.end(), e) );
         return 0;
       };
       
       bool contains(T e)
       {
         boost::lock_guard<boost::mutex> guard(this->mutex);
-        return (std::find(vector.begin(), vector.end(), e) != vector.end() );
+        return (std::find(v.begin(), v.end(), e) != v.end() );
       };
       
       typename std::vector<T>::iterator begin()
       {
         boost::lock_guard<boost::mutex> guard(this->mutex);
-        return vector.begin();
+        return v.begin();
       };
       
       typename std::vector<T>::iterator end()
       {
         boost::lock_guard<boost::mutex> guard(this->mutex);
-        return vector.end();
+        return v.end();
+      };
+      
+      std::string to_str()
+      {
+        std::stringstream ss;
+        for (typename std::vector<T>::iterator it = v.begin(); it != v.end(); it++) {
+          ss << boost::lexical_cast<std::string>(*it);
+          if (it != (v.end() - 1) )
+            ss << ", ";
+        }
+        
+        return ss.str();
       };
   };
   
@@ -153,6 +163,15 @@ namespace patch_pre {
       {
         boost::lock_guard<boost::mutex> guard(this->mutex);
         return map.size();
+      };
+      
+      std::string to_str()
+      {
+        std::stringstream ss;
+        for (typename std::map<Tk, Tv>::iterator it = map.begin(); it != map.end(); it++)
+          ss << "\t" << boost::lexical_cast<std::string>(it->first) << " : " << boost::lexical_cast<std::string>(it->second) << "\n";
+        
+        return ss.str();
       };
   };
   

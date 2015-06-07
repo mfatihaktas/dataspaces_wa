@@ -31,8 +31,10 @@ class Cache {
     int cache_size;
     std::deque<T> cache;
     
-    std::map<T, ACC_T> e_acc_map;
-    std::map<ACC_T, int> acc_num_map;
+    // std::map<T, ACC_T> e_acc_map;
+    patch_pre::thread_safe_map<T, ACC_T> e_acc_map;
+    // std::map<ACC_T, int> acc_num_map;
+    patch_pre::thread_safe_map<ACC_T, int> acc_num_map;
     
     func_handle_del_cb _handle_del_cb;
   public:
@@ -49,7 +51,8 @@ class Cache {
     {
       std::stringstream ss;
       ss << "cache_size= " << boost::lexical_cast<std::string>(cache_size) << "\n";
-      ss << "acc_num_map= \n" << patch_pre::map_to_str<ACC_T, int>(acc_num_map) << "\n";
+      // ss << "acc_num_map= \n" << patch_pre::map_to_str<ACC_T, int>(acc_num_map) << "\n";
+      ss << "acc_num_map= \n" << acc_num_map.to_str() << "\n";
       ss << "cache_content= \n";
       for (typename std::deque<T>::iterator it = cache.begin(); it != cache.end(); it++)
         ss << "\t <" << boost::lexical_cast<std::string>(it->first) << ", " << boost::lexical_cast<std::string>(it->second) << "> \n";
@@ -63,13 +66,16 @@ class Cache {
       if (contains(e) )
         return 1;
       
-      if (acc_num_map.count(acc) == 0)
+      // if (acc_num_map.count(acc) == 0)
+      if (!acc_num_map.contains(acc) )
         acc_num_map[acc] = 0;
       acc_num_map[acc] += 1;
       
       e_acc_map[e] = acc;
       
       if (cache.size() == cache_size) {
+        LOG(ERROR) << ">>>>>>>>> push:: cache.size() == cache_size action !";
+        
         T e_to_del = cache.front();
         if (_handle_del_cb != 0)
           _handle_del_cb(e_to_del);
@@ -86,7 +92,8 @@ class Cache {
         return 1;
       
       acc_num_map[acc] -= 1;
-      e_acc_map.erase(e_acc_map.find(e) );
+      // e_acc_map.erase(e_acc_map.find(e) );
+      e_acc_map.del(e);
       cache.erase(std::find(cache.begin(), cache.end(), e) );
       
       return 0;
