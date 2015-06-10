@@ -26,7 +26,7 @@ class DSpacesDriver
     DSpacesDriver(int appid, int num_peers);
     DSpacesDriver(MPI_Comm mpi_comm, int num_peers, int appid);
     ~DSpacesDriver();
-    int finalize();
+    int close();
     int init(int num_peers, int appid);
     int sync_put(const char* var_name, unsigned int ver, int size,
                  int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
@@ -49,7 +49,7 @@ class DSpacesDriver
     void timeval_subtract (struct timeval *result, struct timeval *x, struct timeval *y);
     int refresh_last_lock_time();
   private:
-    bool finalized;
+    bool closed;
     int appid, num_peers;
     int nprocs, rank;
     MPI_Comm mpi_comm;

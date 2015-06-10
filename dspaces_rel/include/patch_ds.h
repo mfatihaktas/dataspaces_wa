@@ -102,8 +102,19 @@ namespace patch_ds {
       thread_safe_map<T, boost::shared_ptr<boost::mutex> > point_m_map;
       thread_safe_map<T, int> point_numpeers_map;
     public:
-      syncer() {LOG(INFO) << "syncer:: constructed."; };
-      ~syncer() { LOG(INFO) << "syncer:: destructed."; };
+      syncer() {LOG(INFO) << "syncer:: constructed."; }
+      ~syncer() { LOG(INFO) << "syncer:: destructed."; }
+      
+      void close()
+      {
+        for (typename std::map<T, boost::shared_ptr<boost::condition_variable> >::iterator it = point_cv_map.begin(); it != point_cv_map.end(); it++)
+          (it->second).reset();
+        for (typename std::map<T, boost::shared_ptr<boost::mutex> >::iterator it = point_m_map.begin(); it != point_m_map.end(); it++)
+          (it->second).reset();
+        // 
+        LOG(INFO) << "closed:: closed.";
+      }
+      
       int add_sync_point(T point, int num_peers)
       {
         if (point_cv_map.contains(point) ) {
@@ -118,7 +129,8 @@ namespace patch_ds {
         point_numpeers_map[point] = num_peers;
         
         return 0;
-      };
+      }
+      
       int del_sync_point(T point)
       {
         if (!point_cv_map.contains(point) ) {
@@ -130,14 +142,16 @@ namespace patch_ds {
         point_numpeers_map.del(point);
         
         return 0;
-      };
+      }
+      
       int wait(T point)
       {
-        boost::mutex::scoped_lock lock(*point_m_map[point]);
+        boost::mutex::scoped_lock lock(*point_m_map[point] );
         point_cv_map[point]->wait(lock);
         
         return 0;
-      };
+      }
+      
       int notify(T point)
       {
         if (!point_cv_map.contains(point) ) {
@@ -155,7 +169,7 @@ namespace patch_ds {
         point_numpeers_map[point] = num_peers_to_wait;
         
         return 0;
-      };
+      }
   };
   
   template <typename T>
@@ -169,56 +183,51 @@ namespace patch_ds {
       va_arg ( arguments, T* );
     
     va_end ( arguments );                  // Cleans up the list
-  }
+  };
   
-  void debug_print(std::string key, unsigned int ver, int size, int ndim, 
-                  uint64_t* gdim, uint64_t* lb, uint64_t* ub, int* data, size_t data_length)
-  {
-    std::cout << "debug_print::";
-    std::cout << "key= " << key << "\n"
-              << "ver= " << ver << "\n"
-              << "size= " << size << "\n"
-              << "ndim= " << ndim << "\n";
-    std::cout << "gdim=";
-    for (int i=0; i<ndim; i++){
-      std::cout << "\t" << gdim[i] << ", ";
-    }
-    std::cout << "\n";
-    
-    std::cout << "lb=";
-    for (int i=0; i<ndim; i++) {
-      std::cout << "\t" << lb[i] << ", ";
-    }
-    std::cout << "\n";
-    
-    std::cout << "ub=";
-    for (int i=0; i<ndim; i++) {
-      std::cout << "\t" << ub[i] << ", ";
-    }
-    std::cout << "\n";
-    
-    // 
-    if (data == NULL) {
-      return;
-    }
-    std::cout << "data_length= " << data_length << "\n";
-    std::cout << "data=";
-    for (int i = 0; i < data_length; i++) {
-      std::cout << "\t" << data[i] << ", ";
-    }
-    std::cout << "\n";
-  }
-  
-  std::string str_str_map_to_str(std::map<std::string, std::string> str_map)
+  template<typename Tk, typename Tv>
+  std::string map_to_str(std::map<Tk, Tv> map)
   {
     std::stringstream ss;
-    for (std::map<std::string, std::string>::const_iterator it = str_map.begin(); 
-         it != str_map.end(); it++) {
+    for (typename std::map<Tk, Tv>::const_iterator it = map.begin(); it != map.end(); it++)
       ss << "\t" << it->first << ": " << it->second << "\n";
-    }
     
     return ss.str();
-  }
+  };
+  
+  // void debug_print(std::string key, unsigned int ver, int size, int ndim,
+  //                 uint64_t* gdim, uint64_t* lb, uint64_t* ub, int* data, size_t data_length)
+  // {
+  //   std::cout << "debug_print::";
+  //   std::cout << "key= " << key << "\n"
+  //             << "ver= " << ver << "\n"
+  //             << "size= " << size << "\n"
+  //             << "ndim= " << ndim << "\n";
+  //   std::cout << "gdim= ";
+  //   for (int i = 0; i < ndim; i++)
+  //     std::cout << "\t" << gdim[i] << ", ";
+  //   std::cout << "\n";
+    
+  //   std::cout << "lb= ";
+  //   for (int i=0; i<ndim; i++)
+  //     std::cout << "\t" << lb[i] << ", ";
+  //   std::cout << "\n";
+    
+  //   std::cout << "ub= ";
+  //   for (int i = 0; i < ndim; i++)
+  //     std::cout << "\t" << ub[i] << ", ";
+  //   std::cout << "\n";
+    
+  //   // 
+  //   if (data == NULL)
+  //     return;
+    
+  //   std::cout << "data_length= " << data_length << "\n";
+  //   std::cout << "data= ";
+  //   for (int i = 0; i < data_length; i++)
+  //     std::cout << "\t" << data[i] << ", ";
+  //   std::cout << "\n";
+  // };
 }
 
 #endif //end of _PATCH_DS_H_

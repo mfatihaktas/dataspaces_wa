@@ -20,7 +20,7 @@ class DSDriver
     DSDriver(int num_dscnodes, int app_id);
     DSDriver(MPI_Comm mpi_comm, int num_dscnodes, int app_id);
     ~DSDriver();
-    int finalize();
+    int close();
     int init(int num_dscnodes, int app_id);
     int sync_put(const char* var_name, unsigned int ver, int size,
                  int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
@@ -32,7 +32,7 @@ class DSDriver
     void unlock_on_read(const char* var_name);
     
   private:
-    bool finalized;
+    bool closed;
     int num_dscnodes, app_id;
     int nprocs, rank;
     MPI_Comm mpi_comm;

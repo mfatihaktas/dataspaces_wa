@@ -20,7 +20,6 @@
 #include <boost/lexical_cast.hpp>
 #include <glog/logging.h>
 
-
 char* intf_to_ip(const char* intf)
 {
   int fd;
@@ -126,9 +125,8 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
   }
   //
   std::cout << "opt_map=\n";
-  for (std::map<char*, char*>::iterator it=opt_map.begin(); it!=opt_map.end(); ++it){
+  for (std::map<char*, char*>::iterator it=opt_map.begin(); it!=opt_map.end(); ++it)
     std::cout << it->first << " => " << it->second << '\n';
-  }
   return opt_map;
 }
 
@@ -136,17 +134,17 @@ int main(int argc , char **argv)
 {
   std::string temp;
   google::InitGoogleLogging("exp");
-  //
+  // 
   std::map<char*, char*> opt_map = parse_opts(argc, argv);
   
-  int num_dscnodes = boost::lexical_cast<int>(opt_map[(char*)"num_dscnodes"]);
-  int app_id = boost::lexical_cast<int>(opt_map[(char*)"app_id"]);
+  int num_dscnodes = boost::lexical_cast<int>(opt_map[(char*)"num_dscnodes"] );
+  int app_id = boost::lexical_cast<int>(opt_map[(char*)"app_id"] );
   
   if (strcmp(opt_map[(char*)"type"], (char*)"put") == 0) {
-    //
+    // 
   }
-  else if (strcmp(opt_map[(char*)"type"], (char*)"get") == 0){
-    //
+  else if (strcmp(opt_map[(char*)"type"], (char*)"get") == 0) {
+    // 
   }
   else if (strcmp(opt_map[(char*)"type"], (char*)"ri") == 0) {
     if ( (!opt_map.count((char*)"ipeer_dht_laddr") ) || (strcmp(opt_map[(char*)"ipeer_dht_laddr"], (char*)"") == 0) ) {
@@ -168,7 +166,7 @@ int main(int argc , char **argv)
     size_t alphabet_size = sizeof(alphabet_)/sizeof(*alphabet_);
     size_t context_size = 2;
     
-    RIManager ri_manager(app_id, num_dscnodes-1,
+    RIManager ri_manager(app_id, num_dscnodes - 1,
                          opt_map[(char*)"dht_id"][0], intf_to_ip(opt_map[(char*)"dht_lintf"]), atoi(opt_map[(char*)"dht_lport"]), opt_map[(char*)"ipeer_dht_laddr"], atoi(opt_map[(char*)"ipeer_dht_lport"]),
                          trans_protocol, wa_laddr, wa_gftp_lintf, wa_gftp_lport, 
                          tmpfs_dir, wa_ib_lport_list,
@@ -178,7 +176,7 @@ int main(int argc , char **argv)
     std::cout << "Enter\n";
     getline(std::cin, temp);
   }
-  else{
+  else {
     LOG(ERROR) << "main:: unknown type= " << opt_map[(char*)"type"];
   }
   

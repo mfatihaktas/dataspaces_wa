@@ -123,9 +123,8 @@ int main (int argc, char **argv)
     
     size_t data_length = 100; //100*1024*1024;
     char* data_ = (char*)malloc(sizeof(char)*data_length);
-    for (int i = 0; i < data_length; i++) {
+    for (int i = 0; i < data_length; i++)
       data_[i] = alphabet_[i % alphabet_size];
-    }
     
     TCPClient<char> tcp_client((char*)"client", opt_map[(char*)"s_lip"], atoi(opt_map[(char*)"lport"]),
                                data_length, data_);

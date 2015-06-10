@@ -5,7 +5,7 @@
 #define INTER_RI_GET_TIME 2*1000*1000 //usec
 
 DSpacesDriver::DSpacesDriver(int appid, int num_peers)
-: finalized(false),
+: closed(false),
   appid(appid),
   num_peers(num_peers),
   get_flag(false),
@@ -24,7 +24,7 @@ DSpacesDriver::DSpacesDriver(int appid, int num_peers)
 }
 
 DSpacesDriver::DSpacesDriver(MPI_Comm mpi_comm, int num_peers, int appid)
-: finalized(false),
+: closed(false),
   num_peers(num_peers),
   appid(appid),
   mpi_comm(mpi_comm),
@@ -45,23 +45,21 @@ DSpacesDriver::~DSpacesDriver()
 {
   /*
   //riget_threads cause hanging.
-  for (int i = 0; i < riget_thread_v.size(); i++){
+  for (int i = 0; i < riget_thread_v.size(); i++)
     riget_thread_v[i]->join();
-  }
   */
   //LOG(INFO) << "~DSpacesDriver:: all riget_threads joined.";
   
-  // if (!finalized){
-  //   finalize();
-  // }
+  // if (!closed)
+  //   close();
   // 
   LOG(INFO) << "DSpacesDriver:: destructed.";
 }
 
-int DSpacesDriver::finalize()
+int DSpacesDriver::close()
 {
-  if (finalized) {
-    LOG(INFO) << "finalize:: already finalized!";
+  if (closed) {
+    LOG(INFO) << "close:: already closed!";
     return 2;
   }
   try {
@@ -72,12 +70,12 @@ int DSpacesDriver::finalize()
   
   catch(std::exception & ex)
   {
-    LOG(ERROR) << "finalize:: Exception=" << ex.what();
+    LOG(ERROR) << "close:: Exception=" << ex.what();
     return 1;
   }
   // 
-  finalized = true;
-  LOG(INFO) << "finalize:: finalized.";
+  closed = true;
+  LOG(INFO) << "close:: closed.";
   return 0;
 }
 

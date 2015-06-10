@@ -10,7 +10,8 @@
 #include <unistd.h>
 
 #include <string>
-#include <cstdarg> //for variable argument lists
+#include <cstdarg> // For variable argument lists
+#include <csignal> // For wait signal
 
 #include <glog/logging.h>
 #include <boost/shared_ptr.hpp>
@@ -18,7 +19,10 @@
 #include <boost/function.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
-// for boost serialization
+
+#include <boost/asio/io_service.hpp>
+#include <boost/asio/signal_set.hpp>
+// For boost serialization
 #include <fstream>
 #include <sstream>
 #include <boost/serialization/serialization.hpp>
@@ -98,24 +102,38 @@ class BCClient
 typedef std::pair<std::string, unsigned int> key_ver_pair;
 struct RQTable //Remote Query Table
 {
+  struct key_ver_info {
+    public:
+      int p_id;
+      std::string data_type;
+      char ds_id;
+      int size, ndim;
+      uint64_t *gdim_, *lb_, *ub_;
+      
+      key_ver_info(int p_id, std::string data_type, char ds_id,
+                   int size, int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_)
+      : p_id(p_id), data_type(data_type), ds_id(ds_id),
+        size(size), ndim(ndim), gdim_(gdim_), lb_(lb_), ub_(ub_) {}
+  };
+  
   public:
     RQTable();
     ~RQTable();
-    int get_key_ver(std::string key, unsigned int ver, 
-                    std::string &data_type, char &ds_id, int &size, int &ndim, 
-                    uint64_t* &gdim_, uint64_t* &lb_, uint64_t* &ub_);
+    int get_key_ver(std::string key, unsigned int ver,
+                    int& p_id, std::string &data_type, char &ds_id,
+                    int &size, int &ndim, uint64_t* &gdim_, uint64_t* &lb_, uint64_t* &ub_);
     int put_from_map(std::map<std::string, std::string> map);
-    int put_key_ver(std::string key, unsigned int ver, 
-                    std::string data_type, char ds_id, int size, int ndim, 
+    int put_key_ver(std::string key, unsigned int ver,
+                    int p_id, std::string data_type, char ds_id, int size, int ndim, 
                     uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
-    int add_key_ver(std::string key, unsigned int ver, 
-                    std::string data_type, char ds_id, int size, int ndim, 
+    int add_key_ver(std::string key, unsigned int ver,
+                    int p_id, std::string data_type, char ds_id, int size, int ndim, 
                     uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
-    int update_key_ver(std::string key, unsigned int ver, 
-                       std::string data_type, char ds_id, int size, int ndim, 
+    int update_key_ver(std::string key, unsigned int ver,
+                       int p_id, std::string data_type, char ds_id, int size, int ndim, 
                        uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
     int del_key_ver(std::string key, unsigned int ver);
-    bool is_feasible_to_get(std::string key, unsigned int ver, 
+    bool is_feasible_to_get(std::string key, unsigned int ver,
                             int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
     std::string to_str();
     std::map<std::string, std::string> to_str_str_map();
@@ -123,11 +141,8 @@ struct RQTable //Remote Query Table
     int mark_all();
     std::map<std::string, std::string> to_unmarked_str_str_map();
   private:
-    patch_ds::thread_safe_map<key_ver_pair, char> key_ver__dsid_map;
-    patch_ds::thread_safe_map<key_ver_pair, std::string> key_ver__data_type_map;
-    patch_ds::thread_safe_map<key_ver_pair, std::map<std::string, std::vector<uint64_t> > > key_ver__datainfo_map;
-    
-    patch_ds::thread_safe_map<key_ver_pair, bool> key_ver__mark;
+    patch_ds::thread_safe_map<key_ver_pair, boost::shared_ptr<key_ver_info> > kv_info_map;
+    patch_ds::thread_safe_map<key_ver_pair, bool> kv_mark_map;
 };
 
 struct RSTable //Remote Subscription Table
@@ -246,6 +261,9 @@ class RIManager
     boost::shared_ptr<PBuffer> pbuffer_;
     patch_ds::thread_safe_map<int, boost::shared_ptr<BCClient> > appid_bcclient_map; //TODO: prettify
     
+    boost::asio::io_service io_service;
+    boost::asio::signal_set signals;
+    
     RQTable rq_table;
     patch_ds::syncer<key_ver_pair> rq_syncer;
     
@@ -274,14 +292,16 @@ class RIManager
               std::string tmpfs_dir, std::list<std::string> wa_ib_lport_list,
               bool with_prefetch, size_t buffer_size, char* alphabet_, size_t alphabet_size, size_t context_size);
     ~RIManager();
+    void close();
     std::string to_str();
     
     void handle_app_req(char* app_req);
     void handle_get(bool blocking, int app_id, std::map<std::string, std::string> get_map);
     int remote_get(char ds_id, std::map<std::string, std::string> r_get_map);
-    void handle_put(std::map<std::string, std::string> put_map);
+    void handle_put(int p_id, std::map<std::string, std::string> put_map);
     void handle_possible_remote_places(std::string key, unsigned int ver);
-    void handle_prefetch(std::map<std::string, std::string> prefetch_map);
+    void handle_prefetch(char ds_id, key_ver_pair kv);
+    void handle_del(key_ver_pair kv);
     
     void handle_wamsg(std::map<std::string, std::string> wamsg_map);
     void handle_r_query(bool subscribe, std::map<std::string, std::string> r_query_map);

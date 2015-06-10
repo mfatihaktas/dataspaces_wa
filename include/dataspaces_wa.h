@@ -37,9 +37,9 @@ class WADspacesDriver
     boost::shared_ptr<BCClient> bc_client_;
     RMessenger rmessenger;
     IMsgCoder imsg_coder;
-    syncer<key_ver_pair> rg_syncer; //remote_get_syncer
+    patch_ds::syncer<key_ver_pair> rg_syncer; //remote_get_syncer
     
-    thread_safe_map<key_ver_pair, char> key_ver__dsid_map; //for getting rq_reply
+    patch_ds::thread_safe_map<key_ver_pair, char> key_ver__dsid_map; //for getting rq_reply
 };
 
 #endif //end of _DSWA_H_

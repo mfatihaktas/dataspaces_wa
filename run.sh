@@ -11,7 +11,7 @@ RM1_DHT_LIP="192.168.2.151" #"192.168.100.120" #"192.168.100.120" #"192.168.100.
 GFTP_LPORT="62002"
 TMPFS_DIR="/dev/shm"
 
-TRANS_PROTOCOL="i" #"g" #"i"
+TRANS_PROTOCOL="i" #"g"
 
 # DSPACES_BIN=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.5.0/install/bin
 DSPACES_BIN=$DSPACES_DIR/bin

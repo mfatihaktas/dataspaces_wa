@@ -214,9 +214,8 @@ void get_test(WADspacesDriver& wads_driver)
 {
   std::string var_name = "dummy";
   uint64_t* gdim_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
-  for (int i = 0; i < TEST_NDIM; i++) {
+  for (int i = 0; i < TEST_NDIM; i++)
     gdim_[i] = TEST_SGDIM;
-  }
   //specifics
   int *data_ = (int*)malloc(TEST_DATASIZE*sizeof(int) );
   uint64_t *lb_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
@@ -226,9 +225,8 @@ void get_test(WADspacesDriver& wads_driver)
     ub_[i] = TEST_DATASIZE - 1; //TEST_SIZE - 1;
   }
   
-  if (wads_driver.get(true, "int", var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_) ) {
+  if (wads_driver.get(true, "int", var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_) )
     LOG(ERROR) << "get_test:: wads_driver.get failed!";
-  }
   // size_t data_length = patch::get_data_length(TEST_NDIM, gdim, lb, ub);
   // patch::debug_print(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_, data_length);
   
@@ -339,7 +337,7 @@ int main(int argc , char **argv)
                          tmpfs_dir, wa_ib_lport_list,
                          true, buffer_size, alphabet_, alphabet_size, context_size );
     
-    syncer<char> dummy_syncer;
+    patch_ds::syncer<char> dummy_syncer;
     dummy_syncer.add_sync_point('d', 1);
     dummy_syncer.wait('d');
     

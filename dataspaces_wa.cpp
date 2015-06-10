@@ -41,11 +41,11 @@ std::map<std::string, std::string> RMessenger::gen_i_msg(std::string msg_type, i
   std::string gdim = "";
   std::string lb = "";
   std::string ub = "";
-  for(int i=0; i<ndim; i++){
-    gdim += boost::lexical_cast<std::string>(gdim_[i]);
-    lb += boost::lexical_cast<std::string>(lb_[i]);
-    ub += boost::lexical_cast<std::string>(ub_[i]);
-    if (i<ndim-1){
+  for (int i = 0; i < ndim; i++) {
+    gdim += boost::lexical_cast<std::string>(gdim_[i] );
+    lb += boost::lexical_cast<std::string>(lb_[i] );
+    ub += boost::lexical_cast<std::string>(ub_[i] );
+    if (i < ndim - 1) {
       gdim += ",";
       lb += ",";
       ub += ",";
@@ -106,12 +106,11 @@ int WADspacesDriver::get(bool blocking, std::string data_type, std::string key, 
 {
   LOG(INFO) << "get:: started for <key= " << key << ", ver= " << ver << ">.";
   std::string msg_type;
-  if (blocking) {
+  if (blocking)
     msg_type = BLOCKING_GET;
-  }
-  else {
+  else
     msg_type = GET;
-  }
+  
   std::map<std::string, std::string> msg_map = rmessenger.gen_i_msg(msg_type, app_id, data_type, 
                                                                     key, ver, size, ndim, gdim_, lb_, ub_);
   
