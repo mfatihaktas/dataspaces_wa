@@ -35,8 +35,5 @@ exp: $(ODIR)/exp.o $(ODIR)/dht_node.o $(ODIR)/dht_server.o $(ODIR)/dht_client.o 
 $(ODIR)/%.o: %.cpp
 	$(CPP) -g -c -o $@ $< $(INC) $(LIB)
 
-lclean:
-	rm -f $(ODIR)/*.o ${APPS} 
-
 clean:
 	rm -f $(ODIR)/*.o ${APPS}

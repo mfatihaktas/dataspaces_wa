@@ -1,10 +1,10 @@
 #!/bin/bash
 echo $1 $2 $3
 
-NUM_DS_NODE_LIST=( 2 2 )
+NUM_DS_NODE_LIST=( 1 1 )
 # DS_NODE_LIST=( "-host dell01 -host dell03 -host dell04 -host dell05" "-host dell02 -host dell06 -host dell07 -host dell08" )
-DS_NODE_LIST=( "-host dell01 -host dell03" "-host dell02 -host dell04" )
-# DS_NODE_LIST=( "-host dell01" "-host dell02" )
+# DS_NODE_LIST=( "-host dell01 -host dell03" "-host dell02 -host dell04" )
+DS_NODE_LIST=( "-host dell01" "-host dell02" )
 RI_MANAGER_NODE_LIST=( "-host dell01" "-host dell02" )
 NUM_DSPACESWA_CLIENT_LIST=( 1 1 )
 
@@ -14,7 +14,7 @@ DSPACESWA_BIN_DIR=$DSPACESWA_DIR
 TRANS_PROTOCOL="i"                                                                                  #i:infiniband, g:gridftp
 TMPFS_DIR="/cac/u01/mfa51/Desktop/dataspaces_wa/cache"
 #
-RI_MANAGER_APP_ID_LIST=( 10 10 )                                                                    #$((NUM_DSPACES_CNODES+1))
+RI_MANAGER_APP_ID_LIST=( 11 12 )
 RI_MANAGER_CONTROL_LINTF_LIST=( "em2" "em2" )                                                       #"eth0"
 RI_MANAGER_CONTROL_LPORT_LIST=( "60000" "61000" )
 RI_MANAGER_CONTROL_CONNECT_TO_LADDR_LIST=( "" "192.168.2.151" )

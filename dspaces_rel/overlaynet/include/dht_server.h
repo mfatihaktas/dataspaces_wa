@@ -13,26 +13,24 @@
 #include <string>
 #include <vector>
 
-using boost::asio::ip::tcp;
-
 typedef boost::function<void(char*)> function_recv_callback;
 
-class DHTServer{
+class DHTServer {
   public:
-    DHTServer(char* host_name, char* host, int port, 
-              function_recv_callback recv_callback = NULL);
+    DHTServer(char* host_name, char* lip, int lport,
+              function_recv_callback _recv_callback = NULL);
     ~DHTServer();
     std::string to_str();
-    void set_recv_callback(function_recv_callback recv_callback);
+    void set_recv_callback(function_recv_callback _recv_callback);
     
     int close();
     void init_listen();
     void init_recv();
     void handle_recv(char* msg);
   private:
-    char *host, *host_name;
-    int port;
-    int stop_flag;
+    char *lip, *host_name;
+    int lport;
+    bool closed;
     // 
     boost::shared_ptr< boost::asio::io_service > io_service_;
     boost::shared_ptr< boost::asio::ip::tcp::acceptor > acceptor_;

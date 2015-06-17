@@ -153,7 +153,7 @@ int PBuffer::add_access(int p_id, key_ver_pair kv)
     if (cache.size() + key_ver_v.size() != buffer_size)
       std::cout << "ADD_ACCESS:: <" << kv.first << ", " << kv.second << "> \n"
                 << "\t cache= \n" << patch_pre::pvec_to_str<key_ver_pair>(cache.get_content_v() ) << "\n"
-                << "\t will prefetch key_ver_v= \n" << patch_pre::pvec_to_str<key_ver_pair>(key_ver_v) << "\n";
+                << ">> Will prefetch key_ver_v= \n" << patch_pre::pvec_to_str<key_ver_pair>(key_ver_v) << "\n";
     
     for (std::vector<key_ver_pair>::iterator it = key_ver_v.begin(); it != key_ver_v.end(); it++) {
       if (cache.push(p_id, *it) )

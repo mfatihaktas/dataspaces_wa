@@ -31,7 +31,7 @@ elif [ $1  = 'g' ]; then
   GLOG_logtostderr=1 ./exp --type="get" --app_id=1 --num_dscnodes=$NUM_DSCNODES
 elif [ $1  = 'mg' ]; then
   GLOG_logtostderr=1 ./ds_wa_test --type="mget" --app_id=1 --num_dscnodes=$NUM_DSCNODES --num_putget=10 \
-                                  --inter_time_sec=10
+                                  --inter_time_sec=1
 elif [ $1  = 'dp' ]; then
   export GLOG_logtostderr=1 
   export MALLOC_CHECK_=2

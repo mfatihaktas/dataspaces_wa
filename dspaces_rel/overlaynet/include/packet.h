@@ -24,7 +24,7 @@ enum type_t {
   RIMSG = 'I',
 };
 
-class Packet{
+class Packet {
   private:
     int packet_size;
     int msg_size;
@@ -37,7 +37,7 @@ class Packet{
   public:
     Packet(char type, char* msg);
     Packet(char type, std::map<std::string, std::string> msg_map);
-    Packet(size_t type__srlzedmsgmap_size, char* type__srlzedmsgmap);
+    Packet(int type__srlzedmsgmap_size, char* type__srlzedmsgmap);
     ~Packet();
     
     int get_msg_size() const;
@@ -48,7 +48,7 @@ class Packet{
     char* get_data() const;
     std::map<std::string, std::string> get_msg_map() const;
     
-    char* cast_to_chararr(size_t chararr_size, int number) const;
+    char* int_to_char_(int char_size, int number) const;
     std::string to_str() const;
 };
 

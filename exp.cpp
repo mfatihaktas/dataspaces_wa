@@ -203,7 +203,7 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
   return opt_map;
 }
 
-#define TEST_NUMKEYS 18
+#define TEST_NUMKEYS 1
 #define TEST_SIZE 256
 #define TEST_NDIM 1
 #define TEST_DATASIZE TEST_NUMKEYS*pow(TEST_SIZE, 3)

@@ -1,5 +1,5 @@
-#ifndef _DHTNODE_H_
-#define _DHTNODE_H_
+#ifndef _DHT_NODE_H_
+#define _DHT_NODE_H_
 
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
@@ -20,7 +20,7 @@
 #include "dht_client.h"
 #include "packet.h"
 
-namespace patch_dht{
+namespace patch_dht {
   template <typename Tk, typename Tv>
   struct thread_safe_map
   {
@@ -80,22 +80,18 @@ struct comm_channel {
     peer_lport(peer_lport),
     server_(boost::make_shared<DHTServer>(channel_name, lip, lport) ),
     client_(boost::make_shared<DHTClient>(channel_name, peer_lip, peer_lport) ) 
-    { }
+  {}
   
   void reinit()
   {
     // LOG(INFO) << "reinit:: started.";
-    
     close();
     client_.reset();
     server_.reset();
     
-    boost::shared_ptr<DHTServer> temp_server_ = boost::make_shared<DHTServer>(channel_name, lip, lport);
-    server_ = temp_server_;
-    
+    server_ = boost::make_shared<DHTServer>(channel_name, lip, lport);
     // To make sure if first node gets closed by ctrl+c shared_ptr client_ will exist to get closed
-    boost::shared_ptr<DHTClient> temp_client_ = boost::make_shared<DHTClient>(channel_name, (char*)"", 0);
-    client_ = temp_client_;
+    client_ = boost::make_shared<DHTClient>(channel_name, (char*)"", 0);
     
     // LOG(INFO) << "reinit:: done.";
   }
@@ -133,16 +129,16 @@ struct comm_channel {
   std::string to_str()
   {
     std::stringstream ss;
-    ss << "\t channel_name=" << channel_name << "\n";
-    ss << "\t lip=" << lip << ", lport=" << boost::lexical_cast<std::string>(lport) << "\n";
-    ss << "\t peer_lip=" << peer_lip << ", peer_lport=" << boost::lexical_cast<std::string>(peer_lport) << "\n";
+    ss << "\t channel_name= " << channel_name << "\n";
+    ss << "\t lip= " << lip << ", lport= " << boost::lexical_cast<std::string>(lport) << "\n";
+    ss << "\t peer_lip= " << peer_lip << ", peer_lport= " << boost::lexical_cast<std::string>(peer_lport) << "\n";
     
     return ss.str();
   }
 };
 
 //********************************  peer_info  **********************************//
-struct peer_info{
+struct peer_info {
   char id;
   char *lip, *peer_name, *peer_lip, *peer_join_lip;
   int lport, peer_lport, peer_join_lport;
@@ -157,7 +153,7 @@ struct peer_info{
     peer_lport(peer_lport),
     peer_join_lip(peer_join_lip),
     peer_join_lport(peer_join_lport)
-  { }
+  {}
   
   std::string to_str() const
   {
@@ -171,7 +167,7 @@ struct peer_info{
   }
 };
 //********************************  peer_table  **********************************//
-struct peer_table{
+struct peer_table {
   boost::mutex mutex;
   std::vector<char> peer_id_vector;
   patch_dht::thread_safe_map<char, boost::shared_ptr<peer_info> > id_pinfo_map;
@@ -179,9 +175,8 @@ struct peer_table{
   // 
   bool is_peer(char id)
   {
-    if (std::find(peer_id_vector.begin(), peer_id_vector.end(), id) != peer_id_vector.end() ) {
+    if (std::find(peer_id_vector.begin(), peer_id_vector.end(), id) != peer_id_vector.end() )
       return true;
-    }
     
     return false;
   }
@@ -283,8 +278,7 @@ struct peer_table{
 };
 
 //********************************  prospective_peer_info  **********************************//
-struct prospective_peer_info
-{
+struct prospective_peer_info {
   char* join_lip;
   int join_lport;
   // 
@@ -305,8 +299,7 @@ struct prospective_peer_info
 };
 
 //********************************  prospective_peer_table  **********************************//
-struct prospective_peer_table
-{
+struct prospective_peer_table {
   boost::mutex mutex;
   std::vector< boost::shared_ptr<prospective_peer_info> > ppeer_vector;
   
@@ -324,7 +317,7 @@ struct prospective_peer_table
   {
     boost::lock_guard<boost::mutex> guard(this->mutex);
     
-    if (ppeer_vector.empty()){
+    if (ppeer_vector.empty() ) {
       boost::shared_ptr<prospective_peer_info> ppinfo_;
       return ppinfo_;
     }
@@ -370,8 +363,7 @@ class DHTNode {
       msg_map["lip"] = dhtnode_->lip;
       msg_map["lport"] = boost::lexical_cast<std::string>(dhtnode_->next_lport);
       
-      switch(pos)
-      {
+      switch(pos) {
         case 1:
           msg_map["ack"] = "ok";
           break;
@@ -379,13 +371,11 @@ class DHTNode {
           msg_map["ack"] = "nok";
           break;
       }
-      if (pos){
+      if (pos) {
         // Add other peers new peer should connect to
         int count = 0;
-        for (std::map<char, boost::shared_ptr<peer_info> >::const_iterator it = (dhtnode_->ptable.id_pinfo_map).begin();
-            it != dhtnode_->ptable.id_pinfo_map.end(); it++)
-        {
-          if ( !(it->first == peer_id) ){
+        for (std::map<char, boost::shared_ptr<peer_info> >::const_iterator it = (dhtnode_->ptable.id_pinfo_map).begin(); it != dhtnode_->ptable.id_pinfo_map.end(); it++) {
+          if ( !(it->first == peer_id) ) {
             peer_info pinfo = *(it->second);
             
             ++count;
@@ -451,7 +441,7 @@ class DHTNode {
     void fill_pptable(std::map<std::string, std::string> msg_map);
     void handle_next_ppeer();
     
-    void handle_recv(char* type__srlzedmsgmap);
+    void handle_recv(char* type__srlzed_msg_map);
     void handle_join_request(const Packet& p);
     void handle_join_reply(const Packet& p);
     void handle_join_ack(const Packet& p);
@@ -478,4 +468,4 @@ class DHTNode {
 };
 
 
-#endif //_DHTNODE_H_
+#endif //_DHT_NODE_H_

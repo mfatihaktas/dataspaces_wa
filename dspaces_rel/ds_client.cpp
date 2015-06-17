@@ -378,9 +378,9 @@ std::map<std::string, std::string> RQTable::to_str_str_map()
       lb += boost::lexical_cast<std::string>(kv_info.lb_[i] );
       ub += boost::lexical_cast<std::string>(kv_info.ub_[i] );
       if (i < ndim - 1) {
-        gdim += ", ";
-        lb += ", ";
-        ub += ", ";
+        gdim += ",";
+        lb += ",";
+        ub += ",";
       }
     }
     // 
@@ -429,9 +429,9 @@ std::map<std::string, std::string> RQTable::to_unmarked_str_str_map()
         lb += boost::lexical_cast<std::string>(kv_info.lb_[i] );
         ub += boost::lexical_cast<std::string>(kv_info.ub_[i] );
         if (i < ndim - 1) {
-          gdim += ", ";
-          lb += ", ";
-          ub += ", ";
+          gdim += ",";
+          lb += ",";
+          ub += ",";
         }
       }
       // 
@@ -1041,6 +1041,7 @@ void RIManager::handle_put(int p_id, std::map<std::string, std::string> put_map)
     
     // patch_ds::debug_print(key, ver, size, ndim, gdim_, lb_, ub_, NULL);
     rq_table.put_key_ver(key, ver, p_id, data_type, this->id, size, ndim, gdim_, lb_, ub_);
+    pbuffer_->reg_key_ver(p_id, std::make_pair(key, ver) );
     
     if (bcast_rq_table() )
       LOG(ERROR) << "handle_l_put:: bcast_rq_table failed!";
@@ -1382,7 +1383,7 @@ void RIManager::handle_r_query(bool subscribe, std::map<std::string, std::string
   LOG(INFO) << "handle_r_query:: r_query_map= \n" << patch_ds::map_to_str<>(r_query_map);
   
   std::string key = r_query_map["key"];
-  unsigned int ver = boost::lexical_cast<unsigned int>(r_query_map["ver"]);
+  unsigned int ver = boost::lexical_cast<unsigned int>(r_query_map["ver"] );
   
   std::map<std::string, std::string> rq_reply_map;
   rq_reply_map["type"] = REMOTE_QUERY_REPLY;
@@ -1427,6 +1428,7 @@ void RIManager::handle_rq_reply(std::map<std::string, std::string> rq_reply_map)
     int p_id = boost::lexical_cast<int>(rq_reply_map["p_id"] );
     std::string data_type = rq_reply_map["data_type"];
     rq_table.put_key_ver(key, ver, p_id, data_type, ds_id, 0, 0, NULL, NULL, NULL);
+    pbuffer_->reg_key_ver(p_id, std::make_pair(key, ver) );
   }
   
   rq_syncer.notify(std::make_pair(key, ver) );
@@ -1482,10 +1484,10 @@ void RIManager::handle_r_rqtable(std::map<std::string, std::string> r_rqtable_ma
   while (1) {
     std::string tail_str = boost::lexical_cast<std::string>(count);
     std::string key_str = "key_" + tail_str;
-    if (!r_rqtable_map.count(key_str) )
+    if (r_rqtable_map.count(key_str) == 0)
       break;
     
-    int ndim = boost::lexical_cast<int>(r_rqtable_map["ndim_" + tail_str]);
+    int ndim = boost::lexical_cast<int>(r_rqtable_map["ndim_" + tail_str] );
     uint64_t* gdim_ = (uint64_t*)malloc(ndim*sizeof(uint64_t) );
     uint64_t* lb_ = (uint64_t*)malloc(ndim*sizeof(uint64_t) );
     uint64_t* ub_ = (uint64_t*)malloc(ndim*sizeof(uint64_t) );
@@ -1498,13 +1500,10 @@ void RIManager::handle_r_rqtable(std::map<std::string, std::string> r_rqtable_ma
     boost::tokenizer<boost::char_separator<char> >::iterator lb_tokens_it = lb_tokens.begin();
     boost::tokenizer<boost::char_separator<char> > ub_tokens(r_rqtable_map["ub_" + tail_str], sep);
     boost::tokenizer<boost::char_separator<char> >::iterator ub_tokens_it = ub_tokens.begin();
-    for (int i = 0; i < ndim; i++) {
+    for (int i = 0; i < ndim; i++, gdim_tokens_it++, lb_tokens_it++, ub_tokens_it++) {
       gdim_[i] = boost::lexical_cast<uint64_t>(*gdim_tokens_it);
-      gdim_tokens_it++;
       lb_[i] = boost::lexical_cast<uint64_t>(*lb_tokens_it);
-      lb_tokens_it++;
       ub_[i] = boost::lexical_cast<uint64_t>(*ub_tokens_it);
-      ub_tokens_it++;
     }
     std::string key = r_rqtable_map[key_str];
     unsigned int ver= boost::lexical_cast<unsigned int>(r_rqtable_map["ver_" + tail_str] );
@@ -1563,6 +1562,7 @@ void RIManager::handle_r_place(std::map<std::string, std::string> r_place_map)
     return;
   }
   rq_table.put_key_ver(key, ver, p_id, data_type, this->id, size, ndim, gdim_, lb_, ub_);
+  pbuffer_->reg_key_ver(p_id, std::make_pair(key, ver) );
   
   // TODO: Following may throw exception in case of non-blocking get
   b_get_syncer.notify(kv);

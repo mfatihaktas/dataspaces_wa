@@ -20,7 +20,7 @@ Packet::Packet(char type, std::map<std::string, std::string> msg_map)
   this->packet_size = SIZE_SIZE + TYPE_SIZE + msg_size + TAIL_SIZE;
   this->data = new char[packet_size];
   
-  char* temp = cast_to_chararr(SIZE_SIZE, packet_size - SIZE_SIZE );
+  char* temp = int_to_char_(SIZE_SIZE, packet_size - SIZE_SIZE );
   std::memcpy(data, temp, SIZE_SIZE);
   delete temp;
   std::memcpy(data + SIZE_SIZE, &type, TYPE_SIZE);
@@ -30,7 +30,7 @@ Packet::Packet(char type, std::map<std::string, std::string> msg_map)
   this->msg = data + TYPE_SIZE;
 }
 
-Packet::Packet(size_t type__srlzedmsgmap_size, char* type__srlzedmsgmap)
+Packet::Packet(int type__srlzedmsgmap_size, char* type__srlzedmsgmap)
 {
   this->msg_size = type__srlzedmsgmap_size - TYPE_SIZE;
   this->packet_size = SIZE_SIZE + TYPE_SIZE + msg_size + TAIL_SIZE;
@@ -38,7 +38,7 @@ Packet::Packet(size_t type__srlzedmsgmap_size, char* type__srlzedmsgmap)
   //form the packet
   this->data = new char[packet_size];
   
-  char* temp = cast_to_chararr(SIZE_SIZE, packet_size - SIZE_SIZE );
+  char* temp = int_to_char_(SIZE_SIZE, packet_size - SIZE_SIZE );
   std::memcpy(data, temp, SIZE_SIZE);
   delete temp;
   std::memcpy(data + SIZE_SIZE, type__srlzedmsgmap, TYPE_SIZE + msg_size);
@@ -65,7 +65,7 @@ Packet::Packet(char type, char* msg)
   //form the packet
   this->data = new char[packet_size];
   
-  char* temp = cast_to_chararr(SIZE_SIZE, packet_size - SIZE_SIZE );
+  char* temp = int_to_char_(SIZE_SIZE, packet_size - SIZE_SIZE );
   std::memcpy(data, temp, SIZE_SIZE);
   delete temp;
   std::memcpy(data + SIZE_SIZE, &type, TYPE_SIZE);
@@ -75,17 +75,18 @@ Packet::Packet(char type, char* msg)
   this->msg = data + TYPE_SIZE;
 }
 
-char* Packet::cast_to_chararr(size_t chararr_size, int number) const
+char* Packet::int_to_char_(int char_size, int number) const
 {
   std::string str = boost::lexical_cast<std::string>(number);
-  size_t padding_size = chararr_size - str.length();
-  if (padding_size < 0){
-    LOG(ERROR) << "padding_size=" << " < 0";
+  int padding_size = char_size - str.length();
+  if (padding_size < 0) {
+    LOG(ERROR) << "int_to_char_:: padding_size= < 0";
     return NULL;
   }
   std::string final_str = std::string(padding_size, '0').append(str);
-  char* arr = new char[chararr_size];
-  strcpy(arr, final_str.c_str());
+  char* arr = new char[char_size];
+  strcpy(arr, final_str.c_str() );
+  
   return arr;
 }
 

@@ -183,7 +183,7 @@ namespace patch_ds {
       va_arg ( arguments, T* );
     
     va_end ( arguments );                  // Cleans up the list
-  };
+  }
   
   template<typename Tk, typename Tv>
   std::string map_to_str(std::map<Tk, Tv> map)
@@ -193,7 +193,7 @@ namespace patch_ds {
       ss << "\t" << it->first << ": " << it->second << "\n";
     
     return ss.str();
-  };
+  }
   
   // void debug_print(std::string key, unsigned int ver, int size, int ndim,
   //                 uint64_t* gdim, uint64_t* lb, uint64_t* ub, int* data, size_t data_length)
@@ -227,7 +227,7 @@ namespace patch_ds {
   //   for (int i = 0; i < data_length; i++)
   //     std::cout << "\t" << data[i] << ", ";
   //   std::cout << "\n";
-  // };
+  // }
 }
 
 #endif //end of _PATCH_DS_H_

@@ -10,57 +10,6 @@
 
 #include "dataspaces_wa.h"
 
-template <typename T>
-void free_all(int num, ...)
-{
-  va_list arguments;                     // A place to store the list of arguments
-
-  va_start ( arguments, num );           // Initializing arguments to store all values after num
-  
-  for ( int x = 0; x < num; x++ )        // Loop until all numbers are added
-    va_arg ( arguments, T* );
-  
-  va_end ( arguments );                  // Cleans up the list
-}
-
-void debug_print(std::string key, unsigned int ver, int size, int ndim, 
-                uint64_t* gdim, uint64_t* lb, uint64_t* ub, int* data, size_t data_length)
-{
-  std::cout << "debug_print::";
-  std::cout << "key= " << key << "\n"
-            << "ver= " << ver << "\n"
-            << "size= " << size << "\n"
-            << "ndim= " << ndim << "\n";
-  std::cout << "gdim=";
-  for (int i = 0; i < ndim; i++) {
-    std::cout << "\t" << gdim[i] << ", ";
-  }
-  std::cout << "\n";
-  
-  std::cout << "lb=";
-  for (int i = 0; i < ndim; i++) {
-    std::cout << "\t" << lb[i] << ", ";
-  }
-  std::cout << "\n";
-  
-  std::cout << "ub=";
-  for (int i = 0; i < ndim; i++) {
-    std::cout << "\t" << ub[i] << ", ";
-  }
-  std::cout << "\n";
-  
-  // 
-  if (data == NULL) {
-    return;
-  }
-  std::cout << "data_length= " << data_length << "\n";
-  std::cout << "data=";
-  for (int i = 0; i < data_length; i++) {
-    std::cout << "\t" << data[i] << ", ";
-  }
-  std::cout << "\n";
-}
-
 size_t get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_)
 {
   uint64_t dim_length[ndim];
@@ -181,9 +130,9 @@ void multi_get_test(int num_gets, float inter_get_time_sec, std::string base_var
   }
   LOG(INFO) << "multi_get_test:: get_time_profiler= \n" << get_time_profiler.to_str();
   // size_t data_length = patch::get_data_length(TEST_NDIM, gdim, lb, ub);
-  // debug_print(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_, data_length);
+  // patch_ds::debug_print(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_, data_length);
   
-  free_all<uint64_t>(3, gdim_, lb_, ub_);
+  patch_ds::free_all<uint64_t>(3, gdim_, lb_, ub_);
   free(data_);
 }
 
@@ -215,9 +164,9 @@ void multi_put_test(int num_puts, float inter_put_time_sec, std::string base_var
     }
     sleep(inter_put_time_sec);
   }
-  // debug_print(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_, patch::get_data_length(TEST_NDIM, gdim_, lb_, ub_) );
+  // patch_ds::debug_print(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_, patch::get_data_length(TEST_NDIM, gdim_, lb_, ub_) );
   
-  free_all<uint64_t>(3, gdim_, lb_, ub_);
+  patch_ds::free_all<uint64_t>(3, gdim_, lb_, ub_);
   free(data_);
 }
 
@@ -228,14 +177,14 @@ int main(int argc , char **argv)
   // 
   std::map<char*, char*> opt_map = parse_opts(argc, argv);
   
-  int num_dscnodes = boost::lexical_cast<int>(opt_map[(char*)"num_dscnodes"]);
-  int app_id = boost::lexical_cast<int>(opt_map[(char*)"app_id"]);
-  int num_putget = boost::lexical_cast<int>(opt_map[(char*)"num_putget"]);
-  float inter_time_sec = boost::lexical_cast<float>(opt_map[(char*)"inter_time_sec"]);
+  int num_dscnodes = boost::lexical_cast<int>(opt_map[(char*)"num_dscnodes"] );
+  int app_id = boost::lexical_cast<int>(opt_map[(char*)"app_id"] );
+  int num_putget = boost::lexical_cast<int>(opt_map[(char*)"num_putget"] );
+  float inter_time_sec = boost::lexical_cast<float>(opt_map[(char*)"inter_time_sec"] );
   
   TProfiler<std::string> tprofiler;
   if (strcmp(opt_map[(char*)"type"], (char*)"mput") == 0) {
-    WADspacesDriver wads_driver(app_id, num_dscnodes-1);
+    WADspacesDriver wads_driver(app_id, num_dscnodes - 1);
     
     std::cout << "Enter for multi_put_test...\n";
     getline(std::cin, temp);
@@ -249,7 +198,7 @@ int main(int argc , char **argv)
     getline(std::cin, temp);
   }
   else if (strcmp(opt_map[(char*)"type"], (char*)"mget") == 0) {
-    WADspacesDriver wads_driver(app_id, num_dscnodes-1);
+    WADspacesDriver wads_driver(app_id, num_dscnodes - 1);
     
     std::cout << "Enter for multi_get_test...\n";
     getline(std::cin, temp);

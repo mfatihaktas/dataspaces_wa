@@ -117,16 +117,16 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
         break;
     }
   }
-  if (optind < argc){
-    printf ("non-option ARGV-elements: ");
+  if (optind < argc) {
+    std::cout << "parse_opts:: Non-option ARGV-elements= \n";
     while (optind < argc)
-      printf ("%s ", argv[optind++]);
-    putchar ('\n');
+      std::cout << argv[optind++] << "\n";
   }
-  //
-  std::cout << "opt_map=\n";
+  // 
+  std::cout << "parse_opts:: opt_map= \n";
   for (std::map<char*, char*>::iterator it=opt_map.begin(); it!=opt_map.end(); ++it)
-    std::cout << it->first << " => " << it->second << '\n';
+    std::cout << it->first << " : " << it->second << "\n";
+  
   return opt_map;
 }
 

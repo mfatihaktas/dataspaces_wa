@@ -59,7 +59,7 @@ DSpacesDriver::~DSpacesDriver()
 int DSpacesDriver::close()
 {
   if (closed) {
-    LOG(INFO) << "close:: already closed!";
+    LOG(WARNING) << "close:: already closed!";
     return 2;
   }
   try {
@@ -68,8 +68,7 @@ int DSpacesDriver::close()
     MPI_Finalize();
   }
   
-  catch(std::exception & ex)
-  {
+  catch(std::exception & ex) {
     LOG(ERROR) << "close:: Exception=" << ex.what();
     return 1;
   }
@@ -94,7 +93,7 @@ int DSpacesDriver::sync_put(const char* var_name, unsigned int ver, int size,
     this->sync_put_flag = true;
   }
   
-  LOG(INFO) << "sync_put:: will wait for get__flag= " << this->get__flag;
+  // LOG(INFO) << "sync_put:: will wait for get__flag= " << this->get__flag;
   
   while (this->get__flag) {
     // {
@@ -103,7 +102,7 @@ int DSpacesDriver::sync_put(const char* var_name, unsigned int ver, int size,
     // }
   }
   // usleep(10*1000);
-  LOG(INFO) << "sync_put:: done waiting for get__flag.";
+  // LOG(INFO) << "sync_put:: done waiting for get__flag.";
   
   // do_timing("sync_put");
   {
@@ -145,7 +144,7 @@ int DSpacesDriver::get_(const char* var_name, unsigned int ver, int size,
     this->get__flag = true;
   }
   
-  LOG(INFO) << "get_:: will wait for get_flag || sync_put_flag...";
+  // LOG(INFO) << "get_:: will wait for get_flag || sync_put_flag...";
   bool flag = true;
   while (this->get_flag || this->sync_put_flag) {
     {
@@ -153,7 +152,7 @@ int DSpacesDriver::get_(const char* var_name, unsigned int ver, int size,
       // flag = this->get_flag || this->sync_put_flag;
     }
   }
-  LOG(INFO) << "get_:: done waiting for get_flag || sync_put_flag.";
+  // LOG(INFO) << "get_:: done waiting for get_flag || sync_put_flag.";
   
   // do_timing("get_");
   {
@@ -167,10 +166,10 @@ int DSpacesDriver::get_(const char* var_name, unsigned int ver, int size,
     // LOG(INFO) << "get:: locking for var_name= " << var_name;
     // boost::lock_guard<boost::mutex> guard(dspaces_write_mtx);
     // boost::lock_guard<boost::mutex> guard2(dspaces_read_mtx);
-    LOG(INFO) << "get_:: will get var_name= " << var_name;
+    // LOG(INFO) << "get_:: will get var_name= " << var_name;
     result = dspaces_get(var_name, ver, size,
                          ndim, lb_, ub_, data_);
-    LOG(INFO) << "get_:: got var_name= " << var_name;
+    // LOG(INFO) << "get_:: got var_name= " << var_name;
     // LOG(INFO) << "get:: dspaces_get done for var_name= " << var_name;
   }
   // boost::lock_guard<boost::mutex> guard(dspaces_read_mtx);
@@ -198,7 +197,7 @@ int DSpacesDriver::get(const char* var_name, unsigned int ver, int size,
     this->get_flag = true;
   }
   
-  LOG(INFO) << "get:: will wait for get__flag...";
+  // LOG(INFO) << "get:: will wait for get__flag...";
   struct timeval wait_start_time_val, current_time_val, diff_time_val;
   if (gettimeofday(&wait_start_time_val, NULL) ) {
     LOG(ERROR) << "get:: gettimeofday returned non-zero.";
@@ -224,7 +223,7 @@ int DSpacesDriver::get(const char* var_name, unsigned int ver, int size,
       flag = this->get__flag;
     }
   }
-  LOG(INFO) << "get:: done waiting for get__flag.";
+  // LOG(INFO) << "get:: done waiting for get__flag.";
   
   // dspaces_define_gdim(var_name, ndim, gdim_);
   // do_timing("get");
@@ -237,11 +236,11 @@ int DSpacesDriver::get(const char* var_name, unsigned int ver, int size,
   int result;
   {
     
-    LOG(INFO) << "get:: will get var_name= " << var_name;
+    // LOG(INFO) << "get:: will get var_name= " << var_name;
     // boost::lock_guard<boost::mutex> guard(dspaces_read_mtx);
     result = dspaces_get(var_name, ver, size,
                          ndim, lb_, ub_, data_);
-    LOG(INFO) << "get:: got var_name= " << var_name;
+    // LOG(INFO) << "get:: got var_name= " << var_name;
     // LOG(INFO) << "get:: dspaces_get done for var_name= " << var_name;
     
   }
@@ -276,34 +275,34 @@ int DSpacesDriver::sync_put_without_lock(const char* var_name, unsigned int ver,
 
 void DSpacesDriver::lock_on_write(const char* var_name)
 {
-  LOG(INFO) << "lock_on_write:: locking var_name= " << var_name;
+  // LOG(INFO) << "lock_on_write:: locking var_name= " << var_name;
   dspaces_lock_on_write(var_name, &mpi_comm);
-  LOG(INFO) << "lock_on_write:: locked var_name= " << var_name;
+  // LOG(INFO) << "lock_on_write:: locked var_name= " << var_name;
   refresh_last_lock_time();
 }
 
 
 void DSpacesDriver::unlock_on_write(const char* var_name)
 {
-  LOG(INFO) << "unlock_on_write:: unlocking var_name= " << var_name;
+  // LOG(INFO) << "unlock_on_write:: unlocking var_name= " << var_name;
   dspaces_unlock_on_write(var_name, &mpi_comm);
-  LOG(INFO) << "unlock_on_write:: unlocked var_name= " << var_name;
+  // LOG(INFO) << "unlock_on_write:: unlocked var_name= " << var_name;
   refresh_last_lock_time();
 }
 
 void DSpacesDriver::lock_on_read(const char* var_name)
 {
-  LOG(INFO) << "lock_on_read:: locking var_name= " << var_name;
+  // LOG(INFO) << "lock_on_read:: locking var_name= " << var_name;
   dspaces_lock_on_read(var_name, &mpi_comm);
-  LOG(INFO) << "lock_on_read:: locked var_name= " << var_name;
+  // LOG(INFO) << "lock_on_read:: locked var_name= " << var_name;
   refresh_last_lock_time();
 }
 
 void DSpacesDriver::unlock_on_read(const char* var_name)
 {
-  LOG(INFO) << "unlock_on_read:: unlocking var_name= " << var_name;
+  // LOG(INFO) << "unlock_on_read:: unlocking var_name= " << var_name;
   dspaces_unlock_on_read(var_name, &mpi_comm);
-  LOG(INFO) << "unlock_on_read:: unlocked var_name= " << var_name;
+  // LOG(INFO) << "unlock_on_read:: unlocked var_name= " << var_name;
   refresh_last_lock_time();
 }
 
@@ -365,18 +364,18 @@ void DSpacesDriver::do_timing(const char* called_from)
   timeval inter_lock_time_val;
   get_inter_lock_time(&inter_lock_time_val);
   
-  LOG(INFO) << called_from << "." << "do_timing:: inter_lock_time_val=" << inter_lock_time_val.tv_sec << "..." << inter_lock_time_val.tv_usec;
+  // LOG(INFO) << called_from << "." << "do_timing:: inter_lock_time_val=" << inter_lock_time_val.tv_sec << "..." << inter_lock_time_val.tv_usec;
   
   if (inter_lock_time_val.tv_sec > 0) {
     return;
   }
   
   time_t diff = INTER_LOCK_TIME - inter_lock_time_val.tv_usec;
-  LOG(INFO) << called_from << "." << "do_timing:: diff= " << diff << " usec.";
+  // LOG(INFO) << called_from << "." << "do_timing:: diff= " << diff << " usec.";
   if (diff > 0) {
-    LOG(INFO) << called_from << "." << "do_timing:: sleeping for " << diff << " usec.";
+    // LOG(INFO) << called_from << "." << "do_timing:: sleeping for " << diff << " usec.";
     usleep(diff);
-    LOG(INFO) << called_from << "." << "do_timing:: DONE sleeping for " << diff << " usec.";
+    // LOG(INFO) << called_from << "." << "do_timing:: DONE sleeping for " << diff << " usec.";
   }
 }
 
