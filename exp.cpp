@@ -20,51 +20,13 @@
 
 #include "dataspaces_wa.h"
 
-void debug_print(std::string key, unsigned int ver, int size, int ndim, 
-                uint64_t* gdim, uint64_t* lb, uint64_t* ub, int* data, size_t data_length)
-{
-  std::cout << "debug_print::";
-  std::cout << "key= " << key << "\n"
-            << "ver= " << ver << "\n"
-            << "size= " << size << "\n"
-            << "ndim= " << ndim << "\n";
-  std::cout << "gdim=";
-  for (int i=0; i<ndim; i++){
-    std::cout << "\t" << gdim[i] << ", ";
-  }
-  std::cout << "\n";
-  
-  std::cout << "lb=";
-  for (int i=0; i<ndim; i++){
-    std::cout << "\t" << lb[i] << ", ";
-  }
-  std::cout << "\n";
-  
-  std::cout << "ub=";
-  for (int i=0; i<ndim; i++){
-    std::cout << "\t" << ub[i] << ", ";
-  }
-  std::cout << "\n";
-  
-  // 
-  if (data == NULL) {
-    return;
-  }
-  std::cout << "data_length= " << data_length << "\n";
-  std::cout << "data=";
-  for (int i=0; i<data_length; i++){
-    std::cout << "\t" << data[i] << ", ";
-  }
-  std::cout << "\n";
-}
-
 size_t get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_)
 {
   uint64_t dim_length[ndim];
   
-  for(int i=0; i<ndim; i++) {
+  for(int i = 0; i < ndim; i++) {
     uint64_t lb = lb_[i];
-    if (lb < 0 || lb > gdim_[i]) {
+    if (lb < 0 || lb > gdim_[i] ) {
       LOG(ERROR) << "get_data_length:: lb= " << lb << " is not feasible!";
       return 0;
     }
@@ -77,44 +39,31 @@ size_t get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_)
   }
   
   size_t volume = 1;
-  for(int i=0; i<ndim; i++) {
+  for(int i = 0; i < ndim; i++)
     volume *= (size_t)dim_length[i];
-  }
   
   return volume;
 }
 
-template <typename T>
-void free_all(int num, ...)
-{
-  va_list arguments;                     // A place to store the list of arguments
-
-  va_start ( arguments, num );           // Initializing arguments to store all values after num
-  
-  for ( int x = 0; x < num; x++ )        // Loop until all numbers are added
-    va_arg ( arguments, T* );
-  
-  va_end ( arguments );                  // Cleans up the list
-}
-
-char* intf_to_ip(const char* intf)
+std::string intf_to_ip(std::string intf)
 {
   int fd;
   struct ifreq ifr;
+  // 
   fd = socket(AF_INET, SOCK_DGRAM, 0);
   // Type of address to retrieve - IPv4 IP address
   ifr.ifr_addr.sa_family = AF_INET;
   // Copy the interface name in the ifreq structure
-  std::memcpy(ifr.ifr_name , intf , IFNAMSIZ-1);
+  std::memcpy(ifr.ifr_name, intf.c_str(), IFNAMSIZ - 1);
   ioctl(fd, SIOCGIFADDR, &ifr);
   close(fd);
-  
-  return inet_ntoa(( (struct sockaddr_in *)&ifr.ifr_addr )->sin_addr);
+  // 
+  return boost::lexical_cast<std::string>(inet_ntoa( ( (struct sockaddr_in*)&ifr.ifr_addr)->sin_addr) );
 }
 
-std::map<char*, char*> parse_opts(int argc, char** argv)
+std::map<std::string, std::string> parse_opts(int argc, char** argv)
 {
-  std::map<char*, char*> opt_map;
+  std::map<std::string, std::string> opt_map;
   int c;
   
   static struct option long_options[] =
@@ -146,40 +95,40 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
     switch (c)
     {
       case 0:
-        opt_map[(char*)"type"] = optarg;
+        opt_map["type"] = optarg;
         break;
       case 1:
-        opt_map[(char*)"dht_id"] = optarg;
+        opt_map["dht_id"] = optarg;
         break;
       case 2:
-        opt_map[(char*)"num_dscnodes"] = optarg;
+        opt_map["num_dscnodes"] = optarg;
         break;
       case 3:
-        opt_map[(char*)"app_id"] = optarg;
+        opt_map["app_id"] = optarg;
         break;
       case 4:
-        opt_map[(char*)"dht_lintf"] = optarg;
+        opt_map["dht_lintf"] = optarg;
         break;
       case 5:
-        opt_map[(char*)"dht_lport"] = optarg;
+        opt_map["dht_lport"] = optarg;
         break;
       case 6:
-        opt_map[(char*)"ipeer_dht_laddr"] = optarg;
+        opt_map["ipeer_dht_laddr"] = optarg;
         break;
       case 7:
-        opt_map[(char*)"ipeer_dht_lport"] = optarg;
+        opt_map["ipeer_dht_lport"] = optarg;
         break;
       case 8:
-        opt_map[(char*)"trans_protocol"] = optarg;
+        opt_map["trans_protocol"] = optarg;
         break;
       case 9:
-        opt_map[(char*)"wa_lintf"] = optarg;
+        opt_map["wa_lintf"] = optarg;
         break;
       case 10:
-        opt_map[(char*)"gftp_lport"] = optarg;
+        opt_map["gftp_lport"] = optarg;
         break;
       case 11:
-        opt_map[(char*)"tmpfs_dir"] = optarg;
+        opt_map["tmpfs_dir"] = optarg;
         break;
         break;
       case 's':
@@ -191,15 +140,13 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
     }
   }
   if (optind < argc) {
-    std::cout << "non-option ARGV-elements: \n";
+    std::cout << "parse_opts:: Non-option ARGV-elements: \n";
     while (optind < argc)
       std::cout << "\t" << argv[optind++] << "\n";
   }
   // 
-  std::cout << "opt_map=\n";
-  for (std::map<char*, char*>::iterator it=opt_map.begin(); it!=opt_map.end(); ++it) {
-    std::cout << it->first << " => " << it->second << '\n';
-  }
+  std::cout << "parse_opts:: opt_map= \n" << patch_ds::map_to_str<>(opt_map);
+  
   return opt_map;
 }
 
@@ -230,7 +177,7 @@ void get_test(WADspacesDriver& wads_driver)
   // size_t data_length = patch::get_data_length(TEST_NDIM, gdim, lb, ub);
   // patch::debug_print(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_, data_length);
   
-  free_all<uint64_t>(3, gdim_, lb_, ub_);
+  patch_ds::free_all<uint64_t>(3, gdim_, lb_, ub_);
   free(data_);
 }
 
@@ -260,7 +207,7 @@ void put_test(std::string var_name, WADspacesDriver& wads_driver)
   }
   // patch::debug_print(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_, patch::get_data_length(TEST_NDIM, gdim_, lb_, ub_) );
   
-  free_all<uint64_t>(3, gdim_, lb_, ub_);
+  patch_ds::free_all<uint64_t>(3, gdim_, lb_, ub_);
   free(data_);
 }
 
@@ -269,19 +216,19 @@ int main(int argc , char **argv)
   std::string temp;
   google::InitGoogleLogging("exp");
   // 
-  std::map<char*, char*> opt_map = parse_opts(argc, argv);
+  std::map<std::string, std::string> opt_map = parse_opts(argc, argv);
   
   std::string wa_ib_lports[] = {"1234","1235","1236","1237"};
   std::list<std::string> wa_ib_lport_list(wa_ib_lports, wa_ib_lports + sizeof(wa_ib_lports) / sizeof(std::string) );
   
-  int num_dscnodes = boost::lexical_cast<int>(opt_map[(char*)"num_dscnodes"]);
-  int app_id = boost::lexical_cast<int>(opt_map[(char*)"app_id"]);
+  int num_dscnodes = boost::lexical_cast<int>(opt_map["num_dscnodes"] );
+  int app_id = boost::lexical_cast<int>(opt_map["app_id"] );
   char dht_laddr[100];
   char wa_laddr[100];
   
   TProfiler<std::string> tprofiler;
-  if (strcmp(opt_map[(char*)"type"], (char*)"put") == 0) {
-    WADspacesDriver wads_driver(app_id, num_dscnodes-1);
+  if (opt_map["type"].compare("put") == 0) {
+    WADspacesDriver wads_driver(app_id, num_dscnodes - 1);
     
     std::cout << "Enter for put_test...\n";
     getline(std::cin, temp);
@@ -293,8 +240,8 @@ int main(int argc , char **argv)
     std::cout << "Enter\n";
     getline(std::cin, temp);
   }
-  else if (strcmp(opt_map[(char*)"type"], (char*)"get") == 0) {
-    WADspacesDriver wads_driver(app_id, num_dscnodes-1);
+  else if (opt_map["type"].compare("get") == 0) {
+    WADspacesDriver wads_driver(app_id, num_dscnodes - 1);
     
     std::cout << "Enter for get_test...\n";
     getline(std::cin, temp);
@@ -306,25 +253,11 @@ int main(int argc , char **argv)
     std::cout << "Enter\n";
     getline(std::cin, temp);
   }
-  else if (strcmp(opt_map[(char*)"type"], (char*)"ri") == 0) {
-    char* dht_laddr_t = intf_to_ip(opt_map[(char*)"dht_lintf"]);
-    strcpy(dht_laddr, dht_laddr_t);
-    std::cout << "main:: dht_laddr= " << dht_laddr << "\n";
-    
-    char* wa_laddr_t = intf_to_ip(opt_map[(char*)"wa_lintf"]);
-    strcpy(wa_laddr, wa_laddr_t);
-    std::cout << "main:: wa_laddr= " << wa_laddr << "\n";
-    // 
-    if ( (!opt_map.count((char*)"ipeer_dht_laddr") ) || (strcmp(opt_map[(char*)"ipeer_dht_laddr"], (char*)"") == 0) ) {
-      opt_map[(char*)"ipeer_dht_laddr"] = NULL;
-      opt_map[(char*)"ipeer_dht_lport"] = (char*)"0";
+  else if (opt_map["type"].compare("ri") == 0) {
+    if (opt_map.count("ipeer_dht_laddr") == 0) {
+      opt_map["ipeer_dht_laddr"] = "";
+      opt_map["ipeer_dht_lport"] = "0";
     }
-    
-    std::string trans_protocol(opt_map[(char*)"trans_protocol"] );
-    std::string wa_laddr_str(wa_laddr);
-    std::string wa_lintf(opt_map[(char*)"wa_lintf"] );
-    std::string wa_gftp_lport(opt_map[(char*)"gftp_lport"] );
-    std::string tmpfs_dir(opt_map[(char*)"tmpfs_dir"] );
     
     size_t buffer_size = 2;
     char alphabet_[] = {'a', 'b'};
@@ -332,10 +265,11 @@ int main(int argc , char **argv)
     size_t context_size = 2;
     
     RIManager ri_manager(app_id, num_dscnodes-1, 
-                         opt_map[(char*)"dht_id"][0], dht_laddr, atoi(opt_map[(char*)"dht_lport"]), opt_map[(char*)"ipeer_dht_laddr"], atoi( (opt_map[(char*)"ipeer_dht_lport"]) ),
-                         trans_protocol, wa_laddr_str, wa_lintf, wa_gftp_lport, 
-                         tmpfs_dir, wa_ib_lport_list,
-                         true, buffer_size, alphabet_, alphabet_size, context_size );
+                         opt_map["dht_id"][0], intf_to_ip(opt_map["dht_lintf"] ), boost::lexical_cast<int>(opt_map["dht_lport"] ),
+                         opt_map["ipeer_dht_laddr"], boost::lexical_cast<int>(opt_map["ipeer_dht_lport"] ),
+                         opt_map["trans_protocol"], intf_to_ip(opt_map["wa_lintf"] ), opt_map["wa_lintf"], opt_map["gftp_lport"],
+                         opt_map["tmpfs_dir"], wa_ib_lport_list,
+                         true, buffer_size, alphabet_, alphabet_size, context_size);
     
     patch_ds::syncer<char> dummy_syncer;
     dummy_syncer.add_sync_point('d', 1);
@@ -345,7 +279,7 @@ int main(int argc , char **argv)
     getline(std::cin, temp);
   }
   else {
-    LOG(ERROR) << "main:: unknown type= " << opt_map[(char*)"type"];
+    LOG(ERROR) << "main:: unknown type= " << opt_map["type"];
   }
   
   std::cout << "main:: tprofiler= \n" << tprofiler.to_str();

@@ -30,9 +30,12 @@ IBVERBS_LIB = -L/usr/lib64 -libverbs
 # 
 DSPACESREL_DIR=$(DSPACESWA_DIR)/dspaces_rel
 
-OVERLAYNET_DIR = $(DSPACESREL_DIR)/overlaynet
-OVERLAYNET_ODIR = $(OVERLAYNET_DIR)/obj
-OVERLAYNET_OBJS = $(OVERLAYNET_ODIR)/dht_node.o $(OVERLAYNET_ODIR)/dht_server.o $(OVERLAYNET_ODIR)/dht_client.o $(OVERLAYNET_ODIR)/packet.o
+# OVERLAYNET_DIR = $(DSPACESREL_DIR)/overlaynet
+# OVERLAYNET_ODIR = $(OVERLAYNET_DIR)/obj
+# OVERLAYNET_OBJS = $(OVERLAYNET_ODIR)/dht_node.o $(OVERLAYNET_ODIR)/dht_server.o $(OVERLAYNET_ODIR)/dht_client.o $(OVERLAYNET_ODIR)/packet.o
+SDMCONTROL_DIR = $(DSPACESREL_DIR)/sdm_control
+SDMCONTROL_ODIR = $(SDMCONTROL_DIR)/obj
+SDMCONTROL_OBJS = $(SDMCONTROL_ODIR)/sdm_node.o $(SDMCONTROL_ODIR)/sdm_server.o $(SDMCONTROL_ODIR)/sdm_client.o $(SDMCONTROL_ODIR)/packet.o
 
 IBTRANS_DIR = $(DSPACESREL_DIR)/ib_trans
 IBTRANS_ODIR = $(IBTRANS_DIR)/obj
@@ -54,22 +57,22 @@ PROFILER_DIR = $(DSPACESREL_DIR)/profiler
 PROFILER_ODIR = $(PROFILER_DIR)/obj
 PROFILER_OBJS = $(PROFILER_ODIR)/profiler.o
 
-DSPACESREL_INC = -I$(DSPACESREL_DIR)/include -I$(OVERLAYNET_DIR)/include -I$(IBTRANS_DIR)/include -I$(GFTPTRANS_DIR)/include -I$(PREFETCH_DIR)/include -I$(PROFILER_DIR)/include
+DSPACESREL_INC = -I$(DSPACESREL_DIR)/include -I$(SDMCONTROL_DIR)/include -I$(IBTRANS_DIR)/include -I$(GFTPTRANS_DIR)/include -I$(PREFETCH_DIR)/include -I$(PROFILER_DIR)/include
 # 
 INC = $(DSPACES_INC) $(GLOG_INC) $(BOOST_INC) $(DSPACESREL_INC) $(GFTP_INC)
 LIB = $(DSPACES_LIB) $(GLOG_LIB) $(BOOST_LIB) $(IBVERBS_LIB) $(MPI_LIB) $(GFTP_LIB)
 
 ODIR = obj
-OBJS = $(ODIR)/ds_client.o $(ODIR)/ds_drive.o $(OVERLAYNET_OBJS) $(IBTRANS_OBJS) $(GFTPTRANS_OBJS) $(PREFETCH_OBJS) $(PROFILER_OBJS)
+OBJS = $(ODIR)/ds_client.o $(ODIR)/ds_drive.o $(SDMCONTROL_OBJS) $(IBTRANS_OBJS) $(GFTPTRANS_OBJS) $(PREFETCH_OBJS) $(PROFILER_OBJS)
 
-.PHONY: all lclean clean submake_ibtrans_dir submake_overlaynet_dir submake_gftptrans_dir
+.PHONY: all lclean clean submake_ibtrans_dir submake_sdmcontrol_dir submake_gftptrans_dir
 
 APPS := exp
 
-all: submake_overlaynet_dir submake_ibtrans_dir submake_gftptrans_dir submake_prefetch_dir submake_profiler_dir ${APPS}
+all: submake_sdmcontrol_dir submake_ibtrans_dir submake_gftptrans_dir submake_prefetch_dir submake_profiler_dir ${APPS}
 
-submake_overlaynet_dir:
-	make -C $(OVERLAYNET_DIR)
+submake_sdmcontrol_dir:
+	make -C $(SDMCONTROL_DIR)
 
 submake_ibtrans_dir:
 	make -C $(IBTRANS_DIR) 

@@ -55,26 +55,32 @@ class Commer {
     
     int add_peer(char peer_id, std::string peer_name, std::string peer_lip, int peer_lport);
     int rm_peer(char peer_id);
-    int send_to_all_peers(const Packet& p);
+    int send_to_all_peers(char except_id, const Packet& p);
     int send_to_peer(char peer_id, const Packet& p);
     int connect_send_to(std::string to_lip, int to_lport, const Packet& p);
 };
 
 /*******************************************  SDMNode  ********************************************/
 typedef boost::function<void(std::map<std::string, std::string>)> func_rimsg_recv_cb;
+typedef boost::function<void(boost::shared_ptr<Packet>)> func_sdm_cp_recv_cb;
 
 class SDMNode {
   private:
     char id;
+    std::string type; // For now can be only "m -- sdm_master" or "s -- sdm_slave"
     std::string lip, joinhost_lip;
     int lport, joinhost_lport;
     func_rimsg_recv_cb _rimsg_recv_cb;
+    func_sdm_cp_recv_cb _sdm_cp_recv_cb;
     // ImpRem: properties must be thread-safe
     Commer commer;
+    char sdm_master_id;
+    
   public:
-    SDMNode(char id, std::string lip, int lport,
+    SDMNode(char id, std::string type,
+            std::string lip, int lport,
             std::string joinhost_lip, int joinhost_lport,
-            func_rimsg_recv_cb _rimsg_recv_cb);
+            func_rimsg_recv_cb _rimsg_recv_cb, func_sdm_cp_recv_cb _sdm_cp_recv_cb = NULL);
     ~SDMNode();
     void close();
     std::string to_str();
@@ -85,16 +91,17 @@ class SDMNode {
     boost::shared_ptr<Packet> gen_join_reply(char peer_id, bool pos);
     boost::shared_ptr<Packet> gen_packet(PACKET_T packet_t, std::map<std::string, std::string> msg_map = std::map<std::string, std::string>() );
     void ping_peer(char peer_id);
-    // void test();
+
+    int send_msg_to_master(std::map<std::string, std::string> msg_map);
     int broadcast_msg(PACKET_T packet_t, std::map<std::string, std::string> msg_map);
+    int broadcast_msg_to_slaves(PACKET_T packet_t, std::map<std::string, std::string> msg_map);
     int send_msg(char to_id, PACKET_T packet_t, std::map<std::string, std::string> msg_map);
     
     void handle_recv(char* type__srlzed_msg_map);
-    void handle_join_req(const Packet& p);
-    void handle_join_reply(const Packet& p);
-    void handle_join_nack(const Packet& p);
-    void handle_ping(const Packet& p);
-    void handle_pong(const Packet& p);
+    void handle_join_req(std::map<std::string, std::string> msg_map);
+    void handle_join_reply(std::map<std::string, std::string> msg_map);
+    void handle_join_nack(std::map<std::string, std::string> msg_map);
+    void handle_ping(std::map<std::string, std::string> msg_map);
 };
 
 #endif //_SDM_NODE_H_

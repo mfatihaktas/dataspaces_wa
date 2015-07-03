@@ -6,25 +6,32 @@ JOINHOST_LIP="192.168.2.151"
 LPORT=6633
 
 if [ $1  = 's' ]; then
-  GLOG_logtostderr=1 ./exp --type=$1
-elif [ $1  = 'c' ]; then
-  GLOG_logtostderr=1 ./exp --type=$1
+  GLOG_logtostderr=1 ./exp --type="server"
+elif [ $1  = 'cl' ]; then
+  GLOG_logtostderr=1 ./exp --type="client"
 elif [ $1  = 'n' ]; then
   if [ $2  = 0 ]; then
-    GLOG_logtostderr=1 ./exp --type=$1 --id=$2 --lintf=$LINTF --lport=$((LPORT+$2))
+    GLOG_logtostderr=1 ./exp --type="node" --id=$2 --node_type="m" --lintf=$LINTF --lport=$((LPORT+$2))
   else
-    GLOG_logtostderr=1 ./exp --type=$1 --id=$2 --lintf=$LINTF --lport=$((LPORT+$2)) --joinhost_lip=$JOINHOST_LIP --joinhost_lport=$LPORT
+    GLOG_logtostderr=1 ./exp --type="node" --id=$2 --node_type="s" --lintf=$LINTF --lport=$((LPORT+$2)) \
+                             --joinhost_lip=$JOINHOST_LIP --joinhost_lport=$LPORT
   fi
 elif [ $1  = 'dn' ]; then
   export GLOG_logtostderr=1
   if [ $2  = 0 ]; then
-    gdb --args ./exp --type="n" --id=$2 --lintf=$LINTF --lport=$((LPORT+$2))
+    gdb --args ./exp --type="node" --id=$2 --node_type="m" --lintf=$LINTF --lport=$((LPORT+$2))
   else
-    gdb --args ./exp --type="n" --id=$2 --lintf=$LINTF --lport=$((LPORT+$2)) --joinhost_lip=$JOINHOST_LIP --joinhost_lport=$LPORT
+    gdb --args ./exp --type="node" --id=$2 --node_type="s" --lintf=$LINTF --lport=$((LPORT+$2)) \
+                     --joinhost_lip=$JOINHOST_LIP --joinhost_lport=$LPORT
   fi
-elif [ $1  = 'de' ]; then
-  export GLOG_logtostderr=1
-  gdb --args ./exp
+elif [ $1  = 'c' ]; then
+  if [ $2  = 0 ]; then
+    GLOG_logtostderr=1 ./exp --type="control" --id=$2 --node_type="m" --lintf=$LINTF --lport=$((LPORT+$2)) \
+          #--joinhost_lip=$JOINHOST_LIP --joinhost_lport=$LPORT
+  else
+    GLOG_logtostderr=1 ./exp --type="control" --id=$2 --node_type="s" --lintf=$LINTF --lport=$((LPORT+$2)) \
+                             --joinhost_lip=$JOINHOST_LIP --joinhost_lport=$LPORT
+  fi
 elif [ $1  = 'init' ]; then
   if [ $2  = 'd' ]; then
     # ENV VARIABLES FOR MAKE

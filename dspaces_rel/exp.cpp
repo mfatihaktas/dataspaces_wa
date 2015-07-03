@@ -20,7 +20,7 @@
 #include <boost/lexical_cast.hpp>
 #include <glog/logging.h>
 
-char* intf_to_ip(const char* intf)
+std::string intf_to_ip(std::string intf)
 {
   int fd;
   struct ifreq ifr;
@@ -29,16 +29,16 @@ char* intf_to_ip(const char* intf)
   // Type of address to retrieve - IPv4 IP address
   ifr.ifr_addr.sa_family = AF_INET;
   // Copy the interface name in the ifreq structure
-  std::memcpy(ifr.ifr_name , intf , IFNAMSIZ-1);
+  std::memcpy(ifr.ifr_name, intf.c_str(), IFNAMSIZ - 1);
   ioctl(fd, SIOCGIFADDR, &ifr);
   close(fd);
   // 
-  return inet_ntoa(( (struct sockaddr_in *)&ifr.ifr_addr )->sin_addr);
+  return boost::lexical_cast<std::string>(inet_ntoa( ( (struct sockaddr_in*)&ifr.ifr_addr)->sin_addr) );
 }
 
-std::map<char*, char*> parse_opts(int argc, char** argv)
+std::map<std::string, std::string> parse_opts(int argc, char** argv)
 {
-  std::map<char*, char*> opt_map;
+  std::map<std::string, std::string> opt_map;
   // 
   int c;
   
@@ -53,10 +53,9 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
     {"ipeer_dht_laddr", optional_argument, NULL, 6},
     {"ipeer_dht_lport", optional_argument, NULL, 7},
     {"trans_protocol", optional_argument, NULL, 8},
-    {"ib_lintf", optional_argument, NULL, 9},
-    {"gftp_lintf", optional_argument, NULL, 10},
-    {"gftp_lport", optional_argument, NULL, 11},
-    {"tmpfs_dir", optional_argument, NULL, 12},
+    {"wa_lintf", optional_argument, NULL, 9},
+    {"wa_lport", optional_argument, NULL, 10},
+    {"tmpfs_dir", optional_argument, NULL, 11},
     {0, 0, 0, 0}
   };
   
@@ -71,43 +70,40 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
     switch (c)
     {
       case 0:
-        opt_map[(char*)"type"] = optarg;
+        opt_map["type"] = optarg;
         break;
       case 1:
-        opt_map[(char*)"dht_id"] = optarg;
+        opt_map["dht_id"] = optarg;
         break;
       case 2:
-        opt_map[(char*)"num_dscnodes"] = optarg;
+        opt_map["num_dscnodes"] = optarg;
         break;
       case 3:
-        opt_map[(char*)"app_id"] = optarg;
+        opt_map["app_id"] = optarg;
         break;
       case 4:
-        opt_map[(char*)"dht_lintf"] = optarg;
+        opt_map["dht_lintf"] = optarg;
         break;
       case 5:
-        opt_map[(char*)"dht_lport"] = optarg;
+        opt_map["dht_lport"] = optarg;
         break;
       case 6:
-        opt_map[(char*)"ipeer_dht_laddr"] = optarg;
+        opt_map["ipeer_dht_laddr"] = optarg;
         break;
       case 7:
-        opt_map[(char*)"ipeer_dht_lport"] = optarg;
+        opt_map["ipeer_dht_lport"] = optarg;
         break;
       case 8:
-        opt_map[(char*)"trans_protocol"] = optarg;
+        opt_map["trans_protocol"] = optarg;
         break;
       case 9:
-        opt_map[(char*)"ib_lintf"] = optarg;
-        break;
-      case 10:
-        opt_map[(char*)"gftp_lintf"] = optarg;
+        opt_map["wa_lintf"] = optarg;
         break;
       case 11:
-        opt_map[(char*)"gftp_lport"] = optarg;
+        opt_map["wa_lport"] = optarg;
         break;
       case 12:
-        opt_map[(char*)"tmpfs_dir"] = optarg;
+        opt_map["tmpfs_dir"] = optarg;
         break;
       case 's':
         break;
@@ -123,9 +119,7 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
       std::cout << argv[optind++] << "\n";
   }
   // 
-  std::cout << "parse_opts:: opt_map= \n";
-  for (std::map<char*, char*>::iterator it=opt_map.begin(); it!=opt_map.end(); ++it)
-    std::cout << it->first << " : " << it->second << "\n";
+  std::cout << "parse_opts:: opt_map= \n" << patch_ds::map_to_str<>(opt_map);
   
   return opt_map;
 }
@@ -135,49 +129,42 @@ int main(int argc , char **argv)
   std::string temp;
   google::InitGoogleLogging("exp");
   // 
-  std::map<char*, char*> opt_map = parse_opts(argc, argv);
+  std::map<std::string, std::string> opt_map = parse_opts(argc, argv);
   
-  int num_dscnodes = boost::lexical_cast<int>(opt_map[(char*)"num_dscnodes"] );
-  int app_id = boost::lexical_cast<int>(opt_map[(char*)"app_id"] );
-  
-  if (strcmp(opt_map[(char*)"type"], (char*)"put") == 0) {
+  if (opt_map["type"].compare("put") == 0) {
     // 
   }
-  else if (strcmp(opt_map[(char*)"type"], (char*)"get") == 0) {
+  else if (opt_map["type"].compare("get") == 0) {
     // 
   }
-  else if (strcmp(opt_map[(char*)"type"], (char*)"ri") == 0) {
-    if ( (!opt_map.count((char*)"ipeer_dht_laddr") ) || (strcmp(opt_map[(char*)"ipeer_dht_laddr"], (char*)"") == 0) ) {
-      opt_map[(char*)"ipeer_dht_laddr"] = NULL;
-      opt_map[(char*)"ipeer_dht_lport"] = (char*)"0";
+  else if (opt_map["type"].compare("ri") == 0) {
+    if (opt_map.count("ipeer_dht_laddr") == 0) {
+      opt_map["ipeer_dht_laddr"] = "";
+      opt_map["ipeer_dht_lport"] = "0";
     }
     
     std::string wa_ib_dht_lports[] = {"1234","1235","1236","1237"};
     std::list<std::string> wa_ib_lport_list(wa_ib_dht_lports, wa_ib_dht_lports + sizeof(wa_ib_dht_lports) / sizeof(std::string) );
     
-    std::string trans_protocol(opt_map[(char*)"trans_protocol"] );
-    std::string wa_laddr(intf_to_ip(opt_map[(char*)"ib_lintf"] ) );
-    std::string wa_gftp_lintf(opt_map[(char*)"gftp_lintf"] );
-    std::string wa_gftp_lport(opt_map[(char*)"gftp_lport"] );
-    std::string tmpfs_dir(opt_map[(char*)"tmpfs_dir"] );
     
     size_t buffer_size = 2;
     char alphabet_[] = {'a', 'b'};
     size_t alphabet_size = sizeof(alphabet_)/sizeof(*alphabet_);
     size_t context_size = 2;
     
-    RIManager ri_manager(app_id, num_dscnodes - 1,
-                         opt_map[(char*)"dht_id"][0], intf_to_ip(opt_map[(char*)"dht_lintf"]), atoi(opt_map[(char*)"dht_lport"]), opt_map[(char*)"ipeer_dht_laddr"], atoi(opt_map[(char*)"ipeer_dht_lport"]),
-                         trans_protocol, wa_laddr, wa_gftp_lintf, wa_gftp_lport, 
-                         tmpfs_dir, wa_ib_lport_list,
-                         true, buffer_size, alphabet_, alphabet_size, context_size );
+    RIManager ri_manager(boost::lexical_cast<int>(opt_map["app_id"] ), boost::lexical_cast<int>(opt_map["num_dscnodes"] ) - 1,
+                         opt_map["dht_id"].c_str()[0], intf_to_ip(opt_map["dht_lintf"] ), boost::lexical_cast<int>(opt_map["dht_lport"] ),
+                         opt_map["ipeer_dht_laddr"], boost::lexical_cast<int>(opt_map["ipeer_dht_lport"] ),
+                         opt_map["trans_protocol"], intf_to_ip(opt_map["wa_lintf"] ), opt_map["wa_lintf"], opt_map["wa_lport"],
+                         opt_map["tmpfs_dir"], wa_ib_lport_list,
+                         true, buffer_size, alphabet_, alphabet_size, context_size);
     // usleep(1*1000*1000);
     
     std::cout << "Enter\n";
     getline(std::cin, temp);
   }
   else {
-    LOG(ERROR) << "main:: unknown type= " << opt_map[(char*)"type"];
+    LOG(ERROR) << "main:: unknown type= " << opt_map["type"];
   }
   
   return 0;

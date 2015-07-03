@@ -1,6 +1,4 @@
-#include "sdm_server.h"
-#include "sdm_client.h"
-#include "sdm_node.h"
+#include "sdm_control.h"
 
 // for intf_to_ip
 #include <cstring>
@@ -47,10 +45,11 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
   static struct option long_options[] = {
     {"type", optional_argument, NULL, 0},
     {"id", optional_argument, NULL, 1},
-    {"lintf", optional_argument, NULL, 2},
-    {"lport", optional_argument, NULL, 3},
-    {"joinhost_lip", optional_argument, NULL, 4},
-    {"joinhost_lport", optional_argument, NULL, 5},
+    {"node_type", optional_argument, NULL, 2},
+    {"lintf", optional_argument, NULL, 3},
+    {"lport", optional_argument, NULL, 4},
+    {"joinhost_lip", optional_argument, NULL, 5},
+    {"joinhost_lport", optional_argument, NULL, 6},
     {0, 0, 0, 0}
   };
   
@@ -71,15 +70,18 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
         opt_map["id"] = optarg;
         break;
       case 2:
-        opt_map["lintf"] = optarg;
+        opt_map["node_type"] = optarg;
         break;
       case 3:
-        opt_map["lport"] = optarg;
+        opt_map["lintf"] = optarg;
         break;
       case 4:
-        opt_map["joinhost_lip"] = optarg;
+        opt_map["lport"] = optarg;
         break;
       case 5:
+        opt_map["joinhost_lip"] = optarg;
+        break;
+      case 6:
         opt_map["joinhost_lport"] = optarg;
         break;
       case '?':
@@ -106,9 +108,14 @@ void handle_char_recv(char* msg_)
   LOG(INFO) << "handle_char_recv:: msg_= " << msg_;
 }
 
-void handle_map_recv(std::map<std::string, std::string> msg_map)
+void handle_rimsg_recv(std::map<std::string, std::string> msg_map)
 {
-  LOG(INFO) << "handle_map_recv:: msg_map= \n" << patch_sdm::map_to_str<std::string, std::string>(msg_map);
+  LOG(INFO) << "handle_rimsg_recv:: msg_map= \n" << patch_sdm::map_to_str<std::string, std::string>(msg_map);
+}
+
+void handle_cp_recv(boost::shared_ptr<Packet> p_)
+{
+  LOG(INFO) << "handle_cp_recv:: p= \n" << p_->to_str();
 }
 
 int main(int argc, char **argv)
@@ -118,16 +125,21 @@ int main(int argc, char **argv)
   // 
   std::map<std::string, std::string> opt_map = parse_opts(argc, argv);
   
+  if (opt_map.count("joinhost_lip") == 0) {
+    opt_map["joinhost_lip"] = "";
+    opt_map["joinhost_lport"] = "0";
+  }
+  
   std::string s_lip = "192.168.2.151";
   int s_lport = 6633;
   
-  if (opt_map["type"].compare("s") == 0) {
+  if (opt_map["type"].compare("server") == 0) {
     SDMServer sdm_server("sdm_server", s_lip, s_lport, boost::bind(handle_char_recv, _1) );
     // 
     std::cout << "Enter \n";
     getline(std::cin, temp);
   }
-  else if (opt_map["type"].compare("c") == 0) {
+  else if (opt_map["type"].compare("client") == 0) {
     SDMClient sdm_client("sdm_client", s_lip, s_lport);
     sdm_client.connect();
     
@@ -137,21 +149,32 @@ int main(int argc, char **argv)
     std::cout << "Enter \n";
     getline(std::cin, temp);
   }
-  else if (opt_map["type"].compare("n") == 0) {
-    std::string joinhost_lip;
-    int joinhost_lport;
-    if (opt_map.count("joinhost_lip") == 0)
-      joinhost_lip = "";
-    else {
-      joinhost_lip = opt_map["joinhost_lip"];
-      joinhost_lport = boost::lexical_cast<int>(opt_map["joinhost_lport"] );
-    }
-    
-    SDMNode sdm_node(opt_map["id"].c_str()[0], intf_to_ip(opt_map["lintf"] ), boost::lexical_cast<int>(opt_map["lport"] ),
-                     joinhost_lip, joinhost_lport, boost::bind(&handle_map_recv, _1) );
+  else if (opt_map["type"].compare("node") == 0) {
+    SDMNode sdm_node(opt_map["id"].c_str()[0], opt_map["node_type"],
+                     intf_to_ip(opt_map["lintf"] ), boost::lexical_cast<int>(opt_map["lport"] ),
+                     opt_map["joinhost_lip"], boost::lexical_cast<int>(opt_map["joinhost_lport"] ),
+                     boost::bind(&handle_rimsg_recv, _1), boost::bind(&handle_cp_recv, _1) );
   
     std::cout << "Enter \n";
     getline(std::cin, temp);
+  }
+  else if (opt_map["type"].compare("control") == 0) {
+    if (opt_map["node_type"].compare("m") == 0) {
+      SimpleMaster master(opt_map["id"].c_str()[0], "m",
+                          intf_to_ip(opt_map["lintf"] ), boost::lexical_cast<int>(opt_map["lport"] ),
+                          opt_map["joinhost_lip"], boost::lexical_cast<int>(opt_map["joinhost_lport"] ),
+                          boost::bind(&handle_rimsg_recv, _1) );
+      std::cout << "Enter \n";
+      getline(std::cin, temp);
+    }
+    else if (opt_map["node_type"].compare("s") == 0) {
+      SimpleSlave slave(opt_map["id"].c_str()[0], "s",
+                        intf_to_ip(opt_map["lintf"] ), boost::lexical_cast<int>(opt_map["lport"] ),
+                        opt_map["joinhost_lip"], boost::lexical_cast<int>(opt_map["joinhost_lport"] ),
+                        boost::bind(&handle_rimsg_recv, _1) );
+      std::cout << "Enter \n";
+      getline(std::cin, temp);
+    }
   }
   else {
     LOG(ERROR) << "main:: unknown type= " << opt_map["type"];

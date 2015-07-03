@@ -806,20 +806,17 @@ size_t RFPManager::get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uin
 
 /*******************************************  RIManager  ******************************************/
 RIManager::RIManager(int app_id, int num_cnodes,
-                     char id, char* dht_lip, int dht_lport, char* ipeer_dht_lip, int ipeer_dht_lport,
+                     char id, std::string dht_lip, int dht_lport, std::string ipeer_dht_lip, int ipeer_dht_lport,
                      std::string wa_trans_protocol, std::string wa_laddr, std::string wa_gftp_lintf, std::string wa_gftp_lport, 
                      std::string tmpfs_dir, std::list<std::string> wa_ib_lport_list,
                      bool w_prefetch, size_t buffer_size, char* alphabet_, size_t alphabet_size, size_t context_size)
-: app_id(app_id),
-  num_cnodes(num_cnodes),
+: app_id(app_id), num_cnodes(num_cnodes),
   id(id),
-  wa_trans_protocol(wa_trans_protocol),
-  wa_gftp_lintf(wa_gftp_lintf),
-  wa_laddr(wa_laddr),
-  wa_gftp_lport(wa_gftp_lport),
+  wa_trans_protocol(wa_trans_protocol), wa_laddr(wa_laddr), wa_gftp_lintf(wa_gftp_lintf), wa_gftp_lport(wa_gftp_lport),
   tmpfs_dir(tmpfs_dir),
-  dht_node_(new DHTNode(id, boost::bind(&RIManager::handle_wamsg, this, _1),
-                        dht_lip, dht_lport, ipeer_dht_lip, ipeer_dht_lport) ),
+  sdm_node_(new SDMNode(id, dht_lip, dht_lport,
+                        ipeer_dht_lip, ipeer_dht_lport, 
+                        boost::bind(&RIManager::handle_rimsg, this, _1), boost::bind(&RIManager::handle_rcmsg, this, _1) ) ),
   ds_driver_(new DSpacesDriver(app_id, num_cnodes) ),
   bc_server_(new BCServer(app_id, num_cnodes, APP_RIMANAGER_MAX_MSG_SIZE, "req_app_", 
                           boost::bind(&RIManager::handle_app_req, this, _1),
@@ -839,24 +836,24 @@ RIManager::RIManager(int app_id, int num_cnodes,
 
 RIManager::~RIManager()
 {
-  // dht_node_->close();
+  // sdm_node_->close();
   // 
   LOG(INFO) << "RIManager:: destructed.";
 }
 
 void RIManager::close()
 {
-  dht_node_->close();
+  sdm_node_->close();
   ds_driver_->close();
   
   rq_syncer.close();
   rp_syncer.close();
   handle_rp_syncer.close();
-  b_get_syncer.close();
+  bget_syncer.close();
   rf_wa_get_syncer.close();
   rp_wa_get_syncer.close();
   being_fetched_syncer.close();
-  gftpb_ping_syncer.close();
+  gftp_bping_syncer.close();
   // 
   signals.async_wait(boost::bind(&RIManager::close, this) );
   LOG(INFO) << "close:: closed.";
@@ -871,7 +868,7 @@ std::string RIManager::to_str()
   ss << "\t wa_trans_protocol= " << wa_trans_protocol << "\n";
   ss << "\t wa_laddr= " << wa_laddr << "\n";
   ss << "\t wa_gftp_lport= " << wa_gftp_lport << "\n";
-  ss << "\t dht_node= \n" << dht_node_->to_str() << "\n";
+  ss << "\t sdm_node= \n" << sdm_node_->to_str() << "\n";
   
   return ss.str();
 }
@@ -882,10 +879,10 @@ int RIManager::bcast_rq_table()
   std::map<std::string, std::string> rq_table_map = rq_table.to_unmarked_str_str_map();
   rq_table.mark_all();
   
-  rq_table_map["type"] = REMOTE_RQTABLE;
+  rq_table_map["type"] = RI_RQTABLE;
   rq_table_map["id"] = id;
   
-  return broadcast_msg(RIMSG, rq_table_map);
+  return sdm_node_->broadcast_msg(SDM_RIMSG, rq_table_map);
 }
 
 // ----------------------------------------  handle app_req  ------------------------------------ //
@@ -940,9 +937,9 @@ void RIManager::handle_get(bool blocking, int app_id, std::map<std::string, std:
     else {
       if (blocking) {
         key_ver_pair kv = std::make_pair(key, ver);
-        b_get_syncer.add_sync_point(kv, 1);
-        b_get_syncer.wait(kv);
-        b_get_syncer.del_sync_point(kv);
+        bget_syncer.add_sync_point(kv, 1);
+        bget_syncer.wait(kv);
+        bget_syncer.del_sync_point(kv);
         
         ds_id = this->id;
       }
@@ -1006,7 +1003,7 @@ int RIManager::remote_get(char ds_id, std::map<std::string, std::string> r_get_m
   }
   
   key_ver_pair kv = std::make_pair(key, ver);
-  remote_get_time_profiler.add_event(kv, ("<" + key + ", " + boost::lexical_cast<std::string>(ver) + ">") );
+  rget_time_profiler.add_event(kv, ("<" + key + ", " + boost::lexical_cast<std::string>(ver) + ">") );
   key_ver_being_fetched_vector.push_back(kv);
   
   if (remote_fetch(ds_id, r_get_map) ) {
@@ -1017,8 +1014,8 @@ int RIManager::remote_get(char ds_id, std::map<std::string, std::string> r_get_m
   
   key_ver_being_fetched_vector.del(kv);
   being_fetched_syncer.notify(kv);
-  remote_get_time_profiler.end_event(kv);
-  LOG(INFO) << "remote_get:: remote_get_time_profiler= \n" << remote_get_time_profiler.to_str();
+  rget_time_profiler.end_event(kv);
+  LOG(INFO) << "remote_get:: rget_time_profiler= \n" << rget_time_profiler.to_str();
   // 
   // patch_ds::free_all<uint64_t*>(3, gdim_, lb_, ub_);
   LOG(INFO) << "remote_get:: done for <key= " << r_get_map["key"] << ", ver= " << r_get_map["ver"] << ">.";
@@ -1134,34 +1131,24 @@ int RIManager::remote_query(bool subscribe, std::string key, unsigned int ver)
   
   std::map<std::string, std::string> r_q_map;
   if (subscribe)
-    r_q_map["type"] = REMOTE_BLOCKING_QUERY;
+    r_q_map["type"] = RI_RBQUERY;
   else
-    r_q_map["type"] = REMOTE_QUERY;
+    r_q_map["type"] = RI_RQUERY;
   r_q_map["key"] = key;
   r_q_map["ver"] = boost::lexical_cast<std::string>(ver);
   
-  if (broadcast_msg(RIMSG, r_q_map) ) {
-    LOG(ERROR) << "remote_query:: broadcast_msg failed!";
+  if (sdm_node_->broadcast_msg(SDM_RIMSG, r_q_map) ) {
+    LOG(ERROR) << "remote_query:: sdm_node_->broadcast_msg failed!";
     return 1;
   }
   
   key_ver_pair kv = std::make_pair(key, ver);
-  rq_syncer.add_sync_point(kv, dht_node_->get_num_peers() );
+  rq_syncer.add_sync_point(kv, sdm_node_->get_num_peers() );
   rq_syncer.wait(kv);
   rq_syncer.del_sync_point(kv);
   
   LOG(INFO) << "remote_query:: done.";
   return 0;
-}
-
-int RIManager::broadcast_msg(char msg_type, std::map<std::string, std::string> msg_map)
-{
-  return dht_node_->broadcast_msg(msg_type, msg_map);
-}
-
-int RIManager::send_msg(char ds_id, char msg_type, std::map<std::string, std::string> msg_map)
-{
-  return dht_node_->send_msg(ds_id, msg_type, msg_map);
 }
 
 int RIManager::remote_subscribe(std::string key, unsigned int ver)
@@ -1173,8 +1160,8 @@ int RIManager::remote_subscribe(std::string key, unsigned int ver)
   r_subs_map["key"] = key;
   r_subs_map["ver"] = boost::lexical_cast<std::string>(ver);
   
-  if (broadcast_msg(RIMSG, r_subs_map) ){
-    LOG(ERROR) << "remote_subscribe:: broadcast_msg failed!";
+  if (sdm_node_->broadcast_msg(SDM_RIMSG, r_subs_map) ){
+    LOG(ERROR) << "remote_subscribe:: sdm_node_->broadcast_msg failed!";
   }
   // 
   LOG(INFO) << "remote_subscribe:: done.";
@@ -1192,9 +1179,9 @@ int RIManager::remote_fetch(char ds_id, std::map<std::string, std::string> r_fet
   if (this->wa_trans_protocol.compare(INFINIBAND) == 0)
     boost::thread t(&RIManager::handle_wa_get, this, "remote_fetch", r_fetch_map );
   
-  r_fetch_map["type"] = REMOTE_FETCH;
-  if (send_msg(ds_id, RIMSG, r_fetch_map) ) {
-    LOG(ERROR) << "remote_fetch:: send_msg to to_id= " << ds_id << " failed!";
+  r_fetch_map["type"] = RI_RFETCH;
+  if (sdm_node_->send_msg(ds_id, SDM_RIMSG, r_fetch_map) ) {
+    LOG(ERROR) << "remote_fetch:: sdm_node_->send_msg to to_id= " << ds_id << " failed!";
     return 1;
   }
   // TODO: sync will not have any affect for gridftp case since wa_get will return immediately
@@ -1242,7 +1229,7 @@ int RIManager::remote_place(std::string key, unsigned int ver, char to_id)
   
   // patch_ds::debug_print(key, ver, size, ndim, gdim_, lb_, ub_, NULL, 0);
   std::map<std::string, std::string> r_place_map;
-  r_place_map["type"] = REMOTE_PLACE;
+  r_place_map["type"] = RI_RPLACE;
   r_place_map["id"] = id;
   if (imsg_coder.encode_msg_map(r_place_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_) ) {
     LOG(ERROR) << "remote_place:: encode_msg_map failed!";
@@ -1250,8 +1237,8 @@ int RIManager::remote_place(std::string key, unsigned int ver, char to_id)
   }
   
   if (this->wa_trans_protocol.compare(INFINIBAND) == 0) {
-    if (send_msg(to_id, RIMSG, r_place_map) ) {
-      LOG(ERROR) << "remote_place:: send_msg to to_id= " << to_id << " failed!";
+    if (sdm_node_->send_msg(to_id, SDM_RIMSG, r_place_map) ) {
+      LOG(ERROR) << "remote_place:: sdm_node_->send_msg to to_id= " << to_id << " failed!";
       patch_ds::free_all<uint64_t*>(3, gdim_, lb_, ub_);
       return 1;
     }
@@ -1271,7 +1258,7 @@ int RIManager::remote_place(std::string key, unsigned int ver, char to_id)
   }
   else if (this->wa_trans_protocol.compare(GRIDFTP) == 0) {
     if (!gftpb_table.contains(to_id) ) {
-      gftpb_ping(to_id);
+      gftp_bping(to_id);
     }
     std::string laddr, lport, tmpfs_dir;
     if (gftpb_table.get(to_id, laddr, lport, tmpfs_dir) ) {
@@ -1284,8 +1271,8 @@ int RIManager::remote_place(std::string key, unsigned int ver, char to_id)
       patch_ds::free_all<uint64_t*>(3, gdim_, lb_, ub_);
       return 1;
     }
-    if (send_msg(to_id, RIMSG, r_place_map) ) {
-      LOG(ERROR) << "remote_place:: send_msg to to_id= " << to_id << " failed!";
+    if (sdm_node_->send_msg(to_id, SDM_RIMSG, r_place_map) ) {
+      LOG(ERROR) << "remote_place:: sdm_node_->send_msg to to_id= " << to_id << " failed!";
       patch_ds::free_all<uint64_t*>(3, gdim_, lb_, ub_);
       return 1;
     }
@@ -1319,74 +1306,74 @@ void RIManager::handle_wa_get(std::string called_from, std::map<std::string, std
   
   if (called_from.compare("remote_fetch") == 0)
     rf_wa_get_syncer.notify(std::make_pair(key, ver) );
-  else if (called_from.compare("handle_r_place") == 0)
+  else if (called_from.compare("handle_rplace") == 0)
     rp_wa_get_syncer.notify(std::make_pair(key, ver) );
   
   patch_ds::free_all<uint64_t*>(3, gdim_, lb_, ub_);
 }
 
-int RIManager::gftpb_ping(char to_id)
+int RIManager::gftp_bping(char to_id)
 {
-  LOG(INFO) << "gftpb_ping:: started for to_id= " << to_id;
+  LOG(INFO) << "gftp_bping:: started for to_id= " << to_id;
   
-  std::map<std::string, std::string> gftpb_ping_map;
-  gftpb_ping_map["type"] = GFTPB_PING;
-  gftpb_ping_map["id"] = this->id;
+  std::map<std::string, std::string> gftp_bping_map;
+  gftp_bping_map["type"] = RI_GFTP_BPING;
+  gftp_bping_map["id"] = this->id;
   
-  if (send_msg(to_id, RIMSG, gftpb_ping_map) ) {
-    LOG(ERROR) << "gftpb_ping:: send_msg to to_id= " << to_id << " failed!";
+  if (sdm_node_->send_msg(to_id, SDM_RIMSG, gftp_bping_map) ) {
+    LOG(ERROR) << "gftp_bping:: sdm_node_->send_msg to to_id= " << to_id << " failed!";
     return 1;
   }
-  gftpb_ping_syncer.add_sync_point(to_id, 1 );
-  gftpb_ping_syncer.wait(to_id);
-  gftpb_ping_syncer.del_sync_point(to_id);
+  gftp_bping_syncer.add_sync_point(to_id, 1 );
+  gftp_bping_syncer.wait(to_id);
+  gftp_bping_syncer.del_sync_point(to_id);
   // 
-  LOG(INFO) << "gftpb_ping:: done.";
+  LOG(INFO) << "gftp_bping:: done.";
   return 0;
 }
 
 // ------------------------------------  handle wamsg  ------------------------------------------ //
-void RIManager::handle_wamsg(std::map<std::string, std::string> wamsg_map)
+void RIManager::handle_rimsg(std::map<std::string, std::string> rimsg_map)
 {
-  std::string type = wamsg_map["type"];
+  std::string type = rimsg_map["type"];
   
-  if (type.compare(REMOTE_QUERY) == 0)
-    handle_r_query(false, wamsg_map);
-  else if (type.compare(REMOTE_BLOCKING_QUERY) == 0)
-    handle_r_query(true, wamsg_map);
-  else if (type.compare(REMOTE_QUERY_REPLY) == 0)
-    handle_rq_reply(wamsg_map);
-  else if (type.compare(REMOTE_FETCH) == 0)
-    handle_r_fetch(wamsg_map);
-  else if (type.compare(REMOTE_RQTABLE) == 0)
-    handle_r_rqtable(wamsg_map);
-  else if (type.compare(REMOTE_PLACE) == 0)
-    handle_r_place(wamsg_map);
-  else if (type.compare(REMOTE_PLACE_REPLY) == 0)
-    handle_rp_reply(wamsg_map);
+  if (type.compare(RI_RQUERY) == 0)
+    handle_rquery(false, rimsg_map);
+  else if (type.compare(RI_RBQUERY) == 0)
+    handle_rquery(true, rimsg_map);
+  else if (type.compare(RI_RQUERY_REPLY) == 0)
+    handle_rq_reply(rimsg_map);
+  else if (type.compare(RI_RFETCH) == 0)
+    handle_rfetch(rimsg_map);
+  else if (type.compare(RI_RQTABLE) == 0)
+    handle_rqtable(rimsg_map);
+  else if (type.compare(RI_RPLACE) == 0)
+    handle_rplace(rimsg_map);
+  else if (type.compare(RI_RPLACE_REPLY) == 0)
+    handle_rp_reply(rimsg_map);
 #ifdef _GRIDFTP_
-  else if (type.compare(GFTPPUT_DONE) == 0)
-    handle_gftpput_done(wamsg_map);
-  else if (type.compare(GFTPB_PING) == 0)
-    handle_gftpb_ping(wamsg_map);
-  else if (type.compare(GFTPB_PONG) == 0)
-    handle_gftpb_pong(wamsg_map);
+  else if (type.compare(RI_GFTPPUT_DONE) == 0)
+    handle_gftpput_done(rimsg_map);
+  else if (type.compare(RI_GFTP_BPING) == 0)
+    handle_gftp_bping(rimsg_map);
+  else if (type.compare(RI_GFTP_BPONG) == 0)
+    handle_gftp_bpong(rimsg_map);
 #endif // _GRIDFTP_
   else
-    LOG(ERROR) << "handle_wamsg:: unknown type= " << type;
+    LOG(ERROR) << "handle_rimsg:: unknown type= " << type;
   // 
-  LOG(INFO) << "handle_wamsg:: done.";
+  LOG(INFO) << "handle_rimsg:: done.";
 }
 
-void RIManager::handle_r_query(bool subscribe, std::map<std::string, std::string> r_query_map)
+void RIManager::handle_rquery(bool subscribe, std::map<std::string, std::string> r_query_map)
 {
-  LOG(INFO) << "handle_r_query:: r_query_map= \n" << patch_ds::map_to_str<>(r_query_map);
+  LOG(INFO) << "handle_rquery:: r_query_map= \n" << patch_ds::map_to_str<>(r_query_map);
   
   std::string key = r_query_map["key"];
   unsigned int ver = boost::lexical_cast<unsigned int>(r_query_map["ver"] );
   
   std::map<std::string, std::string> rq_reply_map;
-  rq_reply_map["type"] = REMOTE_QUERY_REPLY;
+  rq_reply_map["type"] = RI_RQUERY_REPLY;
   rq_reply_map["key"] = key;
   rq_reply_map["ver"] = r_query_map["ver"];
   
@@ -1397,12 +1384,12 @@ void RIManager::handle_r_query(bool subscribe, std::map<std::string, std::string
   int dummy = -1;
   uint64_t* dummy_;
   if (rq_table.get_key_ver(key, ver, p_id, data_type, ds_id, dummy, dummy, dummy_, dummy_, dummy_) ) {
-    // LOG(INFO) << "handle_r_query:: does not exist; key= " << key;
+    // LOG(INFO) << "handle_rquery:: does not exist; key= " << key;
     rq_reply_map["ds_id"] = '?';
     
     if (subscribe) {
       rs_table.push_subscriber(key, ver, to_id);
-      LOG(INFO) << "handle_r_query:: id= " << to_id << " got subscribed for <key= " << key << ", ver= " << ver << ">";
+      LOG(INFO) << "handle_rquery:: id= " << to_id << " got subscribed for <key= " << key << ", ver= " << ver << ">";
     }
   }
   else {
@@ -1411,10 +1398,10 @@ void RIManager::handle_r_query(bool subscribe, std::map<std::string, std::string
     rq_reply_map["ds_id"] = ds_id;
   }
   
-  if (send_msg(to_id, RIMSG, rq_reply_map) )
-    LOG(ERROR) << "handle_r_query:: send_msg to to_id= " << to_id << " failed!";
+  if (sdm_node_->send_msg(to_id, SDM_RIMSG, rq_reply_map) )
+    LOG(ERROR) << "handle_rquery:: sdm_node_->send_msg to to_id= " << to_id << " failed!";
   // 
-  LOG(INFO) << "handle_r_query:: done.";
+  LOG(INFO) << "handle_rquery:: done.";
 }
 
 void RIManager::handle_rq_reply(std::map<std::string, std::string> rq_reply_map)
@@ -1436,9 +1423,9 @@ void RIManager::handle_rq_reply(std::map<std::string, std::string> rq_reply_map)
   LOG(INFO) << "handle_rq_reply:: done.";
 }
 
-void RIManager::handle_r_fetch(std::map<std::string, std::string> r_fetch_map)
+void RIManager::handle_rfetch(std::map<std::string, std::string> r_fetch_map)
 {
-  LOG(INFO) << "handle_r_fetch:: r_fetch_map= \n" << patch_ds::map_to_str<>(r_fetch_map);
+  LOG(INFO) << "handle_rfetch:: r_fetch_map= \n" << patch_ds::map_to_str<>(r_fetch_map);
   
   std::string key;
   unsigned int ver;
@@ -1447,25 +1434,25 @@ void RIManager::handle_r_fetch(std::map<std::string, std::string> r_fetch_map)
   std::string data_type;
   if (imsg_coder.decode_msg_map(r_fetch_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_) ) {
     patch_ds::free_all<uint64_t*>(3, gdim_, lb_, ub_);
-    LOG(ERROR) << "handle_r_fetch:: decode_msg_map failed!";
+    LOG(ERROR) << "handle_rfetch:: decode_msg_map failed!";
     return;
   }
   
   if (rfp_manager_->wa_put(key, ver, data_type, size, ndim, gdim_, lb_, ub_,
                             r_fetch_map["laddr"], r_fetch_map["lport"], r_fetch_map["tmpfs_dir"] ) ) {
-    LOG(ERROR) << "handle_r_fetch:: rfp_manager_->wa_put failed!";
+    LOG(ERROR) << "handle_rfetch:: rfp_manager_->wa_put failed!";
   }
   // 
 #ifdef _GRIDFTP_
   if (wa_trans_protocol.compare(GRIDFTP) == 0) {
     char to_id = r_fetch_map["id"].c_str()[0];
     std::map<std::string, std::string> gftp_put_done_map;
-    gftp_put_done_map["type"] = GFTPPUT_DONE;
+    gftp_put_done_map["type"] = RI_GFTPPUT_DONE;
     gftp_put_done_map["id"] = to_id;
     gftp_put_done_map["key"] = key;
     gftp_put_done_map["ver"] = boost::lexical_cast<std::string>(ver);
-    if (send_msg(to_id, RIMSG, gftp_put_done_map) ) {
-      LOG(ERROR) << "handle_r_fetch:: send_msg to to_id= " << to_id << " failed!";
+    if (sdm_node_->send_msg(to_id, SDM_RIMSG, gftp_put_done_map) ) {
+      LOG(ERROR) << "handle_rfetch:: sdm_node_->send_msg to to_id= " << to_id << " failed!";
       patch_ds::free_all<uint64_t*>(3, gdim_, lb_, ub_);
       return;
     }
@@ -1473,12 +1460,12 @@ void RIManager::handle_r_fetch(std::map<std::string, std::string> r_fetch_map)
 #endif // _GRIDFTP_
   // 
   patch_ds::free_all<uint64_t*>(3, gdim_, lb_, ub_);
-  LOG(INFO) << "handle_r_fetch:: done.";
+  LOG(INFO) << "handle_rfetch:: done.";
 }
 
-void RIManager::handle_r_rqtable(std::map<std::string, std::string> r_rqtable_map)
+void RIManager::handle_rqtable(std::map<std::string, std::string> r_rqtable_map)
 {
-  LOG(INFO) << "handle_r_rqtable:: r_rqtable_map= \n" << patch_ds::map_to_str<>(r_rqtable_map);
+  LOG(INFO) << "handle_rqtable:: r_rqtable_map= \n" << patch_ds::map_to_str<>(r_rqtable_map);
   
   int count = 0;
   while (1) {
@@ -1521,9 +1508,9 @@ void RIManager::handle_r_rqtable(std::map<std::string, std::string> r_rqtable_ma
   LOG(INFO) << "handle_rq_reply:: done.";
 }
 
-void RIManager::handle_r_place(std::map<std::string, std::string> r_place_map)
+void RIManager::handle_rplace(std::map<std::string, std::string> r_place_map)
 {
-  LOG(INFO) << "handle_r_place:: r_place_map= \n" << patch_ds::map_to_str<>(r_place_map);
+  LOG(INFO) << "handle_rplace:: r_place_map= \n" << patch_ds::map_to_str<>(r_place_map);
   
   std::string key = r_place_map["key"];
   unsigned int ver= boost::lexical_cast<unsigned int>(r_place_map["ver"] );
@@ -1531,18 +1518,18 @@ void RIManager::handle_r_place(std::map<std::string, std::string> r_place_map)
   std::string lport = rfp_manager_->get_lport();
   r_place_map["laddr"] = wa_laddr;
   r_place_map["lport"] = lport;
-  boost::thread t(&RIManager::handle_wa_get, this, "handle_r_place", r_place_map);
+  boost::thread t(&RIManager::handle_wa_get, this, "handle_rplace", r_place_map);
   
   if (this->wa_trans_protocol.compare(INFINIBAND) == 0) {
     std::map<std::string, std::string> rp_reply_map;
-    rp_reply_map["type"] = REMOTE_PLACE_REPLY;
+    rp_reply_map["type"] = RI_RPLACE_REPLY;
     rp_reply_map["key"] = key;
     rp_reply_map["ver"] = r_place_map["ver"];
     rp_reply_map["laddr"] = wa_laddr;
     rp_reply_map["lport"] = lport;
     char to_id = r_place_map["id"].c_str()[0];
-    if (send_msg(to_id, RIMSG, rp_reply_map) ) {
-      LOG(ERROR) << "handle_r_place:: send_msg to to_id= " << to_id << " failed!";
+    if (sdm_node_->send_msg(to_id, SDM_RIMSG, rp_reply_map) ) {
+      LOG(ERROR) << "handle_rplace:: sdm_node_->send_msg to to_id= " << to_id << " failed!";
       return;
     }
   }
@@ -1558,15 +1545,15 @@ void RIManager::handle_r_place(std::map<std::string, std::string> r_place_map)
   int size, ndim;
   uint64_t *gdim_, *lb_, *ub_;
   if (rq_table.get_key_ver(key, ver, p_id, data_type, ds_id, size, ndim, gdim_, lb_, ub_) ) {
-    LOG(ERROR) << "handle_r_place:: rq_table.get_key_ver failed for <key= " << key << ", ver= " << ver << ">.";
+    LOG(ERROR) << "handle_rplace:: rq_table.get_key_ver failed for <key= " << key << ", ver= " << ver << ">.";
     return;
   }
   rq_table.put_key_ver(key, ver, p_id, data_type, this->id, size, ndim, gdim_, lb_, ub_);
   pbuffer_->reg_key_ver(p_id, std::make_pair(key, ver) );
   
   // TODO: Following may throw exception in case of non-blocking get
-  b_get_syncer.notify(kv);
-  LOG(INFO) << "handle_r_place:: done.";
+  bget_syncer.notify(kv);
+  LOG(INFO) << "handle_rplace:: done.";
   
   
   // if (this->wa_trans_protocol.compare(GRIDFTP) == 0) {
@@ -1614,39 +1601,44 @@ void RIManager::handle_gftpput_done(std::map<std::string, std::string> gftpput_d
 {
   LOG(INFO) << "handle_gftpput_done:: gftpput_done_map= \n" << patch_ds::map_to_str<>(gftpput_done_map);
   
-  rf_wa_get_syncer.notify(std::make_pair(gftpput_done_map["key"], boost::lexical_cast<unsigned int>(gftpput_done_map["ver"]) ) );
+  rf_wa_get_syncer.notify(std::make_pair(gftpput_done_map["key"], boost::lexical_cast<unsigned int>(gftpput_done_map["ver"] ) ) );
   // 
   LOG(INFO) << "handle_gftpput_done:: done.";
 }
 
-void RIManager::handle_gftpb_ping(std::map<std::string, std::string> gftpb_ping_map)
+void RIManager::handle_gftp_bping(std::map<std::string, std::string> gftp_bping_map)
 {
-  LOG(INFO) << "handle_gftpb_ping:: gftpb_ping_map= \n" << patch_ds::map_to_str<>(gftpb_ping_map);
+  LOG(INFO) << "handle_gftp_bping:: gftp_bping_map= \n" << patch_ds::map_to_str<>(gftp_bping_map);
   
-  std::map<std::string, std::string> gftpb_pong_map;
-  gftpb_pong_map["type"] = GFTPB_PONG;
-  gftpb_pong_map["id"] = this->id;
-  gftpb_pong_map["laddr"] = this->wa_laddr;
-  gftpb_pong_map["lport"] = this->wa_gftp_lport;
-  gftpb_pong_map["tmpfs_dir"] = this->tmpfs_dir;
+  std::map<std::string, std::string> gftp_bpong_map;
+  gftp_bpong_map["type"] = RI_GFTP_BPONG;
+  gftp_bpong_map["id"] = this->id;
+  gftp_bpong_map["laddr"] = this->wa_laddr;
+  gftp_bpong_map["lport"] = this->wa_gftp_lport;
+  gftp_bpong_map["tmpfs_dir"] = this->tmpfs_dir;
   
-  char to_id = gftpb_ping_map["id"].c_str()[0];
-  if (send_msg(to_id, RIMSG, gftpb_pong_map) ) {
-    LOG(ERROR) << "handle_gftpb_ping:: send_msg to to_id= " << to_id << " failed!";
+  char to_id = gftp_bping_map["id"].c_str()[0];
+  if (sdm_node_->send_msg(to_id, SDM_RIMSG, gftp_bpong_map) ) {
+    LOG(ERROR) << "handle_gftp_bping:: sdm_node_->send_msg to to_id= " << to_id << " failed!";
     return;
   }
   // 
-  LOG(INFO) << "handle_gftpb_ping:: done.";
+  LOG(INFO) << "handle_gftp_bping:: done.";
 }
 
-void RIManager::handle_gftpb_pong(std::map<std::string, std::string> gftpb_pong_map)
+void RIManager::handle_gftp_bpong(std::map<std::string, std::string> gftp_bpong_map)
 {
-  LOG(INFO) << "handle_gftpb_pong:: gftpb_pong_map= \n" << patch_ds::map_to_str<>(gftpb_pong_map);
+  LOG(INFO) << "handle_gftp_bpong:: gftp_bpong_map= \n" << patch_ds::map_to_str<>(gftp_bpong_map);
   
-  char ds_id = gftpb_pong_map["id"].c_str()[0];
-  gftpb_table.add(ds_id, gftpb_pong_map["laddr"], gftpb_pong_map["lport"], gftpb_pong_map["tmpfs_dir"] );
-  gftpb_ping_syncer.notify(ds_id);
+  char ds_id = gftp_bpong_map["id"].c_str()[0];
+  gftpb_table.add(ds_id, gftp_bpong_map["laddr"], gftp_bpong_map["lport"], gftp_bpong_map["tmpfs_dir"] );
+  gftp_bping_syncer.notify(ds_id);
   // 
-  LOG(INFO) << "handle_gftpb_pong:: done.";
+  LOG(INFO) << "handle_gftp_bpong:: done.";
 }
 #endif // _GRIDFTP_
+
+void RIManager::handle_rcmsg(std::map<std::string, std::string> rcmsg_map)
+{
+  
+}

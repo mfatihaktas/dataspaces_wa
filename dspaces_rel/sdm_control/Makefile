@@ -28,7 +28,7 @@ APPS := exp
 
 all: ${APPS}
 
-exp: $(ODIR)/exp.o $(ODIR)/sdm_node.o $(ODIR)/sdm_server.o $(ODIR)/sdm_client.o $(ODIR)/packet.o
+exp: $(ODIR)/exp.o $(ODIR)/sdm_control.o $(ODIR)/sdm_node.o $(ODIR)/sdm_server.o $(ODIR)/sdm_client.o $(ODIR)/packet.o
 	$(CPP) -g -o $@ $^ $(INC) $(LIB)
 
 $(ODIR)/%.o: %.cpp

@@ -20,7 +20,7 @@ elif [ $1  = 'g' ]; then
 elif [ $1  = 'r' ]; then
   GLOG_logtostderr=1 ./exp --type=ri --dht_id='r' --num_dscnodes=$NUM_DSCNODES --app_id=10 \
                            --dht_lintf="lo" --dht_lport=7000 \
-                           --trans_protocol="gridftp" --ib_lintf="em2" --gftp_lport=5000 \
+                           --trans_protocol="gridftp" --wa_lintf="em2" --wa_lport=5000 \
                            --tmpfs_dir=dev/shm
 elif [ $1  = 'load' ]; then
   module load openmpi-x86_64
