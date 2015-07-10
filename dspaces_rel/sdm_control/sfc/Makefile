@@ -7,7 +7,7 @@
 BOOSTASIO_LIB = -L$(BOOSTASIO_DIR)
 
 BOOST_INC = -I$(BOOST_DIR)/include
-BOOST_LIB = -L$(BOOST_DIR)/lib -lboost_system -lpthread -lboost_thread -lboost_serialization
+BOOST_LIB = -L$(BOOST_DIR)/lib -lboost_system -lpthread -lboost_thread -lboost_serialization -lboost_iostreams -lboost_filesystem
 # BOOST_LIB = -lboost_system -lpthread -lboost_thread-mt -lboost_serialization
 
 GLOG_INC = -I$(GLOG_DIR)/include

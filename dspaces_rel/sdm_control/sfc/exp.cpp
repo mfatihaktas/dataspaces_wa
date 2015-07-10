@@ -1,6 +1,3 @@
-#include "hilbert.h"
-#include "sim.h"
-// 
 #include <iostream>
 #include <string>
 #include <stdio.h>
@@ -11,6 +8,10 @@
 
 #include <boost/lexical_cast.hpp>
 #include <glog/logging.h>
+
+#include "hilbert.h"
+#include "sim.h"
+#include "patch_exp.h"
 
 std::map<std::string, std::string> parse_opts(int argc, char** argv)
 {
@@ -55,64 +56,9 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
   return opt_map;
 }
 
-void check_hilbert_curve()
-{
-  unsigned nDims = 2;
-  unsigned nBits = 4;
-  // bitmask_t coord_1_[] = {5, 2};
-  // bitmask_t coord_2_[] = {5, 5};
-  // std::cout << "index_1= " << hilbert_c2i(nDims, nBits, coord_1_) << "\n";
-  // std::cout << "index_2= " << hilbert_c2i(nDims, nBits, coord_2_) << "\n";
-  
-  typedef std::pair<bitmask_t, bitmask_t> coor_p;
-  std::vector<bitmask_t> index_v;
-  std::map<bitmask_t, coor_p> index__coor_p_map;
-  
-  int up_limit = pow(2, nBits);
-  for (int x = 0; x < up_limit; x++) {
-    for (int y = 0; y < up_limit; y++) {
-      bitmask_t coord_[] = {x, y};
-      bitmask_t index = hilbert_c2i(nDims, nBits, coord_);
-      
-      index_v.push_back(index);
-      index__coor_p_map[index] = std::make_pair(x, y);
-    }
-  }
-  std::sort(index_v.begin(), index_v.end() );
-  
-  std::ofstream myfile("hilber_cpp.csv");
-  if (myfile.is_open() ) {
-    for (std::vector<bitmask_t>::iterator it = index_v.begin(); it != index_v.end(); it++) {
-      coor_p p = index__coor_p_map[*it];
-      myfile << p.first << "," << p.second << "\n";
-      // std::cout << p.first << "," << p.second << "\n";
-    }
-    
-    myfile.close();
-  }
-}
-
 // Walk whole space with incremental boxes
 void sim()
 {
-  #define VAR(d, n) BOOST_PP_CAT(d, n)
-  #define VAR_REP(z, n, d) d ## n
-  
-  #define FOR_I(n) BOOST_PP_SUB(BOOST_PP_SUB(NDIM, n), 1)
-  
-  #define FOR_REP(z, n, ll_ul_) \
-    for(int VAR(d, n) = BOOST_PP_TUPLE_ELEM(2, 0, ll_ul_)[n]; VAR(d, n) < BOOST_PP_TUPLE_ELEM(2, 1, ll_ul_)[n]; VAR(d, n)++) {
-    // for(int VAR(d, FOR_I(n) ) = BOOST_PP_TUPLE_ELEM(2, 0, ll_ul_)[FOR_I(n) ]; \
-    //     VAR(d, FOR_I(n) ) < BOOST_PP_TUPLE_ELEM(2, 1, ll_ul_)[FOR_I(n) ]; VAR(d, FOR_I(n) )++) {
-  
-  #define END_FOR_REP(z, n, data) }
-  
-  #define MULTI_FOR(ll_, ul_) \
-    BOOST_PP_REPEAT(NDIM, FOR_REP, (ll_, ul_) )
-  
-  #define END_MULTI_FOR() \
-    BOOST_PP_REPEAT(NDIM, END_FOR_REP, ~)
-  // 
   std::vector<char> ds_id_v = boost::assign::list_of('a')('b');
   int pbuffer_size = 0;
   int lcoor_[] = {0, 0};
@@ -158,6 +104,8 @@ void sim()
   // }
 }
 
+
+
 int main(int argc, char **argv)
 {
   std::string temp;
@@ -165,7 +113,37 @@ int main(int argc, char **argv)
   // 
   std::map<std::string, std::string> opt_map = parse_opts(argc, argv);
   
-  sim();
+  
+  
+  // char ds_id_[] = {'a', 'b', 'c'};
+  // srand (time(NULL) );
+  // int lcoor_[] = {0, 0};
+  // int ucoor_[] = {10, 10};
+  // HPredictor hpredictor(lcoor_, ucoor_);
+  // MULTI_FOR(lcoor_, ucoor_)
+  //   int walk_lcoor_[NDIM] = { BOOST_PP_ENUM(NDIM, VAR_REP, d) };
+  //   int walk_ucoor_[NDIM];
+  //   for (int i = 0; i < NDIM; i++)
+  //     walk_ucoor_[i] = walk_lcoor_[i] + 1;
+    
+  //   std::vector<lcoor_ucoor_pair> next_lcoor_ucoor_pair_v;
+  //   hpredictor.add_acc__predict_next_acc(ds_id_[rand() % sizeof(ds_id_)/sizeof(*ds_id_) ], walk_lcoor_, walk_ucoor_, next_lcoor_ucoor_pair_v);
+  //   // hpredictor.add_acc__predict_next_acc(ds_id_[rand() % sizeof(ds_id_)/sizeof(*ds_id_) ], walk_lcoor_, walk_ucoor_, next_lcoor_ucoor_pair_v);
+  //   hpredictor.add_acc__predict_next_acc('a', walk_lcoor_, walk_ucoor_, next_lcoor_ucoor_pair_v);
+  // END_MULTI_FOR()
+  
+  // std::vector<lcoor_ucoor_pair> next_lcoor_ucoor_pair_v;
+  // int walk_lcoor_[] = {0, 0};
+  // int walk_ucoor_[] = {5, 5};
+  // hpredictor.add_acc__predict_next_acc('a', walk_lcoor_, walk_ucoor_, next_lcoor_ucoor_pair_v);
+  // int walk_2_lcoor_[] = {1, 1};
+  // int walk_2_ucoor_[] = {7, 7};
+  // hpredictor.add_acc__predict_next_acc('b', walk_2_lcoor_, walk_2_ucoor_, next_lcoor_ucoor_pair_v);
+  
+  // std::cout << "main:: hpredictor= \n" << hpredictor.to_str();
+  
+  // check_3d_hilbert_curve();
+  // sim();
   // int get_lcoor_[] = {2, 2};
   // int get_ucoor_[] = {2, 3};
   // std::vector<char> get_v;

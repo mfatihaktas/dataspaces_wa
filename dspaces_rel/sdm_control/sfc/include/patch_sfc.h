@@ -15,10 +15,21 @@ namespace patch_sfc {
     return ss.str();
   }
   
+  template<typename T>
+  std::string set_to_str(std::set<T> s)
+  {
+    std::stringstream ss;
+    for (typename std::set<T>::iterator it = s.begin(); it != s.end(); it++)
+      ss << boost::lexical_cast<std::string>(*it) << ", ";
+    
+    return ss.str();
+  };
+  
   template <typename T>
   std::string arr_to_str(int size, T* arr_)
   {
     std::stringstream ss;
+    
     for (int i = 0; i < size; i++)
       ss << boost::lexical_cast<std::string>(arr_[i] ) << ", ";
     
@@ -61,6 +72,18 @@ namespace patch_sfc {
       action; \
     } \
   }
+// MULTI_FOR
+#define VAR(d, n) BOOST_PP_CAT(d, n)
+#define VAR_REP(z, n, d) d ## n
+#define FOR_I(n) BOOST_PP_SUB(BOOST_PP_SUB(NDIM, n), 1)
 
+#define FOR_REP(z, n, ll_ul_) \
+  for(int VAR(d, n) = BOOST_PP_TUPLE_ELEM(2, 0, ll_ul_)[n]; VAR(d, n) < BOOST_PP_TUPLE_ELEM(2, 1, ll_ul_)[n]; VAR(d, n)++) {
+  // for(int VAR(d, FOR_I(n) ) = BOOST_PP_TUPLE_ELEM(2, 0, ll_ul_)[FOR_I(n) ]; \
+  //     VAR(d, FOR_I(n) ) < BOOST_PP_TUPLE_ELEM(2, 1, ll_ul_)[FOR_I(n) ]; VAR(d, FOR_I(n) )++) {
+#define MULTI_FOR(ll_, ul_) BOOST_PP_REPEAT(NDIM, FOR_REP, (ll_, ul_) )
+
+#define END_FOR_REP(z, n, data) }
+#define END_MULTI_FOR() BOOST_PP_REPEAT(NDIM, END_FOR_REP, ~)
 
 #endif // _PATCH_SFC_H_

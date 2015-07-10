@@ -1,6 +1,8 @@
 #ifndef _SIM_H_
 #define _SIM_H_
 
+#include <math.h>
+
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/point.hpp>
 #include <boost/geometry/geometries/box.hpp>
@@ -13,6 +15,8 @@
 #include <boost/preprocessor.hpp>
 #include "boost/tuple/tuple.hpp"
 #include <boost/assign.hpp>
+#include "boost/icl/interval.hpp"
+#include <boost/icl/interval_map.hpp>
 
 #include <glog/logging.h>
 
@@ -38,6 +42,23 @@ class QTable {
     
     int add(int* lcoor_, int* ucoor_, char ds_id);
     int query(int* lcoor_, int* ucoor_, std::vector<char>& ds_id_v);
+};
+
+/*****************************************  HPredictor  *******************************************/
+typedef std::pair<int*, int*> lcoor_ucoor_pair;
+class HPredictor { // Hilbert
+  private:
+    int *lcoor_, *ucoor_;
+    
+    int hilbert_num_bits;
+    boost::icl::interval_map<bitmask_t, std::set<char> > index_interval__ds_id_set_map;
+  public:
+    HPredictor(int* lcoor_, int* ucoor_);
+    ~HPredictor();
+    std::string to_str();
+    
+    int add_acc__predict_next_acc(char ds_id, int* lcoor_, int* ucoor_,
+                                  std::vector<lcoor_ucoor_pair>& next_lcoor_ucoor_pair_v);
 };
 
 /******************************************  WASpace  *********************************************/
@@ -67,7 +88,7 @@ class WASpace {
 };
 
 /*******************************************  PCSim  **********************************************/
-typedef std::pair<int, std::pair<int*, int*> > app_id__lcoor_ucoor_pair;
+typedef std::pair<int, lcoor_ucoor_pair> app_id__lcoor_ucoor_pair;
 
 class PCSim { // Prefetching Simulator
   private:

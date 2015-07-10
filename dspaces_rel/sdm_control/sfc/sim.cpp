@@ -59,6 +59,54 @@ int QTable::query(int* lcoor_, int* ucoor_, std::vector<char>& ds_id_v)
   return 0;
 }
 
+/*****************************************  HPredictor  *******************************************/
+HPredictor::HPredictor(int* lcoor_, int* ucoor_)
+: lcoor_(lcoor_), ucoor_(ucoor_)
+{
+  IS_VALID_BOX("HPredictor", lcoor_, ucoor_, exit(1) )
+  // 
+  std::vector<int> dim_length_v;
+  for (int i = 0; i < NDIM; i++)
+    dim_length_v.push_back(ucoor_[i] - lcoor_[i] );
+  
+  hilbert_num_bits = (int) log2(*std::max_element(dim_length_v.begin(), dim_length_v.end() ) );
+  // 
+  LOG(INFO) << "HPredictor:: constructed.";
+}
+
+HPredictor::~HPredictor() { LOG(INFO) << "HPredictor:: destructed."; }
+
+std::string HPredictor::to_str()
+{
+  std::stringstream ss;
+  ss << "\t lcoor_= " << patch_sfc::arr_to_str<>(NDIM, lcoor_) << "\n"
+     << "\t ucoor_= " << patch_sfc::arr_to_str<>(NDIM, ucoor_) << "\n"
+     << "\t hilbert_num_bits= " << hilbert_num_bits << "\n";
+  
+  ss << "\t index_interval__ds_id_set_map= \n";
+  for (boost::icl::interval_map<bitmask_t, std::set<char> >::iterator it = index_interval__ds_id_set_map.begin(); it != index_interval__ds_id_set_map.end(); it++)
+    ss << "\t" << it->first << " : " << patch_sfc::set_to_str<>(it->second) << "\n";
+  
+  return ss.str();
+}
+
+int HPredictor::add_acc__predict_next_acc(char ds_id, int* lcoor_, int* ucoor_,
+                                          std::vector<lcoor_ucoor_pair>& next_lcoor_ucoor_pair_v)
+{
+  // add
+  MULTI_FOR(lcoor_, ucoor_)
+    bitmask_t walk_lcoor_[NDIM] = { BOOST_PP_ENUM(NDIM, VAR_REP, d) };
+    bitmask_t index = hilbert_c2i(NDIM, hilbert_num_bits, walk_lcoor_);
+    
+    std::set<char> ds_id_set;
+    ds_id_set.insert(ds_id);
+    
+    index_interval__ds_id_set_map.insert(std::make_pair(boost::icl::interval<bitmask_t>::closed(index, index), ds_id_set) );
+  END_MULTI_FOR()
+  // predict
+  
+}
+
 /******************************************  WASpace  *********************************************/
 WASpace::WASpace(std::vector<char> ds_id_v, int pbuffer_size,
                  int* lcoor_, int* ucoor_)
@@ -122,6 +170,8 @@ int WASpace::get(int c_id, int* lcoor_, int* ucoor_, char& get_type)
     else
       get_type = 'l';
   }
+  
+  return 0;
 }
 
 /*******************************************  PCSim  **********************************************/
@@ -133,12 +183,8 @@ PCSim::PCSim(std::vector<char> ds_id_v, int pbuffer_size,
   for (int p_id = 0; p_id < p_id__ds_id_v.size(); p_id++)
     wa_space.reg_app(p_id, p_id__ds_id_v[p_id] );
   
-  for (int c_id = 0; c_id < c_id__ds_id_v.size(); c_id++) {
+  for (int c_id = 0; c_id < c_id__ds_id_v.size(); c_id++)
     wa_space.reg_app(p_id__ds_id_v.size() + c_id, c_id__ds_id_v[c_id] );
-    
-    std::vector<char> get_type_v;
-    c_id__get_type_v_map[c_id] = get_type_v;
-  }
   // 
   LOG(INFO) << "PCSim:: constructed.";
 }
