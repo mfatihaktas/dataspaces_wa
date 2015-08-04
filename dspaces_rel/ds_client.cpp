@@ -1,115 +1,5 @@
 #include "ds_client.h"
 
-//***********************************  IMsgCoder  ********************************//
-IMsgCoder::IMsgCoder() { LOG(INFO) << "IMsgCoder:: constructed."; }
-
-IMsgCoder::~IMsgCoder() { LOG(INFO) << "IMsgCoder:: destructed."; }
-
-std::map<std::string, std::string> IMsgCoder::decode(char* msg)
-{
-  // msg: serialized std::map<std::string, std::string>
-  std::map<std::string, std::string> msg_map;
-  
-  std::stringstream ss;
-  ss << msg;
-  boost::archive::text_iarchive ia(ss);
-  ia >> msg_map;
-  // 
-  // LOG(INFO) << "decode:: msg_map= \n" << patch_ds::map_to_str<>(msg_map);
-  return msg_map;
-}
-
-int IMsgCoder::decode_msg_map(std::map<std::string, std::string> msg_map,
-                              std::string& key, unsigned int& ver, std::string& data_type,
-                              int& size, int& ndim, uint64_t* &gdim_, uint64_t* &lb_, uint64_t* &ub_)
-{
-  try {
-    key = msg_map["key"];
-    data_type = msg_map["data_type"];
-    ver = boost::lexical_cast<unsigned int>(msg_map["ver"]);
-    size = boost::lexical_cast<int>(msg_map["size"]);
-    ndim = boost::lexical_cast<int>(msg_map["ndim"]);
-    
-    boost::char_separator<char> sep(",");
-    
-    boost::tokenizer<boost::char_separator<char> > gdim_tokens(msg_map["gdim"], sep);
-    boost::tokenizer<boost::char_separator<char> > lb_tokens(msg_map["lb"], sep);
-    boost::tokenizer<boost::char_separator<char> > ub_tokens(msg_map["ub"], sep);
-    
-    uint64_t *t_gdim_ = (uint64_t*)malloc(ndim*sizeof(uint64_t) );
-    uint64_t *t_lb_ = (uint64_t*)malloc(ndim*sizeof(uint64_t) );
-    uint64_t *t_ub_ = (uint64_t*)malloc(ndim*sizeof(uint64_t) );
-    int i;
-    boost::tokenizer<boost::char_separator<char> >::iterator gdim_it = gdim_tokens.begin();
-    boost::tokenizer<boost::char_separator<char> >::iterator lb_it = lb_tokens.begin();
-    boost::tokenizer<boost::char_separator<char> >::iterator ub_it = ub_tokens.begin();
-    for (int i = 0; i < ndim; i++) {
-      t_gdim_[i] = boost::lexical_cast<uint64_t>(*gdim_it);
-      t_lb_[i] = boost::lexical_cast<uint64_t>(*lb_it);
-      t_ub_[i] = boost::lexical_cast<uint64_t>(*ub_it);
-      
-      gdim_it++;
-      lb_it++;
-      ub_it++;
-    }
-    gdim_ = t_gdim_;
-    lb_ = t_lb_;
-    ub_ = t_ub_;
-  }
-  catch(std::exception & ex) {
-    LOG(ERROR) << "decode_msg_map:: Exception=" << ex.what();
-    return 1;
-  }
-  return 0;
-}
-
-int IMsgCoder::encode_msg_map(std::map<std::string, std::string> &msg_map, 
-                              std::string key, unsigned int ver, std::string data_type,
-                              int size, int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_)
-{
-  try {
-    msg_map["key"] = key;
-    msg_map["ver"] = boost::lexical_cast<std::string>(ver);
-    msg_map["data_type"] = data_type;
-    msg_map["size"] = boost::lexical_cast<std::string>(size);
-    msg_map["ndim"] = boost::lexical_cast<std::string>(ndim);
-    
-    std::string gdim = "";
-    std::string lb = "";
-    std::string ub = "";
-    for(int i = 0; i < ndim; i++) {
-      // LOG(INFO) << "encode_msg_map:: gdim_[" << i << "]= " << gdim_[i];
-      // LOG(INFO) << "encode_msg_map:: lb_[" << i << "]= " << lb_[i];
-      // LOG(INFO) << "encode_msg_map:: ub_[" << i << "]= " << ub_[i];
-      gdim += boost::lexical_cast<std::string>(gdim_[i]);
-      lb += boost::lexical_cast<std::string>(lb_[i]);
-      ub += boost::lexical_cast<std::string>(ub_[i]);
-      if (i < ndim - 1) {
-        gdim += ",";
-        lb += ",";
-        ub += ",";
-      }
-    }
-    msg_map["gdim"] = gdim;
-    msg_map["lb"] = lb;
-    msg_map["ub"] = ub;
-  }
-  catch(std::exception & ex) {
-    LOG(ERROR) << "encode_msg_map:: Exception=" << ex.what();
-    return 1;
-  }
-  return 0;
-}
-
-std::string IMsgCoder::encode(std::map<std::string, std::string> msg_map)
-{
-  std::stringstream ss;
-  boost::archive::text_oarchive oa(ss);
-  oa << msg_map;
-  
-  return ss.str();
-}
-
 /*************************************  BCServer  **********************************/
 BCServer::BCServer(int app_id, int num_clients, int msg_size,
                    std::string base_comm_var_name, function_cb_on_recv f_cb,
@@ -911,7 +801,7 @@ void RIManager::handle_app_req(char* app_req)
 
 void RIManager::handle_get(bool blocking, int app_id, std::map<std::string, std::string> get_map)
 {
-  LOG(INFO) << "handle_get:: get_map= \n" << patch_ds::map_to_str<>(get_map);
+  LOG(INFO) << "handle_get:: get_map= \n" << patch_sdm::map_to_str<>(get_map);
   
   std::string key = get_map["key"];
   unsigned int ver = boost::lexical_cast<unsigned int>(get_map["ver"] );
@@ -1367,7 +1257,7 @@ void RIManager::handle_rimsg(std::map<std::string, std::string> rimsg_map)
 
 void RIManager::handle_rquery(bool subscribe, std::map<std::string, std::string> r_query_map)
 {
-  LOG(INFO) << "handle_rquery:: r_query_map= \n" << patch_ds::map_to_str<>(r_query_map);
+  LOG(INFO) << "handle_rquery:: r_query_map= \n" << patch_sdm::map_to_str<>(r_query_map);
   
   std::string key = r_query_map["key"];
   unsigned int ver = boost::lexical_cast<unsigned int>(r_query_map["ver"] );
@@ -1406,7 +1296,7 @@ void RIManager::handle_rquery(bool subscribe, std::map<std::string, std::string>
 
 void RIManager::handle_rq_reply(std::map<std::string, std::string> rq_reply_map)
 {
-  LOG(INFO) << "handle_rq_reply:: rq_reply_map= \n" << patch_ds::map_to_str<>(rq_reply_map);
+  LOG(INFO) << "handle_rq_reply:: rq_reply_map= \n" << patch_sdm::map_to_str<>(rq_reply_map);
   
   std::string key = rq_reply_map["key"];
   unsigned int ver = boost::lexical_cast<unsigned int>(rq_reply_map["ver"] );
@@ -1425,7 +1315,7 @@ void RIManager::handle_rq_reply(std::map<std::string, std::string> rq_reply_map)
 
 void RIManager::handle_rfetch(std::map<std::string, std::string> r_fetch_map)
 {
-  LOG(INFO) << "handle_rfetch:: r_fetch_map= \n" << patch_ds::map_to_str<>(r_fetch_map);
+  LOG(INFO) << "handle_rfetch:: r_fetch_map= \n" << patch_sdm::map_to_str<>(r_fetch_map);
   
   std::string key;
   unsigned int ver;
@@ -1465,7 +1355,7 @@ void RIManager::handle_rfetch(std::map<std::string, std::string> r_fetch_map)
 
 void RIManager::handle_rqtable(std::map<std::string, std::string> r_rqtable_map)
 {
-  LOG(INFO) << "handle_rqtable:: r_rqtable_map= \n" << patch_ds::map_to_str<>(r_rqtable_map);
+  LOG(INFO) << "handle_rqtable:: r_rqtable_map= \n" << patch_sdm::map_to_str<>(r_rqtable_map);
   
   int count = 0;
   while (1) {
@@ -1497,7 +1387,7 @@ void RIManager::handle_rqtable(std::map<std::string, std::string> r_rqtable_map)
     int p_id = boost::lexical_cast<int>(r_rqtable_map["p_id_" + tail_str] );
     rq_table.put_key_ver(key, ver,
                          p_id, r_rqtable_map["data_type_" + tail_str], r_rqtable_map["ds_id_" + tail_str].c_str()[0],
-                         boost::lexical_cast<int>(r_rqtable_map["size_" + tail_str]),
+                         boost::lexical_cast<int>(r_rqtable_map["size_" + tail_str] ),
                          ndim, gdim_, lb_, ub_ );
     // patch_ds::free_all<uint64_t*>(3, gdim_, lb_, ub_);
     pbuffer_->reg_key_ver(p_id, std::make_pair(key, ver) );
@@ -1510,7 +1400,7 @@ void RIManager::handle_rqtable(std::map<std::string, std::string> r_rqtable_map)
 
 void RIManager::handle_rplace(std::map<std::string, std::string> r_place_map)
 {
-  LOG(INFO) << "handle_rplace:: r_place_map= \n" << patch_ds::map_to_str<>(r_place_map);
+  LOG(INFO) << "handle_rplace:: r_place_map= \n" << patch_sdm::map_to_str<>(r_place_map);
   
   std::string key = r_place_map["key"];
   unsigned int ver= boost::lexical_cast<unsigned int>(r_place_map["ver"] );
@@ -1576,7 +1466,7 @@ void RIManager::handle_rplace(std::map<std::string, std::string> r_place_map)
 
 void RIManager::handle_rp_reply(std::map<std::string, std::string> rp_reply_map)
 {
-  LOG(INFO) << "handle_rp_reply:: rp_reply_map= \n" << patch_ds::map_to_str<>(rp_reply_map);
+  LOG(INFO) << "handle_rp_reply:: rp_reply_map= \n" << patch_sdm::map_to_str<>(rp_reply_map);
   
   key_ver_pair kv = std::make_pair(rp_reply_map["key"], boost::lexical_cast<unsigned int>(rp_reply_map["ver"]) );
   key_ver___laddr_lport__tmpfsdir_map[kv] = std::make_pair(std::make_pair(rp_reply_map["laddr"], rp_reply_map["lport"]), rp_reply_map["tmpfs_dir"]);
@@ -1588,7 +1478,7 @@ void RIManager::handle_rp_reply(std::map<std::string, std::string> rp_reply_map)
 
 void RIManager::handle_r_subscribe(std::map<std::string, std::string> r_subs_map)
 {
-  LOG(INFO) << "handle_r_subscribe:: r_subs_map= \n" << patch_ds::map_to_str<>(r_subs_map);
+  LOG(INFO) << "handle_r_subscribe:: r_subs_map= \n" << patch_sdm::map_to_str<>(r_subs_map);
   
   rs_table.push_subscriber(r_subs_map["key"], boost::lexical_cast<unsigned int>(r_subs_map["ver"]), 
                            boost::lexical_cast<char>(r_subs_map["id"]) );
@@ -1599,7 +1489,7 @@ void RIManager::handle_r_subscribe(std::map<std::string, std::string> r_subs_map
 #ifdef _GRIDFTP_
 void RIManager::handle_gftpput_done(std::map<std::string, std::string> gftpput_done_map)
 {
-  LOG(INFO) << "handle_gftpput_done:: gftpput_done_map= \n" << patch_ds::map_to_str<>(gftpput_done_map);
+  LOG(INFO) << "handle_gftpput_done:: gftpput_done_map= \n" << patch_sdm::map_to_str<>(gftpput_done_map);
   
   rf_wa_get_syncer.notify(std::make_pair(gftpput_done_map["key"], boost::lexical_cast<unsigned int>(gftpput_done_map["ver"] ) ) );
   // 
@@ -1608,7 +1498,7 @@ void RIManager::handle_gftpput_done(std::map<std::string, std::string> gftpput_d
 
 void RIManager::handle_gftp_bping(std::map<std::string, std::string> gftp_bping_map)
 {
-  LOG(INFO) << "handle_gftp_bping:: gftp_bping_map= \n" << patch_ds::map_to_str<>(gftp_bping_map);
+  LOG(INFO) << "handle_gftp_bping:: gftp_bping_map= \n" << patch_sdm::map_to_str<>(gftp_bping_map);
   
   std::map<std::string, std::string> gftp_bpong_map;
   gftp_bpong_map["type"] = RI_GFTP_BPONG;
@@ -1628,7 +1518,7 @@ void RIManager::handle_gftp_bping(std::map<std::string, std::string> gftp_bping_
 
 void RIManager::handle_gftp_bpong(std::map<std::string, std::string> gftp_bpong_map)
 {
-  LOG(INFO) << "handle_gftp_bpong:: gftp_bpong_map= \n" << patch_ds::map_to_str<>(gftp_bpong_map);
+  LOG(INFO) << "handle_gftp_bpong:: gftp_bpong_map= \n" << patch_sdm::map_to_str<>(gftp_bpong_map);
   
   char ds_id = gftp_bpong_map["id"].c_str()[0];
   gftpb_table.add(ds_id, gftp_bpong_map["laddr"], gftp_bpong_map["lport"], gftp_bpong_map["tmpfs_dir"] );

@@ -105,8 +105,8 @@ hilbert_ieee_box_vtx(unsigned nDims,
  *      nBits <= (sizeof bitmask_t) * (bits_per_byte)
  */
 unsigned
-hilbert_box_pt(unsigned nDims, unsigned nBytes, unsigned nBits,
-         int findMin, void* coord1, void* coord2);
+  hilbert_box_pt(unsigned nDims, unsigned nBytes, unsigned nBits,
+           int findMin, void* coord1, void* coord2);
 unsigned
 hilbert_ieee_box_pt(unsigned nDims,
         int findMin, double* c1, double* c2);

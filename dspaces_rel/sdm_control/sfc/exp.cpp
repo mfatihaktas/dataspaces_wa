@@ -59,52 +59,117 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
 // Walk whole space with incremental boxes
 void sim()
 {
+  int volume = 1000;
+  int dim_length = (int) pow(volume, (float)1/NDIM);
+  std::cout << "sim:: dim_length= " << dim_length << "\n";
+  
   std::vector<char> ds_id_v = boost::assign::list_of('a')('b');
   int pbuffer_size = 0;
-  int lcoor_[] = {0, 0};
-  int ucoor_[] = {10, 10};
+  int pexpand_length = 1;
+  COOR_T lcoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 0) };
+  COOR_T ucoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, dim_length) };
   std::vector<char> p_id__ds_id_v = boost::assign::list_of('a');
   std::vector<char> c_id__ds_id_v = boost::assign::list_of('b');
-  PCSim pc_sim(ds_id_v, pbuffer_size,
+  PCSim pc_sim(ds_id_v, pbuffer_size, pexpand_length,
                lcoor_, ucoor_,
                p_id__ds_id_v, c_id__ds_id_v);
   
   std::vector<app_id__lcoor_ucoor_pair> p_id__lcoor_ucoor_pair_v, c_id__lcoor_ucoor_pair_v;
-  p_id__lcoor_ucoor_pair_v.push_back(std::make_pair(0, std::make_pair(lcoor_, ucoor_) ) );
   
-  MULTI_FOR(lcoor_, ucoor_)
-    int walk_lcoor_[NDIM] = { BOOST_PP_ENUM(NDIM, VAR_REP, d) };
-    int walk_ucoor_[NDIM];
-    for (int i = 0; i < NDIM; i++)
-      walk_ucoor_[i] = walk_lcoor_[i] + 1;
+  COOR_T put_lcoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 0) };
+  COOR_T put_ucoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, dim_length) };
+  p_id__lcoor_ucoor_pair_v.push_back(std::make_pair(0, std::make_pair(put_lcoor_, put_ucoor_) ) );
+  // MULTI_FOR(put_lcoor_, put_ucoor_)
+  //   COOR_T walk_lcoor_[NDIM] = { BOOST_PP_ENUM(NDIM, VAR_REP, d) };
+  //   COOR_T walk_ucoor_[NDIM];
+  //   for (int i = 0; i < NDIM; i++)
+  //     walk_ucoor_[i] = walk_lcoor_[i] + 1;
     
-    int* dwalk_lcoor_ = (int*)malloc(NDIM*sizeof(int) );
-    int* dwalk_ucoor_ = (int*)malloc(NDIM*sizeof(int) );
+  //   COOR_T* dwalk_lcoor_ = (COOR_T*)malloc(NDIM*sizeof(COOR_T) );
+  //   COOR_T* dwalk_ucoor_ = (COOR_T*)malloc(NDIM*sizeof(COOR_T) );
+  //   for (int i = 0; i < NDIM; i++) {
+  //     dwalk_lcoor_[i] = walk_lcoor_[i];
+  //     dwalk_ucoor_[i] = walk_ucoor_[i];
+  //   }
+    
+  //   p_id__lcoor_ucoor_pair_v.push_back(std::make_pair(0, std::make_pair(dwalk_lcoor_, dwalk_ucoor_) ) );
+  // END_MULTI_FOR()
+  
+  COOR_T get_lcoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 0) };
+  COOR_T get_ucoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, dim_length) };
+  MULTI_FOR(get_lcoor_, get_ucoor_)
+    COOR_T walk_lcoor_[NDIM] = { BOOST_PP_ENUM(NDIM, VAR_REP, d) };
+    
+    COOR_T* dwalk_lcoor_ = (COOR_T*)malloc(NDIM*sizeof(COOR_T) );
+    COOR_T* dwalk_ucoor_ = (COOR_T*)malloc(NDIM*sizeof(COOR_T) );
     for (int i = 0; i < NDIM; i++) {
       dwalk_lcoor_[i] = walk_lcoor_[i];
-      dwalk_ucoor_[i] = walk_ucoor_[i];
+      dwalk_ucoor_[i] = walk_lcoor_[i] + 1;
     }
     
     c_id__lcoor_ucoor_pair_v.push_back(std::make_pair(1, std::make_pair(dwalk_lcoor_, dwalk_ucoor_) ) );
-    std::cout << "d0= " << d0 << ", d1= " << d1 << "\n";
+    // std::cout << "d0= " << d0 << ", d1= " << d1 << "\n";
     // std::cout << "put_test:: " << LUCOOR_TO_STR(walk_lcoor_, walk_ucoor_) << "\n";
-    // wa_space.put(0, walk_lcoor_, walk_ucoor_);
+      // wa_space.put(0, walk_lcoor_, walk_ucoor_);
   END_MULTI_FOR()
   
   pc_sim.sim(p_id__lcoor_ucoor_pair_v, c_id__lcoor_ucoor_pair_v);
   std::cout << "sim:: pc_sim.get_c_id__get_lperc_map= \n" << patch_sfc::map_to_str<>(pc_sim.get_c_id__get_lperc_map() ) << "\n";
-
-  // for (std::vector<app_id__lcoor_ucoor_pair>::iterator it = p_id__lcoor_ucoor_pair_v.begin(); it != p_id__lcoor_ucoor_pair_v.end(); it++) {
-  //   free((it->second).first);
-  //   free((it->second).second);
-  // }
-  // for (std::vector<app_id__lcoor_ucoor_pair>::iterator it = c_id__lcoor_ucoor_pair_v.begin(); it != c_id__lcoor_ucoor_pair_v.end(); it++) {
-  //   free((it->second).first);
-  //   free((it->second).second);
-  // }
+  
+  std::cout << "sim:: pc_sim= \n" << pc_sim.to_str();
 }
 
+void test_hpredictor()
+{
+  char ds_id_[] = {'a', 'b', 'c'};
+  srand(time(NULL) );
+  COOR_T lcoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 0) };
+  COOR_T ucoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 16) };
+  HPredictor hpredictor(lcoor_, ucoor_);
+  
+  std::cout << "test_hpredictor:: index_interval_set= " << *(hpredictor.coor_to_index_interval_set_(lcoor_, ucoor_) ) << "\n";
+  
+  // MULTI_FOR(lcoor_, ucoor_)
+  //   COOR_T walk_lcoor_[NDIM] = { BOOST_PP_ENUM(NDIM, VAR_REP, d) };
+  //   COOR_T walk_ucoor_[NDIM];
+  //   for (int i = 0; i < NDIM; i++)
+  //     walk_ucoor_[i] = walk_lcoor_[i] + 1;
+    
+  //   std::cout << "test_hpredictor:: ----------- \n";
+  //   std::cout << "walk_lucoor_: \n" << LUCOOR_TO_STR(walk_lcoor_, walk_ucoor_) << "\n";
+    
+  //   std::vector<lcoor_ucoor_pair> next_lcoor_ucoor_pair_v;
+  //   // hpredictor.add_acc__predict_next_acc(ds_id_[rand() % sizeof(ds_id_)/sizeof(*ds_id_) ], walk_lcoor_, walk_ucoor_, next_lcoor_ucoor_pair_v);
+  //   hpredictor.add_acc__predict_next_acc('a', walk_lcoor_, walk_ucoor_, 
+  //                                       1, next_lcoor_ucoor_pair_v);
+  //   for (int i = 0; i < next_lcoor_ucoor_pair_v.size(); i++) {
+  //     lcoor_ucoor_pair lu_pair = next_lcoor_ucoor_pair_v[i];
+  //     std::cout << "next_lucoor_: \n" << LUCOOR_TO_STR(lu_pair.first, lu_pair.second) << "\n";
+  //   }
+  // END_MULTI_FOR()
+  std::cout << "hpredictor= \n" << hpredictor.to_str();
+}
 
+void test_rtable()
+{
+  RTable<char> rtable;
+  
+  COOR_T lcoor_1_[] = {0, 0};
+  COOR_T ucoor_1_[] = {5, 5};
+  rtable.add(lcoor_1_, ucoor_1_, 'a');
+  
+  COOR_T lcoor_2_[] = {2, 2};
+  COOR_T ucoor_2_[] = {7, 7};
+  rtable.add(lcoor_2_, ucoor_2_, 'b');
+  
+  COOR_T lcoor_[] = {3, 3};
+  COOR_T ucoor_[] = {5, 5};
+  std::vector<char> ds_id_v;
+  rtable.query(lcoor_, ucoor_, ds_id_v);
+  std::cout << "test_rtable:: ds_id_v= " << patch_sfc::vec_to_str<>(ds_id_v) << "\n";
+  
+  std::cout << "test_rtable:: rtable= \n" << rtable.to_str() << "\n";
+}
 
 int main(int argc, char **argv)
 {
@@ -113,39 +178,14 @@ int main(int argc, char **argv)
   // 
   std::map<std::string, std::string> opt_map = parse_opts(argc, argv);
   
-  
-  
-  // char ds_id_[] = {'a', 'b', 'c'};
-  // srand (time(NULL) );
-  // int lcoor_[] = {0, 0};
-  // int ucoor_[] = {10, 10};
-  // HPredictor hpredictor(lcoor_, ucoor_);
-  // MULTI_FOR(lcoor_, ucoor_)
-  //   int walk_lcoor_[NDIM] = { BOOST_PP_ENUM(NDIM, VAR_REP, d) };
-  //   int walk_ucoor_[NDIM];
-  //   for (int i = 0; i < NDIM; i++)
-  //     walk_ucoor_[i] = walk_lcoor_[i] + 1;
-    
-  //   std::vector<lcoor_ucoor_pair> next_lcoor_ucoor_pair_v;
-  //   hpredictor.add_acc__predict_next_acc(ds_id_[rand() % sizeof(ds_id_)/sizeof(*ds_id_) ], walk_lcoor_, walk_ucoor_, next_lcoor_ucoor_pair_v);
-  //   // hpredictor.add_acc__predict_next_acc(ds_id_[rand() % sizeof(ds_id_)/sizeof(*ds_id_) ], walk_lcoor_, walk_ucoor_, next_lcoor_ucoor_pair_v);
-  //   hpredictor.add_acc__predict_next_acc('a', walk_lcoor_, walk_ucoor_, next_lcoor_ucoor_pair_v);
-  // END_MULTI_FOR()
-  
-  // std::vector<lcoor_ucoor_pair> next_lcoor_ucoor_pair_v;
-  // int walk_lcoor_[] = {0, 0};
-  // int walk_ucoor_[] = {5, 5};
-  // hpredictor.add_acc__predict_next_acc('a', walk_lcoor_, walk_ucoor_, next_lcoor_ucoor_pair_v);
-  // int walk_2_lcoor_[] = {1, 1};
-  // int walk_2_ucoor_[] = {7, 7};
-  // hpredictor.add_acc__predict_next_acc('b', walk_2_lcoor_, walk_2_ucoor_, next_lcoor_ucoor_pair_v);
-  
-  // std::cout << "main:: hpredictor= \n" << hpredictor.to_str();
-  
+  // test_rtable();
+  // check_boost_geometry_api();
+  // check_hilbert_api();
+  // test_hpredictor();
   // check_3d_hilbert_curve();
-  // sim();
-  // int get_lcoor_[] = {2, 2};
-  // int get_ucoor_[] = {2, 3};
+  sim();
+  // COOR_T get_lcoor_[] = {2, 2};
+  // COOR_T get_ucoor_[] = {2, 3};
   // std::vector<char> get_v;
   // wa_space.get(get_lcoor_, get_ucoor_, get_v);
   // std::cout << "main:: get_v= " << patch_sfc::vec_to_str<char>(get_v) << "\n";

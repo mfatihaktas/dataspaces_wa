@@ -30,8 +30,11 @@ namespace patch_sfc {
   {
     std::stringstream ss;
     
-    for (int i = 0; i < size; i++)
-      ss << boost::lexical_cast<std::string>(arr_[i] ) << ", ";
+    for (int i = 0; i < size; i++) {
+      ss << boost::lexical_cast<std::string>(arr_[i] );
+      if (i < size - 1)
+        ss << ",";
+    }
     
     return ss.str();
   }
@@ -55,11 +58,11 @@ namespace patch_sfc {
 #define POINT_SET_REP(z, n, p_coor) \
   boost::geometry::set<n>(BOOST_PP_TUPLE_ELEM(2, 0, p_coor), BOOST_PP_TUPLE_ELEM(2, 1, p_coor)[n] );
 
-#define CREATE_BOX(box, lcoor_, ucoor_) \
-  point_t lp, up; \
-  BOOST_PP_REPEAT(NDIM, POINT_SET_REP, (lp, lcoor_) ) \
-  BOOST_PP_REPEAT(NDIM, POINT_SET_REP, (up, ucoor_) ) \
-  box_t box(lp, up);
+#define CREATE_BOX(i, box, lcoor_, ucoor_) \
+  point_t lp ## i, up ## i; \
+  BOOST_PP_REPEAT(NDIM, POINT_SET_REP, (lp ## i, lcoor_) ) \
+  BOOST_PP_REPEAT(NDIM, POINT_SET_REP, (up ## i, ucoor_) ) \
+  box_t box(lp ## i, up ## i);
 
 #define LUCOOR_TO_STR(lcoor_, ucoor_) \
      "\t lcoor_= " << patch_sfc::arr_to_str<>(NDIM, lcoor_) \
@@ -85,5 +88,7 @@ namespace patch_sfc {
 
 #define END_FOR_REP(z, n, data) }
 #define END_MULTI_FOR() BOOST_PP_REPEAT(NDIM, END_FOR_REP, ~)
+
+#define FIXED_REP(z, n, d) d
 
 #endif // _PATCH_SFC_H_

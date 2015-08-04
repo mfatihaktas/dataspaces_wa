@@ -1,184 +1,12 @@
 #include "sim.h"
 
-bool return_true() { return true; }
-
-/*******************************************  QTable  *********************************************/
-QTable::QTable()
-{
-  // 
-  LOG(INFO) << "QTable:: constructed.";
-}
-
-QTable::~QTable() { LOG(INFO) << "QTable:: destructed."; }
-
-std::string QTable::to_str()
-{
-  std::stringstream ss;
-  
-  for (rtree_t::const_query_iterator it = rtree.qbegin(boost::geometry::index::satisfies(boost::bind(&return_true) ) ); it != rtree.qend(); ++it) {
-    point_t lp = (it->first).min_corner();
-    point_t up = (it->first).max_corner();
-    int lcoor_[NDIM], ucoor_[NDIM];
-    BOOST_PP_REPEAT(NDIM, POINT_GET_REP, (lp, lcoor_) )
-    BOOST_PP_REPEAT(NDIM, POINT_GET_REP, (up, ucoor_) )
-    
-    ss << "\t box= [(";
-    for (int i = 0; i < NDIM; i++, ss << ",")
-      ss << lcoor_[i];
-    ss << ") -- ";
-    for (int i = 0; i < NDIM; i++, ss << ",")
-      ss << ucoor_[i];
-    ss << ")] : " << it->second << "\n";
-  }
-  
-  return ss.str();
-}
-
-int QTable::add(int* lcoor_, int* ucoor_, char ds_id)
-{
-  IS_VALID_BOX("add", lcoor_, ucoor_, return 1)
-  CREATE_BOX(b, lcoor_, ucoor_)
-  
-  rtree.insert(std::make_pair(b, ds_id) );
-  
-  return 0;
-}
-
-int QTable::query(int* lcoor_, int* ucoor_, std::vector<char>& ds_id_v)
-{
-  IS_VALID_BOX("query", lcoor_, ucoor_, return 1)
-  CREATE_BOX(qb, lcoor_, ucoor_)
-  
-  std::vector<value> value_v;
-  // rtree.query(boost::geometry::index::intersects(qb), std::back_inserter(value_v) );
-  rtree.query(boost::geometry::index::contains(qb), std::back_inserter(value_v) );
-  
-  for (std::vector<value>::iterator it = value_v.begin(); it != value_v.end(); it++)
-    ds_id_v.push_back(it->second);
-  
-  return 0;
-}
-
-/*****************************************  HPredictor  *******************************************/
-HPredictor::HPredictor(int* lcoor_, int* ucoor_)
-: lcoor_(lcoor_), ucoor_(ucoor_)
-{
-  IS_VALID_BOX("HPredictor", lcoor_, ucoor_, exit(1) )
-  // 
-  std::vector<int> dim_length_v;
-  for (int i = 0; i < NDIM; i++)
-    dim_length_v.push_back(ucoor_[i] - lcoor_[i] );
-  
-  hilbert_num_bits = (int) log2(*std::max_element(dim_length_v.begin(), dim_length_v.end() ) );
-  // 
-  LOG(INFO) << "HPredictor:: constructed.";
-}
-
-HPredictor::~HPredictor() { LOG(INFO) << "HPredictor:: destructed."; }
-
-std::string HPredictor::to_str()
-{
-  std::stringstream ss;
-  ss << "\t lcoor_= " << patch_sfc::arr_to_str<>(NDIM, lcoor_) << "\n"
-     << "\t ucoor_= " << patch_sfc::arr_to_str<>(NDIM, ucoor_) << "\n"
-     << "\t hilbert_num_bits= " << hilbert_num_bits << "\n";
-  
-  ss << "\t index_interval__ds_id_set_map= \n";
-  for (boost::icl::interval_map<bitmask_t, std::set<char> >::iterator it = index_interval__ds_id_set_map.begin(); it != index_interval__ds_id_set_map.end(); it++)
-    ss << "\t" << it->first << " : " << patch_sfc::set_to_str<>(it->second) << "\n";
-  
-  return ss.str();
-}
-
-int HPredictor::add_acc__predict_next_acc(char ds_id, int* lcoor_, int* ucoor_,
-                                          std::vector<lcoor_ucoor_pair>& next_lcoor_ucoor_pair_v)
-{
-  // add
-  MULTI_FOR(lcoor_, ucoor_)
-    bitmask_t walk_lcoor_[NDIM] = { BOOST_PP_ENUM(NDIM, VAR_REP, d) };
-    bitmask_t index = hilbert_c2i(NDIM, hilbert_num_bits, walk_lcoor_);
-    
-    std::set<char> ds_id_set;
-    ds_id_set.insert(ds_id);
-    
-    index_interval__ds_id_set_map.insert(std::make_pair(boost::icl::interval<bitmask_t>::closed(index, index), ds_id_set) );
-  END_MULTI_FOR()
-  // predict
-  
-}
-
-/******************************************  WASpace  *********************************************/
-WASpace::WASpace(std::vector<char> ds_id_v, int pbuffer_size,
-                 int* lcoor_, int* ucoor_)
-: ds_id_v(ds_id_v), pbuffer_size(pbuffer_size),
-  lcoor_(lcoor_), ucoor_(ucoor_)
-{
-  IS_VALID_BOX("WASpace", lcoor_, ucoor_, exit(1) )
-  // 
-  LOG(INFO) << "WASpace:: constructed.";
-}
-
-WASpace::~WASpace() { LOG(INFO) << "WASpace:: destructed."; }
-
-std::string WASpace::to_str()
-{
-  std::stringstream ss;
-  
-  ss << "ds_id_v= " << patch_sfc::vec_to_str<char>(ds_id_v) << "\n";
-  ss << "pbuffer_size= " << pbuffer_size << "\n";
-  ss << "qtable= \n" << qtable.to_str() << "\n";
-  ss << "app_id__ds_id_map= \n" << patch_sfc::map_to_str<>(app_id__ds_id_map) << "\n";
-  
-  return ss.str();
-}
-
-int WASpace::reg_app(int app_id, char ds_id)
-{
-  if (app_id__ds_id_map.count(app_id) != 0) {
-    LOG(ERROR) << "reg_app:: already reged app_id= " << app_id;
-    return 1;
-  }
-  app_id__ds_id_map[app_id] = ds_id;
-  return 0;
-}
-
-int WASpace::put(int p_id, int* lcoor_, int* ucoor_)
-{
-  if (app_id__ds_id_map.count(p_id) == 0) {
-    LOG(ERROR) << "put:: non-reged p_id= " << p_id;
-    return 1;
-  }
-  if (qtable.add(lcoor_, ucoor_, app_id__ds_id_map[p_id] ) ) {
-    LOG(ERROR) << "put:: qtable.add failed! for " << LUCOOR_TO_STR(lcoor_, ucoor_) << "\n";
-    return 1;
-  }
-  
-  return 0;
-}
-
-int WASpace::get(int c_id, int* lcoor_, int* ucoor_, char& get_type)
-{
-  CREATE_BOX(acced_box, lcoor_, ucoor_)
-  acced_box_v.push_back(acced_box);
-  
-  std::vector<char> ds_id_v;
-  if (qtable.query(lcoor_, ucoor_, ds_id_v) )
-    return 1;
-  else {
-    if (std::find(ds_id_v.begin(), ds_id_v.end(), app_id__ds_id_map[c_id] ) == ds_id_v.end() )
-      get_type = 'r';
-    else
-      get_type = 'l';
-  }
-  
-  return 0;
-}
-
 /*******************************************  PCSim  **********************************************/
-PCSim::PCSim(std::vector<char> ds_id_v, int pbuffer_size,
-             int* lcoor_, int* ucoor_,
+PCSim::PCSim(std::vector<char> ds_id_v,
+             int pbuffer_size, int pexpand_length,
+             COOR_T* lcoor_, COOR_T* ucoor_,
              std::vector<char> p_id__ds_id_v, std::vector<char> c_id__ds_id_v)
-: wa_space(ds_id_v, pbuffer_size, lcoor_, ucoor_)
+: p_id__ds_id_v(p_id__ds_id_v), c_id__ds_id_v(c_id__ds_id_v),
+  wa_space(ds_id_v, pbuffer_size, pexpand_length, lcoor_, ucoor_)
 {
   for (int p_id = 0; p_id < p_id__ds_id_v.size(); p_id++)
     wa_space.reg_app(p_id, p_id__ds_id_v[p_id] );
@@ -195,7 +23,9 @@ std::string PCSim::to_str()
 {
   std::stringstream ss;
   
-  ss << "wa_space= \n" << wa_space.to_str() << "\n";
+  ss << "p_id__ds_id_v= " << patch_sfc::vec_to_str<>(p_id__ds_id_v) << "\n"
+     << "c_id__ds_id_v= " << patch_sfc::vec_to_str<>(c_id__ds_id_v) << "\n"
+     << "wa_space= \n" << wa_space.to_str() << "\n";
   
   return ss.str();
 }
@@ -220,15 +50,28 @@ void PCSim::sim(std::vector<app_id__lcoor_ucoor_pair>& p_id__lcoor_ucoor_pair_v,
 {
   for (std::vector<app_id__lcoor_ucoor_pair>::iterator it = p_id__lcoor_ucoor_pair_v.begin(); it != p_id__lcoor_ucoor_pair_v.end(); it++) {
     wa_space.put(it->first, (it->second).first, (it->second).second);
-    LOG(INFO) << "sim:: put " << LUCOOR_TO_STR((it->second).first, (it->second).second) << "\n";
+    // LOG(INFO) << "sim:: put " << LUCOOR_TO_STR((it->second).first, (it->second).second) << "\n";
   }
-  
+    
   for (std::vector<app_id__lcoor_ucoor_pair>::iterator it = c_id__lcoor_ucoor_pair_v.begin(); it != c_id__lcoor_ucoor_pair_v.end(); it++) {
+    char c_ds_id = c_id__ds_id_v[it->first - p_id__ds_id_v.size() ];
+    
     char get_type;
-    if (wa_space.get(it->first, (it->second).first, (it->second).second, get_type) )
+    std::vector<lcoor_ucoor_pair> next_lcoor_ucoor_pair_v;
+    if (wa_space.get(it->first, (it->second).first, (it->second).second, get_type, next_lcoor_ucoor_pair_v) )
       LOG(WARNING) << "sim:: could NOT get " << LUCOOR_TO_STR((it->second).first, (it->second).second) << "\n";
     else {
-      LOG(INFO) << "sim:: got " << LUCOOR_TO_STR((it->second).first, (it->second).second) << "\n";
+      for (int i = 0; i < next_lcoor_ucoor_pair_v.size(); i++) {
+        lcoor_ucoor_pair lu_pair = next_lcoor_ucoor_pair_v[i];
+        if (wa_space.prefetch(c_ds_id, lu_pair.first, lu_pair.second) ) {
+          // LOG(WARNING) << "get:: prefetch failed! for " << LUCOOR_TO_STR(lu_pair.first, lu_pair.second) << "\n";
+        }
+        else {
+          // LOG(WARNING) << "get:: prefetched " << LUCOOR_TO_STR(lu_pair.first, lu_pair.second) << "\n";
+        }
+      }
+      
+      // LOG(INFO) << "sim:: got get_type= " << get_type << "; " << LUCOOR_TO_STR((it->second).first, (it->second).second) << "\n";
       c_id__get_type_v_map[it->first].push_back(get_type);
     }
   }

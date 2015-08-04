@@ -22,13 +22,13 @@ LIB = $(GLOG_LIB) $(BOOST_LIB)
 
 ODIR = obj
 
-.PHONY: clean
+.PHONY: clean all
 
 APPS := exp
 
 all: ${APPS}
 
-exp: $(ODIR)/exp.o $(ODIR)/sim.o $(ODIR)/hilbert.o
+exp: $(ODIR)/exp.o $(ODIR)/sim.o $(ODIR)/sfc.o $(ODIR)/hilbert.o
 	$(CPP) -g -o $@ $^ $(INC) $(LIB)
 
 $(ODIR)/%.o: %.cpp

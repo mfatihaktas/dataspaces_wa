@@ -1,9 +1,49 @@
 #ifndef _PATCH_EXP_H_
 #define _PATCH_EXP_H_
 
+#include "patch_sfc.h"
+#include "sim.h"
+
 #include "gnuplot-iostream.h"
 
 /***************************************  Check Hilbert  ******************************************/
+void check_boost_geometry_api()
+{
+  // http://boost-geometry.203548.n3.nabble.com/3D-box-gt-3D-multi-polygon-conversion-td4025353.html
+  int lcoor_1_[] = {0, 0};
+  int ucoor_1_[] = {10, 10};
+  CREATE_BOX(0, box_1, lcoor_1_, ucoor_1_)
+  std::cout << "box_1= " << boost::geometry::dsv(box_1) << "\n";
+  
+  int lcoor_2_[] = {5, 5};
+  int ucoor_2_[] = {10, 10};
+  CREATE_BOX(1, box_2, lcoor_2_, ucoor_2_)
+  std::cout << "box_2= " << boost::geometry::dsv(box_2) << "\n";
+  
+  // std::vector<box_t> output_v;
+  // boost::geometry::union_(box_1, box_2, output_v);
+
+  // std::cout << "check_boost_geometry_api:: \n";
+  // for (std::vector<box_t>::iterator it = output_v.begin(); it != output_v.end(); it++) {
+  //   std::cout << "box= " << boost::geometry::dsv(*it) << "\n";
+  // }
+}
+
+void check_hilbert_api()
+{
+  unsigned nDims = 2;
+  unsigned nBits = 4;
+  // double *lcoor_, *ucoor_;
+  double lcoor_[] = {0, 0};
+  double ucoor_[] = {10, 10};
+  
+  hilbert_box_pt(nDims, 0, nBits, 1, lcoor_, ucoor_);
+  // hilbert_ieee_box_pt(nDims, 0, lcoor_, ucoor_);
+  // hilbert_ieee_box_vtx(nDims, 0, lcoor_, ucoor_);
+  std::cout << "check_hilbert_api:: lcoor_= " << patch_sfc::arr_to_str<>(NDIM, lcoor_) << ","
+            << "ucoor_= " << patch_sfc::arr_to_str<>(NDIM,  ucoor_) << "\n";
+}
+
 template<typename T>
 void make_2dscatter_plot(std::vector<T> x_v, std::vector<T> y_v,
                          std::string x_label, std::string y_label,

@@ -338,13 +338,11 @@ class Graph // The graph base class template
       
       adjacency_iter_pair_t ai_pair = get_adj_vertices(root);
       
-      for (adjacency_iter ai = ai_pair.first;  ai != ai_pair.second; ai++) {
+      for (adjacency_iter ai = ai_pair.first;  ai != ai_pair.second; ai++)
         ss << tree_to_pretty_str(*ai, level + 1);
-      }
       
       return ss.str();
     }
-    
 };
 
 // Note: has to change key type to whatever KEY_T set for ParseTree, making these properties template does not work with boost::property

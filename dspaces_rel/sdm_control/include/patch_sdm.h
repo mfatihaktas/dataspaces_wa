@@ -2,6 +2,56 @@
 #define _PATCH_SDM_H_
 
 namespace patch_sdm {
+  template <typename T>
+  struct thread_safe_vector
+  {
+    private:
+      boost::mutex mutex;
+      typename std::vector<T> vector;
+      typename std::vector<T>::iterator it;
+    public:
+      thread_safe_vector() {};
+      ~thread_safe_vector() {};
+      
+      T& operator[](int i) {
+        boost::lock_guard<boost::mutex> guard(this->mutex);
+        return vector[i];
+      };
+      
+      void push_back(T e)
+      {
+        boost::lock_guard<boost::mutex> guard(this->mutex);
+        vector.push_back(e);
+      }
+      
+      int del(T e)
+      {
+        boost::lock_guard<boost::mutex> guard(this->mutex);
+        it = std::find(vector.begin(), vector.end(), e);
+        vector.erase(it);
+        return 0;
+      };
+      
+      bool contains(T e)
+      {
+        boost::lock_guard<boost::mutex> guard(this->mutex);
+        return (std::find(vector.begin(), vector.end(), e) != vector.end() );
+      };
+      
+      typename std::vector<T>::iterator begin()
+      {
+        boost::lock_guard<boost::mutex> guard(this->mutex);
+        return vector.begin();
+      };
+      
+      typename std::vector<T>::iterator end()
+      {
+        boost::lock_guard<boost::mutex> guard(this->mutex);
+        return vector.end();
+      };
+  };
+
+  
   template <typename Tk, typename Tv>
   struct thread_safe_map
   {
@@ -45,23 +95,83 @@ namespace patch_sdm {
       int size() { return map.size(); }
   };
   
-  template<typename Tk, typename Tv>
-  std::string map_to_str(std::map<Tk, Tv> map)
+  template <typename T>
+  struct syncer 
   {
-    std::stringstream ss;
-    for (typename std::map<Tk, Tv>::const_iterator it = map.begin(); it != map.end(); it++)
-      ss << "\t" << it->first << ": " << it->second << "\n";
-    
-    return ss.str();
-  }
-  
-  // char* str_to_char_(std::string str)
-  // {
-  //   char* char_ = (char*)malloc(str.size()*sizeof(char) );
-  //   strcpy(char_, str.c_str() );
-    
-  //   return char_;
-  // }
+    private:
+      thread_safe_map<T, boost::shared_ptr<boost::condition_variable> > point_cv_map;
+      thread_safe_map<T, boost::shared_ptr<boost::mutex> > point_m_map;
+      thread_safe_map<T, int> point_numpeers_map;
+    public:
+      syncer() { LOG(INFO) << "syncer:: constructed."; }
+      ~syncer() { LOG(INFO) << "syncer:: destructed."; }
+      
+      void close()
+      {
+        for (typename std::map<T, boost::shared_ptr<boost::condition_variable> >::iterator it = point_cv_map.begin(); it != point_cv_map.end(); it++)
+          (it->second).reset();
+        for (typename std::map<T, boost::shared_ptr<boost::mutex> >::iterator it = point_m_map.begin(); it != point_m_map.end(); it++)
+          (it->second).reset();
+        // 
+        LOG(INFO) << "closed:: closed.";
+      }
+      
+      int add_sync_point(T point, int num_peers)
+      {
+        if (point_cv_map.contains(point) ) {
+          LOG(ERROR) << "add_sync_point:: already added point.";
+          return 1;
+        }
+        boost::shared_ptr<boost::condition_variable> t_cv_( new boost::condition_variable() );
+        boost::shared_ptr<boost::mutex> t_m_( new boost::mutex() );
+        
+        point_cv_map[point] = t_cv_;
+        point_m_map[point] = t_m_;
+        point_numpeers_map[point] = num_peers;
+        
+        return 0;
+      }
+      
+      int del_sync_point(T point)
+      {
+        if (!point_cv_map.contains(point) ) {
+          LOG(ERROR) << "del_sync_point:: non-existing point.";
+          return 1;
+        }
+        point_cv_map.del(point);
+        point_m_map.del(point);
+        point_numpeers_map.del(point);
+        
+        return 0;
+      }
+      
+      int wait(T point)
+      {
+        boost::mutex::scoped_lock lock(*point_m_map[point] );
+        point_cv_map[point]->wait(lock);
+        
+        return 0;
+      }
+      
+      int notify(T point)
+      {
+        if (!point_cv_map.contains(point) ) {
+          LOG(ERROR) << "notify:: non-existing point.";
+          return 1;
+        }
+        
+        int num_peers_to_wait = point_numpeers_map[point];
+        --num_peers_to_wait;
+        
+        if (num_peers_to_wait == 0) {
+          point_cv_map[point]->notify_one();
+          return 0;
+        }
+        point_numpeers_map[point] = num_peers_to_wait;
+        
+        return 0;
+      }
+  };
 }
 
 #endif //_PATCH_SDM_H_

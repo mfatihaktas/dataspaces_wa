@@ -2,72 +2,20 @@
 #define _DSCLIENT_H_
 
 // #define _GRIDFTP_
-
-#include "mpi.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <map>
-#include <unistd.h>
-
-#include <string>
-#include <cstdarg> // For variable argument lists
-#include <csignal> // For wait signal
-
-#include <glog/logging.h>
-#include <boost/shared_ptr.hpp>
-#include <boost/thread.hpp>
-#include <boost/function.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/make_shared.hpp>
-
-#include <boost/asio/io_service.hpp>
-#include <boost/asio/signal_set.hpp>
-// For boost serialization
-#include <fstream>
-#include <sstream>
-#include <boost/serialization/serialization.hpp>
-#include <boost/serialization/map.hpp>
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/tokenizer.hpp>
-
 #include "patch_ds.h"
 #include "ds_drive.h"
-// #include "dht_node.h"
-#include "sdm_node.h"
-#include "packet.h"
-
+#include "sdm_control.h"
+#include "prefetch.h"
+#include "profiler.h"
 #include "ib_delivery.h"
 #ifdef _GRIDFTP_
 #include "gftp_delivery.h"
 #endif // _GRIDFTP_
 
-#include "prefetch.h"
-#include "profiler.h"
-
-class IMsgCoder
-{
-  public:
-    IMsgCoder();
-    ~IMsgCoder();
-    std::map<std::string, std::string> decode(char* msg);
-    std::string encode(std::map<std::string, std::string> msg_map);
-    int decode_msg_map(std::map<std::string, std::string> msg_map, 
-                       std::string& key, unsigned int& ver, std::string& data_type,
-                       int& size, int& ndim, uint64_t* &gdim_, uint64_t* &lb_, uint64_t* &ub_);
-
-    int encode_msg_map(std::map<std::string, std::string> &msg_map, 
-                       std::string key, unsigned int ver, std::string data_type,
-                       int size, int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_);
-};
-
 // Server side of blocking communication channel over dataspaces
 // Single server <-> many clients
-// used by RIManager
 typedef boost::function<void(char*)> function_cb_on_recv;
-
-class BCServer
-{
+class BCServer {
   public:
     BCServer(int app_id, int num_clients, int msg_size, 
              std::string base_comm_var_name, function_cb_on_recv f_cb,
@@ -84,8 +32,7 @@ class BCServer
 };
 
 // Client side of blocking communication channel over dataspaces
-class BCClient
-{
+class BCClient {
   public:
     BCClient(int app_id, int num_others, int max_msg_size, 
              std::string base_comm_var_name,
@@ -100,66 +47,17 @@ class BCClient
     boost::shared_ptr<DSpacesDriver> ds_driver_;
 };
 
-typedef std::pair<std::string, unsigned int> key_ver_pair;
-struct RQTable //Remote Query Table
-{
-  struct key_ver_info {
-    public:
-      int p_id;
-      std::string data_type;
-      char ds_id;
-      int size, ndim;
-      uint64_t *gdim_, *lb_, *ub_;
-      
-      key_ver_info(int p_id, std::string data_type, char ds_id,
-                   int size, int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_)
-      : p_id(p_id), data_type(data_type), ds_id(ds_id),
-        size(size), ndim(ndim), gdim_(gdim_), lb_(lb_), ub_(ub_) {}
-  };
-  
-  public:
-    RQTable();
-    ~RQTable();
-    int get_key_ver(std::string key, unsigned int ver,
-                    int& p_id, std::string &data_type, char &ds_id,
-                    int &size, int &ndim, uint64_t* &gdim_, uint64_t* &lb_, uint64_t* &ub_);
-    int put_from_map(std::map<std::string, std::string> map);
-    int put_key_ver(std::string key, unsigned int ver,
-                    int p_id, std::string data_type, char ds_id, int size, int ndim, 
-                    uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
-    int add_key_ver(std::string key, unsigned int ver,
-                    int p_id, std::string data_type, char ds_id, int size, int ndim, 
-                    uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
-    int update_key_ver(std::string key, unsigned int ver,
-                       int p_id, std::string data_type, char ds_id, int size, int ndim, 
-                       uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
-    int del_key_ver(std::string key, unsigned int ver);
-    bool is_feasible_to_get(std::string key, unsigned int ver,
-                            int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
-    std::string to_str();
-    std::map<std::string, std::string> to_str_str_map();
-    
-    int mark_all();
-    std::map<std::string, std::string> to_unmarked_str_str_map();
-  private:
-    patch_ds::thread_safe_map<key_ver_pair, boost::shared_ptr<key_ver_info> > kv_info_map;
-    patch_ds::thread_safe_map<key_ver_pair, bool> kv_mark_map;
-};
-
-struct RSTable //Remote Subscription Table
-{
+struct RSTable { // Remote Subscription
   public:
     RSTable();
     ~RSTable();
     int push_subscriber(std::string key, unsigned int ver, char ds_id);
     int pop_subscriber(std::string key, unsigned int ver, char& ds_id);
   private:
-    patch_ds::thread_safe_map<key_ver_pair, std::vector<char> > key_ver__ds_id_vector_map;
+    patch_sdm::thread_safe_map<key_ver_pair, std::vector<char> > key_ver__ds_id_vector_map;
 };
 
-
-struct GFTPBTable //Gridftp Bootstrap Table
-{
+struct GFTPBTable { // Gridftp Bootstrap
   public:
     GFTPBTable();
     ~GFTPBTable();
@@ -168,16 +66,15 @@ struct GFTPBTable //Gridftp Bootstrap Table
     int get(char ds_id, std::string &laddr, std::string &lport, std::string &tmpfs_dir);
     bool contains(char ds_id);
   private:
-    patch_ds::thread_safe_map<char, std::string> dsid_laddr_map;
-    patch_ds::thread_safe_map<char, std::string> dsid_lport_map;
-    patch_ds::thread_safe_map<char, std::string> dsid_tmpfsdir_map;
+    patch_sdm::thread_safe_map<char, std::string> dsid_laddr_map;
+    patch_sdm::thread_safe_map<char, std::string> dsid_lport_map;
+    patch_sdm::thread_safe_map<char, std::string> dsid_tmpfsdir_map;
 };
 
 const std::string INFINIBAND = "i";
 const std::string GRIDFTP = "g";
 
-class RFPManager //Remote Fetch & Place Manager
-{
+class RFPManager { // Remote Fetch & Place
   public:
     RFPManager(std::string wa_trans_protocol, boost::shared_ptr<DSpacesDriver> ds_driver_,
                std::list<std::string> wa_ib_lport_list, std::string wa_gftp_lintf, 
@@ -246,8 +143,7 @@ const std::string RI_GFTP_BPONG = "gb_pong";
 
 typedef std::pair<std::string, std::string> laddr_lport_pair;
 typedef std::pair<laddr_lport_pair, std::string> laddr_lport__tmpfsdir_pair;
-class RIManager
-{
+class RIManager {
   private:
     //ImpRem: Since handle_ core functions are called by client threads, properties must be thread-safe
     int app_id, num_cnodes;
@@ -260,32 +156,32 @@ class RIManager
     boost::shared_ptr<SDMNode> sdm_node_;
     boost::shared_ptr<RFPManager> rfp_manager_;
     boost::shared_ptr<PBuffer> pbuffer_;
-    patch_ds::thread_safe_map<int, boost::shared_ptr<BCClient> > appid_bcclient_map; //TODO: prettify
+    patch_sdm::thread_safe_map<int, boost::shared_ptr<BCClient> > appid_bcclient_map; //TODO: prettify
     
     boost::asio::io_service io_service;
     boost::asio::signal_set signals;
     
-    RQTable rq_table;
-    patch_ds::syncer<key_ver_pair> rq_syncer;
+    KVTable rq_table;
+    patch_sdm::syncer<key_ver_pair> rq_syncer;
     
-    patch_ds::thread_safe_map<key_ver_pair, laddr_lport__tmpfsdir_pair> key_ver___laddr_lport__tmpfsdir_map;
-    patch_ds::syncer<key_ver_pair> rp_syncer;
+    patch_sdm::thread_safe_map<key_ver_pair, laddr_lport__tmpfsdir_pair> key_ver___laddr_lport__tmpfsdir_map;
+    patch_sdm::syncer<key_ver_pair> rp_syncer;
     
     RSTable rs_table;
-    patch_ds::syncer<key_ver_pair> handle_rp_syncer;
+    patch_sdm::syncer<key_ver_pair> handle_rp_syncer;
     
-    patch_ds::syncer<key_ver_pair> bget_syncer;
+    patch_sdm::syncer<key_ver_pair> bget_syncer;
     
-    patch_ds::syncer<key_ver_pair> rf_wa_get_syncer;
-    patch_ds::syncer<key_ver_pair> rp_wa_get_syncer;
+    patch_sdm::syncer<key_ver_pair> rf_wa_get_syncer;
+    patch_sdm::syncer<key_ver_pair> rp_wa_get_syncer;
     
-    patch_ds::thread_safe_vector<key_ver_pair> key_ver_being_fetched_vector;
-    patch_ds::syncer<key_ver_pair> being_fetched_syncer;
+    patch_sdm::thread_safe_vector<key_ver_pair> key_ver_being_fetched_vector;
+    patch_sdm::syncer<key_ver_pair> being_fetched_syncer;
     
     TProfiler<key_ver_pair> rget_time_profiler;
     // 
     GFTPBTable gftpb_table;
-    patch_ds::syncer<char> gftp_bping_syncer;
+    patch_sdm::syncer<char> gftp_bping_syncer;
   public:
     RIManager(int app_id, int num_cnodes, 
               char id, std::string dht_lip, int dht_lport, std::string ipeer_dht_lip, int ipeer_dht_lport, 

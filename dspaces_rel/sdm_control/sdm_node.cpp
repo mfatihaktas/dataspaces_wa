@@ -134,7 +134,7 @@ SDMNode::SDMNode(char id, std::string type,
   // 
   LOG(INFO) << "SDMNode:: constructed; \n" << to_str();
   // 
-  if (joinhost_lip.compare("") == 0) //first node
+  if (joinhost_lip.compare("") == 0) // First node
     LOG(INFO) << "SDMNode:: FIRST NODE.";
   else {
     // To get check joinhost status and get the join_reply
@@ -227,7 +227,7 @@ int SDMNode::send_msg_to_master(std::map<std::string, std::string> msg_map)
 }
 
 int SDMNode::broadcast_msg(PACKET_T packet_t, std::map<std::string, std::string> msg_map)
-{ return commer.send_to_all_peers('', *gen_packet(packet_t, msg_map) ); }
+{ return commer.send_to_all_peers(' ', *gen_packet(packet_t, msg_map) ); }
 
 int SDMNode::broadcast_msg_to_slaves(PACKET_T packet_t, std::map<std::string, std::string> msg_map)
 { return commer.send_to_all_peers(sdm_master_id, *gen_packet(packet_t, msg_map) ); }

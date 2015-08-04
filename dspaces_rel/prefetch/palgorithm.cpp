@@ -173,10 +173,7 @@ void PrefetchAlgo::reset()
 
 std::string PrefetchAlgo::parse_tree_to_pstr() { return parse_tree.to_pretty_str(); }
 
-std::vector<ACC_T> PrefetchAlgo::get_acc_v()
-{
-  return acc_v;
-}
+std::vector<ACC_T> PrefetchAlgo::get_acc_v() { return acc_v; }
 
 int PrefetchAlgo::train(std::vector<ACC_T> acc_v)
 {
