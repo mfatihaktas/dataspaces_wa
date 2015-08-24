@@ -148,10 +148,13 @@ SDMNode::SDMNode(char id, std::string type,
 
 SDMNode::~SDMNode() { LOG(INFO) << "destructed."; }
 
-void SDMNode::close()
+int SDMNode::close()
 {
-  commer.close();
-  LOG(INFO) << "close:: id= " << id << " closed.";
+  int ret = commer.close();
+  if (ret == 0)
+    LOG(INFO) << "close:: id= " << id << " closed.";
+  
+  return ret;
 }
 
 std::string SDMNode::to_str()
@@ -210,7 +213,7 @@ boost::shared_ptr<Packet> SDMNode::gen_join_reply(char peer_id, bool pos)
 boost::shared_ptr<Packet> SDMNode::gen_packet(PACKET_T packet_t, std::map<std::string, std::string> msg_map)
 {
   msg_map["id"] = id;
-  msg_map["type"] = type;
+  msg_map["node_type"] = type;
   
   return boost::make_shared<Packet>(packet_t, msg_map);
 }
@@ -239,7 +242,7 @@ int SDMNode::send_msg(char to_id, PACKET_T packet_t, std::map<std::string, std::
 void SDMNode::handle_recv(char* type__srlzed_msg_map)
 {
   boost::shared_ptr<Packet> p_ = boost::make_shared<Packet>((int)strlen(type__srlzed_msg_map), type__srlzed_msg_map);
-  LOG(INFO) << "handle_recv:: p= \n" << p_->to_str();
+  // LOG(INFO) << "handle_recv:: p= \n" << p_->to_str();
   
   switch (p_->get_type() ) {
     case SDM_JOIN_REQUEST:
@@ -289,7 +292,7 @@ void SDMNode::handle_join_reply(std::map<std::string, std::string> msg_map)
   if (msg_map["ack"].compare("a") == 0) {
     char from_id = (msg_map["id"].c_str() )[0];
     
-    if (msg_map["type"].compare("m") == 0) {
+    if (msg_map["node_type"].compare("m") == 0) {
       if (sdm_master_id != '?')
         LOG(WARNING) << "handle_join_reply:: from_id= " << from_id << " overwriting sdm_master_id= " << sdm_master_id;
       sdm_master_id = from_id;

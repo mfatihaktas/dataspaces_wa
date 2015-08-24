@@ -1,23 +1,10 @@
 #ifndef _SDM_NODE_H_
 #define _SDM_NODE_H_
 
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
-#include <boost/function.hpp>
-#include <boost/bind.hpp>
-#include <boost/lexical_cast.hpp>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <iostream>
-#include <string>
-#include <vector>
-#include <glog/logging.h>
-
+#include "sdm.h"
 #include "sdm_server.h"
 #include "sdm_client.h"
 #include "packet.h"
-#include "patch_sdm.h"
 
 /******************************************  peer_info  *******************************************/
 struct peer_info {
@@ -82,7 +69,7 @@ class SDMNode {
             std::string joinhost_lip, int joinhost_lport,
             func_rimsg_recv_cb _rimsg_recv_cb, func_sdm_cp_recv_cb _sdm_cp_recv_cb = NULL);
     ~SDMNode();
-    void close();
+    int close();
     std::string to_str();
     
     int get_num_peers();

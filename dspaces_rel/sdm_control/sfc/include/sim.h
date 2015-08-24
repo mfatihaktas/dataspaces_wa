@@ -16,7 +16,7 @@ class PCSim { // Prefetching Simulator
     std::map<int, float> c_id__get_lperc_map;
 
   public:
-    PCSim(std::vector<char> ds_id_v,
+    PCSim(char predictor_t, std::vector<char> ds_id_v,
           int pbuffer_size, int pexpand_length,
           COOR_T* lcoor_, COOR_T* ucoor_,
           std::vector<char> p_id__ds_id_v, std::vector<char> c_id__ds_id_v);

@@ -8,7 +8,6 @@
 #include <unistd.h>
 
 #include <string>
-#include <cstdarg> // For variable argument lists
 #include <csignal> // For wait signal
 
 #include <glog/logging.h>
@@ -30,18 +29,18 @@
 #include <boost/tokenizer.hpp>
 
 namespace patch_ds {
-  template <typename T>
-  void free_all(int num, ...)
-  {
-    va_list arguments;                     // A place to store the list of arguments
+  // template <typename T>
+  // void free_all(int num, ...)
+  // {
+  //   va_list arguments;                     // A place to store the list of arguments
   
-    va_start(arguments, num);           // Initializing arguments to store all values after num
+  //   va_start(arguments, num);           // Initializing arguments to store all values after num
     
-    for (int x = 0; x < num; x++)        // Loop until all numbers are added
-      va_arg(arguments, T*);
+  //   for (int x = 0; x < num; x++)        // Loop until all numbers are added
+  //     va_arg(arguments, T*);
     
-    va_end(arguments);                  // Cleans up the list
-  }
+  //   va_end(arguments);                  // Cleans up the list
+  // }
   
   // void debug_print(std::string key, unsigned int ver, int size, int ndim,
   //                 uint64_t* gdim, uint64_t* lb, uint64_t* ub, int* data, size_t data_length)

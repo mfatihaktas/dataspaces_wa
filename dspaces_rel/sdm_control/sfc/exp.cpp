@@ -28,7 +28,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
   {
     int option_index = 0;
     c = getopt_long (argc, argv, "s", long_options, &option_index);
-
+  
     if (c == -1) //Detect the end of the options.
       break;
     
@@ -70,7 +70,8 @@ void sim()
   COOR_T ucoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, dim_length) };
   std::vector<char> p_id__ds_id_v = boost::assign::list_of('a');
   std::vector<char> c_id__ds_id_v = boost::assign::list_of('b');
-  PCSim pc_sim(ds_id_v, pbuffer_size, pexpand_length,
+  PCSim pc_sim(HILBERT_PREDICTOR, ds_id_v,
+               pbuffer_size, pexpand_length,
                lcoor_, ucoor_,
                p_id__ds_id_v, c_id__ds_id_v);
   
@@ -125,7 +126,7 @@ void test_hpredictor()
   srand(time(NULL) );
   COOR_T lcoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 0) };
   COOR_T ucoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 16) };
-  HPredictor hpredictor(lcoor_, ucoor_);
+  HPredictor hpredictor(1, lcoor_, ucoor_);
   
   std::cout << "test_hpredictor:: index_interval_set= " << *(hpredictor.coor_to_index_interval_set_(lcoor_, ucoor_) ) << "\n";
   
@@ -156,16 +157,16 @@ void test_rtable()
   
   COOR_T lcoor_1_[] = {0, 0};
   COOR_T ucoor_1_[] = {5, 5};
-  rtable.add(lcoor_1_, ucoor_1_, 'a');
+  rtable.add("", 0, lcoor_1_, ucoor_1_, 'a');
   
   COOR_T lcoor_2_[] = {2, 2};
   COOR_T ucoor_2_[] = {7, 7};
-  rtable.add(lcoor_2_, ucoor_2_, 'b');
+  rtable.add("", 0, lcoor_2_, ucoor_2_, 'b');
   
   COOR_T lcoor_[] = {3, 3};
   COOR_T ucoor_[] = {5, 5};
   std::vector<char> ds_id_v;
-  rtable.query(lcoor_, ucoor_, ds_id_v);
+  rtable.query("", 0, lcoor_, ucoor_, ds_id_v);
   std::cout << "test_rtable:: ds_id_v= " << patch_sfc::vec_to_str<>(ds_id_v) << "\n";
   
   std::cout << "test_rtable:: rtable= \n" << rtable.to_str() << "\n";

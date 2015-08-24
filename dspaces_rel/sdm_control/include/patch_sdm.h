@@ -1,10 +1,24 @@
 #ifndef _PATCH_SDM_H_
 #define _PATCH_SDM_H_
 
+#include <boost/thread.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
+#include <boost/function.hpp>
+#include <boost/bind.hpp>
+#include <boost/lexical_cast.hpp>
+
+#include <cstdarg> // For variable argument lists
+#include <stdio.h>
+#include <stdlib.h>
+#include <iostream>
+#include <string>
+#include <vector>
+#include <glog/logging.h>
+
 namespace patch_sdm {
   template <typename T>
-  struct thread_safe_vector
-  {
+  struct thread_safe_vector {
     private:
       boost::mutex mutex;
       typename std::vector<T> vector;
@@ -53,8 +67,7 @@ namespace patch_sdm {
 
   
   template <typename Tk, typename Tv>
-  struct thread_safe_map
-  {
+  struct thread_safe_map {
     private:
       boost::mutex mutex;
       typename std::map<Tk, Tv> map;
@@ -96,8 +109,7 @@ namespace patch_sdm {
   };
   
   template <typename T>
-  struct syncer 
-  {
+  struct syncer {
     private:
       thread_safe_map<T, boost::shared_ptr<boost::condition_variable> > point_cv_map;
       thread_safe_map<T, boost::shared_ptr<boost::mutex> > point_m_map;
@@ -171,7 +183,25 @@ namespace patch_sdm {
         
         return 0;
       }
+      
+      bool contains(T point) { return point_cv_map.contains(point); }
   };
+  
+  #define HASH_PRIME 54059
+  #define HASH_PRIME_2 76963
+  #define HASH_PRIME_3 86969
+  unsigned int hash_str(std::string str);
+  
+  template <typename T>
+  void free_all(int num, ...)
+  {
+    va_list arguments;                     // A place to store the list of arguments
+  
+    va_start(arguments, num);           // Initializing arguments to store all values after num
+    for (int x = 0; x < num; x++)        // Loop all
+      free(va_arg(arguments, T*) );
+    va_end(arguments);                  // Cleans up the list
+  }
 }
 
 #endif //_PATCH_SDM_H_

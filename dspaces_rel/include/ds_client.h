@@ -1,5 +1,5 @@
-#ifndef _DSCLIENT_H_
-#define _DSCLIENT_H_
+#ifndef _DS_CLIENT_H_
+#define _DS_CLIENT_H_
 
 // #define _GRIDFTP_
 #include "patch_ds.h"
@@ -43,7 +43,7 @@ class BCClient {
     int app_id, num_others, max_msg_size;
     std::string base_comm_var_name;
     std::string comm_var_name;
-    IMsgCoder imsg_coder;
+    MsgCoder msg_coder;
     boost::shared_ptr<DSpacesDriver> ds_driver_;
 };
 
@@ -119,6 +119,7 @@ class RFPManager { // Remote Fetch & Place
     std::map<key_ver_pair, void*> key_ver__data_map;
 };
 
+/*******************************************  RIManager  ******************************************/
 const size_t APP_RIMANAGER_MAX_MSG_SIZE = 1000;
 
 const std::string GET = "g";
@@ -149,7 +150,7 @@ class RIManager {
     int app_id, num_cnodes;
     char id;
     std::string wa_trans_protocol, wa_gftp_lintf, wa_laddr, wa_gftp_lport, tmpfs_dir; //RIManager needs these for gftpb process
-    IMsgCoder imsg_coder;
+    MsgCoder msg_coder;
     
     boost::shared_ptr<DSpacesDriver> ds_driver_;
     boost::shared_ptr<BCServer> bc_server_;
@@ -183,44 +184,7 @@ class RIManager {
     GFTPBTable gftpb_table;
     patch_sdm::syncer<char> gftp_bping_syncer;
   public:
-    RIManager(int app_id, int num_cnodes, 
-              char id, std::string dht_lip, int dht_lport, std::string ipeer_dht_lip, int ipeer_dht_lport, 
-              std::string wa_trans_protocol, std::string wa_laddr, std::string wa_gftp_lintf, std::string wa_gftp_lport, 
-              std::string tmpfs_dir, std::list<std::string> wa_ib_lport_list,
-              bool with_prefetch, size_t buffer_size, char* alphabet_, size_t alphabet_size, size_t context_size);
-    ~RIManager();
-    void close();
-    std::string to_str();
     
-    void handle_app_req(char* app_req);
-    void handle_get(bool blocking, int app_id, std::map<std::string, std::string> get_map);
-    int remote_get(char ds_id, std::map<std::string, std::string> r_get_map);
-    void handle_put(int p_id, std::map<std::string, std::string> put_map);
-    void handle_possible_remote_places(std::string key, unsigned int ver);
-    void handle_prefetch(char ds_id, key_ver_pair kv);
-    void handle_del(key_ver_pair kv);
-    
-    void handle_rimsg(std::map<std::string, std::string> rimsg_map);
-    void handle_rquery(bool subscribe, std::map<std::string, std::string> r_query_map);
-    void handle_rq_reply(std::map<std::string, std::string> rq_reply_map);
-    void handle_rfetch(std::map<std::string, std::string> r_fetch_map);
-    void handle_rqtable(std::map<std::string, std::string> r_rqtable_map);
-    void handle_rplace(std::map<std::string, std::string> r_place_map);
-    void handle_rp_reply(std::map<std::string, std::string> rp_reply_map);
-#ifdef _GRIDFTP_
-    void handle_gftpput_done(std::map<std::string, std::string> gftpput_done_map);
-    void handle_gftp_bping(std::map<std::string, std::string> gftp_bping_map);
-    void handle_gftp_bpong(std::map<std::string, std::string> gftpb_pong_map);
-#endif // _GRIDFTP_
-    void handle_rcmsg(std::map<std::string, std::string> rcmsg_map);
-
-    int bcast_rq_table();
-    int remote_query(bool subscribe, std::string key, unsigned int ver);
-    int remote_fetch(char ds_id, std::map<std::string, std::string> r_fetch_map);
-    void handle_wa_get(std::string called_from, std::map<std::string, std::string> str_str_map);
-    int remote_place(std::string key, unsigned int ver, char to_id);
-    int remote_subscribe(std::string key, unsigned int ver);
-    int gftp_bping(char to_id); //blocks until pong is received
 };
 
-#endif //end of _DSCLIENT_H_
+#endif //end of _DS_CLIENT_H_

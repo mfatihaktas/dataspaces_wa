@@ -1,6 +1,14 @@
 #ifndef _PATCH_SFC_H_
 #define _PATCH_SFC_H_
 
+#include <string>
+#include <vector>
+#include <map>
+#include <sstream>
+#include <set>
+
+#include <boost/lexical_cast.hpp>
+
 namespace patch_sfc {
   template<typename T>
   std::string vec_to_str(std::vector<T> v)
@@ -23,7 +31,7 @@ namespace patch_sfc {
       ss << boost::lexical_cast<std::string>(*it) << ", ";
     
     return ss.str();
-  };
+  }
   
   template <typename T>
   std::string arr_to_str(int size, T* arr_)
@@ -65,8 +73,12 @@ namespace patch_sfc {
   box_t box(lp ## i, up ## i);
 
 #define LUCOOR_TO_STR(lcoor_, ucoor_) \
-     "\t lcoor_= " << patch_sfc::arr_to_str<>(NDIM, lcoor_) \
+  "lcoor_= " << patch_sfc::arr_to_str<>(NDIM, lcoor_) \
   << ", ucoor_= " << patch_sfc::arr_to_str<>(NDIM, ucoor_)
+
+#define KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_) \
+  "<key= " << key << ", ver= " << boost::lexical_cast<std::string>(ver) << ">, " \
+  << LUCOOR_TO_STR(lcoor_, ucoor_)
 
 #define IS_VALID_BOX(func_name, lcoor_, ucoor_, action) \
   for (int i = 0; i < NDIM; i++) { \
@@ -90,5 +102,8 @@ namespace patch_sfc {
 #define END_MULTI_FOR() BOOST_PP_REPEAT(NDIM, END_FOR_REP, ~)
 
 #define FIXED_REP(z, n, d) d
+
+#define ARR_TO_ARG_LIST_REP(z, n, arr_) arr_[n]
+// 
 
 #endif // _PATCH_SFC_H_

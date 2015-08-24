@@ -26,11 +26,18 @@ elif [ $1  = 'dn' ]; then
   fi
 elif [ $1  = 'c' ]; then
   if [ $2  = 0 ]; then
-    GLOG_logtostderr=1 ./exp --type="control" --id=$2 --node_type="m" --lintf=$LINTF --lport=$((LPORT+$2)) \
-          #--joinhost_lip=$JOINHOST_LIP --joinhost_lport=$LPORT
+    GLOG_logtostderr=1 ./exp --type="control" --id=$2 --node_type="m" --lintf=$LINTF --lport=$((LPORT+$2))
   else
     GLOG_logtostderr=1 ./exp --type="control" --id=$2 --node_type="s" --lintf=$LINTF --lport=$((LPORT+$2)) \
                              --joinhost_lip=$JOINHOST_LIP --joinhost_lport=$LPORT
+  fi
+elif [ $1  = 'dc' ]; then
+  export GLOG_logtostderr=1
+  if [ $2  = 0 ]; then
+    gdb --args ./exp --type="control" --id=$2 --node_type="m" --lintf=$LINTF --lport=$((LPORT+$2))
+  else
+    gdb --args ./exp --type="control" --id=$2 --node_type="s" --lintf=$LINTF --lport=$((LPORT+$2)) \
+                     --joinhost_lip=$JOINHOST_LIP --joinhost_lport=$LPORT
   fi
 elif [ $1  = 'init' ]; then
   if [ $2  = 'd' ]; then

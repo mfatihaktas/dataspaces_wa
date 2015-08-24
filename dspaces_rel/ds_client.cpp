@@ -100,11 +100,10 @@ int BCClient::send(std::map<std::string, std::string> msg_map)
   strcpy(data_, msg_str.c_str() );
   for (int i = msg_size; i < max_msg_size - msg_size; i++)
     data_[i] = '\0';
-  // sync_put(const char* var_name, unsigned int ver, int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
+  
   int result = ds_driver_->sync_put(comm_var_name.c_str(), 0, max_msg_size*sizeof(char), 3, gdim_, lb_, ub_, data_);
   // int result = ds_driver_->sync_put_without_lock(comm_var_name.c_str(), 1, sizeof(char), 1, &gdim, &lb, &ub, data_);
   free(data_);
-  // ds_driver_->lock_on_write(comm_var_name.c_str() );
   patch_ds::free_all<uint64_t*>(3, gdim_, lb_, ub_);
   
   return result;
@@ -781,7 +780,7 @@ void RIManager::handle_app_req(char* app_req)
   std::map<std::string, std::string> app_req_map = imsg_coder.decode(app_req);
   // 
   int app_id = boost::lexical_cast<int>(app_req_map["app_id"]);
-  appid_bcclient_map[app_id] = boost::make_shared<BCClient>(app_id, num_cnodes, APP_RIMANAGER_MAX_MSG_SIZE, "reply_app_", ds_driver_);
+  app_id__bc_client_map[app_id] = boost::make_shared<BCClient>(app_id, num_cnodes, APP_RIMANAGER_MAX_MSG_SIZE, "reply_app_", ds_driver_);
   // 
   std::string type = app_req_map["type"];
   
@@ -872,7 +871,7 @@ void RIManager::handle_get(bool blocking, int app_id, std::map<std::string, std:
   rq_table.add_key_ver(key, ver, p_id, data_type, this->id, size, ndim, gdim_, lb_, ub_);
   // 
   reply_msg_map["ds_id"] = ds_id;
-  appid_bcclient_map[app_id]->send(reply_msg_map);
+  app_id__bc_client_map[app_id]->send(reply_msg_map);
   bc_server_->reinit_listen_client(app_id);
   // 
   LOG(INFO) << "handle_get:: done; blocking= " << blocking << ", <key= " << key << ", ver= " << ver << ">.";

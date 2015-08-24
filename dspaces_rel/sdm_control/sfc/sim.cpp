@@ -1,12 +1,12 @@
 #include "sim.h"
 
 /*******************************************  PCSim  **********************************************/
-PCSim::PCSim(std::vector<char> ds_id_v,
+PCSim::PCSim(char predictor_t, std::vector<char> ds_id_v,
              int pbuffer_size, int pexpand_length,
              COOR_T* lcoor_, COOR_T* ucoor_,
              std::vector<char> p_id__ds_id_v, std::vector<char> c_id__ds_id_v)
 : p_id__ds_id_v(p_id__ds_id_v), c_id__ds_id_v(c_id__ds_id_v),
-  wa_space(ds_id_v, pbuffer_size, pexpand_length, lcoor_, ucoor_)
+  wa_space(predictor_t, ds_id_v, pbuffer_size, pexpand_length, lcoor_, ucoor_)
 {
   for (int p_id = 0; p_id < p_id__ds_id_v.size(); p_id++)
     wa_space.reg_app(p_id, p_id__ds_id_v[p_id] );
@@ -49,7 +49,7 @@ void PCSim::sim(std::vector<app_id__lcoor_ucoor_pair>& p_id__lcoor_ucoor_pair_v,
                 std::vector<app_id__lcoor_ucoor_pair>& c_id__lcoor_ucoor_pair_v)
 {
   for (std::vector<app_id__lcoor_ucoor_pair>::iterator it = p_id__lcoor_ucoor_pair_v.begin(); it != p_id__lcoor_ucoor_pair_v.end(); it++) {
-    wa_space.put(it->first, (it->second).first, (it->second).second);
+    wa_space.put(it->first, "dummy", 0, (it->second).first, (it->second).second);
     // LOG(INFO) << "sim:: put " << LUCOOR_TO_STR((it->second).first, (it->second).second) << "\n";
   }
     
@@ -57,13 +57,14 @@ void PCSim::sim(std::vector<app_id__lcoor_ucoor_pair>& p_id__lcoor_ucoor_pair_v,
     char c_ds_id = c_id__ds_id_v[it->first - p_id__ds_id_v.size() ];
     
     char get_type;
-    std::vector<lcoor_ucoor_pair> next_lcoor_ucoor_pair_v;
-    if (wa_space.get(it->first, (it->second).first, (it->second).second, get_type, next_lcoor_ucoor_pair_v) )
+    std::vector<kv_lucoor_pair> next_kv_lucoor_pair_v;
+    if (wa_space.get(it->first, "dummy", 0, (it->second).first, (it->second).second,
+                     get_type, next_kv_lucoor_pair_v) )
       LOG(WARNING) << "sim:: could NOT get " << LUCOOR_TO_STR((it->second).first, (it->second).second) << "\n";
     else {
-      for (int i = 0; i < next_lcoor_ucoor_pair_v.size(); i++) {
-        lcoor_ucoor_pair lu_pair = next_lcoor_ucoor_pair_v[i];
-        if (wa_space.prefetch(c_ds_id, lu_pair.first, lu_pair.second) ) {
+      for (int i = 0; i < next_kv_lucoor_pair_v.size(); i++) {
+        kv_lucoor_pair kv_lu_pair = next_kv_lucoor_pair_v[i];
+        if (wa_space.prefetch(c_ds_id, (kv_lu_pair.first).first, (kv_lu_pair.first).second, (kv_lu_pair.second).first, (kv_lu_pair.second).second) ) {
           // LOG(WARNING) << "get:: prefetch failed! for " << LUCOOR_TO_STR(lu_pair.first, lu_pair.second) << "\n";
         }
         else {

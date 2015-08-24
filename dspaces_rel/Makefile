@@ -98,7 +98,7 @@ lclean:
 	rm -f $(ODIR)/*.o ${APPS} 
 
 clean:
-	make -C $(OVERLAYNET_DIR) clean
+	# make -C $(OVERLAYNET_DIR) clean
 	make -C $(IBTRANS_DIR) clean
 ifdef GRIDFTP
 	make -C $(GFTPTRANS_DIR) clean

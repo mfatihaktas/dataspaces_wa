@@ -7,7 +7,7 @@
 BOOSTASIO_LIB = -L$(BOOSTASIO_DIR)
 
 BOOST_INC = -I$(BOOST_DIR)/include
-BOOST_LIB = -L$(BOOST_DIR)/lib -lboost_system -lpthread -lboost_thread -lboost_serialization
+BOOST_LIB = -L$(BOOST_DIR)/lib -lboost_system -lpthread -lboost_thread -lboost_serialization -lboost_iostreams -lboost_filesystem
 # BOOST_LIB = -lboost_system -lpthread -lboost_thread-mt -lboost_serialization
 
 GLOG_INC = -I$(GLOG_DIR)/include
@@ -20,14 +20,14 @@ SFC_OBJS = $(SFC_ODIR)/sfc.o $(SFC_ODIR)/hilbert.o
 
 SDM_CONTROL_DIR ?= $(DSPACESWA_DIR)/dspaces_rel/sdm_control
 SDM_CONTROL_INC = -I$(SDM_CONTROL_DIR)/include -I$(SFC_DIR)/include
-#
+# 
 INC = $(GLOG_INC) $(BOOST_INC) $(SDM_CONTROL_INC)
 LIB = $(GLOG_LIB) $(BOOST_LIB)
 
 ODIR = obj
-OBJS = $(ODIR)/exp.o $(ODIR)/sdm_control.o $(ODIR)/sdm.o $(ODIR)/sdm_node.o $(ODIR)/sdm_server.o $(ODIR)/sdm_client.o $(ODIR)/packet.o $(SFC_OBJS)
+OBJS = $(ODIR)/exp.o $(ODIR)/sdm_control.o $(ODIR)/sdm.o $(ODIR)/patch_sdm.o $(ODIR)/sdm_node.o $(ODIR)/sdm_server.o $(ODIR)/sdm_client.o $(ODIR)/packet.o $(SFC_OBJS)
 
-.PHONY: lclean clean all submake_sfc
+.PHONY: all submake_sfc lclean clean
 
 APPS := exp
 

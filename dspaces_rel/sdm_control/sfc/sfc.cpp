@@ -1,11 +1,11 @@
 #include "sfc.h"
 
-/*****************************************  MPredictor  *******************************************/
+/*****************************************  MHPredictor  *******************************************/
 
 
 /*****************************************  HPredictor  *******************************************/
-HPredictor::HPredictor(COOR_T* lcoor_, COOR_T* ucoor_)
-: lcoor_(lcoor_), ucoor_(ucoor_)
+HPredictor::HPredictor(bitmask_t expand_length, COOR_T* lcoor_, COOR_T* ucoor_)
+: expand_length(expand_length), lcoor_(lcoor_), ucoor_(ucoor_)
 {
   IS_VALID_BOX("HPredictor", lcoor_, ucoor_, exit(1) )
   // 
@@ -83,7 +83,7 @@ void HPredictor::expand_1_interval_set(bitmask_t expand_length, index_interval_s
   interval_set = i_set;
 }
 
-int HPredictor::put(char ds_id, COOR_T* lcoor_, COOR_T* ucoor_)
+int HPredictor::put(char ds_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_)
 {
   boost::shared_ptr<index_interval_set_t> index_interval_set_ = coor_to_index_interval_set_(lcoor_, ucoor_);
   
@@ -95,8 +95,8 @@ int HPredictor::put(char ds_id, COOR_T* lcoor_, COOR_T* ucoor_)
   return 0;
 }
 
-int HPredictor::add_acc__predict_next_acc(char ds_id, COOR_T* lcoor_, COOR_T* ucoor_,
-                                          bitmask_t expand_length, std::vector<lcoor_ucoor_pair>& next_lcoor_ucoor_pair_v)
+int HPredictor::add_acc__predict_next_acc(char ds_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_,
+                                          std::vector<kv_lucoor_pair>& next_kv_lucoor_pair_v)
 {
   boost::shared_ptr<index_interval_set_t> index_interval_set_ = coor_to_index_interval_set_(lcoor_, ucoor_);
   acced_index_interval_set_v.push_back(index_interval_set_);
@@ -114,20 +114,34 @@ int HPredictor::add_acc__predict_next_acc(char ds_id, COOR_T* lcoor_, COOR_T* uc
     for (int i = 0; i < NDIM; i++)
       next_ucoor_[i] = (*next_lcoor__)[i] + 1;
     
-    next_lcoor_ucoor_pair_v.push_back(std::make_pair(*next_lcoor__, next_ucoor_) );
+    // next_lcoor_ucoor_pair_v.push_back(std::make_pair(*next_lcoor__, next_ucoor_) );
+    
+    next_kv_lucoor_pair_v.push_back(
+      std::make_pair(std::make_pair(key, ver), std::make_pair(*next_lcoor__, next_ucoor_) ) );
   }
 }
 
 /******************************************  WASpace  *********************************************/
-WASpace::WASpace(std::vector<char> ds_id_v, 
-                 int pbuffer_size, int pexpand_length,
-                 COOR_T* lcoor_, COOR_T* ucoor_)
+WASpace::WASpace(char predictor_t, std::vector<char> ds_id_v, 
+                 int pbuffer_size, int pexpand_length, COOR_T* lcoor_, COOR_T* ucoor_)
 : ds_id_v(ds_id_v),
-  pbuffer_size(pbuffer_size), pexpand_length(pexpand_length),
-  lcoor_(lcoor_), ucoor_(ucoor_),
-  hpredictor(lcoor_, ucoor_)
+  pbuffer_size(pbuffer_size)
 {
   IS_VALID_BOX("WASpace", lcoor_, ucoor_, exit(1) )
+  
+  if (predictor_t == HILBERT_PREDICTOR) {
+    qtable_ = boost::make_shared<RTable<char> >();
+    
+    predictor_ = boost::make_shared<HPredictor>(pexpand_length, lcoor_, ucoor_);
+  }
+  // else if (predictor_t == PREDICTOR_T_HILBERT) {
+  //   qtable_ = boost::make_shared<RTable>();
+  //   predictor_ = boost::make_shared<HPredictor>(pexpand_length, lcoor_, ucoor_);
+  // }
+  else {
+    LOG(ERROR) << "WASpace:: unknown predictor_t= " << predictor_t;
+    exit(1);
+  }
   // 
   LOG(INFO) << "WASpace:: constructed.";
 }
@@ -137,15 +151,11 @@ WASpace::~WASpace() { LOG(INFO) << "WASpace:: destructed."; }
 std::string WASpace::to_str()
 {
   std::stringstream ss;
-  
   ss << "ds_id_v= " << patch_sfc::vec_to_str<char>(ds_id_v) << "\n"
      << "pbuffer_size= " << pbuffer_size << "\n"
-     << "pexpand_length= " << pexpand_length << "\n"
      << "app_id__ds_id_map= \n" << patch_sfc::map_to_str<>(app_id__ds_id_map) << "\n"
-     << "pexpand_length= " << pexpand_length << "\n"
-     << "hpredictor= \n" << hpredictor.to_str() << "\n";
-    // << "rtable= \n" << rtable.to_str() << "\n";
-  
+     << "predictor= \n" << predictor_->to_str() << "\n";
+    // << "qtable= \n" << qtable_->to_str() << "\n";
   return ss.str();
 }
 
@@ -170,26 +180,26 @@ int WASpace::reg_app(int app_id, char ds_id)
   return 0;
 }
 
-int WASpace::prefetch(char ds_id, COOR_T* lcoor_, COOR_T* ucoor_)
+int WASpace::prefetch(char ds_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_)
 {
   IS_VALID_BOX("prefetch", lcoor_, ucoor_, return 1)
   CREATE_BOX(0, pre_box, lcoor_, ucoor_)
   
   std::vector<char> ds_id_v;
-  if (rtable.query(lcoor_, ucoor_, ds_id_v) ) {
-    // LOG(WARNING) << "prefetch:: not-put, cannot prefetch; " << LUCOOR_TO_STR(lcoor_, ucoor_) << "\n";
+  if (qtable_->query(key, ver, lcoor_, ucoor_, ds_id_v) ) {
+    // LOG(WARNING) << "prefetch:: not-put, cannot prefetch; " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_) << "\n";
     return 1;
   }
   else {
-    if (rtable.add(lcoor_, ucoor_, ds_id) ) {
-      LOG(ERROR) << "prefetch:: rtable.add failed! for " << LUCOOR_TO_STR(lcoor_, ucoor_) << "\n";
+    if (qtable_->add(key, ver, lcoor_, ucoor_, ds_id) ) {
+      LOG(ERROR) << "prefetch:: qtable_->add failed! for " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_) << "\n";
       return 1;
     }
     return 0;
   }
 }
 
-int WASpace::put(int p_id, COOR_T* lcoor_, COOR_T* ucoor_)
+int WASpace::put(int p_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_)
 {
   IS_VALID_BOX("put", lcoor_, ucoor_, return 1)
   
@@ -197,25 +207,27 @@ int WASpace::put(int p_id, COOR_T* lcoor_, COOR_T* ucoor_)
     LOG(ERROR) << "put:: non-reged p_id= " << p_id;
     return 1;
   }
-  if (rtable.add(lcoor_, ucoor_, app_id__ds_id_map[p_id] ) ) {
-    LOG(ERROR) << "put:: rtable.add failed! for " << LUCOOR_TO_STR(lcoor_, ucoor_) << "\n";
+  if (qtable_->add(key, ver, lcoor_, ucoor_, app_id__ds_id_map[p_id] ) ) {
+    LOG(ERROR) << "put:: qtable_->add failed! for " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_) << "\n";
     return 1;
   }
   
   return 0;
 }
 
-int WASpace::query(COOR_T* lcoor_, COOR_T* ucoor_, std::vector<char> ds_id_v) { return rtable.query(lcoor_, ucoor_, ds_id_v); }
+int WASpace::query(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, std::vector<char>& ds_id_v)
+{ 
+  return qtable_->query(key, ver, lcoor_, ucoor_, ds_id_v);
+}
 
-int WASpace::get(int c_id, COOR_T* lcoor_, COOR_T* ucoor_, char& get_type,
-                 std::vector<lcoor_ucoor_pair>& next_lcoor_ucoor_pair_v)
+int WASpace::get(int c_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_,
+                 char& get_type, std::vector<kv_lucoor_pair>& next_kv_lucoor_pair_v)
 {
   IS_VALID_BOX("get", lcoor_, ucoor_, return 1)
-  CREATE_BOX(0, acced_box, lcoor_, ucoor_)
   char ds_id = app_id__ds_id_map[c_id];
   
   std::vector<char> ds_id_v;
-  if (rtable.query(lcoor_, ucoor_, ds_id_v) )
+  if (qtable_->query(key, ver, lcoor_, ucoor_, ds_id_v) )
     return 1;
   else {
     if (std::find(ds_id_v.begin(), ds_id_v.end(), ds_id) == ds_id_v.end() )
@@ -224,9 +236,9 @@ int WASpace::get(int c_id, COOR_T* lcoor_, COOR_T* ucoor_, char& get_type,
       get_type = 'l';
   }
   
-  acced_box_v.push_back(acced_box);
-  hpredictor.add_acc__predict_next_acc(ds_id, lcoor_, ucoor_,
-                                       (bitmask_t)pexpand_length, next_lcoor_ucoor_pair_v);
+  // acced_box_v.push_back(acced_box);
+  predictor_->add_acc__predict_next_acc(ds_id, key, ver, lcoor_, ucoor_,
+                                         next_kv_lucoor_pair_v);
   
   return 0;
 }
