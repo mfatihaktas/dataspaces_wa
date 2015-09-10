@@ -10,10 +10,10 @@ TManager::TManager(std::string trans_protocol,
     ibt_manager_ = boost::make_shared<IBTManager>(ib_lport_list);
 #ifdef _GRIDFTP_
   else if (str_str_equals(trans_protocol, GRIDFTP) ) {
-    gftpt_manager_ = boost::make_shared<GFTPDDManager>(gftp_lintf, gftp_lport, tmpfs_dir);
-    if (gftpt_manager_->init_gftp_server() ) {
-      LOG(ERROR) << "TManager:: gftpt_manager_->init_gftp_server failed!";
-      return 1;
+    gftpt_manager_ = boost::make_shared<GFTPTManager>(gftp_lintf, gftp_laddr, boost::lexical_cast<int>(gftp_lport), tmpfs_dir);
+    if (gftpt_manager_->init_server() ) {
+      LOG(ERROR) << "TManager:: gftpt_manager_->init_server failed!";
+      exit(1);
     }
   }
 #endif // _GRIDFTP_
@@ -44,10 +44,8 @@ std::string TManager::get_s_laddr()
 {
   if (str_str_equals(trans_protocol, INFINIBAND) )
     return ib_laddr;
-#ifdef _GRIDFTP_
   else if (str_str_equals(trans_protocol, GRIDFTP) )
     return gftp_laddr;
-#endif // _GRIDFTP_
 }
 
 std::string TManager::get_s_lport()
@@ -56,6 +54,14 @@ std::string TManager::get_s_lport()
     return ibt_manager_->get_next_avail_ib_lport();
   else if (str_str_equals(trans_protocol, GRIDFTP) )
     return gftp_lport;
+}
+
+std::string TManager::get_tmpfs_dir()
+{ 
+  #ifdef _GRIDFTP_
+    return gftpt_manager_->get_tmpfs_dir();
+  #endif // _GRIDFTP_
+  return "";
 }
 
 int TManager::init_get(std::string s_lport, std::string data_id, std::string data_type, data_recv_cb_func recv_cb)
@@ -86,7 +92,7 @@ int TManager::init_put(std::string s_laddr, std::string s_lport, std::string tmp
     ibt_manager_->init_ib_client(s_laddr.c_str(), s_lport.c_str(), data_type, data_length, data_);
 #ifdef _GRIDFTP_
   else if (str_str_equals(trans_protocol, GRIDFTP) ) {
-    if (gftpt_manager_->put(s_laddr, boost::lexical_cast<int>(s_lport), tmpfs_dir, data_id, datasize_inB, data_) ) {
+    if (gftpt_manager_->put(s_laddr, boost::lexical_cast<int>(s_lport), tmpfs_dir, data_id, data_length, data_) ) {
       LOG(ERROR) << "init_put:: gftpt_manager_->put for data_id= " << data_id <<" failed!";
       return 1;
     }

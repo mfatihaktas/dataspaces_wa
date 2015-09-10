@@ -49,7 +49,7 @@ class Commer {
 
 /*******************************************  SDMNode  ********************************************/
 typedef boost::function<void(std::map<std::string, std::string>)> func_rimsg_recv_cb;
-typedef boost::function<void(boost::shared_ptr<Packet>)> func_sdm_cp_recv_cb;
+typedef boost::function<void(boost::shared_ptr<Packet>)> func_cmsg_recv_cb;
 
 class SDMNode {
   private:
@@ -57,8 +57,8 @@ class SDMNode {
     std::string type; // For now can be only "m -- sdm_master" or "s -- sdm_slave"
     std::string lip, joinhost_lip;
     int lport, joinhost_lport;
-    func_rimsg_recv_cb _rimsg_recv_cb;
-    func_sdm_cp_recv_cb _sdm_cp_recv_cb;
+    func_rimsg_recv_cb rimsg_recv_cb;
+    func_cmsg_recv_cb cmsg_recv_cb;
     // ImpRem: properties must be thread-safe
     Commer commer;
     char sdm_master_id;
@@ -67,11 +67,12 @@ class SDMNode {
     SDMNode(char id, std::string type,
             std::string lip, int lport,
             std::string joinhost_lip, int joinhost_lport,
-            func_rimsg_recv_cb _rimsg_recv_cb, func_sdm_cp_recv_cb _sdm_cp_recv_cb = NULL);
+            func_rimsg_recv_cb rimsg_recv_cb, func_cmsg_recv_cb cmsg_recv_cb = NULL);
     ~SDMNode();
     int close();
     std::string to_str();
     
+    char get_id();
     int get_num_peers();
     
     boost::shared_ptr<Packet> gen_join_req();
@@ -79,7 +80,7 @@ class SDMNode {
     boost::shared_ptr<Packet> gen_packet(PACKET_T packet_t, std::map<std::string, std::string> msg_map = std::map<std::string, std::string>() );
     void ping_peer(char peer_id);
 
-    int send_msg_to_master(std::map<std::string, std::string> msg_map);
+    int send_msg_to_master(PACKET_T packet_t, std::map<std::string, std::string> msg_map);
     int broadcast_msg(PACKET_T packet_t, std::map<std::string, std::string> msg_map);
     int broadcast_msg_to_slaves(PACKET_T packet_t, std::map<std::string, std::string> msg_map);
     int send_msg(char to_id, PACKET_T packet_t, std::map<std::string, std::string> msg_map);

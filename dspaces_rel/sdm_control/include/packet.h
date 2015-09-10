@@ -16,14 +16,14 @@
 
 typedef char PACKET_T;
 enum type_t {
-  SDM_JOIN_REQUEST = 'J',
-  SDM_JOIN_REPLY = 'j',
-  SDM_JOIN_ACK = 'a',
-  SDM_JOIN_NACK = 'n',
-  SDM_PING = 'P',
-  SDM_PONG = 'p',
-  SDM_RIMSG = 'I',
-  SDM_CMSG = 'C',
+  PACKET_JOIN_REQUEST = 'J',
+  PACKET_JOIN_REPLY = 'j',
+  PACKET_JOIN_ACK = 'a',
+  PACKET_JOIN_NACK = 'n',
+  PACKET_PING = 'P',
+  PACKET_PONG = 'p',
+  PACKET_RIMSG = 'I',
+  PACKET_CMSG = 'C',
 };
 
 #define SIZE_SIZE 4*sizeof(char)

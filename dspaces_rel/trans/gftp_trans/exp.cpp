@@ -132,8 +132,7 @@ int main(int argc , char **argv)
   
   // std::string file_dir = "/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/gftp_trans/dummy";
   // std::string file_dir = "/dev/shm";
-  
-  size_t datasize = 1*1*1000;
+  std::string data_id = "dummy";
   
   if (opt_map["type"].compare("s") == 0) {
     GFTPTManager gftpt_manager(opt_map["s_lintf"], intf_to_ip(opt_map["s_lintf"] ),
@@ -144,11 +143,12 @@ int main(int argc , char **argv)
     getline(std::cin, temp);
   }
   else if (opt_map["type"].compare("g") == 0) {
+    // int datasize = 1*1*1000;
     // gridftp_get_file(opt_map["src_url"].c_str(), opt_map["dst_url"].c_str() );
 
     // IODriver io_driver(file_dir + "/server");
     // void* data_;
-    // size_t datasize_inB = io_driver.read_file("", "/ds_dummy_0.dat", data_);
+    // int datasize_inB = io_driver.read_file("", "/ds_dummy_0.dat", data_);
     // LOG(INFO) << "main:: datasize_inB= " << datasize_inB;
     // int* int_data_ = static_cast<int*>(data_);
     // int datasize = datasize_inB / sizeof(int);
@@ -161,18 +161,18 @@ int main(int argc , char **argv)
     // gftpt_manager.get_over_gftp("127.0.0.1", "5000", file_dir + "server",
     //                               "dummy", 0, datasize_inB, data_);
     
-    size_t datasize_inB;
+    int datasize_inB;
     void* data_;
     GFTPTManager gftpt_manager(opt_map["s_lintf"], intf_to_ip(opt_map["s_lintf"] ),
                                boost::lexical_cast<int>(opt_map["s_lport"] ), opt_map["tmpfs_dir"] );
     
     gftpt_manager.get(opt_map["s_laddr"], boost::lexical_cast<int>(opt_map["s_lport"] ), opt_map["tmpfs_dir"],
-                      "dummy", datasize_inB, data_);
+                      data_id, datasize_inB, data_);
     
     int* int_data_ = static_cast<int*>(data_);
-    int datasize = datasize_inB / sizeof(int);
-    LOG(INFO) << "main:: datasize=" << datasize << ", data_=";
-    for (int i = 0; i < datasize; i++)
+    int data_length = datasize_inB / sizeof(int);
+    LOG(INFO) << "main:: data_length=" << data_length << ", data_=";
+    for (int i = 0; i < data_length; i++)
       std::cout << int_data_[i] << " ";
     std::cout << "\n";
     
@@ -187,17 +187,28 @@ int main(int argc , char **argv)
     // IODriver io_driver("/cac/u01/mfa51/Desktop/dataspaces_wa/gftp_trans/dummy/");
     // test_io_driver(io_driver);
     
-    size_t datasize_inB = datasize*sizeof(int);
+    int data_length = 1000;
+    int datasize_inB = data_length*sizeof(int);
     int* data_ = (int*)malloc(datasize_inB);
-    for (int i = 0; i < datasize; i++)
+    for (int i = 0; i < data_length; i++)
       data_[i] = i + 1;
     
     LOG(INFO) << "main:: datasize_inB= " << datasize_inB;
     GFTPTManager gftpt_manager(opt_map["s_lintf"], intf_to_ip(opt_map["s_lintf"] ),
                                boost::lexical_cast<int>(opt_map["s_lport"] ), opt_map["tmpfs_dir"] );
     gftpt_manager.put(opt_map["s_laddr"], boost::lexical_cast<int>(opt_map["s_lport"] ), opt_map["tmpfs_dir"],
-                      "dummy", datasize_inB, data_);
+                      data_id, datasize_inB, data_);
+    // 
+    std::cout << "Enter for read_del_datafile... \n";
+    getline(std::cin, temp);
     
+    int read_datasize_inB;
+    void* read_data_;
+    gftpt_manager.read_del_datafile(data_id, read_datasize_inB, read_data_);
+    free(read_data_);
+    std::cout << "main:: read_datasize_inB= " << read_datasize_inB << "\n";
+    
+    // 
     std::cout << "Enter \n";
     getline(std::cin, temp);
   }

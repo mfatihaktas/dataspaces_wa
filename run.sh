@@ -1,95 +1,110 @@
 #!/bin/bash
 echo $1 $2 $3
 
-DHT_LINTF="em2" #"em2" #"eth0"
-WA_LINTF="ib0" #"em2" #"ib0"
+NUM_SNODE=1
+NUM_CLIENT=1
+NUM_DSCNODE=$(($NUM_CLIENT+1)) #+1: RIManager
 
-RM1_DHT_LPORT="60000"
-RM2_DHT_LPORT="65000"
-RM1_DHT_LIP="192.168.2.151" #"192.168.100.120" #"192.168.100.120" #"192.168.100.120"
+CONTROL_LINTF="em2" # "lo"
+RI_MANAGER_CONTROL_LPORT_LIST=( "7000" "7001" "7002" )
+RI_MANAGER_JOIN_CONTROL_LADDR_LIST=( "" "192.168.2.151" "192.168.2.151" )
+RI_MANAGER_JOIN_CONTROL_LPORT_LIST=( "0" "7000" "7000" )
 
-GFTP_LPORT="62002"
-TMPFS_DIR="/dev/shm"
-
-TRANS_PROTOCOL="i" #"g"
-
-# DSPACES_BIN=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.5.0/install/bin
-DSPACES_BIN=$DSPACES_DIR/bin
-
-NUM_SNODES=1
-NUM_DSCNODES=$((1+1)) #+1: RIManager
+TRANS_PROTOCOL="i" # "g"
+IB_LINTF="ib0"
+GFTP_LINTF="em2"
+GFTP_LPORT="6000"
+TMPFS_DIR=$DSPACESWA_DIR/tmpfs
 
 if [ $1  = 's' ]; then
-  $DSPACES_BIN/./dataspaces_server --server $NUM_SNODES --cnodes $NUM_DSCNODES
-  # $DSPACES_BIN/./dataspaces_server -s $NUM_SNODES -c $NUM_DSCNODES
+  if [ -a conf ]; then
+    rm srv.lck
+    rm conf                                                                                         #dataspaces_server cannot overwrite this so before every new run this should be removed
+  fi
+  $DSPACES_DIR/bin/./dataspaces_server --server $NUM_SNODE --cnodes $NUM_DSCNODE
 elif [ $1  = 'p' ]; then
-  GLOG_logtostderr=1 ./exp --type="put" --app_id=1 --num_dscnodes=$NUM_DSCNODES
+  if [ -z "$2" ]; then
+    echo "Which site?"
+  else
+    GLOG_logtostderr=1 ./exp --type="put" --cl_id=1 --base_client_id=$(($2*10)) --num_client=$NUM_CLIENT
+  fi
 elif [ $1  = 'mp' ]; then
-  GLOG_logtostderr=1 ./ds_wa_test --type="mput" --app_id=1 --num_dscnodes=$NUM_DSCNODES --num_putget=10 \
-                                  --inter_time_sec=0
+  if [ -z "$2" ]; then
+    echo "Which site?"
+  else
+    GLOG_logtostderr=1 ./ds_wa_test --type="mput" --cl_id=1 --base_client_id=$(($2*10)) --num_client=$NUM_CLIENT \
+                                    --num_putget=10 --inter_time_sec=0
+  fi
 elif [ $1  = 'g' ]; then
-  GLOG_logtostderr=1 ./exp --type="get" --app_id=1 --num_dscnodes=$NUM_DSCNODES
+  if [ -z "$2" ]; then
+    echo "Which site?"
+  else
+    GLOG_logtostderr=1 ./exp --type="get" --cl_id=1 --base_client_id=$(($2*10)) --num_client=$NUM_CLIENT
+  fi
 elif [ $1  = 'mg' ]; then
-  GLOG_logtostderr=1 ./ds_wa_test --type="mget" --app_id=1 --num_dscnodes=$NUM_DSCNODES --num_putget=10 \
-                                  --inter_time_sec=1
+  if [ -z "$2" ]; then
+    echo "Which site?"
+  else
+    GLOG_logtostderr=1 ./ds_wa_test --type="mget" --cl_id=1 --base_client_id=$(($2*10)) --num_client=$NUM_CLIENT \
+                                    --num_putget=10 --inter_time_sec=1
+  fi
 elif [ $1  = 'dp' ]; then
-  export GLOG_logtostderr=1 
-  export MALLOC_CHECK_=2
-  gdb --args ./exp --type="put" --app_id=1 --num_dscnodes=$NUM_DSCNODES
-elif [ $1  = 'dg' ]; then
-  export GLOG_logtostderr=1 
-  export MALLOC_CHECK_=2
-  gdb --args ./exp --type="get" --app_id=1 --num_dscnodes=$NUM_DSCNODES
-elif [ $1  = 'rm' ]; then
-  if [ $TRANS_PROTOCOL  = 'g' ]; then
-    echo "Starting Gftps..."
-    globus-gridftp-server -aa -password-file pwfile -c None \
-                          -port $GFTP_LPORT \
-                          -d error,warn,info,dump,all &
-                          # -data-interface $WA_LINTF \
-  fi
-  if [ $2  = '1' ]; then
-    GLOG_logtostderr=  ./exp --type="ri" --app_id=10 --num_dscnodes=$NUM_DSCNODES \
-                             --dht_id=$2 --dht_lintf=$DHT_LINTF --dht_lport=$RM1_DHT_LPORT \
-                             --trans_protocol=$TRANS_PROTOCOL --wa_lintf=$WA_LINTF \
-                             --gftp_lport=$GFTP_LPORT --tmpfs_dir=$TMPFS_DIR
-  elif [ $2  = '2' ]; then
-    GLOG_logtostderr=1 ./exp --type="ri" --app_id=10 --num_dscnodes=$NUM_DSCNODES \
-                             --dht_id=$2 --dht_lintf=$DHT_LINTF --dht_lport=$RM2_DHT_LPORT --ipeer_dht_laddr=$RM1_DHT_LIP --ipeer_dht_lport=$RM1_DHT_LPORT \
-                             --trans_protocol=$TRANS_PROTOCOL --wa_lintf=$WA_LINTF \
-                             --gftp_lport=$GFTP_LPORT --tmpfs_dir=$TMPFS_DIR
-  fi
-  read -p "[Enter]"
-  echo "killing stubborns..."
-  fuser -k -n tcp $GFTP_LPORT
-  fuser -k -n tcp $RM1_DHT_LPORT
-  fuser -k -n tcp $RM2_DHT_LPORT
-elif [ $1  = 'drm' ]; then
-  if [ $TRANS_PROTOCOL  = 'g' ]; then
-    echo "Starting Gftps..."
-    globus-gridftp-server -aa -password-file pwfile -c None \
-                          -port $GFTP_LPORT \
-                          -d error,warn,info,dump,all &
-                          # -data-interface $WA_LINTF \
-  fi
-  if [ $2  = '1' ]; then
+  if [ -z "$2" ]; then
+    echo "Which site?"
+  else
     export GLOG_logtostderr=1
-    gdb --args ./exp --type="ri" --app_id=1 --num_dscnodes=$NUM_DSCNODES \
-                     --dht_id=$2 --dht_lintf=$DHT_LINTF --dht_lport=$RM1_DHT_LPORT \
-                     --trans_protocol=$TRANS_PROTOCOL --wa_lintf=$WA_LINTF \
-                     --gftp_lport=$GFTP_LPORT --tmpfs_dir=$TMPFS_DIR
-  elif [ $2  = '2' ]; then
-    export GLOG_logtostderr=1 
-    gdb --args ./exp --type="ri" --app_id=10 --num_dscnodes=$NUM_DSCNODES \
-                     --dht_id=$2 --dht_lintf=$DHT_LINTF --dht_lport=$RM2_DHT_LPORT --ipeer_dht_laddr=$RM1_DHT_LIP --ipeer_dht_lport=$RM1_DHT_LPORT \
-                     --trans_protocol=$TRANS_PROTOCOL --wa_lintf=$WA_LINTF \
-                     --gftp_lport=$GFTP_LPORT --tmpfs_dir=$TMPFS_DIR
+    export MALLOC_CHECK_=2
+    gdb --args ./exp --type="put" --cl_id=1 --base_client_id=$(($2*10)) --num_client=$NUM_CLIENT
+  fi
+elif [ $1  = 'dg' ]; then
+  if [ -z "$2" ]; then
+    echo "Which site?"
+  else
+    export GLOG_logtostderr=1
+    export MALLOC_CHECK_=2
+    gdb --args ./exp --type="get" --cl_id=1 --base_client_id=$(($2*10)) --num_client=$NUM_CLIENT
+  fi
+elif [ $1  = 'r' ]; then
+  # if [ $TRANS_PROTOCOL  = 'g' ]; then
+  #   echo "Starting Gftps..."
+  #   globus-gridftp-server -aa -password-file pwfile -c None \
+  #                         -port $GFTP_LPORT \
+  #                         -d error,warn,info,dump,all &
+  #                         # -data-interface $WA_LINTF \
+  # fi
+  if [ -z "$2" ]; then
+    echo "Which site?"
+  else
+    GLOG_logtostderr=1 ./exp --type="ri" --cl_id=111 --num_client=$NUM_CLIENT --base_client_id=$(($2*10)) \
+                             --ds_id=$2 --control_lintf=$CONTROL_LINTF --control_lport=${RI_MANAGER_CONTROL_LPORT_LIST[$2] } \
+                             --join_control_laddr=${RI_MANAGER_JOIN_CONTROL_LADDR_LIST[$2] } --join_control_lport=${RI_MANAGER_JOIN_CONTROL_LPORT_LIST[$2] } \
+                             --trans_protocol=$TRANS_PROTOCOL --ib_lintf=$IB_LINTF --gftp_lintf=$GFTP_LINTF --gftp_lport=$GFTP_LPORT --tmpfs_dir=$TMPFS_DIR
   fi
   read -p "[Enter]"
-  echo "killing Gftps..."
+  echo "Killing stubborns..."
   fuser -k -n tcp $GFTP_LPORT
-  fuser -k -n tcp $RM1_DHT_LPORT
-  fuser -k -n tcp $RM2_DHT_LPORT
+  # fuser -k -n tcp $RM1_DHT_LPORT
+elif [ $1  = 'dr' ]; then
+  # if [ $TRANS_PROTOCOL  = 'g' ]; then
+  #   echo "Starting Gftps..."
+  #   globus-gridftp-server -aa -password-file pwfile -c None \
+  #                         -port $GFTP_LPORT \
+  #                         -d error,warn,info,dump,all &
+  #                         # -data-interface $WA_LINTF \
+  # fi
+  if [ -z "$2" ]; then
+    echo "Which site?"
+  else
+    export GLOG_logtostderr=1
+    gdb --args ./exp --type="ri" --cl_id=111 --num_client=$NUM_CLIENT --base_client_id=$(($2*10)) \
+                     --ds_id=$2 --control_lintf=$CONTROL_LINTF --control_lport=${RI_MANAGER_CONTROL_LPORT_LIST[$2] } \
+                     --join_control_laddr=${RI_MANAGER_JOIN_CONTROL_LADDR_LIST[$2] } --join_control_lport=${RI_MANAGER_JOIN_CONTROL_LPORT_LIST[$2] } \
+                     --trans_protocol=$TRANS_PROTOCOL --ib_lintf=$IB_LINTF --gftp_lintf=$GFTP_LINTF --gftp_lport=$GFTP_LPORT --tmpfs_dir=$TMPFS_DIR
+  fi
+  read -p "[Enter]"
+  echo "Killing stubborns..."
+  fuser -k -n tcp $GFTP_LPORT
+  # fuser -k -n tcp $RM1_DHT_LPORT
 elif [ $1  = 'gc' ]; then
   TRANS_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/gftp_trans/dummy
   # S_IP=192.168.2.152

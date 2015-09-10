@@ -19,6 +19,13 @@ BOOST_LIB = -L$(BOOST_DIR)/lib -lboost_system -lpthread -lboost_thread -lboost_s
 GLOG_INC = -I$(GLOG_DIR)/include
 GLOG_LIB = -L$(GLOG_DIR)/lib -lglog
 
+ifdef GRIDFTP
+GFTP_INC = -I$(GFTPINC_DIR) #-I/usr/lib64/globus/include
+GFTP_LIB = -L$(GFTPLIB_DIR) -lglobus_ftp_client
+endif # GRIDFTP
+
+IBVERBS_LIB = -L/usr/lib64 -libverbs
+
 ifndef MPI_DIR
 	MPI_LIB = 
 	# $(error MPI_DIR is undefined)
@@ -27,24 +34,29 @@ else
 endif
 # MPI_LIB = -L$(MPI_DIR)/lib -lmpich -lmpichcxx
 # 
-# OVERLAYNET_DIR = $(DSPACESREL_DIR)/overlaynet
-# OVERLAYNET_ODIR = $(OVERLAYNET_DIR)/obj
-# OVERLAYNET_OBJS = $(OVERLAYNET_ODIR)/dht_node.o $(OVERLAYNET_ODIR)/dht_server.o $(OVERLAYNET_ODIR)/dht_client.o $(OVERLAYNET_ODIR)/packet.o
-SDMCONTROL_DIR = $(DSPACESREL_DIR)/sdm_control
-SDMCONTROL_ODIR = $(SDMCONTROL_DIR)/obj
-SDMCONTROL_OBJS = $(SDMCONTROL_ODIR)/sdm_node.o $(SDMCONTROL_ODIR)/sdm_server.o $(SDMCONTROL_ODIR)/sdm_client.o $(SDMCONTROL_ODIR)/packet.o
+SFC_DIR = $(SDMCONTROL_DIR)/sfc
+SFC_ODIR = $(SFC_DIR)/obj
+SFC_OBJS = $(SFC_ODIR)/sfc.o $(SFC_ODIR)/hilbert.o
 
-IBTRANS_DIR = $(DSPACESREL_DIR)/ib_trans
-IBTRANS_ODIR = $(IBTRANS_DIR)/obj
-IBTRANS_OBJS = $(IBTRANS_ODIR)/ib_delivery.o $(IBTRANS_ODIR)/common.o
+SDMCONTROL_DIR = $(DSPACESREL_DIR)/sdm_control
+SDMCONTROL_INC = -I$(SDMCONTROL_DIR)/include -I$(SFC_DIR)/include
+SDMCONTROL_ODIR = $(SDMCONTROL_DIR)/obj
+SDMCONTROL_OBJS = $(SDMCONTROL_ODIR)/sdm_control.o $(SDMCONTROL_ODIR)/sdm.o $(SDMCONTROL_ODIR)/patch_sdm.o $(SDMCONTROL_ODIR)/sdm_node.o $(SDMCONTROL_ODIR)/sdm_server.o $(SDMCONTROL_ODIR)/sdm_client.o $(SDMCONTROL_ODIR)/packet.o $(SFC_OBJS)
+
+IB_TRANS_DIR ?= $(TRANS_DIR)/ib_trans
+IB_TRANS_ODIR = $(IB_TRANS_DIR)/obj
+IB_TRANS_OBJS = $(IB_TRANS_ODIR)/ib_trans.o $(IB_TRANS_ODIR)/common.o
 
 ifdef GRIDFTP
-GFTP_INC = -I$(GFTPINC_DIR)
-GFTP_LIB = -L$(GFTPLIB_DIR) -lglobus_ftp_client
-GFTPTRANS_DIR = $(DSPACESREL_DIR)/gftp_trans
-GFTPTRANS_ODIR = $(GFTPTRANS_DIR)/obj
-GFTPTRANS_OBJS = $(GFTPTRANS_ODIR)/gftp_delivery.o $(GFTPTRANS_ODIR)/gftp_drive.o $(GFTPTRANS_ODIR)/gridftp_api_drive.o $(GFTPTRANS_ODIR)/io_drive.o
-endif
+GFTP_TRANS_DIR ?= $(TRANS_DIR)/gftp_trans
+GFTP_TRANS_ODIR = $(GFTP_TRANS_DIR)/obj
+GFTP_TRANS_OBJS = $(GFTP_TRANS_ODIR)/gftp_trans.o $(GFTP_TRANS_ODIR)/gftp_drive.o $(GFTP_TRANS_ODIR)/gridftp_api_drive.o $(GFTP_TRANS_ODIR)/io_drive.o
+endif # GRIDFTP
+
+TRANS_DIR = $(DSPACESREL_DIR)/trans
+TRANS_INC = -I$(TRANS_DIR)/include -I$(IB_TRANS_DIR)/include -I$(GFTP_TRANS_DIR)/include
+TRANS_ODIR = $(TRANS_DIR)/obj
+TRANS_OBJS = $(TRANS_ODIR)/trans.o $(IB_TRANS_OBJS) $(GFTP_TRANS_OBJS)
 
 PREFETCH_DIR = $(DSPACESREL_DIR)/prefetch
 PREFETCH_ODIR = $(PREFETCH_DIR)/obj
@@ -55,15 +67,14 @@ PROFILER_ODIR = $(PROFILER_DIR)/obj
 PROFILER_OBJS = $(PROFILER_ODIR)/profiler.o
 
 DSPACESREL_DIR = $(DSPACESWA_DIR)/dspaces_rel
+DSPACESREL_INC = -I$(DSPACESREL_DIR)/include $(SDMCONTROL_INC) $(TRANS_INC) -I$(PREFETCH_DIR)/include -I$(PROFILER_DIR)/include
 DSPACESREL_ODIR = $(DSPACESREL_DIR)/obj
-DSPACESREL_OBJS = $(DSPACESREL_ODIR)/ds_client.o $(DSPACESREL_ODIR)/ds_drive.o $(SDMCONTROL_OBJS) $(IBTRANS_OBJS) $(GFTPTRANS_OBJS) $(PREFETCH_OBJS) $(PROFILER_OBJS)
+DSPACESREL_OBJS = $(DSPACESREL_ODIR)/remote_interact.o $(DSPACESREL_ODIR)/ds_client.o $(DSPACESREL_ODIR)/ds_drive.o $(SDMCONTROL_OBJS) $(TRANS_OBJS) $(PREFETCH_OBJS) $(PROFILER_OBJS)
 
-DSPACESWA_INC = -I$(DSPACESWA_DIR)/include -I$(DSPACESREL_DIR)/include -I$(SDMCONTROL_DIR)/include -I$(IBTRANS_DIR)/include -I$(GFTPTRANS_DIR)/include -I$(PREFETCH_DIR)/include -I$(PROFILER_DIR)/include
-DSPACESWA_LIB = $(DSPACESWA_DIR)/lib
-
-IBVERBS_LIB = -L/usr/lib64 -libverbs
+DSPACESWA_INC = -I$(DSPACESWA_DIR)/include $(DSPACESREL_INC)
+DSPACESWA_LIB = $(DSPACESWA_DIR)/lib/libdspaces_wa.a
 # 
-INC = $(DSPACES_INC) $(GLOG_INC) $(BOOST_INC) $(DSPACESWA_INC) $(GFTP_INC)
+INC = $(DSPACES_INC) $(GLOG_INC) $(BOOST_INC) $(GFTP_INC) $(DSPACESWA_INC)
 LIB = $(DSPACES_LIB) $(GLOG_LIB) $(BOOST_LIB) $(IBVERBS_LIB) $(MPI_LIB) $(GFTP_LIB)
 
 ODIR = obj
@@ -94,7 +105,7 @@ $(ODIR)/%.o: %.c
 endif
 
 lib: 
-	ar -cvq $(DSPACESWA_LIB)/libdspaces_wa.a $(OBJS)
+	ar -cvq $(DSPACESWA_LIB) $(OBJS)
 
 lclean:
 	rm -f $(ODIR)/*.o ${APPS}

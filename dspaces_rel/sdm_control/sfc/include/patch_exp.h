@@ -37,7 +37,7 @@ void check_hilbert_api()
   double lcoor_[] = {0, 0};
   double ucoor_[] = {10, 10};
   
-  hilbert_box_pt(nDims, 0, nBits, 1, lcoor_, ucoor_);
+  mfa_hilbert_box_pt(nDims, 0, nBits, 1, lcoor_, ucoor_);
   // hilbert_ieee_box_pt(nDims, 0, lcoor_, ucoor_);
   // hilbert_ieee_box_vtx(nDims, 0, lcoor_, ucoor_);
   std::cout << "check_hilbert_api:: lcoor_= " << patch_sfc::arr_to_str<>(NDIM, lcoor_) << ","
@@ -80,8 +80,8 @@ void check_2d_hilbert_curve()
   unsigned nBits = 4;
   // bitmask_t coord_1_[] = {5, 2};
   // bitmask_t coord_2_[] = {5, 5};
-  // std::cout << "index_1= " << hilbert_c2i(nDims, nBits, coord_1_) << "\n";
-  // std::cout << "index_2= " << hilbert_c2i(nDims, nBits, coord_2_) << "\n";
+  // std::cout << "index_1= " << mfa_hilbert_c2i(nDims, nBits, coord_1_) << "\n";
+  // std::cout << "index_2= " << mfa_hilbert_c2i(nDims, nBits, coord_2_) << "\n";
   
   typedef std::pair<bitmask_t, bitmask_t> coor_p;
   std::vector<bitmask_t> index_v;
@@ -91,7 +91,7 @@ void check_2d_hilbert_curve()
   for (int x = 0; x < up_limit; x++) {
     for (int y = 0; y < up_limit; y++) {
       bitmask_t coord_[] = {x, y};
-      bitmask_t index = hilbert_c2i(nDims, nBits, coord_);
+      bitmask_t index = mfa_hilbert_c2i(nDims, nBits, coord_);
       
       index_v.push_back(index);
       index__coor_p_map[index] = std::make_pair(x, y);
@@ -160,8 +160,8 @@ void check_3d_hilbert_curve()
   unsigned nBits = 4;
   // bitmask_t coord_1_[] = {5, 2, 2};
   // bitmask_t coord_2_[] = {5, 5, 5};
-  // std::cout << "index_1= " << hilbert_c2i(nDims, nBits, coord_1_) << "\n";
-  // std::cout << "index_2= " << hilbert_c2i(nDims, nBits, coord_2_) << "\n";
+  // std::cout << "index_1= " << mfa_hilbert_c2i(nDims, nBits, coord_1_) << "\n";
+  // std::cout << "index_2= " << mfa_hilbert_c2i(nDims, nBits, coord_2_) << "\n";
   
   typedef boost::tuple<bitmask_t, bitmask_t, bitmask_t> coor_t;
   std::vector<bitmask_t> index_v;
@@ -172,7 +172,7 @@ void check_3d_hilbert_curve()
     for (int y = 0; y < up_limit; y++) {
       for (int z = 0; z < up_limit; z++) {
         bitmask_t coord_[] = {x, y, z};
-        bitmask_t index = hilbert_c2i(nDims, nBits, coord_);
+        bitmask_t index = mfa_hilbert_c2i(nDims, nBits, coord_);
         
         index_v.push_back(index);
         index__coor_t_map[index] = boost::make_tuple(x, y, z);

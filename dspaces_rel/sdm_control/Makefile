@@ -4,7 +4,7 @@
 # BOOST_DIR ?= /cac/u01/mfa51/Desktop/boost_1_56_0/install
 # DSPACESWA_DIR ?= /cac/u01/mfa51/Desktop/dataspaces_wa
 # ##################################################################################################
-BOOSTASIO_LIB = -L$(BOOSTASIO_DIR)
+# BOOSTASIO_LIB = -L$(BOOSTASIO_DIR)
 
 BOOST_INC = -I$(BOOST_DIR)/include
 BOOST_LIB = -L$(BOOST_DIR)/lib -lboost_system -lpthread -lboost_thread -lboost_serialization -lboost_iostreams -lboost_filesystem

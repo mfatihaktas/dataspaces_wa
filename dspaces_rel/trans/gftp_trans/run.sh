@@ -1,13 +1,12 @@
 #!/bin/bash
 echo $1 $2 $3
 
-TRANS_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/gftp_trans/dummy
+TRANS_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/trans/gftp_trans/dummy
 S_LINTF="em2"
 # S_LADDR=127.0.0.1
-S_LADDR=192.168.2.152
+S_LADDR=192.168.2.151
 S_LPORT=62000
-TMPFS_DIR="/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/gftp_trans/dummy"
-S_TMPFS_DIR=$TMPFS_DIR"/server"
+TMPFS_DIR="/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/trans/gftp_trans/dummy"
 # S_FNAME=dummy.dat
 S_FNAME=tx.dat
 C_FNAME=recved_tx.dat
@@ -23,13 +22,13 @@ elif [ $1  = 'g' ]; then
   # GLOG_logtostderr=1 ./exp --type="g" --src_url="ftp://$S_LADDR:$PORT$TRANS_DIR/$S_FNAME" --dst_url="$TRANS_DIR/$C_FNAME"
   # export GLOG_logtostderr=1
   # valgrind --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=20 --track-fds=yes ./exp --type="g" --s_laddr=$S_LADDR --s_lport=$S_LPORT --tmpfs_dir=$TMPFS_DIR"/get" --s_tmpfs_dir=$TMPFS_DIR"/server"
-  GLOG_logtostderr=1 ./exp --type="g" --s_laddr=$S_LADDR --s_lport=$S_LPORT --tmpfs_dir=$TMPFS_DIR"/get" --s_tmpfs_dir=$TMPFS_DIR"/server"
+  GLOG_logtostderr=1 ./exp --type="g" --s_laddr=$S_LADDR --s_lport=$S_LPORT --tmpfs_dir=$TMPFS_DIR"" --s_tmpfs_dir=$TMPFS_DIR"/server"
 elif [ $1  = 'dg' ]; then
   export GLOG_logtostderr=1
   gdb --args ./exp --type="g" --s_laddr=$S_LADDR --s_lport=$S_LPORT --tmpfs_dir=$TMPFS_DIR"/get" --s_tmpfs_dir=$TMPFS_DIR"/server"
 elif [ $1  = 'p' ]; then
   # GLOG_logtostderr=1 ./exp --type="p" --src_url="$TRANS_DIR/$S_FNAME" --dst_url="ftp://$S_LADDR:$PORT$TRANS_DIR/$C_FNAME"
-  GLOG_logtostderr=1 ./exp --type="p" --s_laddr=$S_LADDR --s_lport=$S_LPORT --tmpfs_dir=$TMPFS_DIR"/put" --s_tmpfs_dir=$TMPFS_DIR"/server"
+  GLOG_logtostderr=1 ./exp --type="p" --s_laddr=$S_LADDR --s_lport=$S_LPORT --tmpfs_dir=$TMPFS_DIR"" --s_tmpfs_dir=$TMPFS_DIR"/server"
 elif [ $1  = 'dp' ]; then
   export GLOG_logtostderr=1
   gdb --args ./exp --type="p" --s_laddr=$S_LADDR --s_lport=$S_LPORT --tmpfs_dir=$TMPFS_DIR"/put" --s_tmpfs_dir=$TMPFS_DIR"/server"

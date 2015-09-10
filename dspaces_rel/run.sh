@@ -1,27 +1,40 @@
 #!/bin/bash
 echo $1 $2 $3
 
-# DSPACES_BINDIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.5.0/install/bin
+NUM_SNODE=1
+NUM_CLIENT=1
+NUM_DSCNODE=$(($NUM_CLIENT+1)) #+1: RIManager
 
-NUM_SNODES=1
-NUM_DSCNODES=$((1+1)) #+1: RIManager
+CONTROL_LINTF="lo" # "em2"
+RI_MANAGER_CONTROL_LPORT_LIST=( "7000" "7001" "7002" )
+RI_MANAGER_JOIN_CONTROL_LADDR_LIST=( "" "192.168.2.151" "192.168.2.151" )
+RI_MANAGER_JOIN_CONTROL_LPORT_LIST=( "" "7000" "7000" )
+
+TRANS_PROTOCOL="i" # "g"
+IB_LINTF="ib0"
+GFTP_LINTF="em2"
+GFTP_LPORT="6000"
+TMPFS_DIR=$DSPACESWA_DIR/tmpfs
 
 if [ $1  = 's' ]; then
   if [ -a conf ]; then
     rm srv.lck
     rm conf                                                                                         #dataspaces_server cannot overwrite this so before every new run this should be removed
   fi
-  $DSPACES_BINDIR/./dataspaces_server --server $NUM_SNODES --cnodes $NUM_DSCNODES
+  $DSPACES_DIR/bin/./dataspaces_server --server $NUM_SNODE --cnodes $NUM_DSCNODE
 elif [ $1  = 'p' ]; then
-  GLOG_logtostderr=1 ./exp --type=put --dht_id='p' --num_dscnodes=$NUM_DSCNODES --app_id=1
+  GLOG_logtostderr=1 ./exp --type="put" --cl_id=1 --num_client=$NUM_CLIENT --ds_id='p'
 elif [ $1  = 'g' ]; then
-  GLOG_logtostderr=1 ./exp --type=get --dht_id='g' --num_dscnodes=$NUM_DSCNODES --app_id=2
-  #--type=get --num_DScnodes=2 --app_id=3
+  GLOG_logtostderr=1 ./exp --type="get" --cl_id=2 --num_client=$NUM_CLIENT --ds_id='g'
 elif [ $1  = 'r' ]; then
-  GLOG_logtostderr=1 ./exp --type=ri --dht_id='r' --num_dscnodes=$NUM_DSCNODES --app_id=10 \
-                           --dht_lintf="lo" --dht_lport=7000 \
-                           --trans_protocol="gridftp" --wa_lintf="em2" --wa_lport=5000 \
-                           --tmpfs_dir=dev/shm
+  if [ -z "$2" ]; then
+    echo "Which site?"
+  else
+    GLOG_logtostderr=1 ./exp --type="ri" --cl_id=21 --num_client=$NUM_CLIENT --base_client_id=$(($(($2+1))*10)) \
+                             --ds_id=$2 --control_lintf=$CONTROL_LINTF --control_lport=${RI_MANAGER_CONTROL_LPORT_LIST[$2] } \
+                             --join_control_laddr=${RI_MANAGER_JOIN_CONTROL_LADDR_LIST[$2] } --join_control_lport=${RI_MANAGER_JOIN_CONTROL_LPORT_LIST[$2] } \
+                             --trans_protocol=$TRANS_PROTOCOL --ib_lintf=$IB_LINTF --gftp_lintf=$GFTP_LINTF --gftp_lport=$GFTP_LPORT --tmpfs_dir=$TMPFS_DIR
+  fi
 elif [ $1  = 'load' ]; then
   module load openmpi-x86_64
 elif [ $1  = 'show' ]; then

@@ -17,8 +17,9 @@ elif [ $1  = 'dp' ]; then
   export GLOG_logtostderr=1
   gdb --args ./exp --type="p" --trans_protocol=$TRANS_PROTOCOL --ib_lintf=$IB_LINTF --gftp_lintf=$GFTP_LINTF --tmpfs_dir=$TMPFS_DIR
 elif [ $1  = 'init' ]; then
+  # export GRIDFTP=1
+  unset GRIDFTP
   if [ $2  = 'd' ]; then
-    # export GRIDFTP=1
     export CC=/opt/gcc-4.8.2/bin/gcc
     export CPP=/opt/gcc-4.8.2/bin/g++
     export MPICPP=/cac/u01/mfa51/Desktop/mpich-3.1.2/install/bin/mpicxx

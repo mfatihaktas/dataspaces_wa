@@ -18,7 +18,7 @@ class DSDriver
 {
   public:
     DSDriver(int num_dscnodes, int app_id);
-    DSDriver(MPI_Comm mpi_comm, int num_dscnodes, int app_id);
+    DSDriver(int num_dscnodes, int app_id, MPI_Comm mpi_comm);
     ~DSDriver();
     int close();
     int init(int num_dscnodes, int app_id);

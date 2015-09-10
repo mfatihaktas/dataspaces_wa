@@ -99,11 +99,16 @@ void master_test(std::map<std::string, std::string> opt_map)
   COOR_T lcoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 0) };
   COOR_T ucoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 10) };
   
-  SDMMaster master(HILBERT_PREDICTOR, opt_map["id"].c_str()[0],
-                   intf_to_ip(opt_map["lintf"] ), boost::lexical_cast<int>(opt_map["lport"] ),
-                   opt_map["joinhost_lip"], boost::lexical_cast<int>(opt_map["joinhost_lport"] ),
+  SDMMaster master(LUCOOR_DATA_ID, boost::bind(&handle_dm_act, _1),
+                   opt_map["id"].c_str()[0], intf_to_ip(opt_map["lintf"] ), boost::lexical_cast<int>(opt_map["lport"] ), opt_map["joinhost_lip"], boost::lexical_cast<int>(opt_map["joinhost_lport"] ),
                    boost::bind(&handle_rimsg_recv, _1),
-                   pbuffer_size, pexpand_length, lcoor_, ucoor_);
+                   HILBERT_PREDICTOR, pbuffer_size, pexpand_length, lcoor_, ucoor_);
+  
+  // COOR_T m_lcoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 0) };
+  // COOR_T m_ucoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 2) };
+  // master.reg_app(0);
+  // master.put(true, "dummy", 0, m_lcoor_, m_ucoor_, 0);
+  
   // std::cout << "Enter for test... \n";
   // getline(std::cin, temp);
   // COOR_T mquery_lcoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 0) };
@@ -116,10 +121,8 @@ void master_test(std::map<std::string, std::string> opt_map)
 
 void slave_test(std::map<std::string, std::string> opt_map)
 {
-  SDMSlave slave(LUCOOR_DATA_ID, boost::bind(&handle_dm_act, _1),
-                 opt_map["id"].c_str()[0],
-                 intf_to_ip(opt_map["lintf"] ), boost::lexical_cast<int>(opt_map["lport"] ),
-                 opt_map["joinhost_lip"], boost::lexical_cast<int>(opt_map["joinhost_lport"] ),
+  SDMSlave slave(LUCOOR_DATA_ID, boost::bind(&handle_dm_act, _1), "s",
+                 opt_map["id"].c_str()[0], intf_to_ip(opt_map["lintf"] ), boost::lexical_cast<int>(opt_map["lport"] ), opt_map["joinhost_lip"], boost::lexical_cast<int>(opt_map["joinhost_lport"] ),
                  boost::bind(&handle_rimsg_recv, _1) );
   std::cout << "Enter for test... \n";
   getline(std::cin, temp);
@@ -127,8 +130,8 @@ void slave_test(std::map<std::string, std::string> opt_map)
   COOR_T s_lcoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 0) };
   COOR_T s_ucoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 2) };
   if (opt_map["id"].c_str()[0] == '1') {
-    slave.reg_app(0);
-    slave.put("dummy", 0, s_lcoor_, s_ucoor_, 0);
+    slave.reg_app(1);
+    slave.put(true, "dummy", 0, s_lcoor_, s_ucoor_, 0);
   }
   else if (opt_map["id"].c_str()[0] == '2') {
     if (slave.get(true, "dummy", 0, s_lcoor_, s_ucoor_) )

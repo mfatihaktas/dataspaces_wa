@@ -15,8 +15,10 @@ GLOG_LIB = -L$(GLOG_DIR)/lib -lglog
 IBVERBS_LIB = -L/usr/lib64 -libverbs -lrdmacm
 # IB_LIB = -lrdmacm -libverbs -lpthread 
 
+ifdef GRIDFTP
 GFTP_INC = -I$(GFTPINC_DIR) #-I/usr/lib64/globus/include
 GFTP_LIB = -L$(GFTPLIB_DIR) -lglobus_ftp_client
+endif # GRIDFTP
 
 IB_TRANS_DIR ?= $(TRANS_DIR)/ib_trans
 IB_TRANS_ODIR = $(IB_TRANS_DIR)/obj
@@ -32,7 +34,7 @@ TRANS_DIR ?= $(DSPACESWA_DIR)/dspaces_rel/trans
 TRANS_INC = -I$(TRANS_DIR)/include -I$(IB_TRANS_DIR)/include -I$(GFTP_TRANS_DIR)/include
 # 
 INC = $(GLOG_INC) $(BOOST_INC) $(GFTP_INC) $(TRANS_INC)
-LIB = $(GLOG_LIB) $(BOOST_LIB) $(IBVERBS_LIB)
+LIB = $(GLOG_LIB) $(BOOST_LIB) $(IBVERBS_LIB) $(GFTP_LIB)
 
 ODIR = obj
 OBJS = $(ODIR)/exp.o $(ODIR)/trans.o $(IB_TRANS_OBJS) $(GFTP_TRANS_OBJS)

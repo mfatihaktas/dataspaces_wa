@@ -1,167 +1,117 @@
 #include "dataspaces_wa.h"
 
-std::string str_str_map_to_str(std::map<std::string, std::string> str_map)
-{
-  std::stringstream ss;
-  for (std::map<std::string, std::string>::const_iterator it = str_map.begin(); 
-      it != str_map.end(); it++) {
-    ss << "\t" << it->first << ": " << it->second << "\n";
-  }
-  
-  return ss.str();
-}
-
-/*******************************************  RMessenger  *****************************************/
-RMessenger::RMessenger()
+/***************************************  WADSDriver  ****************************************/
+// Note: Reason why base_client_id is added in BCClient's arg rather than eliminating it by taking 
+// app_id arg as base_client_id + app_id is because DS throws segmentation fault in a weird way while
+// initializing it with arbitrary app_id's.
+// Overall, app_id is used for DSDriver, _app_id is used as the application id
+WADSDriver::WADSDriver(int app_id, int base_client_id, int num_local_peers,
+                       char data_id_t)
+: app_id(app_id), base_client_id(base_client_id), num_local_peers(num_local_peers), data_id_t(data_id_t),
+  _app_id(base_client_id + app_id),
+  ds_driver_ (boost::make_shared<DSDriver>(num_local_peers, app_id) ),
+  bc_client_(boost::make_shared<BCClient>(_app_id, RI_MSG_SIZE, "req_app_", ds_driver_) )
 {
   // 
-  LOG(INFO) << "RMessenger:: constructed.";
+  LOG(INFO) << "WADSDriver:: constructed.";
 }
 
-RMessenger::~RMessenger()
+WADSDriver::WADSDriver(int app_id, int base_client_id, int num_local_peers,
+                       char data_id_t, MPI_Comm mpi_comm)
+: app_id(app_id), base_client_id(base_client_id), num_local_peers(num_local_peers), data_id_t(data_id_t),
+  _app_id(base_client_id + app_id),
+  ds_driver_ (boost::make_shared<DSDriver>(mpi_comm, num_local_peers, app_id) ),
+  bc_client_(boost::make_shared<BCClient>(_app_id, RI_MSG_SIZE, "req_app_", ds_driver_) )
 {
   // 
-  LOG(INFO) << "RMessenger:: destructed.";
+  LOG(INFO) << "WADSDriver:: constructed.";
 }
 
-std::map<std::string, std::string> RMessenger::gen_i_msg(std::string msg_type, int app_id, 
-                                                         std::string data_type, std::string key,
-                                                         unsigned int ver, int size, int ndim, 
-                                                         uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
-{
-  std::map<std::string, std::string> msg_map;
-  msg_map["type"] = msg_type;
-  msg_map["app_id"] = boost::lexical_cast<std::string>(app_id);
-  msg_map["data_type"] = data_type;
-  msg_map["key"] = key;
-  msg_map["ver"] = boost::lexical_cast<std::string>(ver);
-  msg_map["size"] = boost::lexical_cast<std::string>(size);
-  msg_map["ndim"] = boost::lexical_cast<std::string>(ndim);
-  
-  std::string gdim = "";
-  std::string lb = "";
-  std::string ub = "";
-  for (int i = 0; i < ndim; i++) {
-    gdim += boost::lexical_cast<std::string>(gdim_[i] );
-    lb += boost::lexical_cast<std::string>(lb_[i] );
-    ub += boost::lexical_cast<std::string>(ub_[i] );
-    if (i < ndim - 1) {
-      gdim += ",";
-      lb += ",";
-      ub += ",";
-    }
-  }
-  msg_map["gdim"] = gdim;
-  msg_map["lb"] = lb;
-  msg_map["ub"] = ub;
-  
-  return msg_map;
-}
+WADSDriver::~WADSDriver() { LOG(INFO) << "WADSDriver:: destructed."; }
 
-/***************************************  WADspacesDriver  ****************************************/
-WADspacesDriver::WADspacesDriver(int app_id, int num_local_peers)
-: app_id(app_id),
-  num_local_peers(num_local_peers),
-  ds_driver_ ( new DSpacesDriver(num_local_peers, app_id) ),
-  bc_client_( new BCClient(app_id, num_local_peers, RI_MSG_SIZE, "req_app_", ds_driver_) )
+int WADSDriver::put(std::string key, unsigned int ver, std::string data_type,
+                    int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
 {
-  // 
-  LOG(INFO) << "WADspacesDriver:: constructed.";
-}
-
-WADspacesDriver::WADspacesDriver(MPI_Comm mpi_comm, int app_id, int num_local_peers)
-: app_id(app_id),
-  num_local_peers(num_local_peers),
-  ds_driver_ ( new DSpacesDriver(mpi_comm, num_local_peers, app_id) ),
-  bc_client_( new BCClient(app_id, num_local_peers, RI_MSG_SIZE, "req_app_", ds_driver_) )
-{
-  // 
-  LOG(INFO) << "WADspacesDriver:: constructed.";
-}
-
-WADspacesDriver::~WADspacesDriver()
-{
-  // 
-  LOG(INFO) << "WADspacesDriver:: destructed.";
-}
-
-int WADspacesDriver::put(std::string data_type, std::string key, unsigned int ver, int size,
-                         int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
-{
-  std::map<std::string, std::string> msg_map = rmessenger.gen_i_msg(PUT, app_id, data_type,
-                                                                    key, ver, size, ndim, gdim_, lb_, ub_);
-  
-  int return_ = ds_driver_->sync_put(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_);
-  
-  if (bc_client_->send(msg_map) ) {
-    LOG(ERROR) << "put:: bc_client_->send failed!";
+  if (ds_driver_->sync_put(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_) ) {
+    LOG(ERROR) << "put:: ds_driver_->sync_put failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
     return 1;
   }
   
-  return return_;
+  std::map<std::string, std::string> msg_map;
+  msg_map["type"] = PUT;
+  msg_map["cl_id"] = boost::lexical_cast<std::string>(_app_id);
+  msg_coder.encode_msg_map(msg_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_);
+  if (bc_client_->send(msg_map) ) {
+    LOG(ERROR) << "put:: bc_client_->send failed; msg_map= " << patch_sfc::map_to_str<>(msg_map);
+    return 1;
+  }
+  
+  return 0;
 }
 
-int WADspacesDriver::get(bool blocking, std::string data_type, std::string key, unsigned int ver, 
-                         int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
+int WADSDriver::get(bool blocking, std::string key, unsigned int ver, std::string data_type,
+                    int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
 {
-  LOG(INFO) << "get:: started for <key= " << key << ", ver= " << ver << ">.";
-  std::string msg_type;
+  LOG(INFO) << "get:: started for " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
+  
+  std::map<std::string, std::string> msg_map;
   if (blocking)
-    msg_type = BLOCKING_GET;
+    msg_map["type"] = BLOCKING_GET;
   else
-    msg_type = GET;
-  
-  std::map<std::string, std::string> msg_map = rmessenger.gen_i_msg(msg_type, app_id, data_type, 
-                                                                    key, ver, size, ndim, gdim_, lb_, ub_);
-  
+    msg_map["type"] = GET;
+  msg_map["cl_id"] = boost::lexical_cast<std::string>(_app_id);
+  msg_coder.encode_msg_map(msg_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_);
   if (bc_client_->send(msg_map) ) {
     LOG(ERROR) << "get:: bc_client_->send failed!";
     return 1;
   }
   // usleep(1000);
   // 
-  boost::shared_ptr<BCServer> bc_server_( 
-    new BCServer(app_id, 0, APP_RIMANAGER_MAX_MSG_SIZE, "reply_app_", 
-                 boost::bind(&WADspacesDriver::handle_ri_reply, this, _1),
-                 ds_driver_)
-  );
-  bc_server_->init_listen_client(app_id);
+  boost::shared_ptr<BCServer> bc_server_ = 
+    boost::make_shared<BCServer>(_app_id, CL__RIMANAGER_MAX_MSG_SIZE, "reply_app_",
+                                 boost::bind(&WADSDriver::handle_ri_reply, this, _1), ds_driver_);
+  bc_server_->init_listen_client(_app_id);
   
-  key_ver_pair kv = std::make_pair(key, ver);
-  rg_syncer.add_sync_point(kv, 1);
-  rg_syncer.wait(kv);
-  rg_syncer.del_sync_point(kv);
+  std::string data_id = get_data_id(data_id_t, key, ver, lb_, ub_);
+  unsigned int sync_point = patch_sdm::hash_str(msg_map["type"] + "_" + data_id);
+  syncer.add_sync_point(sync_point, 1);
+  syncer.wait(sync_point);
+  syncer.del_sync_point(sync_point);
   
-  if (key_ver__dsid_map[kv] == '?') {
-    LOG(INFO) << "get:: <key= " << key << ", ver= " << ver << "> does not exist.";
-    key_ver__dsid_map.del(kv);
+  if (data_id__ds_id_map[data_id] == '?') {
+    LOG(INFO) << "get:: " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
+    data_id__ds_id_map.del(data_id);
     return 1;
   }
   
   if (ds_driver_->get(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_) ) {
-    LOG(ERROR) << "get:: ds_driver_->get failed!";
+    LOG(ERROR) << "get:: ds_driver_->get failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
     return 1;
   }
-  key_ver__dsid_map.del(kv);
-  // 
-  LOG(INFO) << "get:: done for <key= " << key << ", ver= " << ver << ">.";
+  data_id__ds_id_map.del(data_id);
+  
   return 0;
 }
 
-int WADspacesDriver::handle_ri_reply(char* ri_reply)
+int WADSDriver::handle_ri_reply(char* ri_reply_)
 {
-  std::map<std::string, std::string> ri_reply_map = imsg_coder.decode(ri_reply);
+  std::map<std::string, std::string> ri_reply_map = msg_coder.decode(ri_reply_);
+  LOG(INFO) << "handle_ri_reply:: ri_reply_map= \n" << patch_sfc::map_to_str<>(ri_reply_map);
   
-  LOG(INFO) << "handle_ri_reply:: ri_reply_map= \n" << str_str_map_to_str(ri_reply_map);
+  int ndim;
+  std::string key;
+  unsigned int ver;
+  COOR_T *lb_, *ub_;
+  if (msg_coder.decode_msg_map(ri_reply_map, ndim, key, ver, lb_, ub_) ) {
+    LOG(ERROR) << "handle_ri_reply:: msg_coder.decode_msg_map failed for ri_reply_map= \n" << patch_sfc::map_to_str<>(ri_reply_map);
+    return 1;
+  }
   
-  std::string key = ri_reply_map["key"];
-  unsigned int ver = boost::lexical_cast<unsigned int>(ri_reply_map["ver"]);
+  std::string data_id = get_data_id(data_id_t, key, ver, lb_, ub_);
+  data_id__ds_id_map[data_id] = boost::lexical_cast<char>(ri_reply_map["ds_id"] );
   
-  key_ver_pair kv = std::make_pair(key, ver);
-  key_ver__dsid_map[kv] = ri_reply_map["ds_id"].c_str()[0];
+  unsigned int sync_point = patch_sdm::hash_str(ri_reply_map["type"] + "_" + data_id);
+  syncer.notify(sync_point);
   
-  rg_syncer.notify(kv);
-  // 
-  LOG(INFO) << "handle_ri_reply:: done.";
   return 0;
 }

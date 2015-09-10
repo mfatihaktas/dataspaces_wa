@@ -25,7 +25,7 @@
 #include "hilbert.h"
 #include "patch_sfc.h"
 
-#define NDIM 2
+#define NDIM 1
 typedef uint64_t COOR_T;
 
 /********************************************  QTable  ********************************************/
@@ -40,9 +40,6 @@ class QTable { // Query
     virtual std::string to_str() = 0;
     virtual int add(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, VAL_T val) = 0;
     virtual int query(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, std::vector<VAL_T>& val_v) = 0;
-    // std::string to_str();
-    // int add(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, VAL_T val);
-    // int query(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, std::vector<VAL_T>& val_v);
 };
 
 /*******************************************  RTable  *********************************************/
@@ -153,7 +150,14 @@ class KVTable : public QTable<VAL_T> { // Key Ver
     
     int query(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, std::vector<VAL_T>& val_v)
     {
+      IS_VALID_BOX("query", lcoor_, ucoor_, return 1)
+      key_ver_pair kv = std::make_pair(key, ver);
+      if (!kv_val_map.contains(kv) )
+        return 1;
       
+      val_v.push_back(kv_val_map[kv] );
+      
+      return 0;
     }
 };
 

@@ -11,7 +11,18 @@ GFTPTManager::GFTPTManager(std::string s_lintf, std::string s_laddr, int s_lport
 
 GFTPTManager::~GFTPTManager() { LOG(INFO) << "GFTPTManager:: destructed."; }
 
+std::string GFTPTManager::to_str()
+{
+  std::stringstream ss;
+  ss << "\t s_lintf= " << s_lintf << "\n"
+     << "\t s_laddr= " << s_laddr << "\n"
+     << "\t s_lport= " << s_lport << "\n"
+     << "\t tmpfs_dir= " << tmpfs_dir << "\n";
+  return ss.str();
+}
+
 int GFTPTManager::get_s_lport() { return s_lport; }
+std::string GFTPTManager::get_tmpfs_dir() { return tmpfs_dir; }
 
 int GFTPTManager::init_server()
 {
@@ -19,7 +30,7 @@ int GFTPTManager::init_server()
 }
 
 int GFTPTManager::put(std::string s_laddr, int s_lport, std::string tmpfs_dir,
-                      std::string data_id, size_t datasize_inB, void* data_)
+                      std::string data_id, int datasize_inB, void* data_)
 {
   std::string fname = "/ds_" + data_id + ".dat";
   if (io_driver_->write_file("", fname, datasize_inB, data_) ) {
@@ -39,7 +50,7 @@ int GFTPTManager::put(std::string s_laddr, int s_lport, std::string tmpfs_dir,
 }
 
 int GFTPTManager::get(std::string s_laddr, int s_lport, std::string tmpfs_dir,
-                      std::string data_id, size_t &datasize_inB, void* &data_)
+                      std::string data_id, int &datasize_inB, void* &data_)
 {
   std::string fname = "/ds_" + data_id + ".dat";
   std::string src_url = "ftp://" + s_laddr + ":" + boost::lexical_cast<std::string>(s_lport) + tmpfs_dir + fname;
@@ -56,7 +67,7 @@ int GFTPTManager::get(std::string s_laddr, int s_lport, std::string tmpfs_dir,
   return 0;
 }
 
-int GFTPTManager::read_del_datafile(std::string data_id, size_t &datasize_inB, void* &data_)
+int GFTPTManager::read_del_datafile(std::string data_id, int &datasize_inB, void* &data_)
 {
   std::string fname = "/ds_" + data_id + ".dat";
   

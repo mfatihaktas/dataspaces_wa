@@ -10,6 +10,7 @@
 #endif // _GRIDFTP_
 
 #define str_str_equals(x, y) (strcmp(x.c_str(), y.c_str() ) == 0)
+#define str_cstr_equals(x, y) (strcmp(x.c_str(), y) == 0)
 
 const std::string INFINIBAND = "i";
 const std::string GRIDFTP = "g";
@@ -35,6 +36,7 @@ class TManager { // Transport
     
     std::string get_s_laddr();
     std::string get_s_lport();
+    std::string get_tmpfs_dir();
     
     int init_get(std::string s_lport, std::string data_id, std::string data_type, data_recv_cb_func cb);
     int init_put(std::string s_laddr, std::string s_lport, std::string tmpfs_dir,

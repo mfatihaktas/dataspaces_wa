@@ -42,7 +42,7 @@ HPredictor::coor_to_index_interval_set_(COOR_T* lcoor_, COOR_T* ucoor_)
   boost::shared_ptr<index_interval_set_t> index_interval_set_ = boost::make_shared<index_interval_set_t>();
   MULTI_FOR(lcoor_, ucoor_)
     bitmask_t walk_lcoor_[NDIM] = { BOOST_PP_ENUM(NDIM, VAR_REP, d) };
-    bitmask_t index = hilbert_c2i(NDIM, hilbert_num_bits, walk_lcoor_);
+    bitmask_t index = mfa_hilbert_c2i(NDIM, hilbert_num_bits, walk_lcoor_);
     
     index_interval_set_->insert(boost::icl::interval<bitmask_t>::closed(index, index) );
   END_MULTI_FOR()
@@ -56,7 +56,7 @@ void HPredictor::index_interval_set_to_coor_v(index_interval_set_t interval_set,
     for (bitmask_t index = it->lower(); index <= it->upper(); index++) {
       bitmask_t* coor_ = (bitmask_t*)malloc(NDIM*sizeof(bitmask_t) );
       // std::cout << "index_interval_set_to_coor_v:: index= " << index << "\n";
-      hilbert_i2c(NDIM, hilbert_num_bits, index, coor_);
+      mfa_hilbert_i2c(NDIM, hilbert_num_bits, index, coor_);
       
       COOR_T* good_t_coor_ = (COOR_T*)malloc(NDIM*sizeof(int) );
       for (int i = 0; i < NDIM; i++)
@@ -131,7 +131,6 @@ WASpace::WASpace(char predictor_t, std::vector<char> ds_id_v,
   
   if (predictor_t == HILBERT_PREDICTOR) {
     qtable_ = boost::make_shared<RTable<char> >();
-    
     predictor_ = boost::make_shared<HPredictor>(pexpand_length, lcoor_, ucoor_);
   }
   // else if (predictor_t == PREDICTOR_T_HILBERT) {

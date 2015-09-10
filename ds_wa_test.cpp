@@ -8,9 +8,10 @@
 #include <boost/lexical_cast.hpp>
 #include <glog/logging.h>
 
+#include "profiler.h"
 #include "dataspaces_wa.h"
 
-size_t get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_)
+int get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_)
 {
   uint64_t dim_length[ndim];
   
@@ -28,26 +29,27 @@ size_t get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_)
     dim_length[i] = ub - lb;
   }
   
-  size_t volume = 1;
+  int volume = 1;
   for(int i=0; i<ndim; i++) {
-    volume *= (size_t)dim_length[i];
+    volume *= (int)dim_length[i];
   }
   
   return volume;
 }
 
-std::map<char*, char*> parse_opts(int argc, char** argv)
+std::map<std::string, std::string> parse_opts(int argc, char** argv)
 {
-  std::map<char*, char*> opt_map;
+  std::map<std::string, std::string> opt_map;
   int c;
   
   static struct option long_options[] =
   {
     {"type", optional_argument, NULL, 0},
-    {"num_dscnodes", optional_argument, NULL, 1},
-    {"app_id", optional_argument, NULL, 2},
-    {"num_putget", optional_argument, NULL, 3},
-    {"inter_time_sec", optional_argument, NULL, 4},
+    {"cl_id", optional_argument, NULL, 1},
+    {"base_client_id", optional_argument, NULL, 2},
+    {"num_client", optional_argument, NULL, 3},
+    {"num_putget", optional_argument, NULL, 4},
+    {"inter_time_sec", optional_argument, NULL, 5},
     {0, 0, 0, 0}
   };
   
@@ -57,25 +59,28 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
     c = getopt_long (argc, argv, "s",
                      long_options, &option_index);
 
-    if (c == -1) //Detect the end of the options.
+    if (c == -1) // Detect the end of the options.
       break;
     
     switch (c)
     {
       case 0:
-        opt_map[(char*)"type"] = optarg;
+        opt_map["type"] = optarg;
         break;
       case 1:
-        opt_map[(char*)"num_dscnodes"] = optarg;
+        opt_map["cl_id"] = optarg;
         break;
       case 2:
-        opt_map[(char*)"app_id"] = optarg;
+        opt_map["base_client_id"] = optarg;
         break;
       case 3:
-        opt_map[(char*)"num_putget"] = optarg;
+        opt_map["num_client"] = optarg;
         break;
       case 4:
-        opt_map[(char*)"inter_time_sec"] = optarg;
+        opt_map["num_putget"] = optarg;
+        break;
+      case 5:
+        opt_map["inter_time_sec"] = optarg;
         break;
       default:
         break;
@@ -87,10 +92,8 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
       std::cout << "\t" << argv[optind++] << "\n";
   }
   // 
-  std::cout << "opt_map=\n";
-  for (std::map<char*, char*>::iterator it=opt_map.begin(); it!=opt_map.end(); ++it) {
-    std::cout << it->first << " => " << it->second << '\n';
-  }
+  std::cout << "parse_opts:: opt_map= \n" << patch_sfc::map_to_str<>(opt_map);
+  
   return opt_map;
 }
 
@@ -100,12 +103,11 @@ std::map<char*, char*> parse_opts(int argc, char** argv)
 #define TEST_VER 0
 #define TEST_SGDIM 1024
 
-void multi_get_test(int num_gets, float inter_get_time_sec, std::string base_var_name, WADspacesDriver& wads_driver)
+void multi_get_test(int num_gets, float inter_get_time_sec, std::string base_var_name, WADSDriver& wads_driver)
 {
   uint64_t* gdim_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
-  for (int i = 0; i < TEST_NDIM; i++) {
+  for (int i = 0; i < TEST_NDIM; i++)
     gdim_[i] = TEST_SGDIM;
-  }
   //specifics
   int *data_ = (int*)malloc(TEST_DATASIZE*sizeof(int) );
   uint64_t *lb_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
@@ -120,7 +122,7 @@ void multi_get_test(int num_gets, float inter_get_time_sec, std::string base_var
     std::string var_name = base_var_name + "_" + boost::lexical_cast<std::string>(i);
     std::cout << "\n"; // to see better on terminal
     get_time_profiler.add_event(i, var_name);
-    if (wads_driver.get(true, "int", var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_) ) {
+    if (wads_driver.get(true, var_name, TEST_VER, "int", sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_) ) {
       LOG(ERROR) << "multi_get_test:: wads_driver.get failed for var_name= " << var_name;
       return;
     }
@@ -129,19 +131,18 @@ void multi_get_test(int num_gets, float inter_get_time_sec, std::string base_var
     sleep(inter_get_time_sec);
   }
   LOG(INFO) << "multi_get_test:: get_time_profiler= \n" << get_time_profiler.to_str();
-  // size_t data_length = patch::get_data_length(TEST_NDIM, gdim, lb, ub);
+  // int data_length = patch::get_data_length(TEST_NDIM, gdim, lb, ub);
   // patch_ds::debug_print(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_, data_length);
   
-  patch_ds::free_all<uint64_t>(3, gdim_, lb_, ub_);
+  patch_sdm::free_all<uint64_t>(3, gdim_, lb_, ub_);
   free(data_);
 }
 
-void multi_put_test(int num_puts, float inter_put_time_sec, std::string base_var_name, WADspacesDriver& wads_driver)
+void multi_put_test(int num_puts, float inter_put_time_sec, std::string base_var_name, WADSDriver& wads_driver)
 {
   uint64_t* gdim_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
-  for (int i = 0; i < TEST_NDIM; i++) {
+  for (int i = 0; i < TEST_NDIM; i++)
     gdim_[i] = TEST_SGDIM;
-  }
   //specifics
   int *data_ = (int*)malloc(TEST_DATASIZE*sizeof(int) );
   uint64_t *lb_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
@@ -151,14 +152,13 @@ void multi_put_test(int num_puts, float inter_put_time_sec, std::string base_var
     ub_[i] = TEST_SIZE - 1;
   }
   
-  for (int i = 0; i < TEST_DATASIZE; i++) {
+  for (int i = 0; i < TEST_DATASIZE; i++)
     data_[i] = i + 1;
-  }
   
   for (int i = 0; i < num_puts; i++) {
     std::string var_name = base_var_name + "_" + boost::lexical_cast<std::string>(i);
     std::cout << "\n"; // to see better on terminal
-    if (wads_driver.put("int", var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_) ) {
+    if (wads_driver.put(var_name, TEST_VER, "int", sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_) ) {
       LOG(ERROR) << "multi_put_test:: wads_driver.put failed for var_name= " << var_name;
       return;
     }
@@ -166,7 +166,7 @@ void multi_put_test(int num_puts, float inter_put_time_sec, std::string base_var
   }
   // patch_ds::debug_print(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_, patch::get_data_length(TEST_NDIM, gdim_, lb_, ub_) );
   
-  patch_ds::free_all<uint64_t>(3, gdim_, lb_, ub_);
+  patch_sdm::free_all<uint64_t>(3, gdim_, lb_, ub_);
   free(data_);
 }
 
@@ -175,44 +175,42 @@ int main(int argc , char **argv)
   std::string temp;
   google::InitGoogleLogging("exp");
   // 
-  std::map<char*, char*> opt_map = parse_opts(argc, argv);
-  
-  int num_dscnodes = boost::lexical_cast<int>(opt_map[(char*)"num_dscnodes"] );
-  int app_id = boost::lexical_cast<int>(opt_map[(char*)"app_id"] );
-  int num_putget = boost::lexical_cast<int>(opt_map[(char*)"num_putget"] );
-  float inter_time_sec = boost::lexical_cast<float>(opt_map[(char*)"inter_time_sec"] );
+  std::map<std::string, std::string> opt_map = parse_opts(argc, argv);
   
   TProfiler<std::string> tprofiler;
-  if (strcmp(opt_map[(char*)"type"], (char*)"mput") == 0) {
-    WADspacesDriver wads_driver(app_id, num_dscnodes - 1);
+  if (str_cstr_equals(opt_map["type"], "mput") ) {
+    WADSDriver wads_driver(boost::lexical_cast<int>(opt_map["cl_id"] ), boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_client"] ),
+                           LUCOOR_DATA_ID);
     
     std::cout << "Enter for multi_put_test...\n";
     getline(std::cin, temp);
     
     tprofiler.add_event("multi_put_test", "multi_put_test");
-    multi_put_test(num_putget, inter_time_sec, "dummy", wads_driver);
+    multi_put_test(boost::lexical_cast<float>(opt_map["num_putget"] ), boost::lexical_cast<float>(opt_map["inter_time_sec"] ),
+                   "dummy", wads_driver);
     tprofiler.end_event("multi_put_test");
     // multi_put_test(num_putget, "dummy2", wads_driver);
     
     std::cout << "Enter\n";
     getline(std::cin, temp);
   }
-  else if (strcmp(opt_map[(char*)"type"], (char*)"mget") == 0) {
-    WADspacesDriver wads_driver(app_id, num_dscnodes - 1);
+  else if (str_cstr_equals(opt_map["type"], "mget") ) {
+    WADSDriver wads_driver(boost::lexical_cast<int>(opt_map["cl_id"] ), boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_client"] ),
+                           LUCOOR_DATA_ID);
     
     std::cout << "Enter for multi_get_test...\n";
     getline(std::cin, temp);
     
     tprofiler.add_event("multi_get_test", "multi_get_test");
-    multi_get_test(num_putget, inter_time_sec, "dummy", wads_driver);
+    multi_get_test(boost::lexical_cast<float>(opt_map["num_putget"] ), boost::lexical_cast<float>(opt_map["inter_time_sec"] ),
+                   "dummy", wads_driver);
     tprofiler.end_event("multi_get_test");
     
     std::cout << "Enter\n";
     getline(std::cin, temp);
   }
-  else {
-    LOG(ERROR) << "main:: unknown type= " << opt_map[(char*)"type"];
-  }
+  else
+    LOG(ERROR) << "main:: unknown type= " << opt_map["type"];
   
   std::cout << "main:: tprofiler= \n" << tprofiler.to_str();
   // 

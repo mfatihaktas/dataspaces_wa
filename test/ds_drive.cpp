@@ -1,9 +1,8 @@
 #include "ds_drive.h"
 
 DSDriver::DSDriver(int num_dscnodes, int app_id)
-: finalized(false),
-  num_dscnodes(num_dscnodes),
-  app_id(app_id)
+: num_dscnodes(num_dscnodes), app_id(app_id),
+  finalized(false)
 {
   MPI_Init(NULL, NULL);
   MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
@@ -20,11 +19,9 @@ DSDriver::DSDriver(int num_dscnodes, int app_id)
   printf("DSDriver:: constructed.\n");
 }
 
-DSDriver::DSDriver(MPI_Comm mpi_comm, int num_dscnodes, int app_id)
-: finalized(false),
-  num_dscnodes(num_dscnodes),
-  app_id(app_id),
-  mpi_comm(mpi_comm)
+DSDriver::DSDriver(int num_dscnodes, int app_id, MPI_Comm mpi_comm)
+: num_dscnodes(num_dscnodes), app_id(app_id), mpi_comm(mpi_comm),
+  finalized(false)
 {
   if (init(num_dscnodes, app_id) ) {
     fprintf(stderr, "DSDriver:: init failed!\n");
