@@ -11,7 +11,7 @@
 
 #include "profiler.h"
 #include "patch_pre.h"
-#include "prefetch.h"
+#include "markov.h"
 
 /************************************************  WASpace  ********************************************/
 template <typename T>
@@ -46,7 +46,7 @@ class WASpace {
                                                               boost::bind(&WASpace::handle_del, this, _1) );
       }
       // 
-      LOG(INFO) << "WASpace:: constructed."; 
+      LOG(INFO) << "WASpace:: constructed.";
     }
     ~WASpace() { LOG(INFO) << "WASpace:: destructed."; }
     

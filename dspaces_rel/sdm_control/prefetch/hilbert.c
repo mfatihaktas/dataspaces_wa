@@ -1605,7 +1605,7 @@ int main()
   return 0;
 }
 
-#endif
+#endif // TEST_PT
 
 #ifdef TEST_IEEE_PT
 #include <stdio.h>
@@ -1710,7 +1710,7 @@ int main()
   return 0;
 }
 
-#endif
+#endif // TEST_IEEE_PT
 
 #ifdef TEST_NEXT
 #include <stdio.h>
@@ -1747,4 +1747,5 @@ int main()
   printf("\n");
   return 0;
 }
-#endif
+
+#endif // TEST_NEXT

@@ -848,7 +848,7 @@ typedef std::pair<ACC_T, int> acc_step_pair;
 typedef int M_PREFETCH_T;
 #define W_MP_WEIGHT 0
 #define W_MP_MAX 1
-class MPrefetchAlgo { // Mixed
+class MMAlgo { // Mixed
   private:
     M_PREFETCH_T m_prefetch_t;
     std::map<PREFETCH_T, float> prefetch_t__weight_map;
@@ -859,9 +859,9 @@ class MPrefetchAlgo { // Mixed
     std::set<ACC_T> acc_s;
     std::vector<ACC_T> acc_v;
   public:
-    MPrefetchAlgo(M_PREFETCH_T m_prefetch_t,
+    MMAlgo(M_PREFETCH_T m_prefetch_t,
                   std::map<PREFETCH_T, float> prefetch_t__weight_map);
-    ~MPrefetchAlgo();
+    ~MMAlgo();
     void reset();
     
     std::vector<ACC_T> get_acc_v();
@@ -874,15 +874,15 @@ class MPrefetchAlgo { // Mixed
     int get_to_prefetch_w_weight(int& num_acc, std::vector<ACC_T>& acc_v);
 };
 
-class PrefetchAlgo {
+class MAlgo {
   protected:
     ParseTree parse_tree;
     std::set<ACC_T> acc_s;
     std::vector<ACC_T> acc_v;
     
   public:
-    PrefetchAlgo(PREFETCH_T prefetch_t, int context_size);
-    ~PrefetchAlgo();
+    MAlgo(PREFETCH_T prefetch_t, int context_size);
+    ~MAlgo();
     void reset();
     
     std::string parse_tree_to_pstr();
@@ -894,25 +894,25 @@ class PrefetchAlgo {
                         const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v);
 };
 
-class LZAlgo : public PrefetchAlgo {
+class LZAlgo : public MAlgo {
   public:
     LZAlgo();
     ~LZAlgo();
 };
 
-class ALZAlgo : public PrefetchAlgo {
+class ALZAlgo : public MAlgo {
   public:
     ALZAlgo();
     ~ALZAlgo();
 };
 
-class PPMAlgo : public PrefetchAlgo {
+class PPMAlgo : public MAlgo {
   public:
     PPMAlgo(int context_size);
     ~PPMAlgo();
 };
 
-class POAlgo : public PrefetchAlgo {
+class POAlgo : public MAlgo {
   public:
     POAlgo();
     ~POAlgo();

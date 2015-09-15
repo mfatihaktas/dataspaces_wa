@@ -1,13 +1,12 @@
 #include "prefetch.h"
 
-PBuffer::PBuffer(char ds_id, int buffer_size, PREFETCH_T prefetch_t,
-                 bool w_prefetch, func_handle_prefetch_cb _handle_prefetch_cb,
-                 func_handle_del_cb _handle_del_cb )
+MPBuffer::MPBuffer(char ds_id, int buffer_size, PREFETCH_T prefetch_t,
+                   bool w_prefetch, func_handle_prefetch_cb handle_prefetch_cb,
+                   func_handle_del_cb handle_del_cb )
 : ds_id(ds_id), buffer_size(buffer_size),
-  w_prefetch(w_prefetch),
-  _handle_prefetch_cb(_handle_prefetch_cb),
-  _handle_del_cb(_handle_del_cb),
-  cache(buffer_size, _handle_del_cb)
+  w_prefetch(w_prefetch), handle_prefetch_cb(handle_prefetch_cb),
+  handle_del_cb(handle_del_cb),
+  cache(buffer_size, handle_del_cb)
 {
   if (prefetch_t == W_LZ)
     palgo_to_pick_app_ = boost::make_shared<LZAlgo>();
@@ -25,12 +24,12 @@ PBuffer::PBuffer(char ds_id, int buffer_size, PREFETCH_T prefetch_t,
   // palgo_to_pick_app_ = boost::make_shared<MPrefetchAlgo>(prefetch_t, prefetch_t__weight_map);
   
   // 
-  LOG(INFO) << "PBuffer:: constructed.";
+  LOG(INFO) << "MPBuffer:: constructed.";
 }
 
-PBuffer::~PBuffer() { LOG(INFO) << "PBuffer:: destructed."; }
+MPBuffer::~MPBuffer() { LOG(INFO) << "MPBuffer:: destructed."; }
 
-std::string PBuffer::to_str()
+std::string MPBuffer::to_str()
 {
   std::stringstream ss;
   ss << "w_prefetch= " << boost::lexical_cast<std::string>(w_prefetch) << "\n";
@@ -76,7 +75,7 @@ std::string PBuffer::to_str()
 }
 
 // ****************************************  state rel  ***************************************** //
-int PBuffer::reg_key_ver(int p_id, key_ver_pair kv)
+int MPBuffer::reg_key_ver(int p_id, key_ver_pair kv)
 {
   if (reged_key_ver_v.contains(kv) ) {
     LOG(ERROR) << "reg_key_ver:: already registered! <key= " << kv.first << ", ver= " << kv.second << ">.";
@@ -95,7 +94,7 @@ int PBuffer::reg_key_ver(int p_id, key_ver_pair kv)
 }
 
 // ****************************************  operational  *************************************** //
-void PBuffer::sim_prefetch_accuracy(std::vector<int> p_id_v, std::vector<key_ver_pair> key_ver_v, 
+void MPBuffer::sim_prefetch_accuracy(std::vector<int> p_id_v, std::vector<key_ver_pair> key_ver_v, 
                                     float& hit_rate, std::vector<char>& accuracy_v)
 {
   int num_miss = 0;
@@ -121,7 +120,7 @@ void PBuffer::sim_prefetch_accuracy(std::vector<int> p_id_v, std::vector<key_ver
   hit_rate = 1.0 - (float)num_miss / key_ver_v.size();
 }
 
-int PBuffer::add_access(int p_id, key_ver_pair kv)
+int MPBuffer::add_access(int p_id, key_ver_pair kv)
 {
   if (!reged_key_ver_v.contains(kv) ) {
     LOG(WARNING) << "add_access:: non-registered <key= " << kv.first << ", ver= " << kv.second << ">.";
@@ -129,7 +128,7 @@ int PBuffer::add_access(int p_id, key_ver_pair kv)
   }
   
   if (!cache.del(p_id, kv) )
-    _handle_del_cb(kv);
+    handle_del_cb(kv);
   // 
   // acced_key_ver_v.push_back(kv);
   // p_id__acced_key_ver_v_map[p_id].push_back(kv);
@@ -163,15 +162,19 @@ int PBuffer::add_access(int p_id, key_ver_pair kv)
   }
   
   // Call for prefetching per access
+  // TODO: Prefetching action is not put into above mutexed region to not make the other threads wait
+  // for the action but this may affect the operational correctness in case of failure in handling the
+  // prefetching action
+  // Idea: A failure handler here fired by the action handler can be used to correct the cache content
   if (w_prefetch) {
     for (std::vector<key_ver_pair>::iterator it = key_ver_v.begin(); it != key_ver_v.end(); it++)
-      _handle_prefetch_cb(ds_id, *it);
+      handle_prefetch_cb(ds_id, *it);
   }
     
   return 0;
 }
 
-int PBuffer::get_to_prefetch(int& num_app, std::vector<key_ver_pair>& key_ver_v)
+int MPBuffer::get_to_prefetch(int& num_app, std::vector<key_ver_pair>& key_ver_v)
 {
   // Pick app
   std::vector<ACC_T> p_id_v, ep_id_v;
@@ -231,12 +234,12 @@ int PBuffer::get_to_prefetch(int& num_app, std::vector<key_ver_pair>& key_ver_v)
   }
 }
 
-bool PBuffer::contains(key_ver_pair kv)
+bool MPBuffer::contains(key_ver_pair kv)
 {
   return cache.contains(kv);
 }
 
-std::vector<key_ver_pair> PBuffer::get_content_v()
+std::vector<key_ver_pair> MPBuffer::get_content_v()
 {
   return cache.get_content_v();
 }

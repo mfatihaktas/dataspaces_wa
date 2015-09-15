@@ -191,16 +191,5 @@ int main(int argc, char **argv)
   // wa_space.get(get_lcoor_, get_ucoor_, get_v);
   // std::cout << "main:: get_v= " << patch_sfc::vec_to_str<char>(get_v) << "\n";
   
-  // deneme();
-  // if (opt_map["type"].compare("s") == 0) {
-  //   SDMServer sdm_server("sdm_server", s_lip, s_lport, boost::bind(handle_char_recv, _1) );
-  //   // 
-  //   std::cout << "Enter \n";
-  //   getline(std::cin, temp);
-  // }
-  // else {
-  //   LOG(ERROR) << "main:: unknown type= " << opt_map["type"];
-  // }
-  
   return 0;
 }

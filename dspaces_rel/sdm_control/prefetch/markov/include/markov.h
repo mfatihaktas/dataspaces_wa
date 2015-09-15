@@ -22,8 +22,8 @@ class PBuffer { //Prefetching Buffer
     int buffer_size; // # of <key, ver>
     int app_context_size;
     bool w_prefetch;
-    func_handle_prefetch_cb _handle_prefetch_cb;
-    func_handle_del_cb _handle_del_cb;
+    func_handle_prefetch_cb handle_prefetch_cb;
+    func_handle_del_cb handle_del_cb;
     
     patch_pre::thread_safe_map<int, std::deque<key_ver_pair> >  p_id__reged_key_ver_deq_map;
     patch_pre::thread_safe_map<int, int> p_id__front_step_in_deq_map;
