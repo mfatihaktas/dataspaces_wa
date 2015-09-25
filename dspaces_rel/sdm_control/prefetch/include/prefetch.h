@@ -308,9 +308,8 @@ class MWASpace : public WASpace {
     
     patch_all::thread_safe_map<key_ver_pair, int> kv__p_id_map;
     patch_all::thread_safe_map<key_ver_pair, lcoor_ucoor_pair> kv__lucoor_map;
-    // boost::mutex get_mutex;
     
-    patch_all::thread_safe_map<int, std::vector<std::string> > p_id__key_map;
+    // patch_all::thread_safe_map<int, std::vector<std::string> > p_id__key_map;
   public:
     MWASpace(std::vector<char> ds_id_v,
              MALGO_T malgo_t, int max_num_key_ver_in_mpbuffer, bool w_prefetch, func_handle_data_act_cb handle_data_act_cb = 0);

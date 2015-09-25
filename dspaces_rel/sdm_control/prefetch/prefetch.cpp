@@ -115,6 +115,8 @@ int MPBuffer::add_access(key_ver_pair kv)
   // app_id__acced_kv_v_map[p_id].push_back(kv);
   
   int p_id = kv__p_id_map[kv];
+  if (!p_id__last_acced_step_map.contains(p_id) )
+    p_id__last_acced_step_map[p_id] = -1;
   p_id__last_acced_step_map[p_id] += 1;
   // 
   int num_app = 1;
@@ -173,7 +175,7 @@ int MPBuffer::get_to_prefetch(int& num_app, std::vector<key_ver_pair>& kv_v)
     if (!p_id__last_cached_step_map.contains(*it) )
       p_id__last_cached_step_map[*it] = -1;
 
-    // std::cout << "for p_id= " << *it << ":\n"
+    // std::cout << "get_to_prefetch:: for p_id= " << *it << ":\n"
     //           << "\t p_id__last_cached_step_map= " << p_id__last_cached_step_map[*it] << "\n"
     //           << "\t p_id__last_acced_step_map= " << p_id__last_acced_step_map[*it] << "\n";
     if (p_id__last_cached_step_map[*it] < p_id__last_acced_step_map[*it] )
@@ -182,9 +184,9 @@ int MPBuffer::get_to_prefetch(int& num_app, std::vector<key_ver_pair>& kv_v)
       continue;
     // 
     ACC_T step_to_prefetch = p_id__last_cached_step_map[*it] + 1;
-    // std::cout << "step_to_prefetch= " << step_to_prefetch << "\n";
+    // std::cout << "get_to_prefetch:: step_to_prefetch= " << step_to_prefetch << "\n";
     std::deque<key_ver_pair>& kv_deq = p_id__reged_kv_deq_map[*it];
-    // std::cout << "p_id = " << *it << ", kv_deq= \n";
+    // std::cout << "get_to_prefetch:: p_id = " << *it << ", kv_deq= \n";
     // for (std::deque<key_ver_pair>::iterator dit = kv_deq.begin(); dit != kv_deq.end(); dit++)
     //   std::cout << "\t <" << dit->first << "," << dit->second << "> \n";
     
@@ -198,14 +200,14 @@ int MPBuffer::get_to_prefetch(int& num_app, std::vector<key_ver_pair>& kv_v)
     if (kv_deq.empty() )
       continue;
     
-    key_ver_pair kv = kv_deq.front();
-    // LOG(INFO) << "will kv_v.push_back <" << kv.first << ", " << kv.second << ">";
+    // key_ver_pair kv = kv_deq.front();
+    // LOG(INFO) << "get_to_prefetch:: will kv_v.push_back <" << kv.first << ", " << kv.second << ">";
     kv_v.push_back(kv_deq.front() );
     kv_deq.pop_front();
     front_step_in_deq++;
     
     p_id__last_cached_step_map[*it] = step_to_prefetch;
-    // p_id__front_step_in_deq_map[*it] = front_step_in_deq;
+    p_id__front_step_in_deq_map[*it] = front_step_in_deq;
   }
 }
 
@@ -305,7 +307,7 @@ MWASpace::MWASpace(std::vector<char> ds_id_v,
 
 MWASpace::~MWASpace()
 {
-  LOG(INFO) << "MWASpace:: destructed; \n" << to_str_end();
+  // LOG(INFO) << "MWASpace:: destructed; \n" << to_str_end();
 }
 
 std::string MWASpace::to_str()
@@ -353,15 +355,15 @@ std::string MWASpace::to_str()
   return ss.str();
 }
 
-std::string MWASpace::to_str_end()
-{
-  std::stringstream ss;
-  ss << "p_id__key_map= \n";
-  for (std::map<int, std::vector<std::string> >::iterator it = p_id__key_map.begin(); it != p_id__key_map.end(); it++)
-    ss << it->first << " : " << patch_all::vec_to_str(it->second) << "\n";
+// std::string MWASpace::to_str_end()
+// {
+//   std::stringstream ss;
+//   ss << "p_id__key_map= \n";
+//   for (std::map<int, std::vector<std::string> >::iterator it = p_id__key_map.begin(); it != p_id__key_map.end(); it++)
+//     ss << it->first << " : " << patch_all::vec_to_str(it->second) << "\n";
   
-  return ss.str();
-}
+//   return ss.str();
+// }
 
 int MWASpace::del(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, char ds_id)
 {
@@ -383,11 +385,11 @@ int MWASpace::del(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* uco
 
 int MWASpace::put(int p_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, char ds_id)
 {
-  if (!p_id__key_map.contains(p_id) ) {
-    std::vector<std::string> key_v;
-    p_id__key_map[p_id] = key_v;
-  }
-  p_id__key_map[p_id].push_back(key);
+  // if (!p_id__key_map.contains(p_id) ) {
+  //   std::vector<std::string> key_v;
+  //   p_id__key_map[p_id] = key_v;
+  // }
+  // p_id__key_map[p_id].push_back(key);
   // 
   key_ver_pair kv = std::make_pair(key, ver);
   if (ds_id != '\0' && contains(ds_id, kv) ) {
