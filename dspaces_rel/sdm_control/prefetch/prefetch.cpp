@@ -96,7 +96,7 @@ int MPBuffer::del(key_ver_pair kv)
   }
   
   if (handle_mpbuffer_data_act_cb != 0)
-    handle_mpbuffer_data_act_cb(DATA_ACT_DEL, ds_id, kv);
+    handle_mpbuffer_data_act_cb(PREFETCH_DATA_ACT_DEL, ds_id, kv);
   
   return 0;
 }
@@ -150,7 +150,7 @@ int MPBuffer::add_access(key_ver_pair kv)
   if (w_prefetch) {
     for (std::vector<key_ver_pair>::iterator it = kv_v.begin(); it != kv_v.end(); it++) {
       if (handle_mpbuffer_data_act_cb != 0)
-        handle_mpbuffer_data_act_cb(DATA_ACT_PREFETCH, ds_id, *it);
+        handle_mpbuffer_data_act_cb(PREFETCH_DATA_ACT_PREFETCH, ds_id, *it);
     }
   }
     
@@ -223,7 +223,7 @@ int MPBuffer::handle_data_del(key_ver_pair kv)
   }
   
   if (handle_mpbuffer_data_act_cb != 0)
-    handle_mpbuffer_data_act_cb(DATA_ACT_DEL, ds_id, kv);
+    handle_mpbuffer_data_act_cb(PREFETCH_DATA_ACT_DEL, ds_id, kv);
 }
 
 void MPBuffer::sim_prefetch_accuracy(std::vector<int> p_id_v, std::vector<key_ver_pair> kv_v, 
@@ -402,6 +402,8 @@ int MWASpace::put(int p_id, std::string key, unsigned int ver, COOR_T* lcoor_, C
   }
   
   if (ds_id == '\0') { // New data put
+    if (!app_id__ds_id_map.contains(p_id) )
+      return 1;
     ds_id = app_id__ds_id_map[p_id];
     
     // Immediately broadcast it to every ds peer so mpbuffers can be updated
@@ -446,7 +448,7 @@ bool MWASpace::contains(char ds_id, key_ver_pair kv)
     return ds_id__kv_vp_map[ds_id]->contains(kv) || ds_id__mpbuffer_map[ds_id]->contains(kv);
 }
 
-void MWASpace::handle_mpbuffer_data_act(DATA_ACT_T data_act_t, char ds_id, key_ver_pair kv) {
+void MWASpace::handle_mpbuffer_data_act(PREFETCH_DATA_ACT_T data_act_t, char ds_id, key_ver_pair kv) {
   if (handle_data_act_cb != 0)
     handle_data_act_cb(data_act_t, ds_id, kv, kv__lucoor_map[kv] );
 }
@@ -530,7 +532,7 @@ int SWASpace::add_access(int c_id, std::string key, unsigned int ver, COOR_T* lc
     salgo_->get_to_fetch(lcoor_, ucoor_, lucoor_to_fetch_v);
     
     for (std::vector<lcoor_ucoor_pair>::iterator it = lucoor_to_fetch_v.begin(); it != lucoor_to_fetch_v.end(); it++)
-      handle_data_act_cb(DATA_ACT_PREFETCH, ds_id, std::make_pair(key, ver), *it);
+      handle_data_act_cb(PREFETCH_DATA_ACT_PREFETCH, ds_id, std::make_pair(key, ver), *it);
   }
   
   return 0;

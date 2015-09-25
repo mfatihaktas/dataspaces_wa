@@ -88,11 +88,11 @@ void PCSim::sim_all()
     thread_v.push_back(boost::make_shared<boost::thread>(&PCSim::sim_c, this, i, w_prefetch) );
 }
 
-void PCSim::handle_data_act(DATA_ACT_T data_act_t, char ds_id, key_ver_pair kv, lcoor_ucoor_pair lucoor)
+void PCSim::handle_data_act(PREFETCH_DATA_ACT_T data_act_t, char ds_id, key_ver_pair kv, lcoor_ucoor_pair lucoor)
 {
-  // if (data_act_t == DATA_ACT_DEL)
+  // if (data_act_t == PREFETCH_DATA_ACT_DEL)
   //   wa_space_->del(kv.first, kv.second, lucoor.first, lucoor.second, ds_id);
-  // else if (data_act_t == DATA_ACT_PREFETCH) {
+  // else if (data_act_t == PREFETCH_DATA_ACT_PREFETCH) {
   //   LOG(INFO) << "handle_data_act:: before wa_space_->put; wa_space= \n" << wa_space_->to_str();
   //   if (wa_space_->put(NULL_P_ID, kv.first, kv.second, lucoor.first, lucoor.second, ds_id) )
   //     LOG(ERROR) << "handle_data_act:: wa_space_->put failed; " << KV_LUCOOR_TO_STR(kv.first, kv.second, lucoor.first, lucoor.second);

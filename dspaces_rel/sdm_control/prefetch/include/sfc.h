@@ -177,8 +177,8 @@ class RTable : public QTable<VAL_T> {
   private:
     rtree_t rtree;
   public:
-    RTable() { LOG(INFO) << "RTable:: constructed."; }
-    ~RTable() { LOG(INFO) << "RTable:: destructed."; }
+    RTable() {}
+    ~RTable() {}
     std::string to_str()
     {
       std::stringstream ss;
@@ -246,40 +246,59 @@ typedef std::pair<std::string, unsigned int> key_ver_pair;
 template <typename VAL_T>
 class KVTable : public QTable<VAL_T> { // Key Ver
   private:
-    std::map<key_ver_pair, VAL_T> kv_val_map;
-    // patch_sdm::thread_safe_map<key_ver_pair, VAL_T> kv_val_map;
+    patch_all::thread_safe_map<key_ver_pair, std::vector<VAL_T> > kv__val_v_map;
   public:
-    KVTable() { LOG(INFO) << "KVTable:: constructed."; }
-    ~KVTable() { LOG(INFO) << "KVTable:: destructed."; }
+    KVTable() {}
+    ~KVTable() {}
     
     std::string to_str()
     {
       std::stringstream ss;
-      ss << "kv_val_map= \n" << patch_all::map_to_str<>(kv_val_map);
+      ss << "kv__val_v_map= \n";
+      for (typename std::map<key_ver_pair, std::vector<VAL_T> >::iterator it = kv__val_v_map.begin(); it != kv__val_v_map.end(); it++)
+        ss << KV_TO_STR((it->first).first, (it->first).second) << " : " << patch_all::vec_to_str<>(it->second) << "\n";
+      
       return ss.str();
     }
     
     int add(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, VAL_T val)
     {
       IS_VALID_BOX("add", lcoor_, ucoor_, return 1)
-      key_ver_pair kv = std::make_pair(key, ver);
-      if (kv_val_map.contains(kv) ) {
-        LOG(ERROR) << "add:: already contains; <key= " << key << ", ver= " << ver << ">";
-        return 1;
-      }
       
-      kv_val_map[kv] = val;
+      key_ver_pair kv = std::make_pair(key, ver);
+      if (!kv__val_v_map.contains(kv) ) {
+        std::vector<VAL_T> val_v;
+        kv__val_v_map[kv] = val_v;
+      }
+      kv__val_v_map[kv].push_back(val);
+      
+      return 0;
+    }
+    
+    int del(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_)
+    {
+      IS_VALID_BOX("del", lcoor_, ucoor_, return 1)
+      
+      key_ver_pair kv = std::make_pair(key, ver);
+      if (!kv__val_v_map.contains(kv) )
+        return 1;
+      
+      kv__val_v_map.del(kv);
+      
       return 0;
     }
     
     int query(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, std::vector<VAL_T>& val_v)
     {
       IS_VALID_BOX("query", lcoor_, ucoor_, return 1)
+      
       key_ver_pair kv = std::make_pair(key, ver);
-      if (!kv_val_map.contains(kv) )
+      if (!kv__val_v_map.contains(kv) )
         return 1;
       
-      val_v.push_back(kv_val_map[kv] );
+      std::vector<VAL_T>& contained_val_v = kv__val_v_map[kv];
+      for (typename std::vector<VAL_T>::iterator it = contained_val_v.begin(); it != contained_val_v.end(); it++)
+        val_v.push_back(*it);
       
       return 0;
     }

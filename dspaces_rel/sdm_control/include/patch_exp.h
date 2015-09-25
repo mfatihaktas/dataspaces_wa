@@ -79,7 +79,7 @@ void handle_char_recv(char* msg_)
 
 void handle_rimsg_recv(std::map<std::string, std::string> msg_map)
 {
-  LOG(INFO) << "handle_rimsg_recv:: msg_map= \n" << patch_sfc::map_to_str<std::string, std::string>(msg_map);
+  LOG(INFO) << "handle_rimsg_recv:: msg_map= \n" << patch_all::map_to_str<std::string, std::string>(msg_map);
 }
 
 void handle_cp_recv(boost::shared_ptr<Packet> p_)
@@ -89,20 +89,20 @@ void handle_cp_recv(boost::shared_ptr<Packet> p_)
 
 void handle_dm_act(std::map<std::string, std::string> msg_map)
 {
-  LOG(INFO) << "handle_dm_act:: msg_map= \n" << patch_sfc::map_to_str<std::string, std::string>(msg_map);
+  LOG(INFO) << "handle_dm_act:: msg_map= \n" << patch_all::map_to_str<std::string, std::string>(msg_map);
 }
 
 void master_test(std::map<std::string, std::string> opt_map)
 {
-  int pbuffer_size = 2;
+  int max_num_key_ver_in_mpbuffer = 100;
   int pexpand_length = 1;
   COOR_T lcoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 0) };
   COOR_T ucoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 10) };
   
-  SDMMaster master(LUCOOR_DATA_ID, boost::bind(&handle_dm_act, _1),
-                   opt_map["id"].c_str()[0], intf_to_ip(opt_map["lintf"] ), boost::lexical_cast<int>(opt_map["lport"] ), opt_map["joinhost_lip"], boost::lexical_cast<int>(opt_map["joinhost_lport"] ),
-                   boost::bind(&handle_rimsg_recv, _1),
-                   HILBERT_PREDICTOR, pbuffer_size, pexpand_length, lcoor_, ucoor_);
+  MSDMMaster master(boost::bind(&handle_dm_act, _1),
+                    opt_map["id"].c_str()[0], intf_to_ip(opt_map["lintf"] ), boost::lexical_cast<int>(opt_map["lport"] ), opt_map["joinhost_lip"], boost::lexical_cast<int>(opt_map["joinhost_lport"] ),
+                    boost::bind(&handle_rimsg_recv, _1),
+                    MALGO_W_PPM, max_num_key_ver_in_mpbuffer, false);
   
   // COOR_T m_lcoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 0) };
   // COOR_T m_ucoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 2) };
@@ -121,16 +121,16 @@ void master_test(std::map<std::string, std::string> opt_map)
 
 void slave_test(std::map<std::string, std::string> opt_map)
 {
-  SDMSlave slave(LUCOOR_DATA_ID, boost::bind(&handle_dm_act, _1), "s",
-                 opt_map["id"].c_str()[0], intf_to_ip(opt_map["lintf"] ), boost::lexical_cast<int>(opt_map["lport"] ), opt_map["joinhost_lip"], boost::lexical_cast<int>(opt_map["joinhost_lport"] ),
-                 boost::bind(&handle_rimsg_recv, _1) );
+  MSDMSlave slave(boost::bind(&handle_dm_act, _1), "s",
+                  opt_map["id"].c_str()[0], intf_to_ip(opt_map["lintf"] ), boost::lexical_cast<int>(opt_map["lport"] ), opt_map["joinhost_lip"], boost::lexical_cast<int>(opt_map["joinhost_lport"] ),
+                  boost::bind(&handle_rimsg_recv, _1) );
   std::cout << "Enter for test... \n";
   getline(std::cin, temp);
   
   COOR_T s_lcoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 0) };
   COOR_T s_ucoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 2) };
   if (opt_map["id"].c_str()[0] == '1') {
-    slave.reg_app(1);
+    slave.reg_app(0);
     slave.put(true, "dummy", 0, s_lcoor_, s_ucoor_, 0);
   }
   else if (opt_map["id"].c_str()[0] == '2') {

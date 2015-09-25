@@ -267,6 +267,17 @@ namespace patch_all {
     public:
       syncer() {}
       ~syncer() {}
+      
+      int close()
+      {
+        for (typename std::map<T, boost::shared_ptr<boost::condition_variable> >::iterator it = point_cv_map.begin(); it != point_cv_map.end(); it++)
+          (it->second).reset();
+        for (typename std::map<T, boost::shared_ptr<boost::mutex> >::iterator it = point_m_map.begin(); it != point_m_map.end(); it++)
+          (it->second).reset();
+        // 
+        LOG(INFO) << "closed:: closed.";
+      }
+      
       int add_sync_point(T point, int num_peers)
       {
         if (point_cv_map.contains(point) ) {

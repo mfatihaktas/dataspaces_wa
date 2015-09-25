@@ -1,7 +1,7 @@
 #ifndef _SDM_NODE_H_
 #define _SDM_NODE_H_
 
-#include "sdm.h"
+#include "patch_pre.h"
 #include "sdm_server.h"
 #include "sdm_client.h"
 #include "packet.h"
@@ -27,8 +27,8 @@ class Commer {
     func_recv_cb _recv_cb;
     
     SDMServer server;
-    patch_sdm::thread_safe_map<char, boost::shared_ptr<SDMClient> > peer_id__client_map;
-    patch_sdm::thread_safe_map<char, boost::shared_ptr<peer_info> > peer_id__peer_info_map;
+    patch_all::thread_safe_map<char, boost::shared_ptr<SDMClient> > peer_id__client_map;
+    patch_all::thread_safe_map<char, boost::shared_ptr<peer_info> > peer_id__peer_info_map;
   public:
     Commer(char id, std::string lip, int lport,
            func_recv_cb _recv_cb);
@@ -36,7 +36,7 @@ class Commer {
     int close();
     std::string to_str();
     
-    patch_sdm::thread_safe_map<char, boost::shared_ptr<peer_info> >& get_peer_id__peer_info_map();
+    patch_all::thread_safe_map<char, boost::shared_ptr<peer_info> >& get_peer_id__peer_info_map();
     int get_num_peers();
     bool is_peer(char peer_id);
     

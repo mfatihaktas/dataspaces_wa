@@ -694,7 +694,7 @@ void malgo_test()
   */
 }
 
-void handle_mpbuffer_data_act(DATA_ACT_T data_act_t, char ds_id, key_ver_pair kv)
+void handle_mpbuffer_data_act(PREFETCH_DATA_ACT_T data_act_t, char ds_id, key_ver_pair kv)
 {
   // LOG(INFO) << "handle_mpbuffer_data_act:: data_act_t= " << data_act_t << ", ds_id= " << ds_id << KV_TO_STR(key, ver);
 }
@@ -763,7 +763,7 @@ void mpcsim_test()
   int max_num_p = 15;
   int max_num_c = 15;
   int num_putget_mean = 5;
-  float put_rate_mean = 5;
+  float put_rate_mean = 0.2;
   float get_rate_mean = 0.2;
   
   std::vector<char> ds_id_v;

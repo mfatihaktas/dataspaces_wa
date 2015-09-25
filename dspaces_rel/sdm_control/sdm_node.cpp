@@ -52,7 +52,7 @@ std::string Commer::to_str()
   return ss.str();
 }
 
-patch_sdm::thread_safe_map<char, boost::shared_ptr<peer_info> >& Commer::get_peer_id__peer_info_map() { return peer_id__peer_info_map; }
+patch_all::thread_safe_map<char, boost::shared_ptr<peer_info> >& Commer::get_peer_id__peer_info_map() { return peer_id__peer_info_map; }
 int Commer::get_num_peers() { return peer_id__peer_info_map.size(); }
 bool Commer::is_peer(char peer_id) { return peer_id__client_map.contains(peer_id); }
 
@@ -127,7 +127,7 @@ SDMNode::SDMNode(char id, std::string type,
 : id(id), type(type),
   lip(lip), lport(lport),
   joinhost_lip(joinhost_lip), joinhost_lport(joinhost_lport),
-  rimsg_recv_cb(rimsg_recv_cb), ncmsg_recv_cb(cmsg_recv_cb),
+  rimsg_recv_cb(rimsg_recv_cb), cmsg_recv_cb(cmsg_recv_cb),
   commer(id, lip, lport, boost::bind(&SDMNode::handle_recv, this, _1) ),
   sdm_master_id('?')
 {
@@ -194,7 +194,7 @@ boost::shared_ptr<Packet> SDMNode::gen_join_reply(char peer_id, bool pos)
   if (pos) {
     // Add other peers new peer should connect to
     int count = 0;
-    patch_sdm::thread_safe_map<char, boost::shared_ptr<peer_info> >& peer_id__peer_info_map = commer.get_peer_id__peer_info_map();
+    patch_all::thread_safe_map<char, boost::shared_ptr<peer_info> >& peer_id__peer_info_map = commer.get_peer_id__peer_info_map();
     for (std::map<char, boost::shared_ptr<peer_info> >::iterator it = peer_id__peer_info_map.begin(); it != peer_id__peer_info_map.end(); it++) {
       if (it->first != peer_id) {
         peer_info& pinfo = *(it->second);

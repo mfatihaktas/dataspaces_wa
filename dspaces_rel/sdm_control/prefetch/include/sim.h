@@ -43,7 +43,7 @@ class PCSim { // P-C Simulator
     
     std::map<int, float> get_c_id__get_lperc_map();
     
-    void handle_data_act(DATA_ACT_T data_act_t, char ds_id, key_ver_pair kv, lcoor_ucoor_pair lucoor);
+    void handle_data_act(PREFETCH_DATA_ACT_T data_act_t, char ds_id, key_ver_pair kv, lcoor_ucoor_pair lucoor);
 };
 
 /************************************************  MPCSim  ****************************************/
