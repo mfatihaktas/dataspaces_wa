@@ -3,6 +3,7 @@
 
 #include <math.h>
 #include <algorithm>
+#include <functional>
 
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/point.hpp>
@@ -25,7 +26,13 @@
 #include "hilbert.h"
 #include "patch_pre.h"
 
+#define NDIM 2
+typedef uint64_t COOR_T;
+typedef boost::geometry::model::point<int, NDIM, boost::geometry::cs::cartesian> point_t;
+typedef boost::geometry::model::box<point_t> box_t;
+
 /******************************************  MACROS  **********************************************/
+// After \ there should not be any space
 // Note: Most of them are used for tackling ugly boost::geometry interface for multi-dimensional case
 #define POINT_GET_REP(z, n, p_coor) \
   BOOST_PP_TUPLE_ELEM(2, 1, p_coor)[n] = boost::geometry::get<n>(BOOST_PP_TUPLE_ELEM(2, 0, p_coor) );
@@ -33,18 +40,25 @@
 #define POINT_SET_REP(z, n, p_coor) \
   boost::geometry::set<n>(BOOST_PP_TUPLE_ELEM(2, 0, p_coor), BOOST_PP_TUPLE_ELEM(2, 1, p_coor)[n] );
 
+// corner: min, max
+#define BOX_GET_CORNER_REP(z, n, box_corner_coor) \
+  BOOST_PP_TUPLE_ELEM(3, 2, box_corner_coor)[n] = boost::geometry::get<boost::geometry::BOOST_PP_CAT(BOOST_PP_TUPLE_ELEM(3, 1, box_corner_coor), _corner), n>(BOOST_PP_TUPLE_ELEM(3, 0, box_corner_coor) );
+
+// #define BOX_GET_CORNER_REP(z, n, box_coor) \
+  // BOOST_PP_TUPLE_ELEM(2, 1, box_coor)[n] = boost::geometry::get<boost::geometry::max_corner, n>(BOOST_PP_TUPLE_ELEM(2, 0, box_coor) );
+
 #define CREATE_BOX(i, box, lcoor_, ucoor_) \
   point_t lp ## i, up ## i; \
   BOOST_PP_REPEAT(NDIM, POINT_SET_REP, (lp ## i, lcoor_) ) \
   BOOST_PP_REPEAT(NDIM, POINT_SET_REP, (up ## i, ucoor_) ) \
-  box_t box(lp ## i, up ## i);
+  box_t box ## i(lp ## i, up ## i);
 
 #define KV_TO_STR(key, ver) \
   "<key= " << key << ", ver= " << ver << ">"
 
 #define LUCOOR_TO_STR(lcoor_, ucoor_) \
-  "lcoor_= " << patch_sfc::arr_to_str<>(NDIM, lcoor_) \
-  << ", ucoor_= " << patch_sfc::arr_to_str<>(NDIM, ucoor_)
+  "lcoor_= " << patch_all::arr_to_str<>(NDIM, lcoor_) \
+  << ", ucoor_= " << patch_all::arr_to_str<>(NDIM, ucoor_)
 
 #define KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_) \
   KV_TO_STR(key, ver) << ", " << LUCOOR_TO_STR(lcoor_, ucoor_)
@@ -73,9 +87,72 @@
 #define FIXED_REP(z, n, d) d
 
 #define ARR_TO_ARG_LIST_REP(z, n, arr_) arr_[n]
-// ---------------------------------------------------------------------------------------------- //
-#define NDIM 1
-typedef uint64_t COOR_T;
+
+/*****************************************  spatial_syncer  ***************************************/
+struct less_for_box : public std::binary_function<box_t, box_t, bool> {
+  bool operator() (const box_t& b_0, const box_t& b_1) const
+  { 
+    // Note: boost::geometry::within returns true even if b_0 is on the border of b_1
+    // This causes problems while using box_t as map key
+    if (boost::geometry::within(b_0, b_1) ) {
+      COOR_T* lcoor_0_ = (COOR_T*)malloc(NDIM*sizeof(COOR_T) );
+      COOR_T* ucoor_0_ = (COOR_T*)malloc(NDIM*sizeof(COOR_T) );
+      BOOST_PP_REPEAT(NDIM, BOX_GET_CORNER_REP, (b_0, min, lcoor_0_) )
+      BOOST_PP_REPEAT(NDIM, BOX_GET_CORNER_REP, (b_0, max, ucoor_0_) )
+      
+      COOR_T* lcoor_1_ = (COOR_T*)malloc(NDIM*sizeof(COOR_T) );
+      COOR_T* ucoor_1_ = (COOR_T*)malloc(NDIM*sizeof(COOR_T) );
+      BOOST_PP_REPEAT(NDIM, BOX_GET_CORNER_REP, (b_1, min, lcoor_1_) )
+      BOOST_PP_REPEAT(NDIM, BOX_GET_CORNER_REP, (b_1, max, ucoor_1_) )
+      
+      for (int i = 0; i < NDIM; i++) {
+        if (lcoor_0_[i] != lcoor_1_[i] || ucoor_0_[i] != ucoor_1_[i] )
+          return true;
+      }
+      
+      // b_0 is on the border of b_1
+      return false;
+    }
+    return false;
+  }
+};
+
+struct spatial_syncer : public patch_all::syncer<box_t, less_for_box> {
+  public:
+    std::string to_str()
+    {
+      std::stringstream ss;
+      ss << "points= \n";
+      for (std::map<box_t, boost::shared_ptr<boost::condition_variable>, less_for_box >::iterator it = point_cv_map.begin(); it != point_cv_map.end(); it++)
+        ss << "\t" << boost::geometry::dsv(it->first) << "\n";
+    
+      return ss.str();
+    }
+    
+    int notify(box_t box)
+    {
+      bool contains = false;
+      for (std::map<box_t, boost::shared_ptr<boost::condition_variable> >::iterator it = point_cv_map.begin(); it != point_cv_map.end(); it++) {
+        // Because even when any box being waited is on the border of notified box, we confirm notification
+        if (boost::geometry::within(it->first, box) ) {
+          if (!contains)
+            contains = true;
+          
+          int num_peers_to_wait = point__num_peers_map[it->first];
+          --num_peers_to_wait;
+          
+          if (num_peers_to_wait == 0)
+            point_cv_map[it->first]->notify_one();
+          else
+            point__num_peers_map[box] = num_peers_to_wait;
+        }
+      }
+      
+      if (contains)
+        return 0;
+      return 1;
+    }
+};
 
 /********************************************  QTable  ********************************************/
 template <typename VAL_T>
@@ -88,24 +165,11 @@ class QTable { // Query
     
     virtual std::string to_str() = 0;
     virtual int add(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, VAL_T val) = 0;
+    virtual int del(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_) = 0;
     virtual int query(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, std::vector<VAL_T>& val_v) = 0;
 };
 
 /*******************************************  RTable  *********************************************/
-typedef boost::geometry::model::point<int, NDIM, boost::geometry::cs::cartesian> point_t;
-typedef boost::geometry::model::box<point_t> box_t;
-
-// std::string point_to_str(point_t p)
-// {
-//   std::stringstream ss;
-  
-//   int coor_[NDIM];
-//   BOOST_PP_REPEAT(NDIM, POINT_GET_REP, (p, coor_) );
-//   ss << patch_sfc::arr_to_str(NDIM, coor_);
-  
-//   return ss.str();
-// }
-
 template <typename VAL_T>
 class RTable : public QTable<VAL_T> {
   typedef std::pair<box_t, VAL_T> value;
@@ -118,22 +182,8 @@ class RTable : public QTable<VAL_T> {
     std::string to_str()
     {
       std::stringstream ss;
-      for (typename rtree_t::const_query_iterator it = rtree.qbegin(boost::geometry::index::satisfies(boost::lambda::constant(true) ) ); it != rtree.qend(); ++it) {
+      for (typename rtree_t::const_query_iterator it = rtree.qbegin(boost::geometry::index::satisfies(boost::lambda::constant(true) ) ); it != rtree.qend(); ++it)
         ss << "\t box= " << boost::geometry::dsv(it->first) << " : " << it->second << "\n";
-        // point_t lp = (it->first).min_corner();
-        // point_t up = (it->first).max_corner();
-        // int lcoor_[NDIM], ucoor_[NDIM];
-        // BOOST_PP_REPEAT(NDIM, POINT_GET_REP, (lp, lcoor_) )
-        // BOOST_PP_REPEAT(NDIM, POINT_GET_REP, (up, ucoor_) )
-        
-        // ss << "\t box= [(";
-        // for (int i = 0; i < NDIM; i++, ss << ",")
-        //   ss << lcoor_[i];
-        // ss << ") -- ";
-        // for (int i = 0; i < NDIM; i++, ss << ",")
-        //   ss << ucoor_[i];
-        // ss << ")] : " << it->second << "\n";
-      }
       
       return ss.str();
     }
@@ -143,7 +193,24 @@ class RTable : public QTable<VAL_T> {
       IS_VALID_BOX("add", lcoor_, ucoor_, return 1)
       CREATE_BOX(0, b, lcoor_, ucoor_)
       
-      rtree.insert(std::make_pair(b, val) );
+      rtree.insert(std::make_pair(b0, val) );
+      
+      return 0;
+    }
+    
+    int del(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_)
+    {
+      IS_VALID_BOX("del", lcoor_, ucoor_, return 1)
+      CREATE_BOX(0, b, lcoor_, ucoor_)
+      
+      std::vector<VAL_T> val_v;
+      if (query(key, ver, lcoor_, ucoor_, val_v) ) {
+        LOG(ERROR) << "del:: query failed; " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_);
+        return 1;
+      }
+      
+      for (typename std::vector<VAL_T>::iterator it = val_v.begin(); it != val_v.end(); it++)
+        rtree.remove(std::make_pair(b0, *it) );
       
       return 0;
     }
@@ -154,13 +221,22 @@ class RTable : public QTable<VAL_T> {
       CREATE_BOX(0, qb, lcoor_, ucoor_)
       
       std::vector<value> value_v;
-      // rtree.query(boost::geometry::index::intersects(qb), std::back_inserter(value_v) );
-      rtree.query(boost::geometry::index::contains(qb), std::back_inserter(value_v) );
+      // rtree.query(boost::geometry::index::intersects(qb0), std::back_inserter(value_v) );
+      rtree.query(boost::geometry::index::contains(qb0), std::back_inserter(value_v) );
       
       for (typename std::vector<value>::iterator it = value_v.begin(); it != value_v.end(); it++)
         val_v.push_back(it->second);
       
       return (val_v.size() == 0);
+    }
+    
+    box_t get_bounds() { return rtree.bounds(); }
+    
+    int get_bound_lucoor(COOR_T* &lcoor_, COOR_T* &ucoor_)
+    {
+      box_t box = rtree.bounds();
+      BOOST_PP_REPEAT(NDIM, BOX_GET_CORNER_REP, (box, min, lcoor_) )
+      BOOST_PP_REPEAT(NDIM, BOX_GET_CORNER_REP, (box, max, ucoor_) )
     }
 };
 
@@ -179,7 +255,7 @@ class KVTable : public QTable<VAL_T> { // Key Ver
     std::string to_str()
     {
       std::stringstream ss;
-      ss << "kv_val_map= \n" << patch_sfc::map_to_str<>(kv_val_map);
+      ss << "kv_val_map= \n" << patch_all::map_to_str<>(kv_val_map);
       return ss.str();
     }
     
@@ -216,21 +292,27 @@ typedef std::pair<key_ver_pair, lcoor_ucoor_pair> kv_lucoor_pair;
 typedef boost::icl::interval_set<bitmask_t> index_interval_set_t;
 // typedef boost::icl::interval_map<bitmask_t, std::set<char> > index_interval__ds_id_set_map_t;
 
+typedef char SALGO_T;
+const SALGO_T HSALGO = 'h';
+
 class SAlgo {
   protected:
+    COOR_T *lcoor_, *ucoor_;
+    int hilbert_num_bits, max_index;
+    
     std::vector<boost::shared_ptr<index_interval_set_t> > acced_index_interval_set_v;
     // index_interval__ds_id_set_map_t index_interval__ds_id_set_map;
   public:
-    SAlgo(COOR_T *lcoor_, *ucoor_);
-    ~SAlgo();
+    SAlgo(COOR_T* lcoor_, COOR_T* ucoor_);
+    ~SAlgo() {}
     virtual std::string to_str();
     
     boost::shared_ptr<index_interval_set_t> coor_to_index_interval_set_(COOR_T* lcoor_, COOR_T* ucoor_);
     void index_interval_set_to_coor_v(index_interval_set_t interval_set, std::vector<COOR_T*>& coor_v);
     void expand_interval_set(bitmask_t expand_length, index_interval_set_t& interval_set);
     
-    virtual int add_access(COOR_T* lcoor_, COOR_T* ucoor_);
-    virtual int get_to_prefetch() = 0;
+    int add_access(COOR_T* lcoor_, COOR_T* ucoor_);
+    virtual int get_to_fetch(COOR_T* lcoor_, COOR_T* ucoor_, std::vector<lcoor_ucoor_pair>& lucoor_to_fetch_v) = 0;
 };
 
 /*****************************************  MHSAlgo  ******************************************/
@@ -242,14 +324,13 @@ class HSAlgo : public SAlgo { // Hilbert
   private:
     bitmask_t expand_length;
     
-    int hilbert_num_bits, max_index;
   public:
     HSAlgo(COOR_T* lcoor_, COOR_T* ucoor_,
            bitmask_t expand_length);
-    ~HSAlgo();
+    ~HSAlgo() {}
     std::string to_str();
     
-    int get_to_prefetch();
+    int get_to_fetch(COOR_T* lcoor_, COOR_T* ucoor_, std::vector<lcoor_ucoor_pair>& lucoor_to_fetch_v);
 };
 
 #endif // _SFC_H_

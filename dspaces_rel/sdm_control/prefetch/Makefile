@@ -8,8 +8,11 @@ BOOST_LIB = -L$(BOOST_DIR)/lib -lboost_system -lpthread -lboost_thread -lboost_s
 
 GLOG_INC = -I$(GLOG_DIR)/include
 GLOG_LIB = -L$(GLOG_DIR)/lib -lglog
+
+PREFETCH_DIR ?= $(DSPACESWA_DIR)/dspaces_rel/sdm_control/prefetch
+PREFETCH_INC = -I$(PREFETCH_DIR)/include
 # 
-INC = -I$(DSPACES_WA_DIR)/plot/include -I$(DSPACES_WA_DIR)/dspaces_rel/profiler/include -I/include $(GLOG_INC) $(BOOST_INC)
+INC = $(GLOG_INC) $(BOOST_INC) -I$(DSPACES_WA_DIR)/plot/include -I$(DSPACES_WA_DIR)/dspaces_rel/profiler/include $(PREFETCH_INC)
 LIB = $(GLOG_LIB) $(BOOST_LIB)
 
 ODIR = obj

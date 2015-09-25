@@ -5,6 +5,13 @@ SAlgo::SAlgo(COOR_T* lcoor_, COOR_T* ucoor_)
 : lcoor_(lcoor_), ucoor_(ucoor_)
 {
   IS_VALID_BOX("SAlgo", lcoor_, ucoor_, exit(1) )
+  
+  std::vector<int> dim_length_v;
+  for (int i = 0; i < NDIM; i++)
+    dim_length_v.push_back(ucoor_[i] - lcoor_[i] );
+  
+  hilbert_num_bits = (int) ceil(log2(*std::max_element(dim_length_v.begin(), dim_length_v.end() ) ) );
+  max_index = pow(2, NDIM*hilbert_num_bits) - 1;
   // 
   LOG(INFO) << "SAlgo:: constructed.";
 }
@@ -81,14 +88,8 @@ int SAlgo::add_access(COOR_T* lcoor_, COOR_T* ucoor_)
 HSAlgo::HSAlgo(COOR_T* lcoor_, COOR_T* ucoor_,
                bitmask_t expand_length)
 : SAlgo(lcoor_, ucoor_),
-  expand_length(expand_length),
+  expand_length(expand_length)
 {
-  std::vector<int> dim_length_v;
-  for (int i = 0; i < NDIM; i++)
-    dim_length_v.push_back(ucoor_[i] - lcoor_[i] );
-  
-  hilbert_num_bits = (int) ceil(log2(*std::max_element(dim_length_v.begin(), dim_length_v.end() ) ) );
-  max_index = pow(2, NDIM*hilbert_num_bits) - 1;
   // 
   LOG(INFO) << "HSAlgo:: constructed.";
 }
@@ -115,7 +116,7 @@ std::string HSAlgo::to_str()
 //   return 0;
 // }
 
-int HSAlgo::get_to_prefetch()
+int HSAlgo::get_to_fetch(COOR_T* lcoor_, COOR_T* ucoor_, std::vector<lcoor_ucoor_pair>& lucoor_to_fetch_v)
 {
   // Using the last acced index_interval_set predict from locality
   index_interval_set_t& ii_set = *(acced_index_interval_set_v.back() );
@@ -124,16 +125,21 @@ int HSAlgo::get_to_prefetch()
   expand_interval_set(expand_length, ii_set);
   LOG(INFO) << "get_to_prefetch:: after expand_interval_set= " << ii_set << "\n";
   
+  RTable<char> rtable;
+  
   std::vector<COOR_T*> lcoor_v;
   index_interval_set_to_coor_v(ii_set, lcoor_v);
-  for (std::vector<COOR_T*>::iterator next_lcoor__ = lcoor_v.begin(); next_lcoor__ != lcoor_v.end(); next_lcoor__++) {
-    COOR_T* next_ucoor_ = (COOR_T*)malloc(NDIM*sizeof(COOR_T) );
+  for (std::vector<COOR_T*>::iterator lcoor__ = lcoor_v.begin(); lcoor__ != lcoor_v.end(); lcoor__++) {
+    COOR_T* ucoor_ = (COOR_T*)malloc(NDIM*sizeof(COOR_T) );
     for (int i = 0; i < NDIM; i++)
-      next_ucoor_[i] = (*next_lcoor__)[i] + 1;
-    
-    // next_lcoor_ucoor_pair_v.push_back(std::make_pair(*next_lcoor__, next_ucoor_) );
-    
-    next_kv_lucoor_pair_v.push_back(
-      std::make_pair(std::make_pair(key, ver), std::make_pair(*next_lcoor__, next_ucoor_) ) );
+      ucoor_[i] = (*lcoor__)[i] + 1;
+
+    // lucoor_to_fetch_v.push_back(std::make_pair(*lcoor__, ucoor_) );
+    rtable.add("", 0, *lcoor__, ucoor_, '\0');
   }
+  
+  COOR_T* to_fetch_lcoor_ = (COOR_T*)malloc(NDIM*sizeof(COOR_T) );
+  COOR_T* to_fetch_ucoor_ = (COOR_T*)malloc(NDIM*sizeof(COOR_T) );
+  rtable.get_bound_lucoor(to_fetch_lcoor_, to_fetch_ucoor_);
+  lucoor_to_fetch_v.push_back(std::make_pair(to_fetch_lcoor_, to_fetch_ucoor_) );
 }

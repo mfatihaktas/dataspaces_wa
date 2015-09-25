@@ -165,11 +165,10 @@ class Graph // The graph base class template
     {
       std::stringstream ss;
       vertex_iter_pair_t vertices = boost::vertices(graph);
-      for (vertex_iter i = vertices.first; i != vertices.second; i++) {
+      for (vertex_iter i = vertices.first; i != vertices.second; i++)
         ss << vertex_to_str(*i) << "\n";
-      }
-      
       ss << "\n";
+      
       return ss.str();
     }
     
@@ -204,9 +203,8 @@ class Graph // The graph base class template
     
       ss << "  adjacent vertices: \n\t";
       adjacency_iter_pair_t ai_pair = get_adj_vertices(v);
-      for (adjacency_iter ai = ai_pair.first;  ai != ai_pair.second; ai++) {
+      for (adjacency_iter ai = ai_pair.first;  ai != ai_pair.second; ai++)
         ss << properties(*ai).name <<  ", ";
-      }
       ss << "\n";
       
       return ss.str();
@@ -815,44 +813,5 @@ class POAlgo : public MAlgo {
     POAlgo();
     ~POAlgo();
 };
-
-template <typename MALGO>
-void sim_prefetch_accuracy(MALGO& malgo,
-                           int cache_size, std::vector<acc_step_pair> acc_step_v, 
-                           float& hit_rate, std::vector<char>& accuracy_v )
-{
-  Cache<ACC_T, acc_step_pair> cache(cache_size, boost::function<void(acc_step_pair)>() );
-  int num_miss = 0;
-  
-  std::map<ACC_T, int> acc__last_acced_step_map;
-  
-  for (std::vector<acc_step_pair>::iterator it = acc_step_v.begin(); it != acc_step_v.end(); it++) {
-    // std::cout << "sim_prefetch_accuracy:: is <" << it->first << ", " << it->second << ">"
-    //           << " in the cache= \n" << cache.to_str() << "\n";
-    acc__last_acced_step_map[it->first] = it->second;
-    
-    if (!cache.contains(*it) ) {
-      accuracy_v.push_back('f');
-      num_miss++;
-    }
-    else
-      accuracy_v.push_back('-');
-    
-    // In wa-dataspaces scenario data is used only once
-    cache.del(it->first, *it);
-    
-    malgo.add_access(it->first); // Reg only the acc
-    
-    int num_acc = 1; //cache_size;
-    std::vector<ACC_T> acc_v, eacc_v;
-    malgo.get_to_prefetch(num_acc, acc_v, std::vector<ACC_T>(), eacc_v);
-    
-    // Update cache
-    for (std::vector<ACC_T>::iterator iit = acc_v.begin(); iit != acc_v.end(); iit++)
-      cache.push(*iit, std::make_pair(*iit, acc__last_acced_step_map[*iit] + 1) );
-  }
-  
-  hit_rate = 1.0 - (float)num_miss / acc_step_v.size();
-}
 
 #endif // _MARKOV_H_

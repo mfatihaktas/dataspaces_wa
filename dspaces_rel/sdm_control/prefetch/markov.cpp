@@ -6,7 +6,7 @@ MMAlgo::MMAlgo(MMALGO_T mmalgo_t,
 : mmalgo_t(mmalgo_t),
   malgo_t__weight_map(malgo_t__weight_map)
 {
-  for (std::map<PREFETCH_T, float>::iterator it = prefetch_t__weight_map.begin(); it != prefetch_t__weight_map.end(); it++) {
+  for (std::map<MALGO_T, float>::iterator it = malgo_t__weight_map.begin(); it != malgo_t__weight_map.end(); it++) {
     parse_tree_v.push_back(boost::make_shared<ParseTree>(it->first) );
     if (mmalgo_t == MMALGO_W_WEIGHT)
       pt_id__weight_map[parse_tree_v.size() - 1] = it->second;
@@ -45,7 +45,7 @@ int MMAlgo::add_access(ACC_T acc)
   
   for (std::vector<boost::shared_ptr<ParseTree> >::iterator parse_tree__ = parse_tree_v.begin(); parse_tree__ != parse_tree_v.end(); parse_tree__++) {
     if ( (*parse_tree__)->add_access(acc) ) {
-      LOG(INFO) << "add_access:: (*parse_tree__)->add_access for prefetch_t= " << (*parse_tree__)->get_prefetch_t();
+      LOG(INFO) << "add_access:: (*parse_tree__)->add_access for malgo_t= " << (*parse_tree__)->get_malgo_t();
       return 1;
     }
   }
@@ -56,11 +56,11 @@ int MMAlgo::add_access(ACC_T acc)
 int MMAlgo::get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
                             const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v)
 {
-  if (m_prefetch_t == MMALGO_W_WEIGHT) {
+  if (mmalgo_t == MMALGO_W_WEIGHT) {
     if (get_to_prefetch_w_weight(num_acc, acc_v) )
       return 1;
   }
-  else if (m_prefetch_t == MMALGO_W_MAX) {
+  else if (mmalgo_t == MMALGO_W_MAX) {
     if (get_to_prefetch_w_max(num_acc, acc_v) )
       return 1;
   }
@@ -155,8 +155,8 @@ int MMAlgo::get_to_prefetch_w_weight(int& num_acc, std::vector<ACC_T>& acc_v)
 }
 
 /**********************************************  MAlgo  *******************************************/
-MAlgo::MAlgo(PREFETCH_T prefetch_t, int context_size)
-: parse_tree(prefetch_t, context_size) {}
+MAlgo::MAlgo(MALGO_T malgo_t, int context_size)
+: parse_tree(malgo_t, context_size) {}
   
 MAlgo::~MAlgo() {}
 
@@ -210,7 +210,7 @@ int MAlgo::get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
 
 /******************************************  LZAlgo  **********************************************/
 LZAlgo::LZAlgo()
-: MAlgo(W_LZ, 0)
+: MAlgo(MALGO_W_LZ, 0)
 {
   // 
   LOG(INFO) << "LZAlgo:: constructed.";
@@ -220,7 +220,7 @@ LZAlgo::~LZAlgo() { LOG(INFO) << "LZAlgo:: destructed."; }
 
 /******************************************  ALZAlgo  **********************************************/
 ALZAlgo::ALZAlgo()
-: MAlgo(W_ALZ, 0)
+: MAlgo(MALGO_W_ALZ, 0)
 {
   // 
   LOG(INFO) << "ALZAlgo:: constructed.";
@@ -230,7 +230,7 @@ ALZAlgo::~ALZAlgo() { LOG(INFO) << "ALZAlgo:: destructed."; }
 
 /******************************************  PPMAlgo  *********************************************/
 PPMAlgo::PPMAlgo(int context_size)
-: MAlgo(W_PPM, context_size)
+: MAlgo(MALGO_W_PPM, context_size)
 {
   // 
   LOG(INFO) << "PPMAlgo:: constructed.";
@@ -240,7 +240,7 @@ PPMAlgo::~PPMAlgo() { LOG(INFO) << "PPMAlgo:: destructed."; }
 
 /******************************************  POAlgo  **********************************************/
 POAlgo::POAlgo()
-: MAlgo(W_PO, 0)
+: MAlgo(MALGO_W_PO, 0)
 {
   // 
   LOG(INFO) << "POAlgo:: constructed.";

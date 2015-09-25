@@ -1,10 +1,6 @@
 #!/bin/bash
 echo $1 $2 $3
 
-LINTF="em2"
-JOINHOST_LIP="192.168.2.151"
-LPORT=6633
-
 if [ $1  = 'e' ]; then
   GLOG_logtostderr=1 ./exp
 elif [ $1  = 'de' ]; then
