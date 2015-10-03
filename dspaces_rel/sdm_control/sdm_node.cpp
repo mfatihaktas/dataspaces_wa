@@ -120,13 +120,10 @@ int Commer::connect_send_to(std::string to_lip, int to_lport, const Packet& p)
 }
 
 /*******************************************  SDMNode  ********************************************/
-SDMNode::SDMNode(char id, std::string type,
-                 std::string lip, int lport,
-                 std::string joinhost_lip, int joinhost_lport,
+SDMNode::SDMNode(std::string type,
+                 char id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
                  func_rimsg_recv_cb rimsg_recv_cb, func_cmsg_recv_cb cmsg_recv_cb)
-: id(id), type(type),
-  lip(lip), lport(lport),
-  joinhost_lip(joinhost_lip), joinhost_lport(joinhost_lport),
+: type(type), id(id), lip(lip), lport(lport), joinhost_lip(joinhost_lip), joinhost_lport(joinhost_lport),
   rimsg_recv_cb(rimsg_recv_cb), cmsg_recv_cb(cmsg_recv_cb),
   commer(id, lip, lport, boost::bind(&SDMNode::handle_recv, this, _1) ),
   sdm_master_id('?')

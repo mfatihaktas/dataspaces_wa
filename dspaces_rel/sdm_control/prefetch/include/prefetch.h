@@ -289,20 +289,22 @@ class WASpace {
     ~WASpace() {}
     virtual std::string to_str();
     
-    int reg_ds(char ds_id);
+    virtual int reg_ds(char ds_id);
     int reg_app(int app_id, char ds_id);
     
     virtual int put(int p_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, char ds_id = '\0') = 0;
     virtual int del(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, char ds_id) = 0;
     virtual int query(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, std::vector<char>& ds_id_v) = 0;
     virtual int add_access(int c_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_) = 0;
-    // virtual int get(bool blocking, int c_id, char& get_type,
-    //                 std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_) = 0;
 };
 
 /******************************************  MWASpace  ********************************************/
 class MWASpace : public WASpace {
   private:
+    int max_num_key_ver_in_mpbuffer;
+    MALGO_T malgo_t;
+    bool w_prefetch;
+    
     patch_all::thread_safe_vector<key_ver_pair> kv_v;
     patch_all::thread_safe_map<char, boost::shared_ptr<patch_all::thread_safe_vector<key_ver_pair> > > ds_id__kv_vp_map;
     std::map<char, boost::shared_ptr<MPBuffer> >  ds_id__mpbuffer_map;
@@ -317,6 +319,8 @@ class MWASpace : public WASpace {
     ~MWASpace();
     std::string to_str();
     std::string to_str_end();
+    
+    int reg_ds(char ds_id);
     
     int put(int p_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, char ds_id = '\0');
     int del(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, char ds_id);

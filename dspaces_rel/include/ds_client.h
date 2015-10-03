@@ -2,7 +2,7 @@
 #define _DS_CLIENT_H_
 
 #include "ds_drive.h"
-#include "sdm.h"
+#include "patch_sdm.h"
 
 /*******************************************  BCServer  *******************************************/
 // Server side of blocking communication channel over dataspaces
@@ -38,7 +38,7 @@ class BCClient {
     int app_id, max_msg_size;
     std::string base_comm_var_name;
     std::string comm_var_name;
-    MsgCoder msg_coder;
+    patch_sdm::MsgCoder msg_coder;
     boost::shared_ptr<DSDriver> ds_driver_;
   public:
     BCClient(int app_id, int max_msg_size, 

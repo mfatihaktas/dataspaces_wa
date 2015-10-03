@@ -121,7 +121,7 @@ int BCClient::send(std::map<std::string, std::string> msg_map)
   int result = ds_driver_->sync_put(comm_var_name.c_str(), 0, max_msg_size*sizeof(char), 3, gdim_, lb_, ub_, data_);
   // int result = ds_driver_->sync_put_without_lock(comm_var_name.c_str(), 1, sizeof(char), 1, &gdim, &lb, &ub, data_);
   free(data_);
-  patch_sdm::free_all<uint64_t*>(3, gdim_, lb_, ub_);
+  patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
   
   return result;
 }
@@ -340,7 +340,7 @@ int RIManager::remote_get(char ds_id, std::map<std::string, std::string> r_get_m
   rget_time_profiler.end_event(kv);
   LOG(INFO) << "remote_get:: rget_time_profiler= \n" << rget_time_profiler.to_str();
   // 
-  // patch_sdm::free_all<uint64_t*>(3, gdim_, lb_, ub_);
+  // patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
   LOG(INFO) << "remote_get:: done for <key= " << r_get_map["key"] << ", ver= " << r_get_map["ver"] << ">.";
   return 0;
 }
@@ -367,7 +367,7 @@ void RIManager::handle_put(int p_id, std::map<std::string, std::string> put_map)
       LOG(ERROR) << "handle_l_put:: bcast_rq_table failed!";
   }
   // 
-  // patch_sdm::free_all<uint64_t*>(3, gdim_, lb_, ub_);
+  // patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
   LOG(INFO) << "handle_put:: done for <key= " << put_map["key"] << ", ver= " << put_map["ver"] << ">.";
   // LOG(INFO) << "handle_put:: rq_table=\n" << rq_table.to_str();
 }
@@ -520,16 +520,16 @@ int RIManager::remote_fetch(char ds_id, std::map<std::string, std::string> r_fet
     uint64_t *gdim_, *lb_, *ub_;
     std::string data_type;
     if (msg_coder.decode_msg_map(r_fetch_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_) ) {
-      patch_sdm::free_all<uint64_t*>(3, gdim_, lb_, ub_);
+      patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
       LOG(ERROR) << "remote_fetch:: msg_coder.decode_msg_map failed!";
       return 1;
     }
     if (rfp_manager_->gftpfile_read__ds_put(key, ver, size, ndim, gdim_, lb_, ub_) ) {
-      patch_sdm::free_all<uint64_t*>(3, gdim_, lb_, ub_);
+      patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
       LOG(ERROR) << "remote_fetch:: rfp_manager_->gftpfile_read__ds_put failed!";
       return 1;
     }
-    patch_sdm::free_all<uint64_t*>(3, gdim_, lb_, ub_);
+    patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
   }
 #endif // _GRIDFTP_
   // 
@@ -547,7 +547,7 @@ int RIManager::remote_place(std::string key, unsigned int ver, char to_id)
   std::string data_type;
   if (rq_table.get_key_ver(key, ver, p_id, data_type, ds_id, size, ndim, gdim_, lb_, ub_) ) {
     LOG(INFO) << "remote_place:: rq_table.get_key_ver failed!";
-    // patch_sdm::free_all<uint64_t*>(3, gdim_, lb_, ub_);
+    // patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
   }
   
   // patch_ds::debug_print(key, ver, size, ndim, gdim_, lb_, ub_, NULL, 0);
@@ -562,7 +562,7 @@ int RIManager::remote_place(std::string key, unsigned int ver, char to_id)
   if (this->wa_trans_protocol.compare(INFINIBAND) == 0) {
     if (sdm_node_->send_msg(to_id, SDM_RIMSG, r_place_map) ) {
       LOG(ERROR) << "remote_place:: sdm_node_->send_msg to to_id= " << to_id << " failed!";
-      patch_sdm::free_all<uint64_t*>(3, gdim_, lb_, ub_);
+      patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
       return 1;
     }
     
@@ -574,7 +574,7 @@ int RIManager::remote_place(std::string key, unsigned int ver, char to_id)
     laddr_lport__tmpfsdir_pair ll_t = key_ver___laddr_lport__tmpfsdir_map[kv];
     if (rfp_manager_->wa_put(key, ver, data_type, size, ndim, gdim_, lb_, ub_, ll_t.first.first, ll_t.first.second, ll_t.second) ) {
       LOG(ERROR) << "remote_place:: rfp_manager_->wa_put failed!";
-      patch_sdm::free_all<uint64_t*>(3, gdim_, lb_, ub_);
+      patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
       return 1;
     }
     handle_rp_syncer.notify(kv);
@@ -591,17 +591,17 @@ int RIManager::remote_place(std::string key, unsigned int ver, char to_id)
     
     if (rfp_manager_->wa_put(key, ver, "", size, ndim, gdim_, lb_, ub_, laddr, lport, tmpfs_dir) ) {
       LOG(ERROR) << "remote_place:: rfp_manager_->wa_put failed!";
-      patch_sdm::free_all<uint64_t*>(3, gdim_, lb_, ub_);
+      patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
       return 1;
     }
     if (sdm_node_->send_msg(to_id, SDM_RIMSG, r_place_map) ) {
       LOG(ERROR) << "remote_place:: sdm_node_->send_msg to to_id= " << to_id << " failed!";
-      patch_sdm::free_all<uint64_t*>(3, gdim_, lb_, ub_);
+      patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
       return 1;
     }
   }
   // 
-  patch_sdm::free_all<uint64_t*>(3, gdim_, lb_, ub_);
+  patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
   LOG(INFO) << "remote_place:: done.";
   return 0;
 }
@@ -614,7 +614,7 @@ void RIManager::handle_wa_get(std::string called_from, std::map<std::string, std
   uint64_t *gdim_, *lb_, *ub_;
   std::string data_type;
   if (msg_coder.decode_msg_map(str_str_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_) ) {
-    patch_sdm::free_all<uint64_t*>(3, gdim_, lb_, ub_);
+    patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
     LOG(ERROR) << "handle_wa_get:: decode_msg_map failed!";
     return;
   }
@@ -632,7 +632,7 @@ void RIManager::handle_wa_get(std::string called_from, std::map<std::string, std
   else if (called_from.compare("handle_rplace") == 0)
     rp_wa_get_syncer.notify(std::make_pair(key, ver) );
   
-  patch_sdm::free_all<uint64_t*>(3, gdim_, lb_, ub_);
+  patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
 }
 
 int RIManager::gftp_bping(char to_id)
@@ -756,7 +756,7 @@ void RIManager::handle_rfetch(std::map<std::string, std::string> r_fetch_map)
   uint64_t *gdim_, *lb_, *ub_;
   std::string data_type;
   if (msg_coder.decode_msg_map(r_fetch_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_) ) {
-    patch_sdm::free_all<uint64_t*>(3, gdim_, lb_, ub_);
+    patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
     LOG(ERROR) << "handle_rfetch:: decode_msg_map failed!";
     return;
   }
@@ -776,13 +776,13 @@ void RIManager::handle_rfetch(std::map<std::string, std::string> r_fetch_map)
     gftp_put_done_map["ver"] = boost::lexical_cast<std::string>(ver);
     if (sdm_node_->send_msg(to_id, SDM_RIMSG, gftp_put_done_map) ) {
       LOG(ERROR) << "handle_rfetch:: sdm_node_->send_msg to to_id= " << to_id << " failed!";
-      patch_sdm::free_all<uint64_t*>(3, gdim_, lb_, ub_);
+      patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
       return;
     }
   }
 #endif // _GRIDFTP_
   // 
-  patch_sdm::free_all<uint64_t*>(3, gdim_, lb_, ub_);
+  patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
   LOG(INFO) << "handle_rfetch:: done.";
 }
 
@@ -822,7 +822,7 @@ void RIManager::handle_rqtable(std::map<std::string, std::string> r_rqtable_map)
                          p_id, r_rqtable_map["data_type_" + tail_str], r_rqtable_map["ds_id_" + tail_str].c_str()[0],
                          boost::lexical_cast<int>(r_rqtable_map["size_" + tail_str] ),
                          ndim, gdim_, lb_, ub_ );
-    // patch_sdm::free_all<uint64_t*>(3, gdim_, lb_, ub_);
+    // patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
     pbuffer_->reg_key_ver(p_id, std::make_pair(key, ver) );
     
     count++;
@@ -884,16 +884,16 @@ void RIManager::handle_rplace(std::map<std::string, std::string> r_place_map)
   //   uint64_t *gdim_, *lb_, *ub_;
   //   std::string data_type;
   //   if (msg_coder.decode_msg_map(r_fetch_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_) ) {
-  //     patch_sdm::free_all<uint64_t*>(3, gdim_, lb_, ub_);
+  //     patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
   //     LOG(ERROR) << "remote_fetch:: msg_coder.decode_msg_map failed!";
   //     return 1;
   //   }
   //   if (rfp_manager_->gftpfile_read__ds_put(key, ver, size, ndim, gdim_, lb_, ub_) ) {
-  //     patch_sdm::free_all<uint64_t*>(3, gdim_, lb_, ub_);
+  //     patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
   //     LOG(ERROR) << "remote_fetch:: rfp_manager_->gftpfile_read__ds_put failed!";
   //     return 1;
   //   }
-  //   patch_sdm::free_all<uint64_t*>(3, gdim_, lb_, ub_);
+  //   patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
   // }
 }
 

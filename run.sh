@@ -3,11 +3,11 @@ echo $1 $2 $3
 
 NUM_SNODE=1
 NUM_CLIENT=1
-NUM_DSCNODE=$(($NUM_CLIENT+1)) #+1: RIManager
+NUM_DSCNODE=$(($NUM_CLIENT+1)) # +1: RIManager
 
 CONTROL_LINTF="em2" # "lo"
 RI_MANAGER_CONTROL_LPORT_LIST=( "7000" "7001" "7002" )
-RI_MANAGER_JOIN_CONTROL_LADDR_LIST=( "" "192.168.2.151" "192.168.2.151" )
+RI_MANAGER_JOIN_CONTROL_LIP_LIST=( "" "192.168.2.151" "192.168.2.151" )
 RI_MANAGER_JOIN_CONTROL_LPORT_LIST=( "0" "7000" "7000" )
 
 TRANS_PROTOCOL="i" # "g"
@@ -77,7 +77,7 @@ elif [ $1  = 'r' ]; then
   else
     GLOG_logtostderr=1 ./exp --type="ri" --cl_id=111 --num_client=$NUM_CLIENT --base_client_id=$(($2*10)) \
                              --ds_id=$2 --control_lintf=$CONTROL_LINTF --control_lport=${RI_MANAGER_CONTROL_LPORT_LIST[$2] } \
-                             --join_control_laddr=${RI_MANAGER_JOIN_CONTROL_LADDR_LIST[$2] } --join_control_lport=${RI_MANAGER_JOIN_CONTROL_LPORT_LIST[$2] } \
+                             --join_control_lip=${RI_MANAGER_JOIN_CONTROL_LIP_LIST[$2] } --join_control_lport=${RI_MANAGER_JOIN_CONTROL_LPORT_LIST[$2] } \
                              --trans_protocol=$TRANS_PROTOCOL --ib_lintf=$IB_LINTF --gftp_lintf=$GFTP_LINTF --gftp_lport=$GFTP_LPORT --tmpfs_dir=$TMPFS_DIR
   fi
   read -p "[Enter]"
@@ -98,7 +98,7 @@ elif [ $1  = 'dr' ]; then
     export GLOG_logtostderr=1
     gdb --args ./exp --type="ri" --cl_id=111 --num_client=$NUM_CLIENT --base_client_id=$(($2*10)) \
                      --ds_id=$2 --control_lintf=$CONTROL_LINTF --control_lport=${RI_MANAGER_CONTROL_LPORT_LIST[$2] } \
-                     --join_control_laddr=${RI_MANAGER_JOIN_CONTROL_LADDR_LIST[$2] } --join_control_lport=${RI_MANAGER_JOIN_CONTROL_LPORT_LIST[$2] } \
+                     --join_control_lip=${RI_MANAGER_JOIN_CONTROL_LIP_LIST[$2] } --join_control_lport=${RI_MANAGER_JOIN_CONTROL_LPORT_LIST[$2] } \
                      --trans_protocol=$TRANS_PROTOCOL --ib_lintf=$IB_LINTF --gftp_lintf=$GFTP_LINTF --gftp_lport=$GFTP_LPORT --tmpfs_dir=$TMPFS_DIR
   fi
   read -p "[Enter]"

@@ -34,14 +34,14 @@ else
 endif
 # MPI_LIB = -L$(MPI_DIR)/lib -lmpich -lmpichcxx
 # 
-SFC_DIR = $(SDMCONTROL_DIR)/sfc
-SFC_ODIR = $(SFC_DIR)/obj
-SFC_OBJS = $(SFC_ODIR)/sfc.o $(SFC_ODIR)/hilbert.o
+PREFETCH_DIR = $(SDMCONTROL_DIR)/prefetch
+PREFETCH_ODIR = $(PREFETCH_DIR)/obj
+PREFETCH_OBJS = $(PREFETCH_ODIR)/prefetch.o $(PREFETCH_ODIR)/markov.o $(PREFETCH_ODIR)/sfc.o $(PREFETCH_ODIR)/hilbert.o
 
 SDMCONTROL_DIR = $(DSPACESREL_DIR)/sdm_control
-SDMCONTROL_INC = -I$(SDMCONTROL_DIR)/include -I$(SFC_DIR)/include
+SDMCONTROL_INC = -I$(SDMCONTROL_DIR)/include -I$(PREFETCH_DIR)/include
 SDMCONTROL_ODIR = $(SDMCONTROL_DIR)/obj
-SDMCONTROL_OBJS = $(SDMCONTROL_ODIR)/sdm_control.o $(SDMCONTROL_ODIR)/sdm.o $(SDMCONTROL_ODIR)/patch_sdm.o $(SDMCONTROL_ODIR)/sdm_node.o $(SDMCONTROL_ODIR)/sdm_server.o $(SDMCONTROL_ODIR)/sdm_client.o $(SDMCONTROL_ODIR)/packet.o $(SFC_OBJS)
+SDMCONTROL_OBJS = $(SDMCONTROL_ODIR)/sdm_control.o $(SDMCONTROL_ODIR)/patch_sdm.o $(SDMCONTROL_ODIR)/sdm_node.o $(SDMCONTROL_ODIR)/sdm_server.o $(SDMCONTROL_ODIR)/sdm_client.o $(SDMCONTROL_ODIR)/packet.o $(PREFETCH_OBJS)
 
 IB_TRANS_DIR ?= $(TRANS_DIR)/ib_trans
 IB_TRANS_ODIR = $(IB_TRANS_DIR)/obj
@@ -58,18 +58,14 @@ TRANS_INC = -I$(TRANS_DIR)/include -I$(IB_TRANS_DIR)/include -I$(GFTP_TRANS_DIR)
 TRANS_ODIR = $(TRANS_DIR)/obj
 TRANS_OBJS = $(TRANS_ODIR)/trans.o $(IB_TRANS_OBJS) $(GFTP_TRANS_OBJS)
 
-PREFETCH_DIR = $(DSPACESREL_DIR)/prefetch
-PREFETCH_ODIR = $(PREFETCH_DIR)/obj
-PREFETCH_OBJS = $(PREFETCH_ODIR)/prefetch.o $(PREFETCH_ODIR)/palgorithm.o
-
 PROFILER_DIR = $(DSPACESREL_DIR)/profiler
 PROFILER_ODIR = $(PROFILER_DIR)/obj
 PROFILER_OBJS = $(PROFILER_ODIR)/profiler.o
 
 DSPACESREL_DIR = $(DSPACESWA_DIR)/dspaces_rel
-DSPACESREL_INC = -I$(DSPACESREL_DIR)/include $(SDMCONTROL_INC) $(TRANS_INC) -I$(PREFETCH_DIR)/include -I$(PROFILER_DIR)/include
+DSPACESREL_INC = -I$(DSPACESREL_DIR)/include $(SDMCONTROL_INC) $(TRANS_INC) -I$(PROFILER_DIR)/include
 DSPACESREL_ODIR = $(DSPACESREL_DIR)/obj
-DSPACESREL_OBJS = $(DSPACESREL_ODIR)/remote_interact.o $(DSPACESREL_ODIR)/ds_client.o $(DSPACESREL_ODIR)/ds_drive.o $(SDMCONTROL_OBJS) $(TRANS_OBJS) $(PREFETCH_OBJS) $(PROFILER_OBJS)
+DSPACESREL_OBJS = $(DSPACESREL_ODIR)/remote_interact.o $(DSPACESREL_ODIR)/ds_client.o $(DSPACESREL_ODIR)/ds_drive.o $(SDMCONTROL_OBJS) $(TRANS_OBJS) $(PROFILER_OBJS)
 
 DSPACESWA_INC = -I$(DSPACESWA_DIR)/include $(DSPACESREL_INC)
 DSPACESWA_LIB = $(DSPACESWA_DIR)/lib/libdspaces_wa.a
@@ -81,7 +77,7 @@ ODIR = obj
 OBJS = $(ODIR)/dataspaces_wa.o $(DSPACESREL_OBJS)
 LIBDIR = lib
 
-.PHONY: lib all lclean clean submake_dspaces_rel
+.PHONY: all lib lclean clean submake_dspaces_rel
 
 APPS := exp ds_wa_test
 
@@ -113,3 +109,4 @@ lclean:
 clean:
 	make -C $(DSPACESREL_DIR) clean
 	rm -f $(ODIR)/*.o $(LIBDIR)/* ${APPS}
+	

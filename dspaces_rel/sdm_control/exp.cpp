@@ -124,10 +124,9 @@ int main(int argc, char **argv)
     getline(std::cin, temp);
   }
   else if (opt_map["type"].compare("node") == 0) {
-    SDMNode sdm_node(opt_map["id"].c_str()[0], opt_map["node_type"],
-                    intf_to_ip(opt_map["lintf"] ), boost::lexical_cast<int>(opt_map["lport"] ),
-                    opt_map["joinhost_lip"], boost::lexical_cast<int>(opt_map["joinhost_lport"] ),
-                    boost::bind(&handle_rimsg_recv, _1), boost::bind(&handle_cp_recv, _1) );
+    SDMNode sdm_node(opt_map["node_type"],
+                     opt_map["id"].c_str()[0], intf_to_ip(opt_map["lintf"] ), boost::lexical_cast<int>(opt_map["lport"] ), opt_map["joinhost_lip"], boost::lexical_cast<int>(opt_map["joinhost_lport"] ),
+                     boost::bind(&handle_rimsg_recv, _1), boost::bind(&handle_cp_recv, _1) );
   
     std::cout << "Enter \n";
     getline(std::cin, temp);

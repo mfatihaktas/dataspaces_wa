@@ -53,8 +53,8 @@ typedef boost::function<void(boost::shared_ptr<Packet>)> func_cmsg_recv_cb;
 
 class SDMNode {
   private:
-    char id;
     std::string type; // For now can be only "m -- sdm_master" or "s -- sdm_slave"
+    char id;
     std::string lip, joinhost_lip;
     int lport, joinhost_lport;
     func_rimsg_recv_cb rimsg_recv_cb;
@@ -64,10 +64,9 @@ class SDMNode {
     char sdm_master_id;
     
   public:
-    SDMNode(char id, std::string type,
-            std::string lip, int lport,
-            std::string joinhost_lip, int joinhost_lport,
-            func_rimsg_recv_cb rimsg_recv_cb, func_cmsg_recv_cb cmsg_recv_cb = NULL);
+    SDMNode(std::string type,
+            char id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
+            func_rimsg_recv_cb rimsg_recv_cb, func_cmsg_recv_cb cmsg_recv_cb);
     ~SDMNode();
     int close();
     std::string to_str();

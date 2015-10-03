@@ -23,8 +23,8 @@ class RFPManager { // Remote Fetch & Place
     std::map<std::string, void*> data_id__data_map;
   public:
     RFPManager(char data_id_t, std::string trans_protocol,
-               std::string ib_laddr, std::list<std::string> ib_lport_list,
-               std::string gftp_lintf, std::string gftp_laddr, std::string gftp_lport, std::string tmpfs_dir,
+               std::string ib_lip, std::list<std::string> ib_lport_list,
+               std::string gftp_lintf, std::string gftp_lip, std::string gftp_lport, std::string tmpfs_dir,
                boost::shared_ptr<DSDriver> ds_driver_);
     ~RFPManager();
     std::string to_str();
@@ -47,13 +47,13 @@ class RFPManager { // Remote Fetch & Place
 /*******************************************  RIManager  ******************************************/
 // App - RI
 const std::string GET = "g";
-const std::string GET_REPLY = "g_reply";
+const std::string GET_REPLY = "gr";
 const std::string BLOCKING_GET = "bg";
-const std::string BLOCKING_GET_REPLY = "bg_reply";
+const std::string BLOCKING_GET_REPLY = "bgr";
 const std::string PUT = "p";
-const std::string PUT_REPLY = "p_reply";
+const std::string PUT_REPLY = "pr";
 const std::string DEL = "d";
-const std::string DEL_REPLY = "d_reply";
+const std::string DEL_REPLY = "dr";
 // RI - RI
 const std::string RI_TINFO_QUERY = "ri_tiq";
 const std::string RI_TINFO_QUERY_REPLY = "ri_tiqr";
@@ -73,35 +73,32 @@ class RIManager {
   protected:
     //ImpRem: Since handle_ core functions are called by client threads, properties must be thread-safe
     int cl_id, base_client_id, num_client;
-    char ds_id;
+    DATA_ID_T data_id_t;
     std::string data_trans_protocol;
     
-    MsgCoder msg_coder;
+    patch_sdm::MsgCoder msg_coder;
     
     boost::shared_ptr<SDMSlave> sdm_slave_;
     boost::shared_ptr<DSDriver> ds_driver_;
     boost::shared_ptr<BCServer> bc_server_;
-    patch_sdm::thread_safe_map<int, boost::shared_ptr<BCClient> > cl_id__bc_client_map; //TODO: prettify
+    patch_all::thread_safe_map<int, boost::shared_ptr<BCClient> > cl_id__bc_client_map; //TODO: prettify
     boost::shared_ptr<RFPManager> rfp_manager_;
-    patch_sdm::thread_safe_map<char, boost::shared_ptr<t_info> > ds_id__t_info_map;
+    patch_all::thread_safe_map<char, boost::shared_ptr<t_info> > ds_id__t_info_map;
     
-    patch_sdm::syncer<unsigned int> ri_syncer;
+    patch_all::syncer<unsigned int> ri_syncer;
     
     boost::asio::io_service io_service;
     boost::asio::signal_set signals;
   public:
-    RIManager(int cl_id, int base_client_id, int num_client,
-              char ds_id, std::string control_lip, int control_lport, std::string join_control_lip, int join_control_lport,
-              std::string data_trans_protocol, std::string ib_laddr, std::list<std::string> ib_lport_list,
-              std::string gftp_lintf, std::string gftp_laddr, std::string gftp_lport, std::string tmpfs_dir,
-              char predictor_t, int pbuffer_size, int pexpand_length, COOR_T* lcoor_, COOR_T* ucoor_);
+    RIManager(int cl_id, int base_client_id, int num_client, DATA_ID_T data_id_t,
+              std::string data_trans_protocol, std::string ib_lip, std::list<std::string> ib_lport_list,
+              std::string gftp_lintf, std::string gftp_lip, std::string gftp_lport, std::string tmpfs_dir);
     ~RIManager();
     void close();
-    std::string to_str();
+    virtual std::string to_str();
     
     void handle_app_req(char* app_req);
     void handle_get(bool blocking, int cl_id, std::map<std::string, std::string> get_map);
-    // int remote_get(char ds_id, std::map<std::string, std::string> r_get_map);
     void handle_put(int p_id, std::map<std::string, std::string> put_map);
     // void handle_del(key_ver_pair kv);
     
@@ -115,6 +112,130 @@ class RIManager {
     
     void handle_dm_act(std::map<std::string, std::string> dm_act_map);
     void handle_dm_move(std::map<std::string, std::string> msg_map);
+};
+
+/***********************************  MSRIManager : RIManager  ************************************/
+class MSRIManager : public RIManager { // Markov Slave
+  public:
+    MSRIManager(int cl_id, int base_client_id, int num_client,
+                char ds_id, std::string control_lip, int control_lport, std::string join_control_lip, int join_control_lport,
+                std::string data_trans_protocol, std::string ib_lip, std::list<std::string> ib_lport_list,
+                std::string gftp_lintf, std::string gftp_lip, std::string gftp_lport, std::string tmpfs_dir)
+    : RIManager(cl_id, base_client_id, num_client, KV_DATA_ID,
+                data_trans_protocol, ib_lip, ib_lport_list,
+                gftp_lintf, gftp_lip, gftp_lport, tmpfs_dir)
+    {
+      sdm_slave_ = boost::make_shared<MSDMSlave>(ds_id, control_lip, control_lport, join_control_lip, join_control_lport,
+                                                 boost::bind(&RIManager::handle_rimsg, this, _1), boost::bind(&RIManager::handle_dm_act, this, _1) );
+      // 
+      LOG(INFO) << "MSRIManager:: constructed; \n" << to_str();
+      
+      signals.async_wait(boost::bind(&RIManager::close, this) );
+      io_service.run();
+    }
+    ~MSRIManager() { LOG(INFO) << "MSRIManager:: destructed."; }
+    
+    std::string to_str()
+    {
+      std::stringstream ss;
+      ss << "\t sdm_slave= \n" << sdm_slave_->to_str() << "\n";
+      return ss.str();
+    }
+};
+
+/***********************************  SSRIManager : RIManager  ************************************/
+class SSRIManager : public RIManager { // Spatial Slave
+  public:
+    SSRIManager(int cl_id, int base_client_id, int num_client,
+                char ds_id, std::string control_lip, int control_lport, std::string join_control_lip, int join_control_lport,
+                std::string data_trans_protocol, std::string ib_lip, std::list<std::string> ib_lport_list,
+                std::string gftp_lintf, std::string gftp_lip, std::string gftp_lport, std::string tmpfs_dir)
+    : RIManager(cl_id, base_client_id, num_client, LUCOOR_DATA_ID,
+                data_trans_protocol, ib_lip, ib_lport_list,
+                gftp_lintf, gftp_lip, gftp_lport, tmpfs_dir)
+    {
+      sdm_slave_ = boost::make_shared<SSDMSlave>(ds_id, control_lip, control_lport, join_control_lip, join_control_lport,
+                                                 boost::bind(&RIManager::handle_rimsg, this, _1), boost::bind(&RIManager::handle_dm_act, this, _1) );
+      // 
+      LOG(INFO) << "SSRIManager:: constructed; \n" << to_str();
+      
+      signals.async_wait(boost::bind(&RIManager::close, this) );
+      io_service.run();
+    }
+    ~SSRIManager() { LOG(INFO) << "SSRIManager:: destructed."; }
+    
+    std::string to_str()
+    {
+      std::stringstream ss;
+      ss << "\t sdm_slave= \n" << sdm_slave_->to_str() << "\n";
+      return ss.str();
+    }
+};
+
+/***********************************  MMRIManager : RIManager  ************************************/
+class MMRIManager : public RIManager { // Markov Master
+  public:
+    MMRIManager(int cl_id, int base_client_id, int num_client,
+                char ds_id, std::string control_lip, int control_lport, std::string join_control_lip, int join_control_lport,
+                MALGO_T malgo_t, int max_num_key_ver_in_mpbuffer, bool w_prefetch,
+                std::string data_trans_protocol, std::string ib_lip, std::list<std::string> ib_lport_list,
+                std::string gftp_lintf, std::string gftp_lip, std::string gftp_lport, std::string tmpfs_dir)
+    : RIManager(cl_id, base_client_id, num_client, KV_DATA_ID,
+                data_trans_protocol, ib_lip, ib_lport_list,
+                gftp_lintf, gftp_lip, gftp_lport, tmpfs_dir)
+    {
+      boost::shared_ptr<SDMSlave> t_sdm_slave_(
+        new MSDMMaster(ds_id, control_lip, control_lport, join_control_lip, join_control_lport,
+                       boost::bind(&RIManager::handle_rimsg, this, _1), boost::bind(&RIManager::handle_dm_act, this, _1),
+                       malgo_t, max_num_key_ver_in_mpbuffer, w_prefetch) );
+      sdm_slave_ = t_sdm_slave_;
+      // 
+      LOG(INFO) << "MMRIManager:: constructed; \n" << to_str();
+      
+      signals.async_wait(boost::bind(&RIManager::close, this) );
+      io_service.run();
+    }
+    ~MMRIManager() { LOG(INFO) << "MMRIManager:: destructed."; }
+    
+    std::string to_str()
+    {
+      std::stringstream ss;
+      ss << "\t sdm_slave= \n" << sdm_slave_->to_str() << "\n";
+      return ss.str();
+    }
+};
+
+/***********************************  SMRIManager : RIManager  ************************************/
+class SMRIManager : public RIManager { // Spatial Master
+  public:
+    SMRIManager(int cl_id, int base_client_id, int num_client,
+                char ds_id, std::string control_lip, int control_lport, std::string join_control_lip, int join_control_lport,
+                SALGO_T salgo_t, COOR_T* lcoor_, COOR_T* ucoor_, int sexpand_length, bool w_prefetch,
+                std::string data_trans_protocol, std::string ib_lip, std::list<std::string> ib_lport_list,
+                std::string gftp_lintf, std::string gftp_lip, std::string gftp_lport, std::string tmpfs_dir)
+    : RIManager(cl_id, base_client_id, num_client, LUCOOR_DATA_ID,
+                data_trans_protocol, ib_lip, ib_lport_list,
+                gftp_lintf, gftp_lip, gftp_lport, tmpfs_dir)
+    {
+      boost::shared_ptr<SDMSlave> t_sdm_slave_(
+        new SSDMMaster(ds_id, control_lip, control_lport, join_control_lip, join_control_lport,
+                       boost::bind(&RIManager::handle_rimsg, this, _1), boost::bind(&RIManager::handle_dm_act, this, _1),
+                       salgo_t, lcoor_, ucoor_, sexpand_length, w_prefetch) );
+      sdm_slave_ = t_sdm_slave_;
+      // 
+      LOG(INFO) << "SMRIManager:: constructed; \n" << to_str();
+      
+      signals.async_wait(boost::bind(&RIManager::close, this) );
+      io_service.run();
+    }
+    ~SMRIManager() { LOG(INFO) << "SMRIManager:: destructed."; }
+    
+    std::string to_str()
+    {
+      std::stringstream ss;
+      ss << "\t sdm_slave= \n" << sdm_slave_->to_str() << "\n";
+      return ss.str();
+    }
 };
 
 #endif //end of _REMOTE_INTERACT_H_

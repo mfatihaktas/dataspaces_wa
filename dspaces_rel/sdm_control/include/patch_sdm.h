@@ -14,7 +14,7 @@ const DATA_ID_T KV_DATA_ID = 'k';
 const DATA_ID_T LUCOOR_DATA_ID = 'l';
 
 namespace patch_sdm {
-  std::string get_data_id(DATA_ID_T data_id_t, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_);
+  std::string get_data_id(DATA_ID_T data_id_t, std::string key, unsigned int ver, COOR_T* lb_, COOR_T* ub_);
   
   #define HASH_PRIME 54059
   #define HASH_PRIME_2 76963
@@ -73,18 +73,19 @@ namespace patch_sdm {
     public:
       MsgCoder();
       ~MsgCoder();
+      
       std::map<std::string, std::string> decode(char* msg);
       std::string encode(std::map<std::string, std::string> msg_map);
       
       int decode_msg_map(std::map<std::string, std::string> msg_map,
-                         int &ndim, std::string& key, unsigned int& ver, COOR_T* &lcoor_, COOR_T* &ucoor_);
+                         int &ndim, std::string& key, unsigned int& ver, COOR_T* &lb_, COOR_T* &ub_);
       
       int decode_msg_map(std::map<std::string, std::string> msg_map,
                          std::string& key, unsigned int& ver, std::string& data_type,
                          int& size, int& ndim, uint64_t* &gdim_, uint64_t* &lb_, uint64_t* &ub_);
       
       int encode_msg_map(std::map<std::string, std::string> &msg_map,
-                         int ndim, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_);
+                         int ndim, std::string key, unsigned int ver, COOR_T* lb_, COOR_T* ub_);
       
       int encode_msg_map(std::map<std::string, std::string> &msg_map, 
                          std::string key, unsigned int ver, std::string data_type,

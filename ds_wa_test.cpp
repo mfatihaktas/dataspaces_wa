@@ -92,13 +92,13 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
       std::cout << "\t" << argv[optind++] << "\n";
   }
   // 
-  std::cout << "parse_opts:: opt_map= \n" << patch_sfc::map_to_str<>(opt_map);
+  std::cout << "parse_opts:: opt_map= \n" << patch_all::map_to_str<>(opt_map);
   
   return opt_map;
 }
 
 #define TEST_SIZE 512
-#define TEST_NDIM 3
+#define TEST_NDIM 1
 #define TEST_DATASIZE pow(TEST_SIZE, TEST_NDIM)
 #define TEST_VER 0
 #define TEST_SGDIM 1024
@@ -134,7 +134,7 @@ void multi_get_test(int num_gets, float inter_get_time_sec, std::string base_var
   // int data_length = patch::get_data_length(TEST_NDIM, gdim, lb, ub);
   // patch_ds::debug_print(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_, data_length);
   
-  patch_sdm::free_all<uint64_t>(3, gdim_, lb_, ub_);
+  patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
   free(data_);
 }
 
@@ -166,7 +166,7 @@ void multi_put_test(int num_puts, float inter_put_time_sec, std::string base_var
   }
   // patch_ds::debug_print(var_name, TEST_VER, sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_, patch::get_data_length(TEST_NDIM, gdim_, lb_, ub_) );
   
-  patch_sdm::free_all<uint64_t>(3, gdim_, lb_, ub_);
+  patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
   free(data_);
 }
 

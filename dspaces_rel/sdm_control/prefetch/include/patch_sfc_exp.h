@@ -218,7 +218,7 @@ void spcsim_test()
                  p_id__num_put_v, c_id__num_get_v,
                  p_id__put_rate_v, c_id__get_rate_v,
                  p_id__inter_arr_time_v_v, c_id__inter_arr_time_v_v,
-                 HSALGO, sexpand_length, lcoor_, ucoor_, w_prefetch);
+                 SALGO_H, sexpand_length, lcoor_, ucoor_, w_prefetch);
   
   spc_sim.sim_all();
   

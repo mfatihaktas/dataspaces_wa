@@ -2,13 +2,13 @@
 
 /********************************************  RFPManager  ****************************************/
 RFPManager::RFPManager(char data_id_t, std::string trans_protocol,
-                       std::string ib_laddr, std::list<std::string> ib_lport_list,
-                       std::string gftp_lintf, std::string gftp_laddr, std::string gftp_lport, std::string tmpfs_dir,
+                       std::string ib_lip, std::list<std::string> ib_lport_list,
+                       std::string gftp_lintf, std::string gftp_lip, std::string gftp_lport, std::string tmpfs_dir,
                        boost::shared_ptr<DSDriver> ds_driver_)
 : data_id_t(data_id_t),
   t_manager_(boost::make_shared<TManager>(trans_protocol, 
-                                          ib_laddr, ib_lport_list,
-                                          gftp_lintf, gftp_laddr, gftp_lport, tmpfs_dir) ),
+                                          ib_lip, ib_lport_list,
+                                          gftp_lintf, gftp_lip, gftp_lport, tmpfs_dir) ),
   ds_driver_(ds_driver_)
 {
   // 
@@ -21,7 +21,7 @@ std::string RFPManager::to_str()
 {
   std::stringstream ss;
   ss << "data_id_t= " << data_id_t << "\n"
-     << "t_manager= " << t_manager_->to_str() << "\n";
+     << "t_manager= \n" << t_manager_->to_str() << "\n";
   
   return ss.str();
 }
@@ -73,7 +73,7 @@ int RFPManager::wa_put(std::string laddr, std::string lport, std::string tmpfs_d
     return 1;
   }
   
-  std::string data_id = get_data_id(data_id_t, key, ver, lb_, ub_);
+  std::string data_id = patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_);
   if (t_manager_->init_put(laddr, lport, tmpfs_dir, data_id, data_type, data_length, data_) ) {
     LOG(ERROR) << "wa_put:: t_manager_->init_put failed for " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
     return 1;
@@ -91,7 +91,7 @@ int RFPManager::wa_get(std::string laddr, std::string lport, std::string tmpfs_d
   LOG(INFO) << "wa_get:: started laddr= " << laddr << ", lport= " << lport << "; \n"
             << "\t" << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
   
-  std::string data_id = get_data_id(data_id_t, key, ver, lb_, ub_);
+  std::string data_id = patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_);
   
   data_id__recved_size_map[data_id] = 0;
   data_id__data_map[data_id] = malloc(size*get_data_length(ndim, gdim_, lb_, ub_) );
@@ -134,53 +134,22 @@ void RFPManager::handle_recv(std::string data_id, int data_size, void* data_)
   data_id__recved_size_map[data_id] += data_size;
 }
 
-/********************************************  RIManager  ****************************************/
-RIManager::RIManager(int cl_id, int base_client_id, int num_client,
-                     char ds_id, std::string control_lip, int control_lport, std::string join_control_lip, int join_control_lport,
-                     std::string data_trans_protocol, std::string ib_laddr, std::list<std::string> ib_lport_list,
-                     std::string gftp_lintf, std::string gftp_laddr, std::string gftp_lport, std::string tmpfs_dir,
-                     char predictor_t, int pbuffer_size, int pexpand_length, COOR_T* lcoor_, COOR_T* ucoor_)
-: cl_id(cl_id), base_client_id(base_client_id), num_client(num_client),
-  ds_id(ds_id),
+/********************************************  RIManager  *****************************************/
+RIManager::RIManager(int cl_id, int base_client_id, int num_client, DATA_ID_T data_id_t,
+                     std::string data_trans_protocol, std::string ib_lip, std::list<std::string> ib_lport_list,
+                     std::string gftp_lintf, std::string gftp_lip, std::string gftp_lport, std::string tmpfs_dir)
+: cl_id(cl_id), base_client_id(base_client_id), num_client(num_client), data_id_t(data_id_t),
+  data_trans_protocol(data_trans_protocol),
   ds_driver_(new DSDriver(cl_id, num_client) ),
   bc_server_(boost::make_shared<BCServer>(cl_id, base_client_id, num_client, CL__RIMANAGER_MAX_MSG_SIZE,
                                           "req_app_", boost::bind(&RIManager::handle_app_req, this, _1), ds_driver_) ),
+  rfp_manager_(
+    boost::make_shared<RFPManager>(data_id_t, data_trans_protocol,
+                                   ib_lip, ib_lport_list,
+                                   gftp_lintf, gftp_lip, gftp_lport, tmpfs_dir, ds_driver_) ),
   signals(io_service, SIGINT)
 {
-  char data_id_t;
-  if (predictor_t == HILBERT_PREDICTOR)
-    data_id_t = LUCOOR_DATA_ID;
-  // else if (predictor_t == HILBERT_PREDICTOR)
-    // data_id_t = KV_DATA_ID;
-  else {
-    LOG(ERROR) << "RIManager:: unknown predictor_t= " << predictor_t;
-    exit(1);
-  }
-  rfp_manager_ = boost::make_shared<RFPManager>(data_id_t, data_trans_protocol,
-                                                ib_laddr, ib_lport_list,
-                                                gftp_lintf, gftp_laddr, gftp_lport, tmpfs_dir, ds_driver_);
-  
-  // Note: boost::make_shared does not accept more than 10 args
-  if (str_cstr_equals(join_control_lip, "") ) {
-    boost::shared_ptr<SDMSlave> t_sdm_slave_(
-      new SDMMaster(data_id_t, boost::bind(&RIManager::handle_dm_act, this, _1),
-                    ds_id, control_lip, control_lport, join_control_lip, join_control_lport,
-                    boost::bind(&RIManager::handle_rimsg, this, _1),
-                    predictor_t, pbuffer_size, pexpand_length, lcoor_, ucoor_) );
-    sdm_slave_ = t_sdm_slave_;
-  }
-  else {
-    boost::shared_ptr<SDMSlave> t_sdm_slave_(
-      new SDMSlave(data_id_t, boost::bind(&RIManager::handle_dm_act, this, _1), "s",
-                   ds_id, control_lip, control_lport, join_control_lip, join_control_lport,
-                   boost::bind(&RIManager::handle_rimsg, this, _1) ) );
-    sdm_slave_ = t_sdm_slave_;
-  }
-  
   bc_server_->init_listen_all();
-  // 
-  signals.async_wait(boost::bind(&RIManager::close, this) );
-  io_service.run();
   // 
   LOG(INFO) << "RIManager:: constructed; \n" << to_str();
 }
@@ -208,8 +177,6 @@ std::string RIManager::to_str()
   std::stringstream ss;
   ss << "\t cl_id= " << cl_id << "\n"
      << "\t num_client= " << num_client << "\n"
-     << "\t ds_id= " << ds_id << "\n"
-     << "\t sdm_slave= \n" << sdm_slave_->to_str() << "\n"
      << "\t rfp_manager= \n" << rfp_manager_->to_str() << "\n";
   
   return ss.str();
@@ -241,9 +208,14 @@ void RIManager::handle_app_req(char* app_req)
 
 void RIManager::handle_get(bool blocking, int cl_id, std::map<std::string, std::string> get_map)
 {
-  LOG(INFO) << "handle_get:: get_map= \n" << patch_sfc::map_to_str<>(get_map);
+  LOG(INFO) << "handle_get:: get_map= \n" << patch_all::map_to_str<>(get_map);
   
   sdm_slave_->reg_app(cl_id);
+  
+  if (blocking)
+    get_map["type"] = BLOCKING_GET_REPLY;
+  else
+    get_map["type"] = GET_REPLY;
   
   std::string key;
   unsigned int ver;
@@ -251,33 +223,29 @@ void RIManager::handle_get(bool blocking, int cl_id, std::map<std::string, std::
   uint64_t *gdim_, *lb_, *ub_;
   std::string data_type;
   if (msg_coder.decode_msg_map(get_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_) ) {
-    LOG(ERROR) << "handle_get:: msg_coder.decode_msg_map failed! get_map= \n" << patch_sfc::map_to_str<>(get_map);
-    return;
-  }
-  
-  if (blocking)
-    get_map["type"] = BLOCKING_GET_REPLY;
-  else
-    get_map["type"] = GET_REPLY;
-  
-  if (sdm_slave_->get(blocking, key, ver, lb_, ub_) ) {
-    LOG(INFO) << "handle_get:: does not exist " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
+    LOG(ERROR) << "handle_get:: msg_coder.decode_msg_map failed! get_map= \n" << patch_all::map_to_str<>(get_map);
     get_map["ds_id"] = '?';
   }
-  else
-    get_map["ds_id"] = ds_id;
-  // 
-  cl_id__bc_client_map[cl_id]->send(get_map);
-  bc_server_->reinit_listen_client(cl_id);
+  else {
+    if (sdm_slave_->get(blocking, key, ver, lb_, ub_) ) {
+      LOG(INFO) << "handle_get:: does not exist " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
+      get_map["ds_id"] = '?';
+    }
+    else
+      get_map["ds_id"] = sdm_slave_->get_id();
+  }
   
-  patch_sdm::free_all<uint64_t>(3, gdim_, lb_, ub_);
+  cl_id__bc_client_map[cl_id]->send(get_map);
+  patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
 }
 
 void RIManager::handle_put(int p_id, std::map<std::string, std::string> put_map)
 {
-  LOG(INFO) << "handle_put:: put_map= \n" << patch_sfc::map_to_str<>(put_map);
+  LOG(INFO) << "handle_put:: put_map= \n" << patch_all::map_to_str<>(put_map);
   
   sdm_slave_->reg_app(p_id);
+  
+  put_map["type"] = PUT_REPLY;
   
   std::string key;
   unsigned int ver;
@@ -285,16 +253,20 @@ void RIManager::handle_put(int p_id, std::map<std::string, std::string> put_map)
   uint64_t *gdim_, *lb_, *ub_;
   std::string data_type;
   if (msg_coder.decode_msg_map(put_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_) ) {
-    LOG(ERROR) << "handle_put:: msg_coder.decode_msg_map failed! get_map= \n" << patch_sfc::map_to_str<>(put_map);
-    return;
+    LOG(ERROR) << "handle_put:: msg_coder.decode_msg_map failed! get_map= \n" << patch_all::map_to_str<>(put_map);
+    put_map["ds_id"] = '?';
+  }
+  else {
+    if (sdm_slave_->put(true, key, ver, lb_, ub_, p_id) ) {
+      LOG(ERROR) << "handle_put:: sdm_slave_->put failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
+      put_map["ds_id"] = '?';
+    }
+    else
+      put_map["ds_id"] = sdm_slave_->get_id();
   }
   
-  if (sdm_slave_->put(true, key, ver, lb_, ub_, p_id) ) {
-    LOG(ERROR) << "handle_put:: sdm_slave_->put failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
-    return;
-  }
-  
-  patch_sdm::free_all<uint64_t>(3, gdim_, lb_, ub_);
+  cl_id__bc_client_map[p_id]->send(put_map);
+  patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
 }
 
 // ------------------------------------  handle rimsg  ------------------------------------------ //
@@ -303,7 +275,7 @@ int RIManager::t_info_query(char to_id)
   std::map<std::string, std::string> msg_map;
   msg_map["type"] = RI_TINFO_QUERY;
   if (sdm_slave_->send_rimsg(to_id, msg_map) ) {
-    LOG(ERROR) << "t_info_query:: sdm_slave_->send_rimsg failed msg_map= \n" << patch_sfc::map_to_str<>(msg_map);
+    LOG(ERROR) << "t_info_query:: sdm_slave_->send_rimsg failed msg_map= \n" << patch_all::map_to_str<>(msg_map);
     return 1;
   }
   
@@ -330,7 +302,7 @@ void RIManager::handle_rimsg(std::map<std::string, std::string> msg_map)
 
 void RIManager::handle_tinfo_query(std::map<std::string, std::string> msg_map)
 {
-  LOG(INFO) << "handle_tinfo_query:: msg_map= \n" << patch_sfc::map_to_str<>(msg_map);
+  LOG(INFO) << "handle_tinfo_query:: msg_map= \n" << patch_all::map_to_str<>(msg_map);
   
   msg_map["type"] = RI_TINFO_QUERY_REPLY;
   msg_map["laddr"] = rfp_manager_->get_laddr();
@@ -341,21 +313,21 @@ void RIManager::handle_tinfo_query(std::map<std::string, std::string> msg_map)
     boost::thread(&RIManager::remote_get, this, msg_map);
   
   if (sdm_slave_->send_rimsg(boost::lexical_cast<char>(msg_map["id"] ), msg_map) ) {
-    LOG(ERROR) << "handle_tinfo_query:: sdm_slave_->send_rimsg failed msg_map= \n" << patch_sfc::map_to_str<>(msg_map);
+    LOG(ERROR) << "handle_tinfo_query:: sdm_slave_->send_rimsg failed msg_map= \n" << patch_all::map_to_str<>(msg_map);
     return;
   }
 }
 
 void RIManager::remote_get(std::map<std::string, std::string> msg_map)
 {
-  LOG(INFO) << "remote_get:: msg_map= \n" << patch_sfc::map_to_str<>(msg_map);
+  LOG(INFO) << "remote_get:: msg_map= \n" << patch_all::map_to_str<>(msg_map);
   
   std::string key, data_type;
   unsigned ver;
   int size, ndim;
   uint64_t *gdim_, *lb_, *ub_;
   if (msg_coder.decode_msg_map(msg_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_) ) {
-    LOG(ERROR) << "remote_get:: msg_coder.decode_msg_map failed; msg_map= \n" << patch_sfc::map_to_str<>(msg_map);
+    LOG(ERROR) << "remote_get:: msg_coder.decode_msg_map failed; msg_map= \n" << patch_all::map_to_str<>(msg_map);
     return;
   }
   
@@ -367,19 +339,19 @@ void RIManager::remote_get(std::map<std::string, std::string> msg_map)
   
   sdm_slave_->put(false, key, ver, lb_, ub_, REMOTE_P_ID);
   
-  patch_sdm::free_all<uint64_t>(3, gdim_, lb_, ub_);
+  patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
 }
 
 void RIManager::remote_put(std::map<std::string, std::string> msg_map)
 {
-  LOG(INFO) << "remote_put:: msg_map= \n" << patch_sfc::map_to_str<>(msg_map);
+  LOG(INFO) << "remote_put:: msg_map= \n" << patch_all::map_to_str<>(msg_map);
   
   std::string key, data_type;
   unsigned ver;
   int size, ndim;
   uint64_t *gdim_, *lb_, *ub_;
   if (msg_coder.decode_msg_map(msg_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_) ) {
-    LOG(ERROR) << "remote_put:: msg_coder.decode_msg_map failed; msg_map= \n" << patch_sfc::map_to_str<>(msg_map);
+    LOG(ERROR) << "remote_put:: msg_coder.decode_msg_map failed; msg_map= \n" << patch_all::map_to_str<>(msg_map);
     return;
   }
   
@@ -391,12 +363,12 @@ void RIManager::remote_put(std::map<std::string, std::string> msg_map)
     return;
   }
   
-  patch_sdm::free_all<uint64_t>(3, gdim_, lb_, ub_);
+  patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
 }
 
 void RIManager::handle_tinfo_query_reply(std::map<std::string, std::string> msg_map)
 {
-  LOG(INFO) << "handle_tinfo_query_reply:: msg_map= \n" << patch_sfc::map_to_str<>(msg_map);
+  LOG(INFO) << "handle_tinfo_query_reply:: msg_map= \n" << patch_all::map_to_str<>(msg_map);
   
   char from_id = boost::lexical_cast<char>(msg_map["id"] );
   if (ds_id__t_info_map.contains(from_id) )
@@ -410,7 +382,7 @@ void RIManager::handle_tinfo_query_reply(std::map<std::string, std::string> msg_
 
 void RIManager::handle_gridftp_put(std::map<std::string, std::string> msg_map)
 {
-  LOG(INFO) << "handle_gridftp_put:: msg_map= \n" << patch_sfc::map_to_str<>(msg_map);
+  LOG(INFO) << "handle_gridftp_put:: msg_map= \n" << patch_all::map_to_str<>(msg_map);
   
   if (str_str_equals(data_trans_protocol, GRIDFTP) )
     remote_get(msg_map);
@@ -433,7 +405,7 @@ void RIManager::handle_dm_act(std::map<std::string, std::string> dm_act_map)
 
 void RIManager::handle_dm_move(std::map<std::string, std::string> msg_map)
 {
-  LOG(INFO) << "handle_dm_move:: msg_map= \n" << patch_sfc::map_to_str<>(msg_map);
+  LOG(INFO) << "handle_dm_move:: msg_map= \n" << patch_all::map_to_str<>(msg_map);
   
   char to_id = boost::lexical_cast<char>(msg_map["to_id"] );
   if (!ds_id__t_info_map.contains(to_id) || str_str_equals(data_trans_protocol, INFINIBAND) )
@@ -444,7 +416,7 @@ void RIManager::handle_dm_move(std::map<std::string, std::string> msg_map)
   if (str_str_equals(data_trans_protocol, GRIDFTP) ) {
     msg_map["type"] = RI_GRIDFTP_PUT;
     if (sdm_slave_->send_rimsg(to_id, msg_map) ) {
-      LOG(ERROR) << "handle_dm_move:: sdm_slave_->send_rimsg failed msg_map= \n" << patch_sfc::map_to_str<>(msg_map);
+      LOG(ERROR) << "handle_dm_move:: sdm_slave_->send_rimsg failed msg_map= \n" << patch_all::map_to_str<>(msg_map);
       return;
     }
   }

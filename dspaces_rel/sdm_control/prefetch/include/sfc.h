@@ -26,7 +26,7 @@
 #include "hilbert.h"
 #include "patch_pre.h"
 
-#define NDIM 2
+#define NDIM 1
 typedef uint64_t COOR_T;
 typedef boost::geometry::model::point<int, NDIM, boost::geometry::cs::cartesian> point_t;
 typedef boost::geometry::model::box<point_t> box_t;
@@ -312,7 +312,7 @@ typedef boost::icl::interval_set<bitmask_t> index_interval_set_t;
 // typedef boost::icl::interval_map<bitmask_t, std::set<char> > index_interval__ds_id_set_map_t;
 
 typedef char SALGO_T;
-const SALGO_T HSALGO = 'h';
+const SALGO_T SALGO_H = 'h';
 
 class SAlgo {
   protected:

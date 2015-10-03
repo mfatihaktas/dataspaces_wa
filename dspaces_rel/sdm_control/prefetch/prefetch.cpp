@@ -293,7 +293,8 @@ int WASpace::reg_app(int app_id, char ds_id)
 /******************************************  MWASpace  ********************************************/
 MWASpace::MWASpace(std::vector<char> ds_id_v,
                    MALGO_T malgo_t, int max_num_key_ver_in_mpbuffer, bool w_prefetch, func_handle_data_act_cb handle_data_act_cb)
-: WASpace(ds_id_v, handle_data_act_cb)
+: WASpace(ds_id_v, handle_data_act_cb),
+  max_num_key_ver_in_mpbuffer(max_num_key_ver_in_mpbuffer), malgo_t(malgo_t), w_prefetch(w_prefetch)
 {
   for (std::vector<char>::iterator it = ds_id_v.begin(); it != ds_id_v.end(); it++) {
     ds_id__kv_vp_map[*it] = boost::make_shared<patch_all::thread_safe_vector<key_ver_pair> >();
@@ -307,13 +308,22 @@ MWASpace::MWASpace(std::vector<char> ds_id_v,
 
 MWASpace::~MWASpace()
 {
-  // LOG(INFO) << "MWASpace:: destructed; \n" << to_str_end();
+  LOG(INFO) << "MWASpace:: destructed; \n" << to_str_end();
 }
 
 std::string MWASpace::to_str()
 {
   std::stringstream ss;
+  ss << "max_num_key_ver_in_mpbuffer= " << max_num_key_ver_in_mpbuffer << "\n"
+     << "malgo_t= " << malgo_t << "\n"
+     << "w_prefetch= " << w_prefetch << "\n";
   
+  return ss.str();
+}
+
+std::string MWASpace::to_str_end()
+{
+  std::stringstream ss;
   ss << "kv_v= ";
   for (std::vector<key_ver_pair>::iterator it = kv_v.begin(); it != kv_v.end(); it++)
     ss << KV_TO_STR(it->first, it->second) << ", ";
@@ -355,15 +365,18 @@ std::string MWASpace::to_str()
   return ss.str();
 }
 
-// std::string MWASpace::to_str_end()
-// {
-//   std::stringstream ss;
-//   ss << "p_id__key_map= \n";
-//   for (std::map<int, std::vector<std::string> >::iterator it = p_id__key_map.begin(); it != p_id__key_map.end(); it++)
-//     ss << it->first << " : " << patch_all::vec_to_str(it->second) << "\n";
-  
-//   return ss.str();
-// }
+int MWASpace::reg_ds(char ds_id)
+{
+  if (WASpace::reg_ds(ds_id) ) {
+    LOG(ERROR) << "reg_ds:: WASpace::reg_ds failed; ds_id= " << ds_id;
+    return 1;
+  }
+  ds_id__kv_vp_map[ds_id] = boost::make_shared<patch_all::thread_safe_vector<key_ver_pair> >();
+  ds_id__mpbuffer_map[ds_id] = boost::make_shared<MPBuffer>(ds_id, max_num_key_ver_in_mpbuffer, malgo_t,
+                                                            w_prefetch, boost::bind(&MWASpace::handle_mpbuffer_data_act, this, _1, _2, _3) );
+
+  return 0;
+}
 
 int MWASpace::del(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, char ds_id)
 {
@@ -462,7 +475,7 @@ SWASpace::SWASpace(std::vector<char> ds_id_v,
 {
   IS_VALID_BOX("SWASpace", lcoor_, ucoor_, exit(1) )
   
-  if (salgo_t == HSALGO)
+  if (salgo_t == SALGO_H)
     salgo_ = boost::make_shared<HSAlgo>(lcoor_, ucoor_, sexpand_length);
   else {
     LOG(ERROR) << "SWASpace:: unknown salgo_t= " << salgo_t;
@@ -475,8 +488,7 @@ SWASpace::SWASpace(std::vector<char> ds_id_v,
 std::string SWASpace::to_str()
 {
   std::stringstream ss;
-  ss << "WASpace::to_str= \n" << WASpace::to_str() << "\n"
-     << "salgo= \n" << salgo_->to_str() << "\n";
+  ss << "salgo= \n" << salgo_->to_str() << "\n";
     // << "qtable= \n" << qtable_->to_str() << "\n";
   
   return ss.str();

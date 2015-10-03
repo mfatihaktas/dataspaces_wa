@@ -99,9 +99,8 @@ void master_test(std::map<std::string, std::string> opt_map)
   COOR_T lcoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 0) };
   COOR_T ucoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 10) };
   
-  MSDMMaster master(boost::bind(&handle_dm_act, _1),
-                    opt_map["id"].c_str()[0], intf_to_ip(opt_map["lintf"] ), boost::lexical_cast<int>(opt_map["lport"] ), opt_map["joinhost_lip"], boost::lexical_cast<int>(opt_map["joinhost_lport"] ),
-                    boost::bind(&handle_rimsg_recv, _1),
+  MSDMMaster master(opt_map["id"].c_str()[0], intf_to_ip(opt_map["lintf"] ), boost::lexical_cast<int>(opt_map["lport"] ), opt_map["joinhost_lip"], boost::lexical_cast<int>(opt_map["joinhost_lport"] ),
+                    boost::bind(&handle_rimsg_recv, _1), boost::bind(&handle_dm_act, _1),
                     MALGO_W_PPM, max_num_key_ver_in_mpbuffer, false);
   
   // COOR_T m_lcoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 0) };
@@ -121,9 +120,8 @@ void master_test(std::map<std::string, std::string> opt_map)
 
 void slave_test(std::map<std::string, std::string> opt_map)
 {
-  MSDMSlave slave(boost::bind(&handle_dm_act, _1), "s",
-                  opt_map["id"].c_str()[0], intf_to_ip(opt_map["lintf"] ), boost::lexical_cast<int>(opt_map["lport"] ), opt_map["joinhost_lip"], boost::lexical_cast<int>(opt_map["joinhost_lport"] ),
-                  boost::bind(&handle_rimsg_recv, _1) );
+  MSDMSlave slave(opt_map["id"].c_str()[0], intf_to_ip(opt_map["lintf"] ), boost::lexical_cast<int>(opt_map["lport"] ), opt_map["joinhost_lip"], boost::lexical_cast<int>(opt_map["joinhost_lport"] ),
+                  boost::bind(&handle_rimsg_recv, _1), boost::bind(&handle_dm_act, _1) );
   std::cout << "Enter for test... \n";
   getline(std::cin, temp);
   

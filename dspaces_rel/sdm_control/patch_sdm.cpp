@@ -1,12 +1,12 @@
 #include "patch_sdm.h"
 
 namespace patch_sdm {
-  std::string get_data_id(char data_id_t, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_)
+  std::string get_data_id(char data_id_t, std::string key, unsigned int ver, COOR_T* lb_, COOR_T* ub_)
   {
     if (data_id_t == KV_DATA_ID)
       return key + "_" + boost::lexical_cast<std::string>(ver);
     else if (data_id_t == LUCOOR_DATA_ID)
-      return patch_all::arr_to_str<>(NDIM, lcoor_) + "_" + patch_all::arr_to_str<>(NDIM, ucoor_);
+      return patch_all::arr_to_str<>(NDIM, lb_) + "_" + patch_all::arr_to_str<>(NDIM, ub_);
     else
       LOG(ERROR) << "get_data_id:: unknown data_id_t= " << data_id_t;
   }
@@ -49,7 +49,7 @@ namespace patch_sdm {
   }
   
   int MsgCoder::decode_msg_map(std::map<std::string, std::string> msg_map,
-                               int& ndim, std::string& key, unsigned int& ver, COOR_T* &lcoor_, COOR_T* &ucoor_)
+                               int& ndim, std::string& key, unsigned int& ver, COOR_T* &lb_, COOR_T* &ub_)
   {
     try {
       ndim = boost::lexical_cast<int>(msg_map["ndim"] );
@@ -58,17 +58,17 @@ namespace patch_sdm {
       
       boost::char_separator<char> sep(",");
       
-      boost::tokenizer<boost::char_separator<char> > lcoor_tokens(msg_map["lcoor_"], sep);
-      boost::tokenizer<boost::char_separator<char> > ucoor_tokens(msg_map["ucoor_"], sep);
+      boost::tokenizer<boost::char_separator<char> > lb_tokens(msg_map["lb_"], sep);
+      boost::tokenizer<boost::char_separator<char> > ub_tokens(msg_map["ub_"], sep);
       
-      lcoor_ = (COOR_T*)malloc(ndim*sizeof(COOR_T) );
-      ucoor_ = (COOR_T*)malloc(ndim*sizeof(COOR_T) );
+      lb_ = (COOR_T*)malloc(ndim*sizeof(COOR_T) );
+      ub_ = (COOR_T*)malloc(ndim*sizeof(COOR_T) );
       
-      boost::tokenizer<boost::char_separator<char> >::iterator lcoor_it = lcoor_tokens.begin();
-      boost::tokenizer<boost::char_separator<char> >::iterator ucoor_it = ucoor_tokens.begin();
-      for (int i = 0; i < ndim; i++, lcoor_it++, ucoor_it++) {
-        lcoor_[i] = boost::lexical_cast<COOR_T>(*lcoor_it);
-        ucoor_[i] = boost::lexical_cast<COOR_T>(*ucoor_it);
+      boost::tokenizer<boost::char_separator<char> >::iterator lb_it = lb_tokens.begin();
+      boost::tokenizer<boost::char_separator<char> >::iterator ub_it = ub_tokens.begin();
+      for (int i = 0; i < ndim; i++, lb_it++, ub_it++) {
+        lb_[i] = boost::lexical_cast<COOR_T>(*lb_it);
+        ub_[i] = boost::lexical_cast<COOR_T>(*ub_it);
       }
     }
     catch (std::exception& ex) {
@@ -116,14 +116,14 @@ namespace patch_sdm {
   }
   
   int MsgCoder::encode_msg_map(std::map<std::string, std::string> &msg_map,
-                               int ndim, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_)
+                               int ndim, std::string key, unsigned int ver, COOR_T* lb_, COOR_T* ub_)
   {
     try {
       msg_map["ndim"] = boost::lexical_cast<std::string>(ndim);
       msg_map["key"] = key;
       msg_map["ver"] = boost::lexical_cast<std::string>(ver);
-      msg_map["lcoor_"] = patch_all::arr_to_str<>(ndim, lcoor_);
-      msg_map["ucoor_"] = patch_all::arr_to_str<>(ndim, ucoor_);
+      msg_map["lb_"] = patch_all::arr_to_str<>(ndim, lb_);
+      msg_map["ub_"] = patch_all::arr_to_str<>(ndim, ub_);
     }
     catch(std::exception& ex) {
       LOG(ERROR) << "encode_msg_map:: Exception=" << ex.what();

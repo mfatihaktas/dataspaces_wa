@@ -6,7 +6,7 @@
 // initializing it with arbitrary app_id's.
 // Overall, app_id is used for DSDriver, _app_id is used as the application id
 WADSDriver::WADSDriver(int app_id, int base_client_id, int num_local_peers,
-                       char data_id_t)
+                       DATA_ID_T data_id_t)
 : app_id(app_id), base_client_id(base_client_id), num_local_peers(num_local_peers), data_id_t(data_id_t),
   _app_id(base_client_id + app_id),
   ds_driver_ (boost::make_shared<DSDriver>(num_local_peers, app_id) ),
@@ -17,7 +17,7 @@ WADSDriver::WADSDriver(int app_id, int base_client_id, int num_local_peers,
 }
 
 WADSDriver::WADSDriver(int app_id, int base_client_id, int num_local_peers,
-                       char data_id_t, MPI_Comm mpi_comm)
+                       DATA_ID_T data_id_t, MPI_Comm mpi_comm)
 : app_id(app_id), base_client_id(base_client_id), num_local_peers(num_local_peers), data_id_t(data_id_t),
   _app_id(base_client_id + app_id),
   ds_driver_ (boost::make_shared<DSDriver>(mpi_comm, num_local_peers, app_id) ),
@@ -42,9 +42,26 @@ int WADSDriver::put(std::string key, unsigned int ver, std::string data_type,
   msg_map["cl_id"] = boost::lexical_cast<std::string>(_app_id);
   msg_coder.encode_msg_map(msg_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_);
   if (bc_client_->send(msg_map) ) {
-    LOG(ERROR) << "put:: bc_client_->send failed; msg_map= " << patch_sfc::map_to_str<>(msg_map);
+    LOG(ERROR) << "put:: bc_client_->send failed; msg_map= " << patch_all::map_to_str<>(msg_map);
     return 1;
   }
+  // To check if put was a success
+  boost::shared_ptr<BCServer> bc_server_ = 
+    boost::make_shared<BCServer>(_app_id, CL__RIMANAGER_MAX_MSG_SIZE, "reply_app_",
+                                 boost::bind(&WADSDriver::handle_ri_reply, this, _1), ds_driver_);
+  bc_server_->init_listen_client(_app_id);
+  
+  std::string data_id = patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_);
+  unsigned int sync_point = patch_sdm::hash_str(PUT_REPLY + "_" + data_id);
+  syncer.add_sync_point(sync_point, 1);
+  syncer.wait(sync_point);
+  syncer.del_sync_point(sync_point);
+  
+  if (data_id__ds_id_map[data_id] == '?') {
+    data_id__ds_id_map.del(data_id);
+    return 1;
+  }
+  data_id__ds_id_map.del(data_id);
   
   return 0;
 }
@@ -72,14 +89,13 @@ int WADSDriver::get(bool blocking, std::string key, unsigned int ver, std::strin
                                  boost::bind(&WADSDriver::handle_ri_reply, this, _1), ds_driver_);
   bc_server_->init_listen_client(_app_id);
   
-  std::string data_id = get_data_id(data_id_t, key, ver, lb_, ub_);
-  unsigned int sync_point = patch_sdm::hash_str(msg_map["type"] + "_" + data_id);
+  std::string data_id = patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_);
+  unsigned int sync_point = patch_sdm::hash_str(GET_REPLY + "_" + data_id);
   syncer.add_sync_point(sync_point, 1);
   syncer.wait(sync_point);
   syncer.del_sync_point(sync_point);
   
   if (data_id__ds_id_map[data_id] == '?') {
-    LOG(INFO) << "get:: " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
     data_id__ds_id_map.del(data_id);
     return 1;
   }
@@ -96,22 +112,24 @@ int WADSDriver::get(bool blocking, std::string key, unsigned int ver, std::strin
 int WADSDriver::handle_ri_reply(char* ri_reply_)
 {
   std::map<std::string, std::string> ri_reply_map = msg_coder.decode(ri_reply_);
-  LOG(INFO) << "handle_ri_reply:: ri_reply_map= \n" << patch_sfc::map_to_str<>(ri_reply_map);
+  LOG(INFO) << "handle_ri_reply:: ri_reply_map= \n" << patch_all::map_to_str<>(ri_reply_map);
   
   int ndim;
   std::string key;
   unsigned int ver;
   COOR_T *lb_, *ub_;
   if (msg_coder.decode_msg_map(ri_reply_map, ndim, key, ver, lb_, ub_) ) {
-    LOG(ERROR) << "handle_ri_reply:: msg_coder.decode_msg_map failed for ri_reply_map= \n" << patch_sfc::map_to_str<>(ri_reply_map);
+    LOG(ERROR) << "handle_ri_reply:: msg_coder.decode_msg_map failed for ri_reply_map= \n" << patch_all::map_to_str<>(ri_reply_map);
+    patch_all::free_all<COOR_T>(2, lb_, ub_);
     return 1;
   }
   
-  std::string data_id = get_data_id(data_id_t, key, ver, lb_, ub_);
+  std::string data_id = patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_);
   data_id__ds_id_map[data_id] = boost::lexical_cast<char>(ri_reply_map["ds_id"] );
   
   unsigned int sync_point = patch_sdm::hash_str(ri_reply_map["type"] + "_" + data_id);
   syncer.notify(sync_point);
   
+  patch_all::free_all<COOR_T>(2, lb_, ub_);
   return 0;
 }
