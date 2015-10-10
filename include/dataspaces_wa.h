@@ -1,7 +1,6 @@
 #ifndef _DSWA_H_
 #define _DSWA_H_
 
-#include "ds_client.h"
 #include "remote_interact.h"
 
 #define RI_MSG_SIZE 1000

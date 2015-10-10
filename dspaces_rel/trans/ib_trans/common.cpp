@@ -120,7 +120,7 @@ void Connector::event_loop(struct rdma_event_channel *ec, int exit_on_disconnect
         break;
     } 
     else {
-      rc_die("event_loop:: Wnknown event \n");
+      rc_die("event_loop:: Unknown event \n");
     }
   }
 }

@@ -50,6 +50,8 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
     {"ib_lintf", optional_argument, NULL, 2},
     {"gftp_lintf", optional_argument, NULL, 3},
     {"tmpfs_dir", optional_argument, NULL, 4},
+    {"s_lip", optional_argument, NULL, 5},
+    {"s_lport", optional_argument, NULL, 6},
     {0, 0, 0, 0}
   };
   
@@ -78,6 +80,12 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
         break;
       case 4:
         opt_map["tmpfs_dir"] = optarg;
+        break;
+      case 5:
+        opt_map["s_lip"] = optarg;
+        break;
+      case 6:
+        opt_map["s_lport"] = optarg;
         break;
       case '?':
         break; //getopt_long already printed an error message.
@@ -123,18 +131,17 @@ int main(int argc , char **argv)
   
   std::string ib_lports[] = {"1234", "1235", "1236", "1237"};
   std::list<std::string> ib_lport_list(ib_lports, ib_lports + sizeof(ib_lports)/sizeof(*ib_lports) );
-  std::string ib_lport = "1234";
   std::string gftp_lport = "1234";
   // 
   TManager trans_manager(opt_map["trans_protocol"],
                          intf_to_ip(opt_map["ib_lintf"] ), ib_lport_list,
                          opt_map["gftp_lintf"], intf_to_ip(opt_map["gftp_lintf"] ), gftp_lport, opt_map["tmpfs_dir"] );
   if (str_equals(opt_map["type"], "g") ) {
-    trans_manager.init_get(trans_manager.get_s_lport(), "dummy", data_type_str, boost::bind(&data_recv_handler, _1, _2, _3) );
+    trans_manager.init_get(data_type_str, trans_manager.get_s_lport(), "dummy", boost::bind(&data_recv_handler, _1, _2, _3) );
   }
   else if (str_equals(opt_map["type"], "p") ) {
     // size_t data_length = 4* 1024*1024*256;
-    size_t data_length = 1024*1024*256; //1024*1024*256;
+    size_t data_length = 1024; //1024*1024*256;
     void* data_ = (void*)malloc(sizeof(data_type)*data_length);
     
     for (int i = 0; i < data_length; i++)
@@ -144,8 +151,8 @@ int main(int argc , char **argv)
       LOG(ERROR) << "main:: gettimeofday returned non-zero.";
       return 1;
     }
-    trans_manager.init_put(trans_manager.get_s_laddr(), ib_lport, opt_map["tmpfs_dir"],
-                           "dummy", data_type_str, data_length, data_);
+    trans_manager.init_put(opt_map["s_lip"], opt_map["s_lport"], opt_map["tmpfs_dir"],
+                           data_type_str, "dummy", data_length, data_);
     if (gettimeofday(&end_time, NULL) ) {
       LOG(ERROR) << "main:: gettimeofday returned non-zero.";
       return 1;

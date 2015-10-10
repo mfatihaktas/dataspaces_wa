@@ -1,21 +1,121 @@
 #include "markov.h"
 
-/**********************************************  MMAlgo  ******************************************/
-MMAlgo::MMAlgo(MMALGO_T mmalgo_t,
-               std::map<MALGO_T, float> malgo_t__weight_map)
-: mmalgo_t(mmalgo_t),
-  malgo_t__weight_map(malgo_t__weight_map)
+/**********************************************  MAlgo  *******************************************/
+MAlgo::MAlgo(MALGO_T malgo_t, int context_size)
+: parse_tree(malgo_t, context_size) {}
+  
+MAlgo::~MAlgo() {}
+
+void MAlgo::reset()
 {
-  for (std::map<MALGO_T, float>::iterator it = malgo_t__weight_map.begin(); it != malgo_t__weight_map.end(); it++) {
-    parse_tree_v.push_back(boost::make_shared<ParseTree>(it->first) );
-    if (mmalgo_t == MMALGO_W_WEIGHT)
-      pt_id__weight_map[parse_tree_v.size() - 1] = it->second;
+  parse_tree.reset();
+  
+  acc_s.clear();
+  acc_v.clear();
+}
+
+std::string MAlgo::parse_tree_to_pstr() { return parse_tree.to_pretty_str(); }
+
+std::vector<ACC_T> MAlgo::get_acc_v() { return acc_v; }
+
+int MAlgo::train(std::vector<ACC_T> acc_v)
+{
+  for (std::vector<ACC_T>::iterator it = acc_v.begin(); it != acc_v.end(); it++) {
+    if (add_access(*it) )
+      return 1;
   }
+  
+  return 0;
+}
+
+int MAlgo::add_access(ACC_T acc)
+{
+  acc_s.insert(acc);
+  acc_v.push_back(acc);
+  return parse_tree.add_access(acc);
+}
+
+int MAlgo::get_acc_prob_map_for_prefetch(std::map<ACC_T, float>& acc_prob_map)
+{
+  return parse_tree.get_key_prob_map_for_prefetch(acc_prob_map);
+}
+
+int MAlgo::get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
+                           const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v)
+{
+  if (parse_tree.get_to_prefetch(num_acc, acc_v) )
+    return 1;
+  
+  for (std::set<ACC_T>::iterator it = acc_s.begin(); it != acc_s.end(); it++) {
+    if (std::find(cached_acc_v.begin(), cached_acc_v.end(), *it) == cached_acc_v.end() && 
+        std::find(acc_v.begin(), acc_v.end(), *it) == acc_v.end() )
+      eacc_v.push_back(*it);
+  }
+  return 0;
+}
+
+/******************************************  LZAlgo  **********************************************/
+LZAlgo::LZAlgo()
+: MAlgo(MALGO_W_LZ, 0)
+{
+  // 
+  LOG(INFO) << "LZAlgo:: constructed.";
+}
+
+LZAlgo::~LZAlgo() { LOG(INFO) << "LZAlgo:: destructed."; }
+
+/******************************************  ALZAlgo  **********************************************/
+ALZAlgo::ALZAlgo()
+: MAlgo(MALGO_W_ALZ, 0)
+{
+  // 
+  LOG(INFO) << "ALZAlgo:: constructed.";
+}
+
+ALZAlgo::~ALZAlgo() { LOG(INFO) << "ALZAlgo:: destructed."; }
+
+/******************************************  PPMAlgo  *********************************************/
+PPMAlgo::PPMAlgo(int context_size)
+: MAlgo(MALGO_W_PPM, context_size)
+{
+  // 
+  LOG(INFO) << "PPMAlgo:: constructed.";
+}
+
+PPMAlgo::~PPMAlgo() { LOG(INFO) << "PPMAlgo:: destructed."; }
+
+/******************************************  POAlgo  **********************************************/
+POAlgo::POAlgo()
+: MAlgo(MALGO_W_PO, 0)
+{
+  // 
+  LOG(INFO) << "POAlgo:: constructed.";
+}
+
+POAlgo::~POAlgo() { LOG(INFO) << "POAlgo:: destructed."; }
+
+/**********************************************  MMAlgo  ******************************************/
+MMAlgo::MMAlgo(std::vector<MALGO_T> malgo_t_v)
+{
+  for (std::vector<MALGO_T>::iterator it = malgo_t_v.begin(); it != malgo_t_v.end(); it++)
+    parse_tree_v.push_back(boost::make_shared<ParseTree>(*it) );
   // 
   LOG(INFO) << "MMAlgo:: constructed.";
 }
 
 MMAlgo::~MMAlgo() { LOG(INFO) << "MMAlgo:: destructed."; }
+
+std::string MMAlgo::to_str()
+{
+  std::stringstream ss;
+  ss << "acc_s= " << patch_all::set_to_str<>(acc_s) << "\n"
+     << "acc_v= " << patch_all::vec_to_str<>(acc_v) << "\n";
+  
+  // for (std::vector<boost::shared_ptr<ParseTree> >::iterator parse_tree__ = parse_tree_v.begin(); parse_tree__ != parse_tree_v.end(); parse_tree__++)
+  //   ss << "a parse_tree= \n" << (*parse_tree__)->to_str() << "\n";
+  
+  return ss.str();
+}
 
 void MMAlgo::reset()
 {
@@ -52,6 +152,19 @@ int MMAlgo::add_access(ACC_T acc)
   
   return 0;
 }
+
+/**********************************************  MMAlgo  ******************************************/
+WMMAlgo::WMMAlgo(std::vector<MALGO_T> malgo_t_v,
+                 std::map<MALGO_T, float> malgo_t__weight_map)
+: MMAlgo(malgo_t_v),
+  malgo_t__weight_map(malgo_t__weight_map)
+{
+  // 
+  LOG(INFO) << "WMMAlgo:: constructed.";
+}
+
+MMAlgo::~MMAlgo() { LOG(INFO) << "MMAlgo:: destructed."; }
+
 
 int MMAlgo::get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
                             const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v)
@@ -153,97 +266,3 @@ int MMAlgo::get_to_prefetch_w_weight(int& num_acc, std::vector<ACC_T>& acc_v)
   
   return 0;
 }
-
-/**********************************************  MAlgo  *******************************************/
-MAlgo::MAlgo(MALGO_T malgo_t, int context_size)
-: parse_tree(malgo_t, context_size) {}
-  
-MAlgo::~MAlgo() {}
-
-void MAlgo::reset()
-{
-  parse_tree.reset();
-  
-  acc_s.clear();
-  acc_v.clear();
-}
-
-std::string MAlgo::parse_tree_to_pstr() { return parse_tree.to_pretty_str(); }
-
-std::vector<ACC_T> MAlgo::get_acc_v() { return acc_v; }
-
-int MAlgo::train(std::vector<ACC_T> acc_v)
-{
-  for (std::vector<ACC_T>::iterator it = acc_v.begin(); it != acc_v.end(); it++) {
-    if (add_access(*it) )
-      return 1;
-  }
-  
-  return 0;
-}
-
-int MAlgo::add_access(ACC_T acc)
-{
-  acc_s.insert(acc);
-  acc_v.push_back(acc);
-  return parse_tree.add_access(acc);
-}
-
-int MAlgo::get_acc_prob_map_for_prefetch(std::map<ACC_T, float>& acc_prob_map)
-{
-  return parse_tree.get_key_prob_map_for_prefetch(acc_prob_map);
-}
-
-int MAlgo::get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
-                           const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v)
-{
-  if (parse_tree.get_to_prefetch(num_acc, acc_v) )
-    return 1;
-  
-  for (std::set<ACC_T>::iterator it = acc_s.begin(); it != acc_s.end(); it++) {
-    if (std::find(cached_acc_v.begin(), cached_acc_v.end(), *it) == cached_acc_v.end() && 
-        std::find(acc_v.begin(), acc_v.end(), *it) == acc_v.end() )
-      eacc_v.push_back(*it);
-  }
-  return 0;
-}
-
-/******************************************  LZAlgo  **********************************************/
-LZAlgo::LZAlgo()
-: MAlgo(MALGO_W_LZ, 0)
-{
-  // 
-  LOG(INFO) << "LZAlgo:: constructed.";
-}
-
-LZAlgo::~LZAlgo() { LOG(INFO) << "LZAlgo:: destructed."; }
-
-/******************************************  ALZAlgo  **********************************************/
-ALZAlgo::ALZAlgo()
-: MAlgo(MALGO_W_ALZ, 0)
-{
-  // 
-  LOG(INFO) << "ALZAlgo:: constructed.";
-}
-
-ALZAlgo::~ALZAlgo() { LOG(INFO) << "ALZAlgo:: destructed."; }
-
-/******************************************  PPMAlgo  *********************************************/
-PPMAlgo::PPMAlgo(int context_size)
-: MAlgo(MALGO_W_PPM, context_size)
-{
-  // 
-  LOG(INFO) << "PPMAlgo:: constructed.";
-}
-
-PPMAlgo::~PPMAlgo() { LOG(INFO) << "PPMAlgo:: destructed."; }
-
-/******************************************  POAlgo  **********************************************/
-POAlgo::POAlgo()
-: MAlgo(MALGO_W_PO, 0)
-{
-  // 
-  LOG(INFO) << "POAlgo:: constructed.";
-}
-
-POAlgo::~POAlgo() { LOG(INFO) << "POAlgo:: destructed."; }

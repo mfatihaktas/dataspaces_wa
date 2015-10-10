@@ -20,23 +20,23 @@ std::string IBTManager::to_str()
 std::string IBTManager::get_next_avail_ib_lport() { return ib_lport_queue.pop(); }
 void IBTManager::give_ib_lport_back(std::string ib_lport) { ib_lport_queue.push(ib_lport); }
 
-void IBTManager::init_ib_server(const char* lport, boost::function<void(RECV_ID_T, int, void*)> dr_cb,
-                                std::string data_type, RECV_ID_T recv_id)
+void IBTManager::init_ib_server(std::string data_type, const char* lport,
+                                RECV_ID_T recv_id, boost::function<void(RECV_ID_T, int, void*)> data_recv_cb)
 {
   if (str_equals(data_type, "int") ) {
-    IBServer<int, RECV_ID_T> ib_server(lport, recv_id, dr_cb);
+    IBServer<int, RECV_ID_T> ib_server(lport, recv_id, data_recv_cb);
     ib_server.init();
   }
   else if (str_equals(data_type, "char") ) {
-    IBServer<char, RECV_ID_T> ib_server(lport, recv_id, dr_cb);
+    IBServer<char, RECV_ID_T> ib_server(lport, recv_id, data_recv_cb);
     ib_server.init();
   }
   else if (str_equals(data_type, "double") ) {
-    IBServer<double, RECV_ID_T> ib_server(lport, recv_id, dr_cb);
+    IBServer<double, RECV_ID_T> ib_server(lport, recv_id, data_recv_cb);
     ib_server.init();
   }
   else if (str_equals(data_type, "float") ) {
-    IBServer<float, RECV_ID_T> ib_server(lport, recv_id, dr_cb);
+    IBServer<float, RECV_ID_T> ib_server(lport, recv_id, data_recv_cb);
     ib_server.init();
   }
   else

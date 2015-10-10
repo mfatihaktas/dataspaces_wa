@@ -6,16 +6,21 @@ IB_LINTF="ib0"
 GFTP_LINTF="em2"
 TMPFS_DIR=""
 
+S_LIP=10.0.0.151
+S_LPORT=1234
+
 if [ $1  = 'g' ]; then
   GLOG_logtostderr=1 ./exp --type="g" --trans_protocol=$TRANS_PROTOCOL --ib_lintf=$IB_LINTF --gftp_lintf=$GFTP_LINTF --tmpfs_dir=$TMPFS_DIR
 elif [ $1  = 'p' ]; then
-  GLOG_logtostderr=1 ./exp --type="p" --trans_protocol=$TRANS_PROTOCOL --ib_lintf=$IB_LINTF --gftp_lintf=$GFTP_LINTF --tmpfs_dir=$TMPFS_DIR
+  GLOG_logtostderr=1 ./exp --type="p" --trans_protocol=$TRANS_PROTOCOL --ib_lintf=$IB_LINTF --gftp_lintf=$GFTP_LINTF --tmpfs_dir=$TMPFS_DIR \
+                           --s_lip=$S_LIP --s_lport=$S_LPORT
 elif [ $1  = 'dg' ]; then
   export GLOG_logtostderr=1
   gdb --args ./exp --type="g" --trans_protocol=$TRANS_PROTOCOL --ib_lintf=$IB_LINTF --gftp_lintf=$GFTP_LINTF --tmpfs_dir=$TMPFS_DIR
 elif [ $1  = 'dp' ]; then
   export GLOG_logtostderr=1
-  gdb --args ./exp --type="p" --trans_protocol=$TRANS_PROTOCOL --ib_lintf=$IB_LINTF --gftp_lintf=$GFTP_LINTF --tmpfs_dir=$TMPFS_DIR
+  gdb --args ./exp --type="p" --trans_protocol=$TRANS_PROTOCOL --ib_lintf=$IB_LINTF --gftp_lintf=$GFTP_LINTF --tmpfs_dir=$TMPFS_DIR \
+                   --s_lip=$S_LIP --s_lport=$S_LPORT
 elif [ $1  = 'init' ]; then
   # export GRIDFTP=1
   unset GRIDFTP
@@ -52,7 +57,7 @@ elif [ $1  = 'init' ]; then
     export CPP=g++
     export MPICPP=mpicxx
     export MPICPP_OPTS='-DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX'
-    export MPI_DIR=/opt/intel/impi/4.1.3.048/intel64
+    export MPI_DIR=/apps/intel/impi/4.1.3.048/intel64
     export GLOG_DIR=/home/sc14demo/common-apps/glog-0.3.3/install
     export BOOST_DIR=/home/sc14demo/common-apps/boost_1_56_0/install
     export GFTPINC_DIR=/usr/include/globus

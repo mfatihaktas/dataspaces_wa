@@ -1,10 +1,10 @@
 #ifndef _REMOTE_INTERACT_H_
 #define _REMOTE_INTERACT_H_
 
+#include "ds_client.h"
+#include "sdm_control.h"
 #include "profiler.h"
 #include "trans.h"
-#include "sdm_control.h"
-#include "ds_client.h"
 
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/signal_set.hpp>
@@ -29,15 +29,15 @@ class RFPManager { // Remote Fetch & Place
     ~RFPManager();
     std::string to_str();
     
-    std::string get_laddr();
+    std::string get_lip();
     std::string get_lport();
     std::string get_tmpfs_dir();
     int get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_);
     
-    int wa_put(std::string laddr, std::string lport, std::string tmpfs_dir,
+    int wa_put(std::string lip, std::string lport, std::string tmpfs_dir,
                std::string key, unsigned int ver, std::string data_type,
                int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
-    int wa_get(std::string laddr, std::string lport, std::string tmpfs_dir,
+    int wa_get(std::string lip, std::string lport, std::string tmpfs_dir,
                std::string key, unsigned int ver, std::string data_type,
                int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
     
@@ -62,11 +62,21 @@ const std::string RI_GRIDFTP_PUT = "ri_gp";
 const int CL__RIMANAGER_MAX_MSG_SIZE = 1000;
 
 class RIManager {
-  struct t_info {
-    std::string laddr, lport, tmpfs_dir;
+  struct trans_info {
+    std::string lip, lport, tmpfs_dir;
     
-    t_info(std::string laddr, std::string lport, std::string tmpfs_dir)
-    : laddr(laddr), lport(lport), tmpfs_dir(tmpfs_dir)
+    trans_info(std::string lip, std::string lport, std::string tmpfs_dir)
+    : lip(lip), lport(lport), tmpfs_dir(tmpfs_dir)
+    {}
+  };
+  
+  struct data_info {
+    std::string data_type;
+    int size;
+    COOR_T* gdim_;
+    
+    data_info(std::string data_type, int size, COOR_T* gdim_)
+    : data_type(data_type), size(size), gdim_(gdim_)
     {}
   };
   
@@ -83,7 +93,8 @@ class RIManager {
     boost::shared_ptr<BCServer> bc_server_;
     patch_all::thread_safe_map<int, boost::shared_ptr<BCClient> > cl_id__bc_client_map; //TODO: prettify
     boost::shared_ptr<RFPManager> rfp_manager_;
-    patch_all::thread_safe_map<char, boost::shared_ptr<t_info> > ds_id__t_info_map;
+    patch_all::thread_safe_map<char, boost::shared_ptr<trans_info> > ds_id__trans_info_map;
+    patch_all::thread_safe_map<unsigned int, boost::shared_ptr<data_info> > data_id_hash__data_info_map;
     
     patch_all::syncer<unsigned int> ri_syncer;
     
@@ -102,7 +113,7 @@ class RIManager {
     void handle_put(int p_id, std::map<std::string, std::string> put_map);
     // void handle_del(key_ver_pair kv);
     
-    int t_info_query(char to_id);
+    int trans_info_query(char to_id, std::map<std::string, std::string> msg_map);
     void handle_rimsg(std::map<std::string, std::string> rimsg_map);
     void handle_tinfo_query(std::map<std::string, std::string> msg_map);
     void remote_get(std::map<std::string, std::string> msg_map);

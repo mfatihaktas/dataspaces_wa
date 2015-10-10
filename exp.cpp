@@ -8,15 +8,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 // 
-#include <iostream>
-#include <string>
-#include <stdio.h>
-#include <stdlib.h>
 #include <getopt.h>
-#include <map>
-
-#include <boost/lexical_cast.hpp>
-#include <glog/logging.h>
 
 #include "profiler.h"
 #include "dataspaces_wa.h"

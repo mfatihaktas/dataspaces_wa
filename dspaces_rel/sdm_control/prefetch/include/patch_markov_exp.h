@@ -363,7 +363,7 @@ void test_rand_shuffle_train()
   int num_algo = malgo_v.size() + mmalgo_v.size();
   
   int alphabet_size = 10;
-  int num_acc = 100;
+  int num_acc = 50;
   std::vector<int> acc_v;
   std::vector<acc_step_pair> acc_step_v;
   std::map<ACC_T, float> acc__arr_rate_map;
@@ -440,6 +440,8 @@ void test_rand_shuffle_train()
   make_plot<float>(run_i_v_v, hit_rate_v_v, title_v,
                    "Run index", "Hit rate",
                    plot_title_ss.str(), out_url);
+
+  std::cout << "acc_step_v= " << patch_all::pvec_to_str<>(acc_step_v) << "\n";
 }
 
 void plot_malgo_comparison()
@@ -475,7 +477,7 @@ void plot_malgo_comparison()
   int num_algo = malgo_v.size() + mmalgo_v.size();
   
   int alphabet_size = 4;
-  int num_acc = 1000;
+  int num_acc = 50;
   std::vector<int> acc_v;
   std::vector<acc_step_pair> acc_step_v;
   std::map<ACC_T, float> acc__arr_rate_map;
@@ -491,7 +493,7 @@ void plot_malgo_comparison()
   float hit_rate;
   std::vector<char> accuracy_v;
   
-  int num_run = 150;
+  int num_run = 50;
   for (int i = 1; i <= num_run; i++) {
     // acc_v.clear();
     // acc_step_v.clear();
@@ -534,10 +536,12 @@ void plot_malgo_comparison()
                 << "alph_size= " << alphabet_size
                 << ", num_acc= " << num_acc;
   
-  std::string out_url = ""; //"/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/prefetch/img/fig_hit_rate_sim.png";
+  std::string out_url = ""; //"/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/prefetch/fig_hit_rate_sim.png";
   make_plot<float>(run_i_v_v, hit_rate_v_v, title_v,
                    "Run index", "Hit rate",
                    plot_title_ss.str(), out_url);
+
+  std::cout << "acc_step_v= " << patch_all::pvec_to_str<>(acc_step_v) << "\n";
 }
 
 void malgo_test()

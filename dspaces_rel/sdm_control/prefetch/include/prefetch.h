@@ -81,7 +81,7 @@ class Cache {
       // boost::lock_guard<boost::mutex> guard(mutex);
       
       if (cache.size() == cache_size) {
-        LOG(INFO) << "PUSH:: cache.size() == cache_size; cache_content= " << patch_all::pdeque_to_str<>(cache) << "\n";
+        // LOG(INFO) << "push:: cache.size() == cache_size; cache_content= " << patch_all::pdeque_to_str<>(cache) << "\n";
         pop();
       }
       

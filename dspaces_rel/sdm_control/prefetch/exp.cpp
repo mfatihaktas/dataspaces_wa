@@ -105,14 +105,10 @@ int main(int argc, char **argv)
   
   if (str_cstr_equals(opt_map["type"], "markov") ) {
     // test_rand_shuffle_train();
-    // plot_malgo_comparison();
+    plot_malgo_comparison();
     // malgo_test();
     // m_prefetch_test();
-    mpcsim_test();
-    
-    patch_all::thread_safe_map<int, int> int_int_map;
-    int_int_map[0] += 1;
-    std::cout << "int_int_map= \n" << int_int_map.to_str();
+    // mpcsim_test();
     
     // std::vector<char> ds_id_v = boost::assign::list_of('a')('b');
     // MWASpace mwa_space(ds_id_v, MALGO_W_PPM, 10, false, 0);

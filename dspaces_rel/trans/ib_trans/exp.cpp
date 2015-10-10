@@ -46,8 +46,8 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
   static struct option long_options[] =
   {
     {"type", optional_argument, NULL, 0},
-    {"port", optional_argument, NULL, 1},
-    {"s_addr", optional_argument, NULL, 2},
+    {"s_lport", optional_argument, NULL, 1},
+    {"s_lip", optional_argument, NULL, 2},
     {0, 0, 0, 0}
   };
   
@@ -66,10 +66,10 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
         opt_map["type"] = optarg;
         break;
       case 1:
-        opt_map["port"] = optarg;
+        opt_map["s_lport"] = optarg;
         break;
       case 2:
-        opt_map["s_addr"] = optarg;
+        opt_map["s_lip"] = optarg;
         break;
       case '?':
         break; //getopt_long already printed an error message.
@@ -124,21 +124,10 @@ int main(int argc , char **argv)
   // 
   IBTManager trans_manager(ib_lport_list);
   if (str_equals(opt_map["type"], "server") ) {
-    trans_manager.init_ib_server(trans_manager.get_next_avail_ib_lport().c_str(),
-                                 boost::bind(&data_recv_handler, _1, _2, _3),
-                                 data_type_str, "dummy");
-    
-    // trans_manager.init_ib_server("dummy2", 0, data_type_str, trans_manager.get_next_avail_ib_lport().c_str(), 
-    //                           boost::bind(&data_recv_handler, _1, _2, _3, _4) );
-  
-    // trans_manager.init_ib_server("dummy2", 0, data_type_str, trans_manager.get_next_avail_ib_lport().c_str(), 
-    //                           boost::bind(&data_recv_handler, _1, _2, _3, _4) );
-  
-    // trans_manager.init_ib_server("dummy2", 0, data_type_str, trans_manager.get_next_avail_ib_lport().c_str(), 
-    //                           boost::bind(&data_recv_handler, _1, _2, _3, _4) );
+    trans_manager.init_ib_server(data_type_str, trans_manager.get_next_avail_ib_lport().c_str(),
+                                 "dummy", boost::bind(&data_recv_handler, _1, _2, _3) );
   }
   else if (str_equals(opt_map["type"], "client") ) {
-    // size_t data_length = 4* 1024*1024*256;
     size_t data_length = 1024*1024*256; //1024*1024*256;
     void* data_ = (void*)malloc(sizeof(data_type)*data_length);
     
@@ -149,8 +138,7 @@ int main(int argc , char **argv)
       LOG(ERROR) << "main:: gettimeofday returned non-zero.";
       return 1;
     }
-    // std::string port = opt_map["port"];
-    trans_manager.init_ib_client(opt_map["s_addr"].c_str(), opt_map["port"].c_str(),
+    trans_manager.init_ib_client(opt_map["s_lip"].c_str(), opt_map["s_lport"].c_str(),
                                  data_type_str, data_length, data_);
     if (gettimeofday(&end_time, NULL) ) {
       LOG(ERROR) << "main:: gettimeofday returned non-zero.";
@@ -160,22 +148,6 @@ int main(int argc , char **argv)
     long exec_time_usec = end_time.tv_usec - start_time.tv_usec;
     LOG(INFO) << "main:: exec_time= " << exec_time_sec << "." << exec_time_usec / 1000 << " sec.";
     // 
-    
-    // port = boost::lexical_cast<std::string>(1 + boost::lexical_cast<int>(port) );
-    
-    // trans_manager.init_ib_client(opt_map[(char*)"s_addr"], port.c_str(),
-    //                           data_type_str, data_length, data_);
-    
-    // port = boost::lexical_cast<std::string>(1 + boost::lexical_cast<int>(port) );
-    
-    // trans_manager.init_ib_client(opt_map[(char*)"s_addr"], port.c_str(),
-    //                           data_type_str, data_length, data_);
-                              
-    // port = boost::lexical_cast<std::string>(1 + boost::lexical_cast<int>(port) );
-    
-    // trans_manager.init_ib_client(opt_map[(char*)"s_addr"], port.c_str(),
-    //                           data_type_str, data_length, data_);
-    
     free(data_);
     // std::cout << "Enter\n";
     // getline(std::cin, temp);

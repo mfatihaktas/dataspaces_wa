@@ -44,10 +44,10 @@ namespace patch_ib {
       std::string to_str()
       {
         std::stringstream ss;
-        ss << "\t->";
+        ss << "\t ->";
         for (typename std::deque<T>::iterator it = d_queue.begin(); it != d_queue.end(); ++it)
           ss << boost::lexical_cast<std::string>(*it) << ", ";
-        ss << "->\n";
+        ss << "-> \n";
         
         return ss.str();
       };
@@ -74,8 +74,8 @@ class IBTManager { // Trans
     std::string get_next_avail_ib_lport();
     void give_ib_lport_back(std::string ib_lport);
     
-    void init_ib_server(const char* lport, data_recv_cb_func dr_cb,
-                        std::string data_type, RECV_ID_T recv_id);
+    void init_ib_server(std::string data_type, const char* lport,
+                        RECV_ID_T recv_id, boost::function<void(RECV_ID_T, int, void*)> data_recv_cb);
     
     void init_ib_client(const char* s_laddr, const char* s_lport,
                         std::string data_type, int data_length, void* data_);

@@ -20,7 +20,7 @@ class IBClient {
     uint32_t peer_rkey;
   };
   private:
-    const char *s_laddr, *s_lport;
+    const char *s_lip, *s_lport;
     int data_length;
     DATA_T* data_;
     
@@ -28,9 +28,9 @@ class IBClient {
     // 
     boost::shared_ptr<Connector> connector_;
   public:
-    IBClient(const char* s_laddr, const char* s_lport, 
+    IBClient(const char* s_lip, const char* s_lport, 
              int data_length, DATA_T* data_)
-    : s_laddr(s_laddr), s_lport(s_lport),
+    : s_lip(s_lip), s_lport(s_lport),
       data_length(data_length), data_(data_),
       num_srs(0),
       connector_(
@@ -50,7 +50,7 @@ class IBClient {
     {
       std::stringstream ss;
     
-      ss << "s_laddr= " << s_laddr << "\n";
+      ss << "s_lip= " << s_lip << "\n";
       ss << "s_lport= " << s_lport << "\n";
       ss << "data_length= " << boost::lexical_cast<std::string>(data_length) << "\n";
       
@@ -84,7 +84,7 @@ class IBClient {
     
       TEST_NZ(ibv_post_send(id->qp, &wr, &bad_wr) );
       num_srs += 1;
-      LOG(INFO) << "write_remote:: size= " << size << " num_srs= " << num_srs;
+      LOG(INFO) << "write_remote:: size= " << size << "B num_srs= " << num_srs;
     };
     
     void post_receive(struct rdma_cm_id *id)
@@ -196,7 +196,7 @@ class IBClient {
     {
       struct client_context ctx;
       
-      connector_->rc_client_loop(s_laddr, s_lport, &ctx);
+      connector_->rc_client_loop(s_lip, s_lport, &ctx);
     };
 };
 

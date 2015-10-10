@@ -9,7 +9,7 @@ WADSDriver::WADSDriver(int app_id, int base_client_id, int num_local_peers,
                        DATA_ID_T data_id_t)
 : app_id(app_id), base_client_id(base_client_id), num_local_peers(num_local_peers), data_id_t(data_id_t),
   _app_id(base_client_id + app_id),
-  ds_driver_ (boost::make_shared<DSDriver>(num_local_peers, app_id) ),
+  ds_driver_ (boost::make_shared<DSDriver>(app_id, num_local_peers) ),
   bc_client_(boost::make_shared<BCClient>(_app_id, RI_MSG_SIZE, "req_app_", ds_driver_) )
 {
   // 
@@ -20,7 +20,7 @@ WADSDriver::WADSDriver(int app_id, int base_client_id, int num_local_peers,
                        DATA_ID_T data_id_t, MPI_Comm mpi_comm)
 : app_id(app_id), base_client_id(base_client_id), num_local_peers(num_local_peers), data_id_t(data_id_t),
   _app_id(base_client_id + app_id),
-  ds_driver_ (boost::make_shared<DSDriver>(mpi_comm, num_local_peers, app_id) ),
+  ds_driver_ (boost::make_shared<DSDriver>(app_id,  num_local_peers, mpi_comm) ),
   bc_client_(boost::make_shared<BCClient>(_app_id, RI_MSG_SIZE, "req_app_", ds_driver_) )
 {
   // 

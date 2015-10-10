@@ -209,11 +209,15 @@ void SDMSlave::handle_sdm_move(std::map<std::string, std::string> msg_map)
   
   dm_act_cb(msg_map);
   
-  msg_map["type"] = SDM_MOVE_REPLY;
-  if (send_cmsg_to_master(msg_map) ) {
-    LOG(ERROR) << "handle_sdm_move:: send_cmsg_to_master failed; msg_map= \n" << patch_all::map_to_str<>(msg_map);
-    return;
-  }
+  // Note: Cause SDMMaster to let ri_manager continue with the blocking squery before ri_manager actually
+  // does sdm_slave_->put the data. This causes available data to seem unavailable. I moved the following
+  // to ri_manager remote_get after it does sdm_slave_->put because there is always supposed to be a
+  // remote_get as a response to the sdm_move.
+  // msg_map["type"] = SDM_MOVE_REPLY;
+  // if (send_cmsg_to_master(msg_map) ) {
+  //   LOG(ERROR) << "handle_sdm_move:: send_cmsg_to_master failed; msg_map= \n" << patch_all::map_to_str<>(msg_map);
+  //   return;
+  // }
 }
 
 void SDMSlave::handle_sdm_del(std::map<std::string, std::string> msg_map)
@@ -232,7 +236,7 @@ void SDMSlave::handle_sdm_del(std::map<std::string, std::string> msg_map)
 /*************************************  MSDMSlave : SDMSlave  *************************************/
 MSDMSlave::MSDMSlave(char ds_id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
                      func_rimsg_recv_cb rimsg_recv_cb, func_dm_act_cb dm_act_cb)
-: SDMSlave(KV_DATA_ID, type,
+: SDMSlave(KV_DATA_ID, "s",
            ds_id, lip, lport, joinhost_lip, joinhost_lport,
            rimsg_recv_cb, dm_act_cb,
            boost::make_shared<KVTable<int> >() )
@@ -246,7 +250,7 @@ MSDMSlave::~MSDMSlave() { LOG(INFO) << "MSDMSlave:: destructed."; }
 /*************************************  SSDMSlave : SDMSlave  *************************************/
 SSDMSlave::SSDMSlave(char ds_id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
                      func_rimsg_recv_cb rimsg_recv_cb, func_dm_act_cb dm_act_cb)
-: SDMSlave(LUCOOR_DATA_ID, type,
+: SDMSlave(LUCOOR_DATA_ID, "s",
            ds_id, lip, lport, joinhost_lip, joinhost_lport,
            rimsg_recv_cb, dm_act_cb,
            boost::make_shared<RTable<int> >() )
@@ -334,7 +338,11 @@ int SDMMaster::put(bool notify, std::string key, unsigned int ver, COOR_T* lcoor
     LOG(ERROR) << "put:: qtable_->add failed for " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_);
     return 1;
   }
-    
+  
+  unsigned int sync_point = patch_sdm::hash_str(
+    "B" + SDM_SQUERY + "_" + patch_sdm::get_data_id(data_id_t, key, ver, lcoor_, ucoor_) );
+  sdm_m_syncer.notify(sync_point);
+  
   return wa_space_->put(p_id, key, ver, lcoor_, ucoor_);
 }
 

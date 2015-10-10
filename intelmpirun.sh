@@ -79,7 +79,7 @@ RI_MANAGER_DATA_LINTF_LIST=( "ib0" "ib0" )                                      
 RI_MANAGER_DATA_GFTP_LPORT_LIST=("60100" "61100" )
 RI_MANAGER_DATA_TMPFS_DIR_LIST=("/dev/shm" "/dev/shm" )
 
-MPIRUN=/opt/intel/impi/4.1.3.048/intel64/bin/mpirun
+MPIRUN=mpirun # /apps/intel/impi/4.1.3.048/intel64/bin/mpirun
 PKILL=/usr/bin/pkill
 if [ $1  = 'r' ]; then
   export GLOG_logtostderr=1

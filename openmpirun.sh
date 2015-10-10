@@ -24,7 +24,7 @@ RI_MANAGER_DATA_LINTF_LIST=( "ib0" "ib0" )                                      
 RI_MANAGER_DATA_GFTP_LPORT_LIST=( "60100" "61100" )
 RI_MANAGER_DATA_TMPFS_DIR_LIST=( $TMPFS_DIR"/put" $TMPFS_DIR"/get" )
 
-MPIRUN=/usr/lib64/openmpi/bin/mpirun
+MPIRUN=mpirun # /usr/lib64/openmpi/bin/mpirun
 PKILL=/usr/bin/pkill
 if [ $1  = 'r' ]; then
   export GLOG_logtostderr=1

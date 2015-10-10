@@ -1,7 +1,7 @@
 #include "gftp_trans.h"
 
-GFTPTManager::GFTPTManager(std::string s_lintf, std::string s_laddr, int s_lport, std::string tmpfs_dir)
-: s_lintf(s_lintf), s_laddr(s_laddr), s_lport(s_lport), tmpfs_dir(tmpfs_dir),
+GFTPTManager::GFTPTManager(std::string s_lintf, std::string s_lip, int s_lport, std::string tmpfs_dir)
+: s_lintf(s_lintf), s_lip(s_lip), s_lport(s_lport), tmpfs_dir(tmpfs_dir),
   io_driver_(boost::make_shared<IODriver>(tmpfs_dir) ),
   gftp_driver_(boost::make_shared<GFTPDriver>() )
 {
@@ -15,7 +15,7 @@ std::string GFTPTManager::to_str()
 {
   std::stringstream ss;
   ss << "\t s_lintf= " << s_lintf << "\n"
-     << "\t s_laddr= " << s_laddr << "\n"
+     << "\t s_lip= " << s_lip << "\n"
      << "\t s_lport= " << s_lport << "\n"
      << "\t tmpfs_dir= " << tmpfs_dir << "\n";
   return ss.str();
@@ -29,7 +29,7 @@ int GFTPTManager::init_server()
   return gftp_driver_->init_server(s_lintf, s_lport);
 }
 
-int GFTPTManager::put(std::string s_laddr, int s_lport, std::string tmpfs_dir,
+int GFTPTManager::put(std::string s_lip, int s_lport, std::string tmpfs_dir,
                       std::string data_id, int datasize_inB, void* data_)
 {
   std::string fname = "/ds_" + data_id + ".dat";
@@ -38,7 +38,7 @@ int GFTPTManager::put(std::string s_laddr, int s_lport, std::string tmpfs_dir,
     return 1;
   }
   std::string src_url = tmpfs_dir + fname;
-  std::string dst_url = "ftp://" + s_laddr + ":" + boost::lexical_cast<std::string>(s_lport) + tmpfs_dir + fname;
+  std::string dst_url = "ftp://" + s_lip + ":" + boost::lexical_cast<std::string>(s_lport) + tmpfs_dir + fname;
   
   if (gftp_driver_->put_file(src_url, dst_url) ) {
     LOG(ERROR) << "put_over_gftp:: gftp_driver_->put_file failed!";
@@ -49,11 +49,11 @@ int GFTPTManager::put(std::string s_laddr, int s_lport, std::string tmpfs_dir,
   return 0;
 }
 
-int GFTPTManager::get(std::string s_laddr, int s_lport, std::string tmpfs_dir,
+int GFTPTManager::get(std::string s_lip, int s_lport, std::string tmpfs_dir,
                       std::string data_id, int &datasize_inB, void* &data_)
 {
   std::string fname = "/ds_" + data_id + ".dat";
-  std::string src_url = "ftp://" + s_laddr + ":" + boost::lexical_cast<std::string>(s_lport) + tmpfs_dir + fname;
+  std::string src_url = "ftp://" + s_lip + ":" + boost::lexical_cast<std::string>(s_lport) + tmpfs_dir + fname;
   std::string dst_url = tmpfs_dir + fname;
   
   if (gftp_driver_->get_file(src_url, dst_url) ) {

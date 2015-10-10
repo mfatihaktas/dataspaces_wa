@@ -736,39 +736,6 @@ class ParseTree {
     }
 };
 
-/*********************************************  MMAlgo  *******************************************/
-typedef KEY_T ACC_T;
-typedef std::pair<ACC_T, int> acc_step_pair;
-
-typedef char MMALGO_T;
-const MMALGO_T MMALGO_W_WEIGHT = 'w';
-const MMALGO_T MMALGO_W_MAX = 'm';
-class MMAlgo { // Mixed
-  private:
-    MMALGO_T mmalgo_t;
-    std::map<MALGO_T, float> malgo_t__weight_map;
-    
-    std::vector<boost::shared_ptr<ParseTree> > parse_tree_v;
-    std::map<int, float> pt_id__weight_map;
-    
-    std::set<ACC_T> acc_s;
-    std::vector<ACC_T> acc_v;
-  public:
-    MMAlgo(MMALGO_T mmalgo_t,
-           std::map<MALGO_T, float> malgo_t__weight_map);
-    ~MMAlgo();
-    void reset();
-    
-    std::vector<ACC_T> get_acc_v();
-    int train(std::vector<ACC_T> acc_v);
-    int add_access(ACC_T acc);
-    int get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
-                        const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v);
-    
-    int get_to_prefetch_w_max(int& num_acc, std::vector<ACC_T>& acc_v);
-    int get_to_prefetch_w_weight(int& num_acc, std::vector<ACC_T>& acc_v);
-};
-
 /**********************************************  MAlgo  *******************************************/
 class MAlgo {
   protected:
@@ -812,6 +779,45 @@ class POAlgo : public MAlgo {
   public:
     POAlgo();
     ~POAlgo();
+};
+
+/*********************************************  MMAlgo  *******************************************/
+typedef KEY_T ACC_T;
+typedef std::pair<ACC_T, int> acc_step_pair;
+class MMAlgo { // Mixed
+  protected:
+    std::vector<boost::shared_ptr<ParseTree> > parse_tree_v;
+    
+    std::set<ACC_T> acc_s;
+    std::vector<ACC_T> acc_v;
+  public:
+    MMAlgo(std::vector<MALGO_T> malgo_t_v);
+    ~MMAlgo();
+    virtual std::string to_str();
+    void reset();
+    
+    std::vector<ACC_T> get_acc_v();
+    int train(std::vector<ACC_T> acc_v);
+    int add_access(ACC_T acc);
+    virtual int get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
+                                const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v) = 0;
+};
+
+/***************************************  WMMAlgo : MMAlgo  ***************************************/
+class WMAlgo : public MMAlgo{ // Weight
+  private:
+    std::map<MALGO_T, float> malgo_t__weight_map;
+  public:
+    WMMAlgo(std::vector<MALGO_T> malgo_t_v,
+            std::map<MALGO_T, float> malgo_t__weight_map);
+    ~WMMAlgo();
+    std::string to_str();
+    
+    int get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
+                        const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v);
+    
+    // int get_to_prefetch_w_max(int& num_acc, std::vector<ACC_T>& acc_v);
+    // int get_to_prefetch_w_weight(int& num_acc, std::vector<ACC_T>& acc_v);
 };
 
 #endif // _MARKOV_H_

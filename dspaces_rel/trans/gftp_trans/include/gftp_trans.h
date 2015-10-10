@@ -9,13 +9,13 @@
 class GFTPTManager
 {
   private:
-    std::string s_lintf, s_laddr;
+    std::string s_lintf, s_lip;
     int s_lport;
     std::string tmpfs_dir;
     boost::shared_ptr<IODriver> io_driver_;
     boost::shared_ptr<GFTPDriver> gftp_driver_;
   public:
-    GFTPTManager(std::string s_lintf, std::string s_laddr, int s_lport, std::string tmpfs_dir);
+    GFTPTManager(std::string s_lintf, std::string s_lip, int s_lport, std::string tmpfs_dir);
     ~GFTPTManager();
     std::string to_str();
     
@@ -23,9 +23,9 @@ class GFTPTManager
     std::string get_tmpfs_dir();
     
     int init_server();
-    int put(std::string s_laddr, int s_lport, std::string tmpfs_dir,
+    int put(std::string s_lip, int s_lport, std::string tmpfs_dir,
             std::string data_id, int datasize_inB, void* data_);
-    int get(std::string s_laddr, int s_lport, std::string tmpfs_dir,
+    int get(std::string s_lip, int s_lport, std::string tmpfs_dir,
             std::string data_id, int &datasize_inB, void* &data_);
     
     int read_del_datafile(std::string data_id, int &datasize_inB, void* &data_);
