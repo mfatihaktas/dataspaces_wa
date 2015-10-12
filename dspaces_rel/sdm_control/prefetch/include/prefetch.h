@@ -33,10 +33,13 @@ class Cache {
     Cache(int cache_size, func_handle_cache_data_del_cb handle_data_del_cb = 0)
     : cache_size(cache_size), handle_data_del_cb(handle_data_del_cb)
     {
-      LOG(INFO) << "Cache:: constructed.";
+      // LOG(INFO) << "Cache:: constructed.";
     }
     
-    ~Cache() { LOG(INFO) << "Cache:: destructed."; }
+    ~Cache()
+    {
+      // LOG(INFO) << "Cache:: destructed."; 
+    }
     
     std::string to_str()
     {

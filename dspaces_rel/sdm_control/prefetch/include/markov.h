@@ -370,7 +370,7 @@ class ParseTree {
       return false;
     }
     
-    int get_to_prefetch(int& num_keys, std::vector<KEY_T>& key_v)
+    int get_to_prefetch(int num_keys, std::vector<KEY_T>& key_v)
     {
       std::map<KEY_T, float> key_prob_map;
       get_key_prob_map_for_prefetch(key_prob_map);
@@ -385,7 +385,6 @@ class ParseTree {
         if (key_v.size() == num_keys)
           break;
       }
-      num_keys = key_v.size();
       
       return 0;
     }
@@ -737,6 +736,8 @@ class ParseTree {
 };
 
 /**********************************************  MAlgo  *******************************************/
+typedef KEY_T ACC_T;
+typedef std::pair<ACC_T, int> acc_step_pair;
 class MAlgo {
   protected:
     ParseTree parse_tree;
@@ -782,42 +783,72 @@ class POAlgo : public MAlgo {
 };
 
 /*********************************************  MMAlgo  *******************************************/
-typedef KEY_T ACC_T;
-typedef std::pair<ACC_T, int> acc_step_pair;
+typedef std::pair<MALGO_T, int> malgo_t__context_size_pair;
 class MMAlgo { // Mixed
   protected:
+    std::vector<malgo_t__context_size_pair> malgo_t__context_size_v;
+    
     std::vector<boost::shared_ptr<ParseTree> > parse_tree_v;
     
     std::set<ACC_T> acc_s;
     std::vector<ACC_T> acc_v;
   public:
-    MMAlgo(std::vector<MALGO_T> malgo_t_v);
+    MMAlgo(std::vector<malgo_t__context_size_pair> malgo_t__context_size_v);
     ~MMAlgo();
     virtual std::string to_str();
     void reset();
     
     std::vector<ACC_T> get_acc_v();
     int train(std::vector<ACC_T> acc_v);
-    int add_access(ACC_T acc);
+    virtual int add_access(ACC_T acc);
     virtual int get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
                                 const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v) = 0;
 };
 
 /***************************************  WMMAlgo : MMAlgo  ***************************************/
-class WMAlgo : public MMAlgo{ // Weight
+class WMMAlgo : public MMAlgo { // Weight
   private:
-    std::map<MALGO_T, float> malgo_t__weight_map;
+    std::vector<float> malgo_id__weight_v;
   public:
-    WMMAlgo(std::vector<MALGO_T> malgo_t_v,
-            std::map<MALGO_T, float> malgo_t__weight_map);
+    WMMAlgo(std::vector<malgo_t__context_size_pair> malgo_t__context_size_v,
+            std::vector<float> malgo_id__weight_v);
     ~WMMAlgo();
     std::string to_str();
     
     int get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
                         const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v);
+};
+
+/***************************************  MMMAlgo : MMAlgo  ***************************************/
+class MMMAlgo : public MMAlgo { // Max
+  private:
     
-    // int get_to_prefetch_w_max(int& num_acc, std::vector<ACC_T>& acc_v);
-    // int get_to_prefetch_w_weight(int& num_acc, std::vector<ACC_T>& acc_v);
+  public:
+    MMMAlgo(std::vector<malgo_t__context_size_pair> malgo_t__context_size_v);
+    ~MMMAlgo();
+    std::string to_str();
+    
+    int get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
+                        const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v);
+};
+
+/***************************************  BMMAlgo : MMAlgo  ***************************************/
+class BMMAlgo : public MMAlgo { // Best
+  private:
+    int window_size;
+  
+    std::vector<boost::shared_ptr<patch_all::Queue<int> > > malgo_id__score_queue_v;
+    std::vector<boost::shared_ptr<std::vector<ACC_T> > > malgo_id__last_predicted_acc_v_v;
+  public:
+    BMMAlgo(std::vector<malgo_t__context_size_pair> malgo_t__context_size_v, int window_size);
+    ~BMMAlgo();
+    std::string to_str();
+    
+    int add_access(ACC_T acc);
+    
+    int get_malgo_score(int malgo_id);
+    int get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
+                        const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v);
 };
 
 #endif // _MARKOV_H_

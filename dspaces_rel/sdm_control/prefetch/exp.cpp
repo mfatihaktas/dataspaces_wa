@@ -88,11 +88,11 @@ int main(int argc, char **argv)
   // // std::map<box_t, int, less_for_box> box_int_map;
   // patch_all::thread_safe_map<box_t, int, less_for_box> box_int_map;
   // box_int_map[b0] = 1;
-  // box_int_map[b1] = 2;
+  // box_int_map[b1] = 2; 
   
   // std::cout << "box_int_map[b0]= " << box_int_map[b0] << "\n";
   
-  // std::cout << "box_int_map= \n";
+  // std::cout << "box_int_map= \n"; 
   // for (std::map<box_t, int>::iterator it = box_int_map.begin(); it != box_int_map.end(); it++)
   //   std::cout << boost::geometry::dsv(it->first) << " : " << it->second << "\n";
   
@@ -105,8 +105,9 @@ int main(int argc, char **argv)
   
   if (str_cstr_equals(opt_map["type"], "markov") ) {
     // test_rand_shuffle_train();
-    plot_malgo_comparison();
-    // malgo_test();
+    plot_malgo_comparison(); 
+    // test_malgo();
+    // test_bmmalgo();
     // m_prefetch_test();
     // mpcsim_test();
     

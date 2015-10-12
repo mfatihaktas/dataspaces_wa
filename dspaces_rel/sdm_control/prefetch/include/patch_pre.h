@@ -342,7 +342,51 @@ namespace patch_all {
     for (int x = 0; x < num; x++)        // Loop all
       free(va_arg(arguments, T*) );
     va_end(arguments);                  // Cleans up the list
-  }
+  };
+  
+  template <typename T>
+  class Queue { //Queue
+    private:
+      int size;
+      
+      std::deque<T> q;
+    public:
+      Queue(int size)
+      : size(size)
+      {}
+      
+      T& operator[](int i) { return q[i]; }
+      
+      typename std::deque<T>::iterator begin() { return q.begin(); }
+      
+      typename std::deque<T>::iterator end() { return q.end(); }
+      
+      void push(T const& value)
+      {
+        if (q.size() == size)
+          pop();
+        q.push_front(value);
+      }
+      
+      T pop()
+      {
+        T rc = q.back();
+        q.pop_back();
+        
+        return rc;
+      }
+      
+      std::string to_str()
+      {
+        std::stringstream ss;
+        ss << "->";
+        for (typename std::deque<T>::iterator it = q.begin(); it != q.end(); ++it)
+          ss << boost::lexical_cast<std::string>(*it) << ", ";
+        ss << "-> \n";
+        
+        return ss.str();
+      }
+  };
 }
 
 #endif // _PATCH_PRE_H_
