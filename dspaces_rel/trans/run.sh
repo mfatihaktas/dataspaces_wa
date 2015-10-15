@@ -1,26 +1,35 @@
 #!/bin/bash
 echo $1 $2 $3
 
-TRANS_PROTOCOL="i" # "g"
+TRANS_PROTOCOL="t" # "i" # "g"
 IB_LINTF="ib0"
+TCP_LINTF="em2"
 GFTP_LINTF="em2"
 TMPFS_DIR=""
 
-S_LIP=10.0.0.151
+S_LIP=192.168.2.151 # 10.0.0.151 # 192.168.2.151 # 10.0.0.151
 S_LPORT=1234
 
 if [ $1  = 'g' ]; then
-  GLOG_logtostderr=1 ./exp --type="g" --trans_protocol=$TRANS_PROTOCOL --ib_lintf=$IB_LINTF --gftp_lintf=$GFTP_LINTF --tmpfs_dir=$TMPFS_DIR
+  GLOG_logtostderr=1 ./exp --type="g" --trans_protocol=$TRANS_PROTOCOL --ib_lintf=$IB_LINTF \
+                           --tcp_lintf=$TCP_LINTF --s_lport=$S_LPORT \
+                           --gftp_lintf=$GFTP_LINTF --tmpfs_dir=$TMPFS_DIR
 elif [ $1  = 'p' ]; then
-  GLOG_logtostderr=1 ./exp --type="p" --trans_protocol=$TRANS_PROTOCOL --ib_lintf=$IB_LINTF --gftp_lintf=$GFTP_LINTF --tmpfs_dir=$TMPFS_DIR \
+  GLOG_logtostderr=1 ./exp --type="p" --trans_protocol=$TRANS_PROTOCOL --ib_lintf=$IB_LINTF \
+                           --tcp_lintf=$TCP_LINTF \
+                           --gftp_lintf=$GFTP_LINTF --tmpfs_dir=$TMPFS_DIR \
                            --s_lip=$S_LIP --s_lport=$S_LPORT
 elif [ $1  = 'dg' ]; then
   export GLOG_logtostderr=1
-  gdb --args ./exp --type="g" --trans_protocol=$TRANS_PROTOCOL --ib_lintf=$IB_LINTF --gftp_lintf=$GFTP_LINTF --tmpfs_dir=$TMPFS_DIR
+  gdb --args ./exp --type="g" --trans_protocol=$TRANS_PROTOCOL --ib_lintf=$IB_LINTF \
+                              --tcp_lintf=$TCP_LINTF --s_lport=$S_LPORT \
+                              --gftp_lintf=$GFTP_LINTF --tmpfs_dir=$TMPFS_DIR
 elif [ $1  = 'dp' ]; then
   export GLOG_logtostderr=1
-  gdb --args ./exp --type="p" --trans_protocol=$TRANS_PROTOCOL --ib_lintf=$IB_LINTF --gftp_lintf=$GFTP_LINTF --tmpfs_dir=$TMPFS_DIR \
-                   --s_lip=$S_LIP --s_lport=$S_LPORT
+  gdb --args ./exp --type="p" --trans_protocol=$TRANS_PROTOCOL --ib_lintf=$IB_LINTF \
+                              --tcp_lintf=$TCP_LINTF \
+                              --gftp_lintf=$GFTP_LINTF --tmpfs_dir=$TMPFS_DIR \
+                              --s_lip=$S_LIP --s_lport=$S_LPORT
 elif [ $1  = 'init' ]; then
   # export GRIDFTP=1
   unset GRIDFTP

@@ -1,14 +1,16 @@
 #include "remote_interact.h"
 
 /********************************************  RFPManager  ****************************************/
-RFPManager::RFPManager(char data_id_t, std::string trans_protocol,
+RFPManager::RFPManager(DATA_ID_T data_id_t, std::string trans_protocol,
                        std::string ib_lip, std::list<std::string> ib_lport_list,
+                       std::string tcp_lip, int tcp_lport,
                        std::string gftp_lintf, std::string gftp_lip, std::string gftp_lport, std::string tmpfs_dir,
                        boost::shared_ptr<DSDriver> ds_driver_)
 : data_id_t(data_id_t),
-  t_manager_(boost::make_shared<TManager>(trans_protocol, 
-                                          ib_lip, ib_lport_list,
-                                          gftp_lintf, gftp_lip, gftp_lport, tmpfs_dir) ),
+  trans_(boost::make_shared<Trans>(trans_protocol, 
+                                   ib_lip, ib_lport_list,
+                                   tcp_lip, tcp_lport,
+                                   gftp_lintf, gftp_lip, gftp_lport, tmpfs_dir) ),
   ds_driver_(ds_driver_)
 {
   // 
@@ -21,14 +23,14 @@ std::string RFPManager::to_str()
 {
   std::stringstream ss;
   ss << "data_id_t= " << data_id_t << "\n"
-     << "t_manager= \n" << t_manager_->to_str() << "\n";
+     << "trans_= \n" << trans_->to_str() << "\n";
   
   return ss.str();
 }
 
-std::string RFPManager::get_lip() { return t_manager_->get_s_lip(); }
-std::string RFPManager::get_lport() { return t_manager_->get_s_lport(); }
-std::string RFPManager::get_tmpfs_dir() { return t_manager_->get_tmpfs_dir(); }
+std::string RFPManager::get_lip() { return trans_->get_s_lip(); }
+std::string RFPManager::get_lport() { return trans_->get_s_lport(); }
+std::string RFPManager::get_tmpfs_dir() { return trans_->get_tmpfs_dir(); }
 
 int RFPManager::get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_)
 {
@@ -74,8 +76,8 @@ int RFPManager::wa_put(std::string lip, std::string lport, std::string tmpfs_dir
   }
   
   std::string data_id = patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_);
-  if (t_manager_->init_put(lip, lport, tmpfs_dir, data_type, data_id, data_length, data_) ) {
-    LOG(ERROR) << "wa_put:: t_manager_->init_put failed for " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
+  if (trans_->init_put(lip, lport, tmpfs_dir, data_type, data_id, data_length, data_) ) {
+    LOG(ERROR) << "wa_put:: trans_->init_put failed for " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
     return 1;
   }
   free(data_);
@@ -96,8 +98,8 @@ int RFPManager::wa_get(std::string lip, std::string lport, std::string tmpfs_dir
   data_id__recved_size_map[data_id] = 0;
   data_id__data_map[data_id] = malloc(size*get_data_length(ndim, gdim_, lb_, ub_) );
   
-  if (t_manager_->init_get(data_type, lport, data_id, boost::bind(&RFPManager::handle_recv, this, _1, _2, _3) ) ) {
-    LOG(ERROR) << "wa_get:: t_manager_->init_get failed for " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
+  if (trans_->init_get(data_type, lport, data_id, boost::bind(&RFPManager::handle_recv, this, _1, _2, _3) ) ) {
+    LOG(ERROR) << "wa_get:: trans_->init_get failed for " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
     return 1;
   }
   
@@ -137,16 +139,17 @@ void RFPManager::handle_recv(std::string data_id, int data_size, void* data_)
 /********************************************  RIManager  *****************************************/
 RIManager::RIManager(int cl_id, int base_client_id, int num_client, DATA_ID_T data_id_t,
                      std::string data_trans_protocol, std::string ib_lip, std::list<std::string> ib_lport_list,
+                     std::string tcp_lip, int tcp_lport,
                      std::string gftp_lintf, std::string gftp_lip, std::string gftp_lport, std::string tmpfs_dir)
 : cl_id(cl_id), base_client_id(base_client_id), num_client(num_client), data_id_t(data_id_t),
   data_trans_protocol(data_trans_protocol),
   ds_driver_(new DSDriver(cl_id, num_client) ),
   bc_server_(boost::make_shared<BCServer>(cl_id, base_client_id, num_client, CL__RIMANAGER_MAX_MSG_SIZE,
                                           "req_app_", boost::bind(&RIManager::handle_app_req, this, _1), ds_driver_) ),
-  rfp_manager_(
-    boost::make_shared<RFPManager>(data_id_t, data_trans_protocol,
-                                   ib_lip, ib_lport_list,
-                                   gftp_lintf, gftp_lip, gftp_lport, tmpfs_dir, ds_driver_) ),
+  rfp_manager_(new RFPManager(data_id_t, data_trans_protocol,
+                              ib_lip, ib_lport_list,
+                              tcp_lip, tcp_lport,
+                              gftp_lintf, gftp_lip, gftp_lport, tmpfs_dir, ds_driver_) ),
   signals(io_service, SIGINT)
 {
   bc_server_->init_listen_all();
@@ -229,6 +232,20 @@ void RIManager::handle_get(bool blocking, int cl_id, std::map<std::string, std::
   else {
     if (sdm_slave_->get(blocking, key, ver, lb_, ub_) ) {
       LOG(INFO) << "handle_get:: does not exist " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
+      // Note: If before returning the reply to the app, data is written to ds with SDM_MOVE, lock type 2
+      // access seq is violated and deadlock occurs -- app lock_on_read reply while write is not done there
+      // Ugly solution: App will lock_on_read on data before on reply, a garbage data will be written here
+      // even though data is not available. Based on the reply app will ignore data or not.
+      int _ndim = 1;
+      uint64_t _gdim_[] = {1};
+      uint64_t _lb_[] = {0};
+      uint64_t _ub_[] = {1};
+      char _data_[] = {'\0'};
+      if (ds_driver_->sync_put(key.c_str(), ver, sizeof(char), _ndim, gdim_, _lb_, _ub_, _data_) ) {
+        LOG(ERROR) << "handle_get:: ds_driver_->sync_put failed for " << KV_LUCOOR_TO_STR(key, ver, _lb_, _ub_);
+        return;
+      }
+      
       get_map["ds_id"] = '?';
     }
     else
@@ -256,18 +273,24 @@ void RIManager::handle_put(int p_id, std::map<std::string, std::string> put_map)
     put_map["ds_id"] = '?';
   }
   else {
-    if (sdm_slave_->put(true, key, ver, lb_, ub_, p_id) ) {
-      LOG(ERROR) << "handle_put:: sdm_slave_->put failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
-      put_map["ds_id"] = '?';
-    }
-    else {
-      put_map["ds_id"] = sdm_slave_->get_id();
-      data_id_hash__data_info_map[patch_sdm::hash_str(patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_) ) ] =
-        boost::make_shared<data_info>(data_type, size, gdim_);
-    }
+    // Note: Causes SDMMaster to initiate SDM_MOVE which requires access to dataspaces. In case data
+    // is in SDMMaster's ds this may cause read before write to ds even though lock type 2 requires
+    // SDMMaster to write since app is already waiting on lock_on_read
+    // if (sdm_slave_->put(true, key, ver, lb_, ub_, p_id) ) {ata
+    //   LOG(ERROR) << "handle_put:: sdm_slave_->put failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
+    //   put_map["ds_id"] = '?';
+    // }
+    // else {
+    put_map["ds_id"] = sdm_slave_->get_id();
+    data_id_hash__data_info_map[patch_sdm::hash_str(patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_) ) ] =
+      boost::make_shared<data_info>(data_type, size, gdim_);
+    // }
+    cl_id__bc_client_map[p_id]->send(put_map);
   }
   
-  cl_id__bc_client_map[p_id]->send(put_map);
+  if (sdm_slave_->put(true, key, ver, lb_, ub_, p_id) )
+    LOG(ERROR) << "handle_put:: sdm_slave_->put failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
+  // cl_id__bc_client_map[p_id]->send(put_map);
   patch_all::free_all<uint64_t>(2, lb_, ub_);
 }
 
@@ -322,7 +345,7 @@ void RIManager::handle_tinfo_query(std::map<std::string, std::string> msg_map)
   msg_map["lport"] = rfp_manager_->get_lport();
   msg_map["tmpfs_dir"] = rfp_manager_->get_tmpfs_dir();
   
-  if (str_str_equals(data_trans_protocol, INFINIBAND) )
+  if (str_str_equals(data_trans_protocol, INFINIBAND) || str_str_equals(data_trans_protocol, TCP) )
     boost::thread(&RIManager::remote_get, this, msg_map);
   
   if (sdm_slave_->send_rimsg(boost::lexical_cast<char>(msg_map["id"] ), msg_map) ) {

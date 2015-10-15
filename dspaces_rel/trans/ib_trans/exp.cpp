@@ -122,10 +122,10 @@ int main(int argc , char **argv)
   std::string ib_lports[] = {"1234","1235","1236","1237"};
   std::list<std::string> ib_lport_list(ib_lports, ib_lports + sizeof(ib_lports) / sizeof(std::string) );
   // 
-  IBTManager trans_manager(ib_lport_list);
+  IBTrans ib_trans(opt_map["s_lip"], ib_lport_list);
   if (str_equals(opt_map["type"], "server") ) {
-    trans_manager.init_ib_server(data_type_str, trans_manager.get_next_avail_ib_lport().c_str(),
-                                 "dummy", boost::bind(&data_recv_handler, _1, _2, _3) );
+    ib_trans.init_server(data_type_str, ib_trans.get_s_lport().c_str(),
+                         "dummy", boost::bind(&data_recv_handler, _1, _2, _3) );
   }
   else if (str_equals(opt_map["type"], "client") ) {
     size_t data_length = 1024*1024*256; //1024*1024*256;
@@ -138,8 +138,10 @@ int main(int argc , char **argv)
       LOG(ERROR) << "main:: gettimeofday returned non-zero.";
       return 1;
     }
-    trans_manager.init_ib_client(opt_map["s_lip"].c_str(), opt_map["s_lport"].c_str(),
-                                 data_type_str, data_length, data_);
+    
+    ib_trans.init_client(opt_map["s_lip"].c_str(), opt_map["s_lport"].c_str(),
+                         data_type_str, data_length, data_);
+    
     if (gettimeofday(&end_time, NULL) ) {
       LOG(ERROR) << "main:: gettimeofday returned non-zero.";
       return 1;
@@ -156,9 +158,9 @@ int main(int argc , char **argv)
     // BQueue<int> bq;
     // bq.create_timed_push_thread(12);
     
-    // std::string ib_lport = trans_manager.get_next_avail_ib_lport();
+    // std::string ib_lport = ib_trans.get_next_avail_ib_lport();
     // LOG(INFO) << "main:: ib_lport= " << ib_lport;
-    // ib_lport = trans_manager.get_next_avail_ib_lport();
+    // ib_lport = ib_trans.get_next_avail_ib_lport();
     // LOG(INFO) << "main:: ib_lport= " << ib_lport;
   }
   else

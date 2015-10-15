@@ -1,35 +1,37 @@
 #include "gftp_trans.h"
 
-GFTPTManager::GFTPTManager(std::string s_lintf, std::string s_lip, int s_lport, std::string tmpfs_dir)
+GFTPTrans::GFTPTrans(std::string s_lintf, std::string s_lip, int s_lport, std::string tmpfs_dir)
 : s_lintf(s_lintf), s_lip(s_lip), s_lport(s_lport), tmpfs_dir(tmpfs_dir),
   io_driver_(boost::make_shared<IODriver>(tmpfs_dir) ),
   gftp_driver_(boost::make_shared<GFTPDriver>() )
 {
   // 
-  LOG(INFO) << "GFTPTManager:: constructed.";
+  LOG(INFO) << "GFTPTrans:: constructed.";
 }
 
-GFTPTManager::~GFTPTManager() { LOG(INFO) << "GFTPTManager:: destructed."; }
+GFTPTrans::~GFTPTrans() { LOG(INFO) << "GFTPTrans:: destructed."; }
 
-std::string GFTPTManager::to_str()
+std::string GFTPTrans::to_str()
 {
   std::stringstream ss;
   ss << "\t s_lintf= " << s_lintf << "\n"
      << "\t s_lip= " << s_lip << "\n"
      << "\t s_lport= " << s_lport << "\n"
      << "\t tmpfs_dir= " << tmpfs_dir << "\n";
+  
   return ss.str();
 }
 
-int GFTPTManager::get_s_lport() { return s_lport; }
-std::string GFTPTManager::get_tmpfs_dir() { return tmpfs_dir; }
+std::string GFTPTrans::get_s_lip() { return s_lip; }
+int GFTPTrans::get_s_lport() { return s_lport; }
+std::string GFTPTrans::get_tmpfs_dir() { return tmpfs_dir; }
 
-int GFTPTManager::init_server()
+int GFTPTrans::init_server()
 {
   return gftp_driver_->init_server(s_lintf, s_lport);
 }
 
-int GFTPTManager::put(std::string s_lip, int s_lport, std::string tmpfs_dir,
+int GFTPTrans::put(std::string s_lip, int s_lport, std::string tmpfs_dir,
                       std::string data_id, int datasize_inB, void* data_)
 {
   std::string fname = "/ds_" + data_id + ".dat";
@@ -49,7 +51,7 @@ int GFTPTManager::put(std::string s_lip, int s_lport, std::string tmpfs_dir,
   return 0;
 }
 
-int GFTPTManager::get(std::string s_lip, int s_lport, std::string tmpfs_dir,
+int GFTPTrans::get(std::string s_lip, int s_lport, std::string tmpfs_dir,
                       std::string data_id, int &datasize_inB, void* &data_)
 {
   std::string fname = "/ds_" + data_id + ".dat";
@@ -67,7 +69,7 @@ int GFTPTManager::get(std::string s_lip, int s_lport, std::string tmpfs_dir,
   return 0;
 }
 
-int GFTPTManager::read_del_datafile(std::string data_id, int &datasize_inB, void* &data_)
+int GFTPTrans::read_del_datafile(std::string data_id, int &datasize_inB, void* &data_)
 {
   std::string fname = "/ds_" + data_id + ".dat";
   

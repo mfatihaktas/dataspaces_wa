@@ -513,7 +513,6 @@ void SDMMaster::handle_sdm_squery(std::map<std::string, std::string> msg_map)
   }
   if (move_act) {
     LOG(INFO) << "handle_sdm_squery:: move_act= " << move_act << ", ds_id_v= " << patch_all::vec_to_str<>(ds_id_v);
-    
     // TODO: choose from ds_id_v wisely -- considering proximity, load etc.
     char from_id = ds_id_v[0];
     std::map<std::string, std::string> move_act_msg_map;
@@ -532,15 +531,14 @@ void SDMMaster::handle_sdm_squery(std::map<std::string, std::string> msg_map)
         LOG(ERROR) << "handle_sdm_squery:: send_cmsg failed for msg_map= " << patch_all::map_to_str<>(move_act_msg_map);
         return;
       }
-      
-      LOG(INFO) << "handle_sdm_squery:: waiting for move; from_id= " << from_id << ", to_id= " << msg_map["id"] << ", " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_);
-      unsigned int sync_point = patch_sdm::hash_str(
-        SDM_MOVE + "_" + patch_sdm::get_data_id(data_id_t, key, ver, lcoor_, ucoor_) );
-      sdm_m_syncer.add_sync_point(sync_point, 1);
-      sdm_m_syncer.wait(sync_point);
-      sdm_m_syncer.del_sync_point(sync_point);
-      LOG(INFO) << "handle_sdm_squery:: done waiting for move; from_id= " << from_id << ", to_id= " << msg_map["id"] << ", " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_);
     }
+    LOG(INFO) << "handle_sdm_squery:: waiting for move; from_id= " << from_id << ", to_id= " << msg_map["id"] << ", " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_);
+    unsigned int sync_point = patch_sdm::hash_str(
+      SDM_MOVE + "_" + patch_sdm::get_data_id(data_id_t, key, ver, lcoor_, ucoor_) );
+    sdm_m_syncer.add_sync_point(sync_point, 1);
+    sdm_m_syncer.wait(sync_point);
+    sdm_m_syncer.del_sync_point(sync_point);
+    LOG(INFO) << "handle_sdm_squery:: done waiting for move; from_id= " << from_id << ", to_id= " << msg_map["id"] << ", " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_);
   }
   msg_map["type"] = SDM_SQUERY_REPLY;
   if (send_cmsg(boost::lexical_cast<char>(msg_map["id"] ), msg_map) ) {

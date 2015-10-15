@@ -27,12 +27,12 @@ void make_plot(std::vector<T> x1_v, std::vector<T> y1_v, std::string title1,
   T max_y = std::max<T>(*std::max_element(y1_v.begin(), y1_v.end() ), *std::max_element(y2_v.begin(), y2_v.end() ) );
   
   if (out_url.compare("") != 0) {
-    gp << "set term png enhanced font '/usr/share/fonts/dejavu/DejaVuSans.ttf' 12\n";
+    gp << "set term png large enhanced font '/usr/share/fonts/dejavu/DejaVuSans.ttf' 12\n";
     gp << "set output \"" << out_url << "\"\n";
   }
   gp << "set key left top\n";
   gp << "set title '" << plot_title << "'\n";
-  gp << "set style line 1 lc rgb '#7F7F7F' lt 1 lw 2 pt 5 ps 1.5\n";
+  gp << "set style line 1 lc rgb '#7F7F7F' lt 1 lw 2 pt 4 ps 1.5\n";
   gp << "set style line 2 lc rgb '#0060ad' lt 1 lw 2 pt 5 ps 1.5\n";
   gp << "set xrange [" << min_x << ":" << max_x*1.2 << "]\nset yrange [" << min_y << ":" << max_y*1.2 << "]\n";
   gp << "set xlabel '" << x_label << "'\n";
@@ -90,7 +90,7 @@ void make_plot(std::vector<std::vector<T> > x_v_v, std::vector<std::vector<T> > 
   T max_y = *std::max_element(y_v.begin(), y_v.end() );
   
   if (out_url.compare("") != 0) {
-    gp << "set term png enhanced font '/usr/share/fonts/dejavu/DejaVuSans.ttf' 12\n";
+    gp << "set term png size 1000,600 enhanced font '/usr/share/fonts/dejavu/DejaVuSans.ttf' 12\n";
     gp << "set output \"" << out_url << "\"\n";
   }
   gp << "set key right top\n";
@@ -102,7 +102,7 @@ void make_plot(std::vector<std::vector<T> > x_v_v, std::vector<std::vector<T> > 
   
   
   for (int i = 0; i < x_v_v.size(); i++)
-    gp << "set style line " << boost::lexical_cast<std::string>(i + 1) << " lc rgb '" << color_code_[i] << "' lt 1 lw 1 pt 7 ps 1\n";
+    gp << "set style line " << boost::lexical_cast<std::string>(i + 1) << " lc rgb '" << color_code_[i] << "' " << "pt " << boost::lexical_cast<std::string>(i + 1) << " lt 1 lw 1 ps 1\n";
     // gp << "set style line " << boost::lexical_cast<std::string>(i + 1) << " lc rgb '" << color_code_[i] << "' lt 1 lw 2 pt 5 ps 1.5\n";
   
   // gp << "set logscale xy\n";
@@ -375,18 +375,14 @@ void test_rand_shuffle_train()
   for (ACC_T a = 0; a < alphabet_size; a++)
     acc__arr_rate_map[a] = 1 + static_cast<float>(rand() ) / static_cast<float>(RAND_MAX); // (float) 1 / alphabet_size;
   gen_poisson_acc_seq(alphabet_size, num_acc, acc__arr_rate_map, acc_v);
-  // for (int i = 0; i < num_acc; i++)
-  //   acc_v.push_back(i % alphabet_size);
   std::cout << "acc_v= " << patch_all::vec_to_str<>(acc_v) << "\n";
   // acc_v_to_acc_step_v(acc_v, acc_step_v);
   
   int shuffle_width = 2;
   float shuffle_prob = 0.5;
   std::vector<int> shuffle_indices;
-  // for (int i = shuffle_width; i < num_acc; i += (2*shuffle_width + 1) )
   for (int i = 0; i < num_acc/10; i++)
     shuffle_indices.push_back(rand() % num_acc);
-    // shuffle_indices.push_back(i);
   // 
   std::vector<std::vector<float> > run_i_v_v(num_algo);
   std::vector<std::vector<float> > hit_rate_v_v(num_algo);
@@ -396,7 +392,11 @@ void test_rand_shuffle_train()
   
   int num_run = 40;
   for (int i = 1; i <= num_run; i++) {
+    shuffle_indices.clear();
+    for (int j = 0; j < num_acc/10; j++)
+      shuffle_indices.push_back(rand() % num_acc);
     random_partial_shuffle<ACC_T>(shuffle_prob, shuffle_width, shuffle_indices, acc_v);
+    
     std::map<ACC_T, float> acc__emp_prob_map;
     get_emprical_dist(alphabet_size, acc_v, acc__emp_prob_map);
     std::cout << "run_i= " << i << ", acc__emp_prob_map= \n" << patch_all::map_to_str<ACC_T, float>(acc__emp_prob_map) << "\n";
@@ -414,6 +414,9 @@ void test_rand_shuffle_train()
     //   (*it)->train(acc_v_);
     
     // std::random_shuffle(acc_v.begin(), acc_v.end() );
+    shuffle_indices.clear();
+    for (int j = 0; j < num_acc/10; j++)
+      shuffle_indices.push_back(rand() % num_acc);
     random_partial_shuffle<ACC_T>(shuffle_prob, shuffle_width, shuffle_indices, acc_v);
     acc_step_v.clear();
     acc_v_to_acc_step_v(acc_v, acc_step_v);
@@ -438,24 +441,24 @@ void test_rand_shuffle_train()
   }
   
   std::stringstream plot_title_ss;
-  plot_title_ss << "Hit rate after training with random partial shuffling pattern; "
+  plot_title_ss << "Hit rate after training with noisy pattern; "
                 << "alphabet size= " << alphabet_size
                 << ", pattern length= " << num_acc;
   
   std::string out_url = ""; // "/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/prefetch/img/fig_hit_rate_w_rand_partial_shuffle.png";
   make_plot<float>(run_i_v_v, hit_rate_v_v, title_v,
-                   "Number of repetitions of the random partial shuffling pattern observed", "Hit rate",
+                   "Number of repetitions of the noisy pattern observed", "Hit rate",
                    plot_title_ss.str(), out_url);
 
-  out_url = "/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/prefetch/fig_hit_rate_w_rand_partial_shuffle.png";
+  out_url = "/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/sdm_control/prefetch/fig_hit_rate_w_rand_partial_shuffle.png";
   make_plot<float>(run_i_v_v, hit_rate_v_v, title_v,
-                   "Number of repetitions of the random partial shuffling pattern observed", "Hit rate",
+                   "Number of repetitions of the noisy pattern observed", "Hit rate",
                    plot_title_ss.str(), out_url);
   
   std::cout << "acc_step_v= " << patch_all::pvec_to_str<>(acc_step_v) << "\n";
 }
 
-void plot_malgo_comparison()
+void test_fixed_train()
 {
   std::vector<std::string> title_v;
   
@@ -481,17 +484,20 @@ void plot_malgo_comparison()
   malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 1) );
   malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 2) );
   malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 4) );
-  malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 8) );
+  // malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 8) );
   
-  std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.2)(0.2)(0.2)(0.2)(0.2);
+  // std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.2)(0.2)(0.2)(0.2)(0.2);
+  std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.25)(0.25)(0.25)(0.25);
+  // std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.4)(0.15)(0.15)(0.15)(0.15);
+  // std::vector<float> malgo_id__weight_v = boost::assign::list_of(1)(0)(0)(0)(0);
   mmalgo_v.push_back(boost::make_shared<WMMAlgo>(malgo_t__context_size_v, malgo_id__weight_v) );
   title_v.push_back("mixed-blended");
   
   mmalgo_v.push_back(boost::make_shared<MMMAlgo>(malgo_t__context_size_v) );
   title_v.push_back("mixed-most confident");
   
-  mmalgo_v.push_back(boost::make_shared<BMMAlgo>(malgo_t__context_size_v, 4) );
-  title_v.push_back("mixed-best wnd 4");
+  mmalgo_v.push_back(boost::make_shared<BMMAlgo>(malgo_t__context_size_v, 10) );
+  title_v.push_back("mixed-best wnd 10");
   
   int num_algo = malgo_v.size() + mmalgo_v.size();
   
@@ -560,7 +566,7 @@ void plot_malgo_comparison()
                    "Number of repetitions of the fixed pattern observed", "Hit rate",
                    plot_title_ss.str(), out_url);
   
-  out_url = "/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/prefetch/fig_hit_rate_w_fixed.png";
+  out_url = "/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/sdm_control/prefetch/fig_hit_rate_w_fixed.png";
   make_plot<float>(run_i_v_v, hit_rate_v_v, title_v,
                    "Number of repetitions of the fixed pattern observed", "Hit rate",
                    plot_title_ss.str(), out_url);

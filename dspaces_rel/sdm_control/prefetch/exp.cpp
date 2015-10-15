@@ -104,8 +104,8 @@ int main(int argc, char **argv)
   // s_syncer.del_sync_point(b0);
   
   if (str_cstr_equals(opt_map["type"], "markov") ) {
-    // test_rand_shuffle_train();
-    plot_malgo_comparison(); 
+    // test_fixed_train();
+    test_rand_shuffle_train(); 
     // test_malgo();
     // test_bmmalgo();
     // m_prefetch_test();

@@ -62,23 +62,26 @@ namespace patch_ib {
 typedef std::string RECV_ID_T;
 typedef boost::function<void(RECV_ID_T, int, void*)> data_recv_cb_func;
 
-class IBTManager { // Trans
+class IBTrans { // Transport
   private:
-    patch_ib::BQueue<std::string> ib_lport_queue;
+    std::string s_lip;
+  
+    patch_ib::BQueue<std::string> s_lport_queue;
 
   public:
-    IBTManager(std::list<std::string> ib_lport_list);
-    ~IBTManager();
+    IBTrans(std::string s_lip, std::list<std::string> ib_lport_list);
+    ~IBTrans();
     std::string to_str();
     
-    std::string get_next_avail_ib_lport();
-    void give_ib_lport_back(std::string ib_lport);
+    std::string get_s_lip();
+    std::string get_s_lport();
+    void return_s_lport(std::string s_lport);
     
-    void init_ib_server(std::string data_type, const char* lport,
-                        RECV_ID_T recv_id, boost::function<void(RECV_ID_T, int, void*)> data_recv_cb);
+    void init_server(std::string data_type, const char* lport,
+                     RECV_ID_T recv_id, boost::function<void(RECV_ID_T, int, void*)> data_recv_cb);
     
-    void init_ib_client(const char* s_laddr, const char* s_lport,
-                        std::string data_type, int data_length, void* data_);
+    void init_client(const char* s_laddr, const char* s_lport,
+                     std::string data_type, int data_length, void* data_);
 };
 
 #endif // _IB_TRANS_H_

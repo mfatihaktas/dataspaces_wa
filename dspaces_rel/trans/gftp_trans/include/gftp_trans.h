@@ -6,7 +6,7 @@
 #include "gftp_drive.h"
 #include "io_drive.h"
 
-class GFTPTManager
+class GFTPTrans
 {
   private:
     std::string s_lintf, s_lip;
@@ -15,10 +15,11 @@ class GFTPTManager
     boost::shared_ptr<IODriver> io_driver_;
     boost::shared_ptr<GFTPDriver> gftp_driver_;
   public:
-    GFTPTManager(std::string s_lintf, std::string s_lip, int s_lport, std::string tmpfs_dir);
-    ~GFTPTManager();
+    GFTPTrans(std::string s_lintf, std::string s_lip, int s_lport, std::string tmpfs_dir);
+    ~GFTPTrans();
     std::string to_str();
     
+    std::string get_s_lip();
     int get_s_lport();
     std::string get_tmpfs_dir();
     

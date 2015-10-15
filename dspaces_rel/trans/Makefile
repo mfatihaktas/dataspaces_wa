@@ -24,6 +24,10 @@ IB_TRANS_DIR ?= $(TRANS_DIR)/ib_trans
 IB_TRANS_ODIR = $(IB_TRANS_DIR)/obj
 IB_TRANS_OBJS = $(IB_TRANS_ODIR)/ib_trans.o $(IB_TRANS_ODIR)/common.o
 
+TCP_TRANS_DIR ?= $(TRANS_DIR)/tcp_trans
+TCP_TRANS_ODIR = $(TCP_TRANS_DIR)/obj
+TCP_TRANS_OBJS = $(TCP_TRANS_ODIR)/tcp_trans.o $(TCP_TRANS_ODIR)/tcp_server.o $(TCP_TRANS_ODIR)/tcp_client.o
+
 ifdef GRIDFTP
 GFTP_TRANS_DIR ?= $(TRANS_DIR)/gftp_trans
 GFTP_TRANS_ODIR = $(GFTP_TRANS_DIR)/obj
@@ -31,24 +35,27 @@ GFTP_TRANS_OBJS = $(GFTP_TRANS_ODIR)/gftp_trans.o $(GFTP_TRANS_ODIR)/gftp_drive.
 endif # GRIDFTP
 
 TRANS_DIR ?= $(DSPACESWA_DIR)/dspaces_rel/trans
-TRANS_INC = -I$(TRANS_DIR)/include -I$(IB_TRANS_DIR)/include -I$(GFTP_TRANS_DIR)/include
+TRANS_INC = -I$(TRANS_DIR)/include -I$(IB_TRANS_DIR)/include -I$(TCP_TRANS_DIR)/include -I$(GFTP_TRANS_DIR)/include
 # 
 INC = $(GLOG_INC) $(BOOST_INC) $(GFTP_INC) $(TRANS_INC)
 LIB = $(GLOG_LIB) $(BOOST_LIB) $(IBVERBS_LIB) $(GFTP_LIB)
 
 ODIR = obj
-OBJS = $(ODIR)/exp.o $(ODIR)/trans.o $(IB_TRANS_OBJS) $(GFTP_TRANS_OBJS)
+OBJS = $(ODIR)/exp.o $(ODIR)/trans.o $(IB_TRANS_OBJS) $(TCP_TRANS_OBJS) $(GFTP_TRANS_OBJS)
 
-.PHONY: all submake_ibtrans submake_gftptrans lclean clean
+.PHONY: all submake_ib_trans submake_tcp_trans submake_gftp_trans lclean clean
 
 APPS := exp
 
-all: submake_ibtrans submake_gftptrans ${APPS}
+all: submake_ib_trans submake_tcp_trans submake_gftp_trans ${APPS}
 
-submake_ibtrans:
+submake_ib_trans:
 	make -C $(IB_TRANS_DIR)
 
-submake_gftptrans:
+submake_tcp_trans:
+	make -C $(TCP_TRANS_DIR)
+	
+submake_gftp_trans:
 ifdef GRIDFTP
 	make -C $(GFTP_TRANS_DIR)
 endif # GRIDFTP
@@ -64,6 +71,7 @@ lclean:
 
 clean:
 	make -C $(IB_TRANS_DIR) clean
+	make -C $(TCP_TRANS_DIR) clean
 ifdef GRIDFTP
 	make -C $(GFTP_TRANS_DIR) clean
 endif # GRIDFTP

@@ -32,11 +32,6 @@ WADSDriver::~WADSDriver() { LOG(INFO) << "WADSDriver:: destructed."; }
 int WADSDriver::put(std::string key, unsigned int ver, std::string data_type,
                     int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
 {
-  if (ds_driver_->sync_put(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_) ) {
-    LOG(ERROR) << "put:: ds_driver_->sync_put failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
-    return 1;
-  }
-  
   std::map<std::string, std::string> msg_map;
   msg_map["type"] = PUT;
   msg_map["cl_id"] = boost::lexical_cast<std::string>(_app_id);
@@ -63,6 +58,11 @@ int WADSDriver::put(std::string key, unsigned int ver, std::string data_type,
   }
   data_id__ds_id_map.del(data_id);
   
+  if (ds_driver_->sync_put(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_) ) {
+    LOG(ERROR) << "put:: ds_driver_->sync_put failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
+    return 1;
+  }
+  
   return 0;
 }
 
@@ -70,7 +70,7 @@ int WADSDriver::get(bool blocking, std::string key, unsigned int ver, std::strin
                     int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
 {
   LOG(INFO) << "get:: started for " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
-  
+  // 
   std::map<std::string, std::string> msg_map;
   if (blocking)
     msg_map["type"] = BLOCKING_GET;
@@ -82,13 +82,23 @@ int WADSDriver::get(bool blocking, std::string key, unsigned int ver, std::strin
     LOG(ERROR) << "get:: bc_client_->send failed!";
     return 1;
   }
-  // usleep(1000);
+  // 
+  int _ndim = 1;
+  uint64_t _gdim_[] = {1};
+  uint64_t _lb_[] = {0};
+  uint64_t _ub_[] = {1};
+  char _data_[] = {'\0'};
+  if (ds_driver_->get(key.c_str(), ver, sizeof(char), _ndim, gdim_, _lb_, _ub_, _data_) ) {
+    LOG(ERROR) << "get:: ds_driver_->get failed for " << KV_LUCOOR_TO_STR(key, ver, _lb_, _ub_);
+    return 1;
+  }
+  LOG(INFO) << "get:: _data_= " << patch_all::arr_to_str<>(1, _data_) << "\n";
   // 
   boost::shared_ptr<BCServer> bc_server_ = 
     boost::make_shared<BCServer>(_app_id, CL__RIMANAGER_MAX_MSG_SIZE, "reply_app_",
                                  boost::bind(&WADSDriver::handle_ri_reply, this, _1), ds_driver_);
   bc_server_->init_listen_client(_app_id);
-  
+  // usleep(1000);
   std::string data_id = patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_);
   unsigned int sync_point = patch_sdm::hash_str(GET_REPLY + "_" + data_id);
   syncer.add_sync_point(sync_point, 1);

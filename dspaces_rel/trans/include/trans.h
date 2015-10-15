@@ -5,6 +5,7 @@
 // #define _GRIDFTP_
 
 #include "ib_trans.h"
+#include "tcp_trans.h"
 #ifdef _GRIDFTP_
   #include "gftp_trans.h"
 #endif // _GRIDFTP_
@@ -13,25 +14,27 @@
 #define str_cstr_equals(x, y) (strcmp(x.c_str(), y) == 0)
 
 const std::string INFINIBAND = "i";
+const std::string TCP = "t";
 const std::string GRIDFTP = "g";
 
-class TManager { // Transport
+class Trans { // Transport
   typedef boost::function<void(std::string, int, void*)> data_recv_cb_func;
   
   private:
     std::string trans_protocol;
-    std::string ib_lip, gftp_lip, gftp_lport;
     
-    boost::shared_ptr<IBTManager> ibt_manager_;
+    boost::shared_ptr<IBTrans> ib_trans_;
+    boost::shared_ptr<TCPTrans> tcp_trans_;
   #ifdef _GRIDFTP_
-    boost::shared_ptr<GFTPTManager> gftpt_manager_;
+    boost::shared_ptr<GFTPTrans> gftp_trans_;
   #endif // _GRIDFTP_
   
   public:
-    TManager(std::string trans_protocol,
-             std::string ib_lip, std::list<std::string> ib_lport_list, 
-             std::string gftp_lintf, std::string gftp_lip, std::string gftp_lport, std::string tmpfs_dir);
-    ~TManager();
+    Trans(std::string trans_protocol,
+          std::string ib_lip, std::list<std::string> ib_lport_list,
+          std::string tcp_lip, int tcp_lport,
+          std::string gftp_lintf, std::string gftp_lip, std::string gftp_lport, std::string tmpfs_dir);
+    ~Trans();
     std::string to_str();
     
     std::string get_s_lip();

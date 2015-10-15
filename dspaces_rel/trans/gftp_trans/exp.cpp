@@ -135,9 +135,9 @@ int main(int argc , char **argv)
   std::string data_id = "dummy";
   
   if (opt_map["type"].compare("s") == 0) {
-    GFTPTManager gftpt_manager(opt_map["s_lintf"], intf_to_ip(opt_map["s_lintf"] ),
-                               boost::lexical_cast<int>(opt_map["s_lport"] ), opt_map["tmpfs_dir"] );
-    gftpt_manager.init_server();
+    GFTPTrans gftp_trans(opt_map["s_lintf"], intf_to_ip(opt_map["s_lintf"] ),
+                         boost::lexical_cast<int>(opt_map["s_lport"] ), opt_map["tmpfs_dir"] );
+    gftp_trans.init_server();
     
     std::cout << "Enter \n";
     getline(std::cin, temp);
@@ -158,16 +158,16 @@ int main(int argc , char **argv)
     // }
     // std::cout << "\n";
     
-    // gftpt_manager.get_over_gftp("127.0.0.1", "5000", file_dir + "server",
+    // gftp_trans.get_over_gftp("127.0.0.1", "5000", file_dir + "server",
     //                               "dummy", 0, datasize_inB, data_);
     
     int datasize_inB;
     void* data_;
-    GFTPTManager gftpt_manager(opt_map["s_lintf"], intf_to_ip(opt_map["s_lintf"] ),
-                               boost::lexical_cast<int>(opt_map["s_lport"] ), opt_map["tmpfs_dir"] );
+    GFTPTrans gftp_trans(opt_map["s_lintf"], intf_to_ip(opt_map["s_lintf"] ),
+                         boost::lexical_cast<int>(opt_map["s_lport"] ), opt_map["tmpfs_dir"] );
     
-    gftpt_manager.get(opt_map["s_laddr"], boost::lexical_cast<int>(opt_map["s_lport"] ), opt_map["tmpfs_dir"],
-                      data_id, datasize_inB, data_);
+    gftp_trans.get(opt_map["s_laddr"], boost::lexical_cast<int>(opt_map["s_lport"] ), opt_map["tmpfs_dir"],
+                   data_id, datasize_inB, data_);
     
     int* int_data_ = static_cast<int*>(data_);
     int data_length = datasize_inB / sizeof(int);
@@ -194,17 +194,17 @@ int main(int argc , char **argv)
       data_[i] = i + 1;
     
     LOG(INFO) << "main:: datasize_inB= " << datasize_inB;
-    GFTPTManager gftpt_manager(opt_map["s_lintf"], intf_to_ip(opt_map["s_lintf"] ),
-                               boost::lexical_cast<int>(opt_map["s_lport"] ), opt_map["tmpfs_dir"] );
-    gftpt_manager.put(opt_map["s_laddr"], boost::lexical_cast<int>(opt_map["s_lport"] ), opt_map["tmpfs_dir"],
-                      data_id, datasize_inB, data_);
+    GFTPTrans gftp_trans(opt_map["s_lintf"], intf_to_ip(opt_map["s_lintf"] ),
+                         boost::lexical_cast<int>(opt_map["s_lport"] ), opt_map["tmpfs_dir"] );
+    gftp_trans.put(opt_map["s_laddr"], boost::lexical_cast<int>(opt_map["s_lport"] ), opt_map["tmpfs_dir"],
+                   data_id, datasize_inB, data_);
     // 
     std::cout << "Enter for read_del_datafile... \n";
     getline(std::cin, temp);
     
     int read_datasize_inB;
     void* read_data_;
-    gftpt_manager.read_del_datafile(data_id, read_datasize_inB, read_data_);
+    gftp_trans.read_del_datafile(data_id, read_datasize_inB, read_data_);
     free(read_data_);
     std::cout << "main:: read_datasize_inB= " << read_datasize_inB << "\n";
     

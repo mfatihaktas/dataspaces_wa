@@ -14,16 +14,17 @@ typedef boost::function<void(RECV_ID_T, int, void*)> data_recv_cb_func;
 
 class RFPManager { // Remote Fetch & Place
   private:
-    char data_id_t;
+    DATA_ID_T data_id_t;
     
-    boost::shared_ptr<TManager> t_manager_;
+    boost::shared_ptr<Trans> trans_;
     boost::shared_ptr<DSDriver> ds_driver_;
     
     std::map<std::string, int> data_id__recved_size_map;
     std::map<std::string, void*> data_id__data_map;
   public:
-    RFPManager(char data_id_t, std::string trans_protocol,
+    RFPManager(DATA_ID_T data_id_t, std::string trans_protocol,
                std::string ib_lip, std::list<std::string> ib_lport_list,
+               std::string tcp_lip, int tcp_lport,
                std::string gftp_lintf, std::string gftp_lip, std::string gftp_lport, std::string tmpfs_dir,
                boost::shared_ptr<DSDriver> ds_driver_);
     ~RFPManager();
@@ -103,6 +104,7 @@ class RIManager {
   public:
     RIManager(int cl_id, int base_client_id, int num_client, DATA_ID_T data_id_t,
               std::string data_trans_protocol, std::string ib_lip, std::list<std::string> ib_lport_list,
+              std::string tcp_lip, int tcp_lport,
               std::string gftp_lintf, std::string gftp_lip, std::string gftp_lport, std::string tmpfs_dir);
     ~RIManager();
     void close();
@@ -131,9 +133,11 @@ class MSRIManager : public RIManager { // Markov Slave
     MSRIManager(int cl_id, int base_client_id, int num_client,
                 char ds_id, std::string control_lip, int control_lport, std::string join_control_lip, int join_control_lport,
                 std::string data_trans_protocol, std::string ib_lip, std::list<std::string> ib_lport_list,
+                std::string tcp_lip, int tcp_lport,
                 std::string gftp_lintf, std::string gftp_lip, std::string gftp_lport, std::string tmpfs_dir)
     : RIManager(cl_id, base_client_id, num_client, KV_DATA_ID,
                 data_trans_protocol, ib_lip, ib_lport_list,
+                tcp_lip, tcp_lport,
                 gftp_lintf, gftp_lip, gftp_lport, tmpfs_dir)
     {
       sdm_slave_ = boost::make_shared<MSDMSlave>(ds_id, control_lip, control_lport, join_control_lip, join_control_lport,
@@ -160,9 +164,11 @@ class SSRIManager : public RIManager { // Spatial Slave
     SSRIManager(int cl_id, int base_client_id, int num_client,
                 char ds_id, std::string control_lip, int control_lport, std::string join_control_lip, int join_control_lport,
                 std::string data_trans_protocol, std::string ib_lip, std::list<std::string> ib_lport_list,
+                std::string tcp_lip, int tcp_lport,
                 std::string gftp_lintf, std::string gftp_lip, std::string gftp_lport, std::string tmpfs_dir)
     : RIManager(cl_id, base_client_id, num_client, LUCOOR_DATA_ID,
                 data_trans_protocol, ib_lip, ib_lport_list,
+                tcp_lip, tcp_lport,
                 gftp_lintf, gftp_lip, gftp_lport, tmpfs_dir)
     {
       sdm_slave_ = boost::make_shared<SSDMSlave>(ds_id, control_lip, control_lport, join_control_lip, join_control_lport,
@@ -190,9 +196,11 @@ class MMRIManager : public RIManager { // Markov Master
                 char ds_id, std::string control_lip, int control_lport, std::string join_control_lip, int join_control_lport,
                 MALGO_T malgo_t, int max_num_key_ver_in_mpbuffer, bool w_prefetch,
                 std::string data_trans_protocol, std::string ib_lip, std::list<std::string> ib_lport_list,
+                std::string tcp_lip, int tcp_lport,
                 std::string gftp_lintf, std::string gftp_lip, std::string gftp_lport, std::string tmpfs_dir)
     : RIManager(cl_id, base_client_id, num_client, KV_DATA_ID,
                 data_trans_protocol, ib_lip, ib_lport_list,
+                tcp_lip, tcp_lport,
                 gftp_lintf, gftp_lip, gftp_lport, tmpfs_dir)
     {
       boost::shared_ptr<SDMSlave> t_sdm_slave_(
@@ -223,9 +231,11 @@ class SMRIManager : public RIManager { // Spatial Master
                 char ds_id, std::string control_lip, int control_lport, std::string join_control_lip, int join_control_lport,
                 SALGO_T salgo_t, COOR_T* lcoor_, COOR_T* ucoor_, int sexpand_length, bool w_prefetch,
                 std::string data_trans_protocol, std::string ib_lip, std::list<std::string> ib_lport_list,
+                std::string tcp_lip, int tcp_lport,
                 std::string gftp_lintf, std::string gftp_lip, std::string gftp_lport, std::string tmpfs_dir)
     : RIManager(cl_id, base_client_id, num_client, LUCOOR_DATA_ID,
                 data_trans_protocol, ib_lip, ib_lport_list,
+                tcp_lip, tcp_lport,
                 gftp_lintf, gftp_lip, gftp_lport, tmpfs_dir)
     {
       boost::shared_ptr<SDMSlave> t_sdm_slave_(

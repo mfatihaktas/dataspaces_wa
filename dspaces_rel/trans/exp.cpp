@@ -48,10 +48,11 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
     {"type", optional_argument, NULL, 0},
     {"trans_protocol", optional_argument, NULL, 1},
     {"ib_lintf", optional_argument, NULL, 2},
-    {"gftp_lintf", optional_argument, NULL, 3},
-    {"tmpfs_dir", optional_argument, NULL, 4},
-    {"s_lip", optional_argument, NULL, 5},
-    {"s_lport", optional_argument, NULL, 6},
+    {"tcp_lintf", optional_argument, NULL, 3},
+    {"gftp_lintf", optional_argument, NULL, 4},
+    {"tmpfs_dir", optional_argument, NULL, 5},
+    {"s_lip", optional_argument, NULL, 6},
+    {"s_lport", optional_argument, NULL, 7},
     {0, 0, 0, 0}
   };
   
@@ -76,15 +77,18 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
         opt_map["ib_lintf"] = optarg;
         break;
       case 3:
-        opt_map["gftp_lintf"] = optarg;
+        opt_map["tcp_lintf"] = optarg;
         break;
       case 4:
-        opt_map["tmpfs_dir"] = optarg;
+        opt_map["gftp_lintf"] = optarg;
         break;
       case 5:
-        opt_map["s_lip"] = optarg;
+        opt_map["tmpfs_dir"] = optarg;
         break;
       case 6:
+        opt_map["s_lip"] = optarg;
+        break;
+      case 7:
         opt_map["s_lport"] = optarg;
         break;
       case '?':
@@ -100,24 +104,22 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
     putchar ('\n');
   }
   // 
-  std::cout << "opt_map= \n";
-  for (std::map<std::string, std::string>::iterator it=opt_map.begin(); it!=opt_map.end(); ++it)
-    std::cout << it->first << " : " << it->second << '\n';
+  std::cout << "opt_map= \n" << patch_tcp::map_to_str<>(opt_map) << "\n";
   
   return opt_map;
 }
 
-size_t total_recved_size = 0;
-void data_recv_handler(std::string recv_id, size_t data_size, void* data_)
+int total_recved_size = 0;
+void data_recv_handler(std::string data_id, int data_size, void* data_)
 {
   total_recved_size += data_size;
-  LOG(INFO) << "data_recv_handler:: for recv_id= " << recv_id
+  LOG(INFO) << "data_recv_handler:: for data_id= " << data_id
             << ", recved data_size= " << data_size
             << ", total_recved_size= " << (float)total_recved_size/(1024*1024) << "MB";
 }
 
-#define data_type int
-const std::string data_type_str = "int";
+#define DATA_T int
+const std::string DATA_T_STR = "int";
 
 int main(int argc , char **argv)
 {
@@ -133,26 +135,35 @@ int main(int argc , char **argv)
   std::list<std::string> ib_lport_list(ib_lports, ib_lports + sizeof(ib_lports)/sizeof(*ib_lports) );
   std::string gftp_lport = "1234";
   // 
-  TManager trans_manager(opt_map["trans_protocol"],
-                         intf_to_ip(opt_map["ib_lintf"] ), ib_lport_list,
-                         opt_map["gftp_lintf"], intf_to_ip(opt_map["gftp_lintf"] ), gftp_lport, opt_map["tmpfs_dir"] );
-  if (str_equals(opt_map["type"], "g") ) {
-    trans_manager.init_get(data_type_str, trans_manager.get_s_lport(), "dummy", boost::bind(&data_recv_handler, _1, _2, _3) );
+  Trans trans(opt_map["trans_protocol"],
+              intf_to_ip(opt_map["ib_lintf"] ), ib_lport_list,
+              intf_to_ip(opt_map["tcp_lintf"] ), boost::lexical_cast<int>(opt_map["s_lport"] ),
+              opt_map["gftp_lintf"], intf_to_ip(opt_map["gftp_lintf"] ), gftp_lport, opt_map["tmpfs_dir"] );
+  if (str_cstr_equals(opt_map["type"], "g") ) {
+    trans.init_get(DATA_T_STR, trans.get_s_lport(), "dummy", boost::bind(&data_recv_handler, _1, _2, _3) );
+    
+    std::cout << "Enter \n";
+    getline(std::cin, temp);
   }
-  else if (str_equals(opt_map["type"], "p") ) {
-    // size_t data_length = 4* 1024*1024*256;
-    size_t data_length = 1024; //1024*1024*256;
-    void* data_ = (void*)malloc(sizeof(data_type)*data_length);
+  else if (str_cstr_equals(opt_map["type"], "p") ) {
+    // int data_length = 4* 1024*1024*256;
+    int data_length = 1024; //1024*1024*256;
+    void* data_ = (void*)malloc(sizeof(DATA_T)*data_length);
     
     for (int i = 0; i < data_length; i++)
-      static_cast<data_type*>(data_)[i] = (data_type)i*1.2;
+      static_cast<DATA_T*>(data_)[i] = (DATA_T)i*1.2;
     // 
     if (gettimeofday(&start_time, NULL) ) {
       LOG(ERROR) << "main:: gettimeofday returned non-zero.";
       return 1;
     }
-    trans_manager.init_put(opt_map["s_lip"], opt_map["s_lport"], opt_map["tmpfs_dir"],
-                           data_type_str, "dummy", data_length, data_);
+    
+    //TODO: for now
+    if (str_cstr_equals(opt_map["trans_protocol"], "t") )
+      data_length *= sizeof(DATA_T);
+    trans.init_put(opt_map["s_lip"], opt_map["s_lport"], opt_map["tmpfs_dir"],
+                   DATA_T_STR, "dummy", data_length, data_);
+    
     if (gettimeofday(&end_time, NULL) ) {
       LOG(ERROR) << "main:: gettimeofday returned non-zero.";
       return 1;
@@ -162,7 +173,7 @@ int main(int argc , char **argv)
     LOG(INFO) << "main:: exec_time= " << exec_time_sec << "." << exec_time_usec / 1000 << " sec.";
     // 
     free(data_);
-    // std::cout << "Enter\n";
+    // std::cout << "Enter \n";
     // getline(std::cin, temp);
   }
   else

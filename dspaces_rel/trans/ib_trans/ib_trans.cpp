@@ -1,27 +1,31 @@
 #include "ib_trans.h"
 
-IBTManager::IBTManager(std::list<std::string> ib_lport_list)
+IBTrans::IBTrans(std::string s_lip, std::list<std::string> s_lport_list)
+: s_lip(s_lip)
 {
-  for (std::list<std::string>::iterator it = ib_lport_list.begin(); it != ib_lport_list.end(); it++)
-    ib_lport_queue.push(*it);
+  for (std::list<std::string>::iterator it = s_lport_list.begin(); it != s_lport_list.end(); it++)
+    s_lport_queue.push(*it);
   // 
-  LOG(INFO) << "IBTManager:: constructed; \n" << to_str();
+  LOG(INFO) << "IBTrans:: constructed; \n" << to_str();
 }
 
-IBTManager::~IBTManager() { LOG(INFO) << "IBTManager:: destructed."; }
+IBTrans::~IBTrans() { LOG(INFO) << "IBTrans:: destructed."; }
 
-std::string IBTManager::to_str()
+std::string IBTrans::to_str()
 {
   std::stringstream ss;
-  ss << "ib_lport_queue= \n" << ib_lport_queue.to_str();
+  ss << "s_lip= " << s_lip << "\n"
+     << "s_lport_queue= \n" << s_lport_queue.to_str();
+  
   return ss.str();
 }
 
-std::string IBTManager::get_next_avail_ib_lport() { return ib_lport_queue.pop(); }
-void IBTManager::give_ib_lport_back(std::string ib_lport) { ib_lport_queue.push(ib_lport); }
+std::string IBTrans::get_s_lip() { return s_lip; }
+std::string IBTrans::get_s_lport() { return s_lport_queue.pop(); }
+void IBTrans::return_s_lport(std::string s_lport) { s_lport_queue.push(s_lport); }
 
-void IBTManager::init_ib_server(std::string data_type, const char* lport,
-                                RECV_ID_T recv_id, boost::function<void(RECV_ID_T, int, void*)> data_recv_cb)
+void IBTrans::init_server(std::string data_type, const char* lport,
+                          RECV_ID_T recv_id, boost::function<void(RECV_ID_T, int, void*)> data_recv_cb)
 {
   if (str_equals(data_type, "int") ) {
     IBServer<int, RECV_ID_T> ib_server(lport, recv_id, data_recv_cb);
@@ -43,8 +47,8 @@ void IBTManager::init_ib_server(std::string data_type, const char* lport,
     LOG(ERROR) << "init_ib_server:: unknown data_type= " << data_type;
 }
 
-void IBTManager::init_ib_client(const char* s_laddr, const char* s_lport,
-                                std::string data_type, int data_length, void* data_)
+void IBTrans::init_client(const char* s_laddr, const char* s_lport,
+                          std::string data_type, int data_length, void* data_)
 {
   if (str_equals(data_type, "int") ) {
     IBClient<int> ib_client(s_laddr, s_lport, data_length, static_cast<int*>(data_) );

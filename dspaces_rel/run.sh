@@ -12,6 +12,8 @@ RI_MANAGER_JOIN_CONTROL_LPORT_LIST=( "" "7000" "7000" )
 
 TRANS_PROTOCOL="i" # "g"
 IB_LINTF="ib0"
+TCP_LINTF="em2"
+TCP_LPORT="6000"
 GFTP_LINTF="em2"
 GFTP_LPORT="6000"
 TMPFS_DIR=$DSPACESWA_DIR/tmpfs
@@ -33,7 +35,9 @@ elif [ $1  = 'r' ]; then
     GLOG_logtostderr=1 ./exp --type="ri" --cl_id=21 --num_client=$NUM_CLIENT --base_client_id=$(($(($2+1))*10)) \
                              --ds_id=$2 --control_lintf=$CONTROL_LINTF --control_lport=${RI_MANAGER_CONTROL_LPORT_LIST[$2] } \
                              --join_control_laddr=${RI_MANAGER_JOIN_CONTROL_LADDR_LIST[$2] } --join_control_lport=${RI_MANAGER_JOIN_CONTROL_LPORT_LIST[$2] } \
-                             --trans_protocol=$TRANS_PROTOCOL --ib_lintf=$IB_LINTF --gftp_lintf=$GFTP_LINTF --gftp_lport=$GFTP_LPORT --tmpfs_dir=$TMPFS_DIR
+                             --trans_protocol=$TRANS_PROTOCOL --ib_lintf=$IB_LINTF \
+                             --tcp_lintf=$TCP_LINTF --tcp_lport=$TCP_LPORT \
+                             --gftp_lintf=$GFTP_LINTF --gftp_lport=$GFTP_LPORT --tmpfs_dir=$TMPFS_DIR
   fi
 elif [ $1  = 'load' ]; then
   module load openmpi-x86_64

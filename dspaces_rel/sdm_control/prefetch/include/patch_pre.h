@@ -204,59 +204,59 @@ namespace patch_all {
       }
   };
   
-  template <typename Tk, typename Tv, class Compare = std::less<Tk> >
-  struct not_thread_safe_map {
-    private:
-      // boost::mutex mutex;
-      typename std::map<Tk, Tv, Compare> map;
-    public:
-      not_thread_safe_map() {}
-      ~not_thread_safe_map() {}
+  // template <typename Tk, typename Tv, class Compare = std::less<Tk> >
+  // struct not_thread_safe_map {
+  //   private:
+  //     // boost::mutex mutex;
+  //     typename std::map<Tk, Tv, Compare> map;
+  //   public:
+  //     not_thread_safe_map() {}
+  //     ~not_thread_safe_map() {}
       
-      Tv& operator[](Tk k) {
-        // boost::lock_guard<boost::mutex> guard(this->mutex);
-        return map[k];
-      }
+  //     Tv& operator[](Tk k) {
+  //       // boost::lock_guard<boost::mutex> guard(this->mutex);
+  //       return map[k];
+  //     }
       
-      int del(Tk k)
-      {
-        // boost::lock_guard<boost::mutex> guard(this->mutex);
-        map.erase(map.find(k) );
-      }
+  //     int del(Tk k)
+  //     {
+  //       // boost::lock_guard<boost::mutex> guard(this->mutex);
+  //       map.erase(map.find(k) );
+  //     }
       
-      bool contains(Tk k)
-      {
-        // boost::lock_guard<boost::mutex> guard(this->mutex);
-        return !(map.count(k) == 0);
-      }
+  //     bool contains(Tk k)
+  //     {
+  //       // boost::lock_guard<boost::mutex> guard(this->mutex);
+  //       return !(map.count(k) == 0);
+  //     }
       
-      typename std::map<Tk, Tv>::iterator begin() 
-      {
-        // boost::lock_guard<boost::mutex> guard(this->mutex);
-        return map.begin();
-      }
+  //     typename std::map<Tk, Tv>::iterator begin() 
+  //     {
+  //       // boost::lock_guard<boost::mutex> guard(this->mutex);
+  //       return map.begin();
+  //     }
       
-      typename std::map<Tk, Tv>::iterator end()
-      {
-        // boost::lock_guard<boost::mutex> guard(this->mutex);
-        return map.end();
-      }
+  //     typename std::map<Tk, Tv>::iterator end()
+  //     {
+  //       // boost::lock_guard<boost::mutex> guard(this->mutex);
+  //       return map.end();
+  //     }
       
-      size_t size()
-      {
-        // boost::lock_guard<boost::mutex> guard(this->mutex);
-        return map.size();
-      }
+  //     size_t size()
+  //     {
+  //       // boost::lock_guard<boost::mutex> guard(this->mutex);
+  //       return map.size();
+  //     }
       
-      std::string to_str()
-      {
-        std::stringstream ss;
-        for (typename std::map<Tk, Tv>::iterator it = map.begin(); it != map.end(); it++)
-          ss << "\t" << boost::lexical_cast<std::string>(it->first) << " : " << boost::lexical_cast<std::string>(it->second) << "\n";
+  //     std::string to_str()
+  //     {
+  //       std::stringstream ss;
+  //       for (typename std::map<Tk, Tv>::iterator it = map.begin(); it != map.end(); it++)
+  //         ss << "\t" << boost::lexical_cast<std::string>(it->first) << " : " << boost::lexical_cast<std::string>(it->second) << "\n";
         
-        return ss.str();
-      }
-  };
+  //       return ss.str();
+  //     }
+  // };
   
   template <typename T, class Compare = std::less<T> >
   struct syncer {

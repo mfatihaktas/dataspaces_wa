@@ -54,9 +54,11 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
     {"join_control_lport", optional_argument, NULL, 8},
     {"trans_protocol", optional_argument, NULL, 9},
     {"ib_lintf", optional_argument, NULL, 10},
-    {"gftp_lintf", optional_argument, NULL, 11},
-    {"gftp_lport", optional_argument, NULL, 12},
-    {"tmpfs_dir", optional_argument, NULL, 13},
+    {"tcp_lintf", optional_argument, NULL, 11},
+    {"tcp_lport", optional_argument, NULL, 12},
+    {"gftp_lintf", optional_argument, NULL, 13},
+    {"gftp_lport", optional_argument, NULL, 14},
+    {"tmpfs_dir", optional_argument, NULL, 15},
     {0, 0, 0, 0}
   };
   
@@ -104,12 +106,18 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
         opt_map["ib_lintf"] = optarg;
         break;
       case 11:
-        opt_map["gftp_lintf"] = optarg;
+        opt_map["tcp_lintf"] = optarg;
         break;
       case 12:
-        opt_map["gftp_lport"] = optarg;
+        opt_map["tcp_lport"] = optarg;
         break;
       case 13:
+        opt_map["gftp_lintf"] = optarg;
+        break;
+      case 14:
+        opt_map["gftp_lport"] = optarg;
+        break;
+      case 15:
         opt_map["tmpfs_dir"] = optarg;
         break;
       case '?':
@@ -163,6 +171,7 @@ int main(int argc , char **argv)
           boost::lexical_cast<char>(opt_map["ds_id"] ), intf_to_ip(opt_map["control_lintf"] ), boost::lexical_cast<int>(opt_map["control_lport"] ), opt_map["join_control_lip"], boost::lexical_cast<int>(opt_map["join_control_lport"] ),
           malgo_t, max_num_key_ver_in_mpbuffer, w_prefetch,
           opt_map["trans_protocol"], intf_to_ip(opt_map["ib_lintf"] ), ib_lport_list,
+          intf_to_ip(opt_map["tcp_lintf"] ), boost::lexical_cast<int>(opt_map["tcp_lport"] ),
           opt_map["gftp_lintf"], intf_to_ip(opt_map["gftp_lintf"] ), opt_map["gftp_lport"], opt_map["tmpfs_dir"] ) );
       
       // boost::shared_ptr<RIManager> ri_manager_(
@@ -171,6 +180,7 @@ int main(int argc , char **argv)
       //     boost::lexical_cast<char>(opt_map["ds_id"] ), intf_to_ip(opt_map["control_lintf"] ), boost::lexical_cast<int>(opt_map["control_lport"] ), opt_map["join_control_lip"], boost::lexical_cast<int>(opt_map["join_control_lport"] ),
       //     salgo_t, lcoor_, ucoor_, sexpand_length, w_prefetch,
       //     opt_map["trans_protocol"], intf_to_ip(opt_map["ib_lintf"] ), ib_lport_list,
+      //     intf_to_ip(opt_map["tcp_lintf"] ), boost::lexical_cast<int>(opt_map["tcp_lport"] ),
       //     opt_map["gftp_lintf"], intf_to_ip(opt_map["gftp_lintf"] ), opt_map["gftp_lport"], opt_map["tmpfs_dir"] ) );
     }
     else {
@@ -179,6 +189,7 @@ int main(int argc , char **argv)
           boost::lexical_cast<int>(opt_map["cl_id"] ), boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_client"] ),
           boost::lexical_cast<char>(opt_map["ds_id"] ), intf_to_ip(opt_map["control_lintf"] ), boost::lexical_cast<int>(opt_map["control_lport"] ), opt_map["join_control_lip"], boost::lexical_cast<int>(opt_map["join_control_lport"] ),
           opt_map["trans_protocol"], intf_to_ip(opt_map["ib_lintf"] ), ib_lport_list,
+          intf_to_ip(opt_map["tcp_lintf"] ), boost::lexical_cast<int>(opt_map["tcp_lport"] ),
           opt_map["gftp_lintf"], intf_to_ip(opt_map["gftp_lintf"] ), opt_map["gftp_lport"], opt_map["tmpfs_dir"] ) );
       
       // boost::shared_ptr<RIManager> ri_manager_(
@@ -186,6 +197,7 @@ int main(int argc , char **argv)
       //     boost::lexical_cast<int>(opt_map["cl_id"] ), boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_client"] ),
       //     boost::lexical_cast<char>(opt_map["ds_id"] ), intf_to_ip(opt_map["control_lintf"] ), boost::lexical_cast<int>(opt_map["control_lport"] ), opt_map["join_control_lip"], boost::lexical_cast<int>(opt_map["join_control_lport"] ),
       //     opt_map["trans_protocol"], intf_to_ip(opt_map["ib_lintf"] ), ib_lport_list,
+      //     intf_to_ip(opt_map["tcp_lintf"] ), boost::lexical_cast<int>(opt_map["tcp_lport"] ),
       //     opt_map["gftp_lintf"], intf_to_ip(opt_map["gftp_lintf"] ), opt_map["gftp_lport"], opt_map["tmpfs_dir"] ) );
     }
     // usleep(1*1000*1000);
