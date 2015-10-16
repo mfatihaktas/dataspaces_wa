@@ -256,17 +256,16 @@ void acc_v_to_acc_step_v(std::vector<ACC_T>& acc_v, std::vector<acc_step_pair>& 
 
 // ----------------------------------------  sim_test  -------------------------------------------//
 #define VARIANCE 2
-void gen_scenario(int num_ds, std::vector<char>& ds_id_v,
+void gen_scenario(int num_ds, std::vector<int>& ds_id_v,
                   int max_num_p, int max_num_c, int num_putget_mean, float put_rate_mean, float get_rate_mean,
                   int& num_p, int& num_c,
-                  std::vector<char>& p_id__ds_id_v, std::vector<char>& c_id__ds_id_v,
+                  std::vector<int>& p_id__ds_id_v, std::vector<int>& c_id__ds_id_v,
                   std::vector<int>& p_id__num_put_v, std::vector<int>& c_id__num_get_v,
                   std::vector<float>& p_id__put_rate_vec, std::vector<float>& c_id__get_rate_v,
                   std::vector<std::vector<float> >& p_id__inter_arr_time_v_v, std::vector<std::vector<float> >& c_id__inter_arr_time_v_v )
 {
-  int base_ascii_dec = 97;
   for (int i = 0; i < num_ds; i++)
-    ds_id_v.push_back( (char) (base_ascii_dec + i) );
+    ds_id_v.push_back(i);
   
   num_p = max_num_p; // rand() % max_num_p + 1;
   for (int i = 0; i < num_p; i++) {
@@ -756,7 +755,7 @@ void test_bmmalgo()
             << "hit_rate= " << bmmalgo_hit_rate << "\n";
 }
 
-void handle_mpbuffer_data_act(PREFETCH_DATA_ACT_T data_act_t, char ds_id, key_ver_pair kv)
+void handle_mpbuffer_data_act(PREFETCH_DATA_ACT_T data_act_t, int ds_id, key_ver_pair kv)
 {
   // LOG(INFO) << "handle_mpbuffer_data_act:: data_act_t= " << data_act_t << ", ds_id= " << ds_id << KV_TO_STR(key, ver);
 }
@@ -816,7 +815,7 @@ void m_prefetch_test()
 void mpcsim_test()
 {
   int num_p, num_c;
-  std::vector<char> p_id__ds_id_v, c_id__ds_id_v;
+  std::vector<int> p_id__ds_id_v, c_id__ds_id_v;
   std::vector<int> p_id__num_put_v, c_id__num_get_v;
   std::vector<float> p_id__put_rate_v, c_id__get_rate_v;
   std::vector<std::vector<float> > p_id__inter_arr_time_v_v, c_id__inter_arr_time_v_v;
@@ -828,7 +827,7 @@ void mpcsim_test()
   float put_rate_mean = 0.2;
   float get_rate_mean = 0.2;
   
-  std::vector<char> ds_id_v;
+  std::vector<int> ds_id_v;
   gen_scenario(num_ds, ds_id_v,
                max_num_p, max_num_c, num_putget_mean, put_rate_mean, get_rate_mean,
                num_p, num_c,

@@ -67,17 +67,21 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
     {"base_client_id", optional_argument, NULL, 2},
     {"num_client", optional_argument, NULL, 3},
     {"ds_id", optional_argument, NULL, 4},
-    {"control_lintf", optional_argument, NULL, 5},
-    {"control_lport", optional_argument, NULL, 6},
-    {"join_control_lip", optional_argument, NULL, 7},
-    {"join_control_lport", optional_argument, NULL, 8},
-    {"trans_protocol", optional_argument, NULL, 9},
-    {"ib_lintf", optional_argument, NULL, 10},
-    {"tcp_lintf", optional_argument, NULL, 11},
-    {"tcp_lport", optional_argument, NULL, 12},
-    {"gftp_lintf", optional_argument, NULL, 13},
-    {"gftp_lport", optional_argument, NULL, 14},
-    {"tmpfs_dir", optional_argument, NULL, 15},
+    {"lcontrol_lintf", optional_argument, NULL, 5},
+    {"lcontrol_lport", optional_argument, NULL, 6},
+    {"join_lcontrol_lip", optional_argument, NULL, 7},
+    {"join_lcontrol_lport", optional_argument, NULL, 8},
+    {"control_lintf", optional_argument, NULL, 9},
+    {"control_lport", optional_argument, NULL, 10},
+    {"join_control_lip", optional_argument, NULL, 11},
+    {"join_control_lport", optional_argument, NULL, 12},
+    {"trans_protocol", optional_argument, NULL, 13},
+    {"ib_lintf", optional_argument, NULL, 14},
+    {"tcp_lintf", optional_argument, NULL, 15},
+    {"tcp_lport", optional_argument, NULL, 16},
+    {"gftp_lintf", optional_argument, NULL, 17},
+    {"gftp_lport", optional_argument, NULL, 18},
+    {"tmpfs_dir", optional_argument, NULL, 19},
     {0, 0, 0, 0}
   };
   
@@ -99,7 +103,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
         break;
       case 2:
         opt_map["base_client_id"] = optarg;
-        break;
+        break;  
       case 3:
         opt_map["num_client"] = optarg;
         break;
@@ -107,36 +111,48 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
         opt_map["ds_id"] = optarg;
         break;
       case 5:
-        opt_map["control_lintf"] = optarg;
+        opt_map["lcontrol_lintf"] = optarg;
         break;
       case 6:
-        opt_map["control_lport"] = optarg;
+        opt_map["lcontrol_lport"] = optarg;
         break;
       case 7:
-        opt_map["join_control_lip"] = optarg;
+        opt_map["join_lcontrol_lip"] = optarg;
         break;
       case 8:
-        opt_map["join_control_lport"] = optarg;
+        opt_map["join_lcontrol_lport"] = optarg;
         break;
       case 9:
-        opt_map["trans_protocol"] = optarg;
+        opt_map["control_lintf"] = optarg;
         break;
       case 10:
-        opt_map["ib_lintf"] = optarg;
+        opt_map["control_lport"] = optarg;
         break;
       case 11:
-        opt_map["tcp_lintf"] = optarg;
+        opt_map["join_control_lip"] = optarg;
         break;
       case 12:
-        opt_map["tcp_lport"] = optarg;
+        opt_map["join_control_lport"] = optarg;
         break;
       case 13:
-        opt_map["gftp_lintf"] = optarg;
+        opt_map["trans_protocol"] = optarg;
         break;
       case 14:
-        opt_map["gftp_lport"] = optarg;
+        opt_map["ib_lintf"] = optarg;
         break;
       case 15:
+        opt_map["tcp_lintf"] = optarg;
+        break;
+      case 16:
+        opt_map["tcp_lport"] = optarg;
+        break;
+      case 17:
+        opt_map["gftp_lintf"] = optarg;
+        break;
+      case 18:
+        opt_map["gftp_lport"] = optarg;
+        break;
+      case 19:
         opt_map["tmpfs_dir"] = optarg;
         break;
       case '?':
@@ -218,7 +234,9 @@ int main(int argc , char **argv)
   
   TProfiler<std::string> tprofiler;
   if (str_cstr_equals(opt_map["type"], "put") ) {
-    MWADSDriver wads_driver(boost::lexical_cast<int>(opt_map["cl_id"] ), boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_client"] ) );
+    MWADSDriver wads_driver(
+      boost::lexical_cast<int>(opt_map["cl_id"] ), boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_client"] ),
+      intf_to_ip(opt_map["lcontrol_lintf"] ), boost::lexical_cast<int>(opt_map["lcontrol_lport"] ), opt_map["join_lcontrol_lip"], boost::lexical_cast<int>(opt_map["join_lcontrol_lport"] ) );
     
     std::cout << "Enter for put_test...\n";
     getline(std::cin, temp);
@@ -231,7 +249,9 @@ int main(int argc , char **argv)
     getline(std::cin, temp);
   }
   else if (str_cstr_equals(opt_map["type"], "get") ) {
-    MWADSDriver wads_driver(boost::lexical_cast<int>(opt_map["cl_id"] ), boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_client"] ) );
+    MWADSDriver wads_driver(
+      boost::lexical_cast<int>(opt_map["cl_id"] ), boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_client"] ),
+      intf_to_ip(opt_map["lcontrol_lintf"] ), boost::lexical_cast<int>(opt_map["lcontrol_lport"] ), opt_map["join_lcontrol_lip"], boost::lexical_cast<int>(opt_map["join_lcontrol_lport"] ) );
     
     std::cout << "Enter for get_test...\n";
     getline(std::cin, temp);
@@ -257,10 +277,16 @@ int main(int argc , char **argv)
     
     bool w_prefetch = true;
     
+    if (opt_map.count("join_lcontrol_lip") == 0) {
+      opt_map["join_lcontrol_lip"] = "";
+      opt_map["join_lcontrol_lport"] = "0";
+    }
+    
     if (str_cstr_equals(opt_map["join_control_lip"], "") ) {
       MMRIManager ri_manager(
         boost::lexical_cast<int>(opt_map["cl_id"] ), boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_client"] ),
-        boost::lexical_cast<char>(opt_map["ds_id"] ), intf_to_ip(opt_map["control_lintf"] ), boost::lexical_cast<int>(opt_map["control_lport"] ), opt_map["join_control_lip"], boost::lexical_cast<int>(opt_map["join_control_lport"] ),
+        intf_to_ip(opt_map["lcontrol_lintf"] ), boost::lexical_cast<int>(opt_map["lcontrol_lport"] ), opt_map["join_lcontrol_lip"], boost::lexical_cast<int>(opt_map["join_lcontrol_lport"] ),
+        boost::lexical_cast<int>(opt_map["ds_id"] ), intf_to_ip(opt_map["control_lintf"] ), boost::lexical_cast<int>(opt_map["control_lport"] ), opt_map["join_control_lip"], boost::lexical_cast<int>(opt_map["join_control_lport"] ),
         malgo_t, max_num_key_ver_in_mpbuffer, w_prefetch,
         opt_map["trans_protocol"], intf_to_ip(opt_map["ib_lintf"] ), ib_lport_list,
         intf_to_ip(opt_map["tcp_lintf"] ), boost::lexical_cast<int>(opt_map["tcp_lport"] ),
@@ -268,7 +294,8 @@ int main(int argc , char **argv)
       
       // SMRIManager ri_manager(
       //   boost::lexical_cast<int>(opt_map["cl_id"] ), boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_client"] ),
-      //   boost::lexical_cast<char>(opt_map["ds_id"] ), intf_to_ip(opt_map["control_lintf"] ), boost::lexical_cast<int>(opt_map["control_lport"] ), opt_map["join_control_lip"], boost::lexical_cast<int>(opt_map["join_control_lport"] ),
+      //   intf_to_ip(opt_map["lcontrol_lintf"] ), boost::lexical_cast<int>(opt_map["lcontrol_lport"] ), opt_map["join_lcontrol_lip"], boost::lexical_cast<int>(opt_map["join_lcontrol_lport"] ),
+      //   boost::lexical_cast<int>(opt_map["ds_id"] ), intf_to_ip(opt_map["control_lintf"] ), boost::lexical_cast<int>(opt_map["control_lport"] ), opt_map["join_control_lip"], boost::lexical_cast<int>(opt_map["join_control_lport"] ),
       //   salgo_t, lcoor_, ucoor_, sexpand_length, w_prefetch,
       //   opt_map["trans_protocol"], intf_to_ip(opt_map["ib_lintf"] ), ib_lport_list,
       //   intf_to_ip(opt_map["tcp_lintf"] ), boost::lexical_cast<int>(opt_map["tcp_lport"] ),
@@ -280,14 +307,16 @@ int main(int argc , char **argv)
     else {
       MSRIManager ri_manager(
         boost::lexical_cast<int>(opt_map["cl_id"] ), boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_client"] ),
-        boost::lexical_cast<char>(opt_map["ds_id"] ), intf_to_ip(opt_map["control_lintf"] ), boost::lexical_cast<int>(opt_map["control_lport"] ), opt_map["join_control_lip"], boost::lexical_cast<int>(opt_map["join_control_lport"] ),
+        intf_to_ip(opt_map["lcontrol_lintf"] ), boost::lexical_cast<int>(opt_map["lcontrol_lport"] ), opt_map["join_lcontrol_lip"], boost::lexical_cast<int>(opt_map["join_lcontrol_lport"] ),
+        boost::lexical_cast<int>(opt_map["ds_id"] ), intf_to_ip(opt_map["control_lintf"] ), boost::lexical_cast<int>(opt_map["control_lport"] ), opt_map["join_control_lip"], boost::lexical_cast<int>(opt_map["join_control_lport"] ),
         opt_map["trans_protocol"], intf_to_ip(opt_map["ib_lintf"] ), ib_lport_list,
         intf_to_ip(opt_map["tcp_lintf"] ), boost::lexical_cast<int>(opt_map["tcp_lport"] ),
         opt_map["gftp_lintf"], intf_to_ip(opt_map["gftp_lintf"] ), opt_map["gftp_lport"], opt_map["tmpfs_dir"] );
       
       // SSRIManager ri_manager(
       //   boost::lexical_cast<int>(opt_map["cl_id"] ), boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_client"] ),
-      //   boost::lexical_cast<char>(opt_map["ds_id"] ), intf_to_ip(opt_map["control_lintf"] ), boost::lexical_cast<int>(opt_map["control_lport"] ), opt_map["join_control_lip"], boost::lexical_cast<int>(opt_map["join_control_lport"] ),
+      //   intf_to_ip(opt_map["lcontrol_lintf"] ), boost::lexical_cast<int>(opt_map["lcontrol_lport"] ), opt_map["join_lcontrol_lip"], boost::lexical_cast<int>(opt_map["join_lcontrol_lport"] ),
+      //   boost::lexical_cast<int>(opt_map["ds_id"] ), intf_to_ip(opt_map["control_lintf"] ), boost::lexical_cast<int>(opt_map["control_lport"] ), opt_map["join_control_lip"], boost::lexical_cast<int>(opt_map["join_control_lport"] ),
       //   opt_map["trans_protocol"], intf_to_ip(opt_map["ib_lintf"] ), ib_lport_list,
       //   intf_to_ip(opt_map["tcp_lintf"] ), boost::lexical_cast<int>(opt_map["tcp_lport"] ),
       //   opt_map["gftp_lintf"], intf_to_ip(opt_map["gftp_lintf"] ), opt_map["gftp_lport"], opt_map["tmpfs_dir"] );

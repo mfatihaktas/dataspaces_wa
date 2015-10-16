@@ -65,7 +65,7 @@ int main(int argc, char **argv)
   std::map<std::string, std::string> opt_map = parse_opts(argc, argv);
   srand(time(NULL) );
   
-  // RTable<char> rtable;
+  // RTable<int> rtable;
   
   // COOR_T lc_0_[] = {0, 0};
   // COOR_T uc_0_[] = {1, 1};
@@ -111,7 +111,7 @@ int main(int argc, char **argv)
     // m_prefetch_test();
     // mpcsim_test();
     
-    // std::vector<char> ds_id_v = boost::assign::list_of('a')('b');
+    // std::vector<int> ds_id_v = boost::assign::list_of(0)(1);
     // MWASpace mwa_space(ds_id_v, MALGO_W_PPM, 10, false, 0);
     // COOR_T lc_[] = {0, 0};
     // COOR_T uc_[] = {1, 1};
@@ -120,7 +120,7 @@ int main(int argc, char **argv)
     // mwa_space.reg_app(1, 'b');
     
     // mwa_space.put(0, "d_0", 0, lc_, uc_);
-    // std::vector<char> query_ds_id_v;
+    // std::vector<int> query_ds_id_v;
     // if (mwa_space.query("d_0", 0, lc_, uc_, query_ds_id_v) )
     //   LOG(INFO) << "mwa_space.query failed; " << KV_TO_STR("d_0", 0);
     

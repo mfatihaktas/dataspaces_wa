@@ -98,6 +98,8 @@ int main(int argc, char **argv)
   google::InitGoogleLogging("exp");
   // 
   std::map<std::string, std::string> opt_map = parse_opts(argc, argv);
+  // Packet p(PACKET_RIMSG, opt_map);
+  // LOG(INFO) << "main:: p.int_to_char_(8, 12)= " << patch_all::arr_to_str<>(8, p.int_to_char_(8, 12) );
   
   if (opt_map.count("joinhost_lip") == 0) {
     opt_map["joinhost_lip"] = "";
@@ -124,10 +126,16 @@ int main(int argc, char **argv)
     getline(std::cin, temp);
   }
   else if (opt_map["type"].compare("node") == 0) {
-    SDMNode sdm_node(opt_map["node_type"],
-                     opt_map["id"].c_str()[0], intf_to_ip(opt_map["lintf"] ), boost::lexical_cast<int>(opt_map["lport"] ), opt_map["joinhost_lip"], boost::lexical_cast<int>(opt_map["joinhost_lport"] ),
+    SDMNode sdm_node(opt_map["node_type"], true,
+                     boost::lexical_cast<int>(opt_map["id"] ), intf_to_ip(opt_map["lintf"] ), boost::lexical_cast<int>(opt_map["lport"] ), opt_map["joinhost_lip"], boost::lexical_cast<int>(opt_map["joinhost_lport"] ),
                      boost::bind(&handle_rimsg_recv, _1), boost::bind(&handle_cp_recv, _1) );
-  
+    sleep(1);
+    if (opt_map["node_type"].compare("s") == 0) {
+      std::map<std::string, std::string> msg_map;
+      msg_map["type"] = "HI";
+      sdm_node.send_msg_to_master(PACKET_RIMSG, msg_map);
+    }
+      
     std::cout << "Enter \n";
     getline(std::cin, temp);
   }

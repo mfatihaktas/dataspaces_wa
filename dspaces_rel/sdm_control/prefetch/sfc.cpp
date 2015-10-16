@@ -104,11 +104,11 @@ std::string HSAlgo::to_str()
   return ss.str();
 }
 
-// int HSAlgo::put(char ds_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_)
+// int HSAlgo::put(int ds_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_)
 // {
 //   boost::shared_ptr<index_interval_set_t> index_interval_set_ = coor_to_index_interval_set_(lcoor_, ucoor_);
   
-//   std::set<char> ds_id_set;
+//   std::set<int> ds_id_set;
 //   ds_id_set.insert(ds_id);
 //   for (index_interval_set_t::iterator it = index_interval_set_->begin(); it != index_interval_set_->end(); it++)
 //     index_interval__ds_id_set_map += std::make_pair(*it, ds_id_set);
@@ -125,7 +125,7 @@ int HSAlgo::get_to_fetch(COOR_T* lcoor_, COOR_T* ucoor_, std::vector<lcoor_ucoor
   expand_interval_set(expand_length, ii_set);
   LOG(INFO) << "get_to_prefetch:: after expand_interval_set= " << ii_set << "\n";
   
-  RTable<char> rtable;
+  RTable<int> rtable;
   
   std::vector<COOR_T*> lcoor_v;
   index_interval_set_to_coor_v(ii_set, lcoor_v);
@@ -135,7 +135,7 @@ int HSAlgo::get_to_fetch(COOR_T* lcoor_, COOR_T* ucoor_, std::vector<lcoor_ucoor
       ucoor_[i] = (*lcoor__)[i] + 1;
 
     // lucoor_to_fetch_v.push_back(std::make_pair(*lcoor__, ucoor_) );
-    rtable.add("", 0, *lcoor__, ucoor_, '\0');
+    rtable.add("", 0, *lcoor__, ucoor_, -1);
   }
   
   COOR_T* to_fetch_lcoor_ = (COOR_T*)malloc(NDIM*sizeof(COOR_T) );

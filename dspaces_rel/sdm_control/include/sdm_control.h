@@ -12,9 +12,9 @@ class SDMCEntity { // SDM Control
     patch_sdm::MsgCoder msg_coder;
   public:
     SDMCEntity(std::string type,
-               char id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
+               int id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
                func_rimsg_recv_cb rimsg_recv_cb)
-    : sdm_node(type,
+    : sdm_node(type, false,
                id, lip, lport, joinhost_lip, joinhost_lport,
                rimsg_recv_cb, boost::bind(&SDMCEntity::handle_cmsg, this, _1) )
     {}
@@ -28,13 +28,13 @@ class SDMCEntity { // SDM Control
       return ss.str();
     }
     
-    char get_id() { return sdm_node.get_id(); }
+    int get_id() { return sdm_node.get_id(); }
     
     int send_cmsg_to_master(std::map<std::string, std::string> msg_map) { return sdm_node.send_msg_to_master(PACKET_CMSG, msg_map); }
     // int broadcast_msg(PACKET_T packet_t, std::map<std::string, std::string> msg_map) { return sdm_node.broadcast_msg(packet_t, msg_map); }
     int broadcast_cmsg_to_slaves(std::map<std::string, std::string> msg_map) { return sdm_node.broadcast_msg_to_slaves(PACKET_CMSG, msg_map); }
-    int send_cmsg(char to_id, std::map<std::string, std::string> msg_map) { return sdm_node.send_msg(to_id, PACKET_CMSG, msg_map); }
-    int send_rimsg(char to_id, std::map<std::string, std::string> msg_map) { return sdm_node.send_msg(to_id, PACKET_RIMSG, msg_map); }
+    int send_cmsg(int to_id, std::map<std::string, std::string> msg_map) { return sdm_node.send_msg(to_id, PACKET_CMSG, msg_map); }
+    int send_rimsg(int to_id, std::map<std::string, std::string> msg_map) { return sdm_node.send_msg(to_id, PACKET_RIMSG, msg_map); }
     
     void handle_cmsg(boost::shared_ptr<Packet> p_)
     {
@@ -75,7 +75,7 @@ const int REMOTE_P_ID = -1;
 typedef boost::function<void(std::map<std::string, std::string> ) > func_dm_act_cb;
 class SDMSlave : public SDMCEntity {
   protected:
-    char data_id_t;
+    DATA_ID_T data_id_t;
     func_dm_act_cb dm_act_cb;
     std::string type;
     
@@ -85,8 +85,8 @@ class SDMSlave : public SDMCEntity {
     patch_all::syncer<unsigned int> sdm_s_syncer;
     patch_all::thread_safe_vector<std::string> data_id_to_bget_v;
   public:
-    SDMSlave(char data_id_t, std::string type,
-             char ds_id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
+    SDMSlave(DATA_ID_T data_id_t, std::string type,
+             int ds_id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
              func_rimsg_recv_cb rimsg_recv_cb, func_dm_act_cb dm_act_cb,
              boost::shared_ptr<QTable<int> > qtable_);
     // SDMSlave(const SDMSlave&);
@@ -110,7 +110,7 @@ class SDMSlave : public SDMCEntity {
 /*************************************  MSDMSlave : SDMSlave  *************************************/
 class MSDMSlave : public SDMSlave { // Markov
   public:
-    MSDMSlave(char ds_id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
+    MSDMSlave(int ds_id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
               func_rimsg_recv_cb rimsg_recv_cb, func_dm_act_cb dm_act_cb);
     ~MSDMSlave();
 };
@@ -118,7 +118,7 @@ class MSDMSlave : public SDMSlave { // Markov
 /*************************************  SSDMSlave : SDMSlave  *************************************/
 class SSDMSlave : public SDMSlave { // Spatial
   public:
-    SSDMSlave(char ds_id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
+    SSDMSlave(int ds_id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
               func_rimsg_recv_cb rimsg_recv_cb, func_dm_act_cb dm_act_cb);
     ~SSDMSlave();
 };
@@ -131,8 +131,8 @@ class SDMMaster : public SDMSlave {
     int num_slaves;
     patch_all::syncer<unsigned int> sdm_m_syncer;
   public:
-    SDMMaster(char data_id_t,
-              char ds_id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
+    SDMMaster(DATA_ID_T data_id_t,
+              int ds_id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
               func_rimsg_recv_cb rimsg_recv_cb, func_dm_act_cb dm_act_cb,
               boost::shared_ptr<QTable<int> > qtable_, boost::shared_ptr<WASpace> wa_space_);
     ~SDMMaster();
@@ -154,13 +154,13 @@ class SDMMaster : public SDMSlave {
     void handle_sdm_move_reply(std::map<std::string, std::string> msg_map);
     void handle_sdm_del_reply(std::map<std::string, std::string> msg_map);
     
-    void handle_wa_space_data_act(PREFETCH_DATA_ACT_T data_act_t, char to_id, key_ver_pair kv, lcoor_ucoor_pair lucoor_);
+    void handle_wa_space_data_act(PREFETCH_DATA_ACT_T data_act_t, int to_id, key_ver_pair kv, lcoor_ucoor_pair lucoor_);
 };
 
 /************************************  MSDMMaster : SDMMaster  ************************************/
 class MSDMMaster : public SDMMaster { // Markov
   public:
-    MSDMMaster(char ds_id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
+    MSDMMaster(int ds_id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
                func_rimsg_recv_cb rimsg_recv_cb, func_dm_act_cb dm_act_cb,
                MALGO_T malgo_t, int max_num_key_ver_in_mpbuffer, bool w_prefetch);
     ~MSDMMaster();
@@ -170,7 +170,7 @@ class MSDMMaster : public SDMMaster { // Markov
 /************************************  SSDMMaster : SDMMaster  ************************************/
 class SSDMMaster : public SDMMaster { // Spatial
   public:
-    SSDMMaster(char ds_id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
+    SSDMMaster(int ds_id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
                func_rimsg_recv_cb rimsg_recv_cb, func_dm_act_cb dm_act_cb,
                SALGO_T salgo_t, COOR_T* lcoor_, COOR_T* ucoor_, int sexpand_length, bool w_prefetch);
     ~SSDMMaster();

@@ -15,7 +15,7 @@ std::string peer_info::to_str()
 }
 
 /********************************************  Commer  ********************************************/
-Commer::Commer(char id, std::string lip, int lport,
+Commer::Commer(int id, std::string lip, int lport,
                func_recv_cb _recv_cb)
 : id(id), lip(lip), lport(lport),
   _recv_cb(_recv_cb),
@@ -32,7 +32,7 @@ int Commer::close()
   server.close();
   
   bool err_flag = false;
-  for (std::map<char, boost::shared_ptr<SDMClient> >::iterator it = peer_id__client_map.begin(); it != peer_id__client_map.end(); it++) {
+  for (std::map<int, boost::shared_ptr<SDMClient> >::iterator it = peer_id__client_map.begin(); it != peer_id__client_map.end(); it++) {
     if ((it->second)->close() )
       err_flag = true;
   }
@@ -46,17 +46,17 @@ std::string Commer::to_str()
 {
   std::stringstream ss;
   ss << "id= " << id << ", lip= " << lip << ", lport= " << lport << "\n";
-  for (std::map<char, boost::shared_ptr<peer_info> >::iterator it = peer_id__peer_info_map.begin(); it != peer_id__peer_info_map.end(); it++)
+  for (std::map<int, boost::shared_ptr<peer_info> >::iterator it = peer_id__peer_info_map.begin(); it != peer_id__peer_info_map.end(); it++)
     ss << "\t peer_id= " << it->first << "= \n" << (it->second)->to_str();
 
   return ss.str();
 }
 
-patch_all::thread_safe_map<char, boost::shared_ptr<peer_info> >& Commer::get_peer_id__peer_info_map() { return peer_id__peer_info_map; }
+patch_all::thread_safe_map<int, boost::shared_ptr<peer_info> >& Commer::get_peer_id__peer_info_map() { return peer_id__peer_info_map; }
 int Commer::get_num_peers() { return peer_id__peer_info_map.size(); }
-bool Commer::is_peer(char peer_id) { return peer_id__client_map.contains(peer_id); }
+bool Commer::is_peer(int peer_id) { return peer_id__client_map.contains(peer_id); }
 
-int Commer::add_peer(char peer_id, std::string peer_name, std::string peer_lip, int peer_lport)
+int Commer::add_peer(int peer_id, std::string peer_name, std::string peer_lip, int peer_lport)
 {
   if (peer_id__peer_info_map.contains(peer_id) ) {
     LOG(ERROR) << "add_peer:: already contained peer_id= " << peer_id;
@@ -71,7 +71,7 @@ int Commer::add_peer(char peer_id, std::string peer_name, std::string peer_lip, 
   return 0;
 }
 
-int Commer::rm_peer(char peer_id)
+int Commer::rm_peer(int peer_id)
 {
   if (!peer_id__peer_info_map.contains(peer_id) ) {
     LOG(ERROR) << "rm_peer:: does not contain peer_id= " << peer_id;
@@ -83,10 +83,10 @@ int Commer::rm_peer(char peer_id)
   return 0;
 }
 
-int Commer::send_to_all_peers(char except_id, const Packet& p)
+int Commer::send_to_all_peers(int except_id, const Packet& p)
 {
   bool err_flag = false;
-  for (std::map<char, boost::shared_ptr<SDMClient> >::iterator it = peer_id__client_map.begin(); it != peer_id__client_map.end(); it++) {
+  for (std::map<int, boost::shared_ptr<SDMClient> >::iterator it = peer_id__client_map.begin(); it != peer_id__client_map.end(); it++) {
     if (it->first != except_id) {
       if (send_to_peer(it->first, p) ) {
         LOG(INFO) << "send_to_all_peers:: send_to_peer failed for peer_id= " << it->first;
@@ -100,7 +100,7 @@ int Commer::send_to_all_peers(char except_id, const Packet& p)
   return 0;
 }
 
-int Commer::send_to_peer(char peer_id, const Packet& p)
+int Commer::send_to_peer(int peer_id, const Packet& p)
 {
   return peer_id__client_map[peer_id]->send(p.size(), p.get_data_() );
 }
@@ -119,14 +119,21 @@ int Commer::connect_send_to(std::string to_lip, int to_lport, const Packet& p)
   return 0;
 }
 
+int Commer::connect(std::string to_lip, int to_lport)
+{
+  boost::shared_ptr<SDMClient> client_ = boost::make_shared<SDMClient>("c", to_lip, to_lport);
+  client_->connect();
+}
+
 /*******************************************  SDMNode  ********************************************/
-SDMNode::SDMNode(std::string type,
-                 char id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
+SDMNode::SDMNode(std::string type, bool master_slave,
+                 int id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
                  func_rimsg_recv_cb rimsg_recv_cb, func_cmsg_recv_cb cmsg_recv_cb)
-: type(type), id(id), lip(lip), lport(lport), joinhost_lip(joinhost_lip), joinhost_lport(joinhost_lport),
+: type(type), master_slave(master_slave),
+  id(id), lip(lip), lport(lport), joinhost_lip(joinhost_lip), joinhost_lport(joinhost_lport),
   rimsg_recv_cb(rimsg_recv_cb), cmsg_recv_cb(cmsg_recv_cb),
   commer(id, lip, lport, boost::bind(&SDMNode::handle_recv, this, _1) ),
-  sdm_master_id('?')
+  sdm_master_id(-1)
 {
   // 
   LOG(INFO) << "SDMNode:: constructed; \n" << to_str();
@@ -164,7 +171,7 @@ std::string SDMNode::to_str()
   return ss.str();
 }
 
-char SDMNode::get_id() { return id; }
+int SDMNode::get_id() { return id; }
 int SDMNode::get_num_peers() { return commer.get_num_peers(); }
 
 //--------------------------------------------  gen_packet  --------------------------------------//
@@ -177,7 +184,7 @@ boost::shared_ptr<Packet> SDMNode::gen_join_req()
   return gen_packet(PACKET_JOIN_REQUEST, msg_map);
 }
 
-boost::shared_ptr<Packet> SDMNode::gen_join_reply(char peer_id, bool pos)
+boost::shared_ptr<Packet> SDMNode::gen_join_reply(int peer_id, bool pos)
 {
   std::map<std::string, std::string> msg_map;
   msg_map["lip"] = lip;
@@ -188,11 +195,11 @@ boost::shared_ptr<Packet> SDMNode::gen_join_reply(char peer_id, bool pos)
   else
     msg_map["ack"] = "n";
   
-  if (pos) {
+  if (pos && !master_slave) {
     // Add other peers new peer should connect to
     int count = 0;
-    patch_all::thread_safe_map<char, boost::shared_ptr<peer_info> >& peer_id__peer_info_map = commer.get_peer_id__peer_info_map();
-    for (std::map<char, boost::shared_ptr<peer_info> >::iterator it = peer_id__peer_info_map.begin(); it != peer_id__peer_info_map.end(); it++) {
+    patch_all::thread_safe_map<int, boost::shared_ptr<peer_info> >& peer_id__peer_info_map = commer.get_peer_id__peer_info_map();
+    for (std::map<int, boost::shared_ptr<peer_info> >::iterator it = peer_id__peer_info_map.begin(); it != peer_id__peer_info_map.end(); it++) {
       if (it->first != peer_id) {
         peer_info& pinfo = *(it->second);
         
@@ -210,7 +217,7 @@ boost::shared_ptr<Packet> SDMNode::gen_join_reply(char peer_id, bool pos)
 
 boost::shared_ptr<Packet> SDMNode::gen_packet(PACKET_T packet_t, std::map<std::string, std::string> msg_map)
 {
-  msg_map["id"] = id;
+  msg_map["id"] = boost::lexical_cast<std::string>(id);
   msg_map["node_type"] = type;
   
   return boost::make_shared<Packet>(packet_t, msg_map);
@@ -219,7 +226,7 @@ boost::shared_ptr<Packet> SDMNode::gen_packet(PACKET_T packet_t, std::map<std::s
 //----------------------------------------  messaging  -------------------------------------------//
 int SDMNode::send_msg_to_master(PACKET_T packet_t, std::map<std::string, std::string> msg_map)
 {
-  if (sdm_master_id != '?')
+  if (sdm_master_id != -1)
     return send_msg(sdm_master_id, packet_t, msg_map);
   else {
     LOG(ERROR) << "send_msg_to_master:: master does not exist!";
@@ -233,14 +240,14 @@ int SDMNode::broadcast_msg(PACKET_T packet_t, std::map<std::string, std::string>
 int SDMNode::broadcast_msg_to_slaves(PACKET_T packet_t, std::map<std::string, std::string> msg_map)
 { return commer.send_to_all_peers(sdm_master_id, *gen_packet(packet_t, msg_map) ); }
 
-int SDMNode::send_msg(char to_id, PACKET_T packet_t, std::map<std::string, std::string> msg_map)
+int SDMNode::send_msg(int to_id, PACKET_T packet_t, std::map<std::string, std::string> msg_map)
 { return commer.send_to_peer(to_id, *gen_packet(packet_t, msg_map) ); }
 
 //-----------------------------------------  handle_  --------------------------------------------//
 void SDMNode::handle_recv(char* type__srlzed_msg_map)
 {
   boost::shared_ptr<Packet> p_ = boost::make_shared<Packet>((int)strlen(type__srlzed_msg_map), type__srlzed_msg_map);
-  // LOG(INFO) << "handle_recv:: p= \n" << p_->to_str();
+  LOG(INFO) << "handle_recv:: p= \n" << p_->to_str();
   
   switch (p_->get_type() ) {
     case PACKET_JOIN_REQUEST:
@@ -250,7 +257,8 @@ void SDMNode::handle_recv(char* type__srlzed_msg_map)
       handle_join_reply(p_->get_msg_map() );
       break;
     case PACKET_JOIN_ACK: // Note: Used to provide conn_up semantics for sdm_control
-      cmsg_recv_cb(p_);
+      if (cmsg_recv_cb != NULL)
+        cmsg_recv_cb(p_);
       break;
     case PACKET_JOIN_NACK:
       handle_join_nack(p_->get_msg_map() );
@@ -273,7 +281,7 @@ void SDMNode::handle_recv(char* type__srlzed_msg_map)
 
 void SDMNode::handle_join_req(std::map<std::string, std::string> msg_map)
 {
-  char from_id = (msg_map["id"].c_str() )[0];
+  int from_id = boost::lexical_cast<int>(msg_map["id"] );
   std::string from_lip = msg_map["lip"];
   int from_lport = boost::lexical_cast<int>(msg_map["lport"] );
   
@@ -281,17 +289,20 @@ void SDMNode::handle_join_req(std::map<std::string, std::string> msg_map)
     LOG(ERROR) << "handle_join_req:: commer.add_peer failed; peer_id= " << from_id;
     commer.connect_send_to(from_lip, from_lport, *gen_join_reply(from_id, false) );
   }
-  else
+  else {
+    LOG(INFO) << "handle_join_req:: new peer added; peer_id= " << from_id << ", lip= " << from_lip << ", lport= " << from_lport << "\n"
+              << "commer= \n" << commer.to_str() << "\n";
     commer.send_to_peer(from_id, *gen_join_reply(from_id, true) );
+  }
 }
 
 void SDMNode::handle_join_reply(std::map<std::string, std::string> msg_map)
 {
   if (msg_map["ack"].compare("a") == 0) {
-    char from_id = (msg_map["id"].c_str() )[0];
+    int from_id = boost::lexical_cast<int>(msg_map["id"] );
     
     if (msg_map["node_type"].compare("m") == 0) {
-      if (sdm_master_id != '?')
+      if (sdm_master_id != -1)
         LOG(WARNING) << "handle_join_reply:: from_id= " << from_id << " overwriting sdm_master_id= " << sdm_master_id;
       sdm_master_id = from_id;
     }
@@ -314,7 +325,7 @@ void SDMNode::handle_join_reply(std::map<std::string, std::string> msg_map)
         if (msg_map.count("id_" + key_tail_str) == 0)
           break;
         
-        char ppeer_id = boost::lexical_cast<char>(msg_map["id_" + key_tail_str] );
+        int ppeer_id = boost::lexical_cast<int>(msg_map["id_" + key_tail_str] );
         if (commer.is_peer(ppeer_id) )
           continue;
         
@@ -334,7 +345,7 @@ void SDMNode::handle_join_reply(std::map<std::string, std::string> msg_map)
 
 void SDMNode::handle_join_nack(std::map<std::string, std::string> msg_map)
 {
-  char from_id = (msg_map["id"].c_str() )[0];
+  int from_id = boost::lexical_cast<int>(msg_map["id"] );
   // With join_req recved, we connected to it, now we learned things did not work out on the other side
   if (commer.rm_peer(from_id) )
     LOG(ERROR) << "handle_join_nack:: commer.rm_peer failed; peer_id= " << from_id;
@@ -344,6 +355,6 @@ void SDMNode::handle_join_nack(std::map<std::string, std::string> msg_map)
 
 void SDMNode::handle_ping(std::map<std::string, std::string> msg_map)
 {
-  char from_id = (msg_map["id"].c_str() )[0];
+  int from_id = boost::lexical_cast<int>(msg_map["id"] );
   commer.send_to_peer(from_id, *gen_packet(PACKET_PONG) );
 }

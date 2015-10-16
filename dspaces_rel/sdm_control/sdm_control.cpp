@@ -1,8 +1,8 @@
 #include "sdm_control.h"
 
 /***********************************  SDMSlave : SDMCEntity  **************************************/
-SDMSlave::SDMSlave(char data_id_t, std::string type,
-                   char ds_id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
+SDMSlave::SDMSlave(DATA_ID_T data_id_t, std::string type,
+                   int ds_id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
                    func_rimsg_recv_cb rimsg_recv_cb, func_dm_act_cb dm_act_cb,
                    boost::shared_ptr<QTable<int> > qtable_)
 : SDMCEntity(type,
@@ -234,7 +234,7 @@ void SDMSlave::handle_sdm_del(std::map<std::string, std::string> msg_map)
 }
 
 /*************************************  MSDMSlave : SDMSlave  *************************************/
-MSDMSlave::MSDMSlave(char ds_id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
+MSDMSlave::MSDMSlave(int ds_id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
                      func_rimsg_recv_cb rimsg_recv_cb, func_dm_act_cb dm_act_cb)
 : SDMSlave(KV_DATA_ID, "s",
            ds_id, lip, lport, joinhost_lip, joinhost_lport,
@@ -248,7 +248,7 @@ MSDMSlave::MSDMSlave(char ds_id, std::string lip, int lport, std::string joinhos
 MSDMSlave::~MSDMSlave() { LOG(INFO) << "MSDMSlave:: destructed."; }
 
 /*************************************  SSDMSlave : SDMSlave  *************************************/
-SSDMSlave::SSDMSlave(char ds_id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
+SSDMSlave::SSDMSlave(int ds_id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
                      func_rimsg_recv_cb rimsg_recv_cb, func_dm_act_cb dm_act_cb)
 : SDMSlave(LUCOOR_DATA_ID, "s",
            ds_id, lip, lport, joinhost_lip, joinhost_lport,
@@ -262,8 +262,8 @@ SSDMSlave::SSDMSlave(char ds_id, std::string lip, int lport, std::string joinhos
 SSDMSlave::~SSDMSlave() { LOG(INFO) << "SSDMSlave:: destructed."; }
 
 /*************************************  SDMMaster : SDMSlave  *************************************/
-SDMMaster::SDMMaster(char data_id_t,
-                     char ds_id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
+SDMMaster::SDMMaster(DATA_ID_T data_id_t,
+                     int ds_id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
                      func_rimsg_recv_cb rimsg_recv_cb, func_dm_act_cb dm_act_cb,
                      boost::shared_ptr<QTable<int> > qtable_, boost::shared_ptr<WASpace> wa_space_)
 : SDMSlave(data_id_t, "m",
@@ -321,7 +321,7 @@ int SDMMaster::sdm_mquery(std::string key, unsigned int ver, COOR_T* lcoor_, COO
 
 int SDMMaster::reg_app(int app_id)
 {
-  char ds_id = get_id();
+  int ds_id = get_id();
   if (wa_space_->reg_app(app_id, ds_id) ) {
     LOG(ERROR) << "handle_sdm_reg_app:: wa_space_->reg_app failed for <app_id= " << app_id << ", ds_id= " << ds_id << ">.";
     return 1;
@@ -375,7 +375,7 @@ void SDMMaster::handle_conn_up(std::map<std::string, std::string> msg_map)
   LOG(INFO) << "handle_conn_up:: msg_map= \n" << patch_all::map_to_str<>(msg_map);
   
   if (str_cstr_equals(msg_map["node_type"], "s") ) { // Slave
-    wa_space_->reg_ds(boost::lexical_cast<char>(msg_map["id"] ) );
+    wa_space_->reg_ds(boost::lexical_cast<int>(msg_map["id"] ) );
     
     num_slaves++;
   }
@@ -439,12 +439,12 @@ void SDMMaster::handle_sdm_reg_app(std::map<std::string, std::string> msg_map)
 {
   LOG(INFO) << "handle_sdm_reg_app:: msg_map= \n" << patch_all::map_to_str<>(msg_map);
   
-  if (wa_space_->reg_app(boost::lexical_cast<int>(msg_map["app_id"] ), boost::lexical_cast<char>(msg_map["id"] ) ) ) {
+  if (wa_space_->reg_app(boost::lexical_cast<int>(msg_map["app_id"] ), boost::lexical_cast<int>(msg_map["id"] ) ) ) {
     LOG(ERROR) << "handle_sdm_reg_app:: wa_space_->reg_app failed for <app_id= " << msg_map["app_id"] << ", ds_id= " << msg_map["id"] << ">.";
     return;
   }
   msg_map["type"] = SDM_REG_APP_REPLY;
-  if (send_cmsg(boost::lexical_cast<char>(msg_map["id"] ), msg_map) ) {
+  if (send_cmsg(boost::lexical_cast<int>(msg_map["id"] ), msg_map) ) {
     LOG(ERROR) << "handle_sdm_squery:: send_cmsg failed for msg_map= " << patch_all::map_to_str<>(msg_map);
     return;
   }
@@ -486,7 +486,7 @@ void SDMMaster::handle_sdm_squery(std::map<std::string, std::string> msg_map)
   }
   
   bool move_act = true;
-  std::vector<char> ds_id_v;
+  std::vector<int> ds_id_v;
   if (wa_space_->query(key, ver, lcoor_, ucoor_, ds_id_v) ) {
     LOG(INFO) << "handle_sdm_squery:: not available " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_);
     // sdm_mquery(key, ver, lcoor_, ucoor_);
@@ -514,7 +514,7 @@ void SDMMaster::handle_sdm_squery(std::map<std::string, std::string> msg_map)
   if (move_act) {
     LOG(INFO) << "handle_sdm_squery:: move_act= " << move_act << ", ds_id_v= " << patch_all::vec_to_str<>(ds_id_v);
     // TODO: choose from ds_id_v wisely -- considering proximity, load etc.
-    char from_id = ds_id_v[0];
+    int from_id = ds_id_v[0];
     std::map<std::string, std::string> move_act_msg_map;
     if (msg_coder.encode_msg_map(move_act_msg_map, ndim, key, ver, lcoor_, ucoor_) ) {
       LOG(ERROR) << "handle_sdm_squery:: msg_coder.encode_msg_map failed; " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_);
@@ -541,7 +541,7 @@ void SDMMaster::handle_sdm_squery(std::map<std::string, std::string> msg_map)
     LOG(INFO) << "handle_sdm_squery:: done waiting for move; from_id= " << from_id << ", to_id= " << msg_map["id"] << ", " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_);
   }
   msg_map["type"] = SDM_SQUERY_REPLY;
-  if (send_cmsg(boost::lexical_cast<char>(msg_map["id"] ), msg_map) ) {
+  if (send_cmsg(boost::lexical_cast<int>(msg_map["id"] ), msg_map) ) {
     LOG(ERROR) << "handle_sdm_squery:: send_cmsg failed for msg_map= \n" << patch_all::map_to_str<>(msg_map);
     return;
   }
@@ -587,7 +587,7 @@ void SDMMaster::handle_sdm_del_reply(std::map<std::string, std::string> msg_map)
   patch_all::free_all<COOR_T>(2, lcoor_, ucoor_);
 }
 
-void SDMMaster::handle_wa_space_data_act(PREFETCH_DATA_ACT_T data_act_t, char to_id, key_ver_pair kv, lcoor_ucoor_pair lucoor_)
+void SDMMaster::handle_wa_space_data_act(PREFETCH_DATA_ACT_T data_act_t, int to_id, key_ver_pair kv, lcoor_ucoor_pair lucoor_)
 {
   std::map<std::string, std::string> msg_map;
   if (msg_coder.encode_msg_map(msg_map, NDIM, kv.first, kv.second, lucoor_.first, lucoor_.second) ) {
@@ -596,13 +596,13 @@ void SDMMaster::handle_wa_space_data_act(PREFETCH_DATA_ACT_T data_act_t, char to
   }
   
   if (data_act_t == PREFETCH_DATA_ACT_PREFETCH) {
-    std::vector<char> ds_id_v;
+    std::vector<int> ds_id_v;
     if (wa_space_->query(kv.first, kv.second, lucoor_.first, lucoor_.second, ds_id_v) ) {
       LOG(ERROR) << "handle_wa_space_data_act:: data_act_t= " << data_act_t << ", non-existing data; " << KV_LUCOOR_TO_STR(kv.first, kv.second, lucoor_.first, lucoor_.second);
       return;
     }
     // TODO: choose from ds_id_v wisely -- considering proximity, load etc.
-    char from_id = ds_id_v[0];
+    int from_id = ds_id_v[0];
     msg_map["type"] = SDM_MOVE;
     msg_map["to_id"] = to_id;
     
@@ -638,14 +638,14 @@ void SDMMaster::handle_wa_space_data_act(PREFETCH_DATA_ACT_T data_act_t, char to
 }
 
 /************************************  MSDMMaster : SDMMaster  ************************************/
-MSDMMaster::MSDMMaster(char ds_id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
+MSDMMaster::MSDMMaster(int ds_id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
                        func_rimsg_recv_cb rimsg_recv_cb, func_dm_act_cb dm_act_cb,
                        MALGO_T malgo_t, int max_num_key_ver_in_mpbuffer, bool w_prefetch)
 : SDMMaster(KV_DATA_ID,
             ds_id, lip, lport, joinhost_lip, joinhost_lport,
             rimsg_recv_cb, dm_act_cb,
             boost::make_shared<KVTable<int> >(),
-            boost::make_shared<MWASpace>(std::vector<char>(),
+            boost::make_shared<MWASpace>(std::vector<int>(),
                                          malgo_t, max_num_key_ver_in_mpbuffer, w_prefetch, boost::bind(&SDMMaster::handle_wa_space_data_act, this, _1, _2, _3, _4) ) )
 {
   // 
@@ -662,14 +662,14 @@ std::string MSDMMaster::to_str()
 }
 
 /************************************  SSDMMaster : SDMMaster  ************************************/
-SSDMMaster::SSDMMaster(char ds_id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
+SSDMMaster::SSDMMaster(int ds_id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
                        func_rimsg_recv_cb rimsg_recv_cb, func_dm_act_cb dm_act_cb,
                        SALGO_T salgo_t, COOR_T* lcoor_, COOR_T* ucoor_, int sexpand_length, bool w_prefetch)
 : SDMMaster(LUCOOR_DATA_ID,
             ds_id, lip, lport, joinhost_lip, joinhost_lport,
             rimsg_recv_cb, dm_act_cb,
             boost::make_shared<RTable<int> >(),
-            boost::make_shared<SWASpace>(std::vector<char>(),
+            boost::make_shared<SWASpace>(std::vector<int>(),
                                          salgo_t, lcoor_, ucoor_, sexpand_length, w_prefetch, boost::bind(&SDMMaster::handle_wa_space_data_act, this, _1, _2, _3, _4) ) )
 {
   // 

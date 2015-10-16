@@ -5,9 +5,15 @@ NUM_SNODE=1
 NUM_CLIENT=1
 NUM_DSCNODE=$(($NUM_CLIENT+1)) #+1: RIManager
 
+LCONTROL_LINTF="lo" # "em2"
+RI_MANAGER_LCONTROL_LPORT_LIST=( 8000 8001 8002 )
+APP_LCONTROL_LPORT_LIST=( 9000 9001 9002 9003 9004 )
+APP_JOIN_LCONTROL_LIP_LIST=( "" "192.168.2.151" "192.168.2.151" )
+APP_JOIN_LCONTROL_LPORT_LIST=( 0 8000 8000 )
+
 CONTROL_LINTF="lo" # "em2"
 RI_MANAGER_CONTROL_LPORT_LIST=( "7000" "7001" "7002" )
-RI_MANAGER_JOIN_CONTROL_LADDR_LIST=( "" "192.168.2.151" "192.168.2.151" )
+RI_MANAGER_JOIN_CONTROL_LIP_LIST=( "" "192.168.2.151" "192.168.2.151" )
 RI_MANAGER_JOIN_CONTROL_LPORT_LIST=( "" "7000" "7000" )
 
 TRANS_PROTOCOL="i" # "g"
@@ -33,8 +39,8 @@ elif [ $1  = 'r' ]; then
     echo "Which site?"
   else
     GLOG_logtostderr=1 ./exp --type="ri" --cl_id=21 --num_client=$NUM_CLIENT --base_client_id=$(($(($2+1))*10)) \
+                             --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=${RI_MANAGER_LCONTROL_LPORT_LIST[$2] }  \
                              --ds_id=$2 --control_lintf=$CONTROL_LINTF --control_lport=${RI_MANAGER_CONTROL_LPORT_LIST[$2] } \
-                             --join_control_laddr=${RI_MANAGER_JOIN_CONTROL_LADDR_LIST[$2] } --join_control_lport=${RI_MANAGER_JOIN_CONTROL_LPORT_LIST[$2] } \
                              --trans_protocol=$TRANS_PROTOCOL --ib_lintf=$IB_LINTF \
                              --tcp_lintf=$TCP_LINTF --tcp_lport=$TCP_LPORT \
                              --gftp_lintf=$GFTP_LINTF --gftp_lport=$GFTP_LPORT --tmpfs_dir=$TMPFS_DIR

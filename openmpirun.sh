@@ -11,18 +11,21 @@ NUM_DSPACESWA_CLIENT_LIST=( 1 1 )
 DSPACES_BIN_DIR=$DSPACES_DIR/bin                                                                    # DSPACES_DIR, DSPACESWA_DIR is set with ". run.sh init ?"
 DSPACESWA_BIN_DIR=$DSPACESWA_DIR
 
-TRANS_PROTOCOL="i"                                                                                  #i:infiniband, g:gridftp
+TRANS_PROTOCOL="t"                                                                                  #i:infiniband, t:tcp, g:gridftp
 TMPFS_DIR="/cac/u01/mfa51/Desktop/dataspaces_wa/cache"
-#
-RI_MANAGER_APP_ID_LIST=( 11 12 )
-RI_MANAGER_CONTROL_LINTF_LIST=( "em2" "em2" )                                                       #"eth0"
-RI_MANAGER_CONTROL_LPORT_LIST=( "60000" "61000" )
-RI_MANAGER_CONTROL_CONNECT_TO_LADDR_LIST=( "" "192.168.2.151" )
-RI_MANAGER_CONTROL_CONNECT_TO_LPORT_LIST=( "" "60000" )
-RI_MANAGER_DATA_LINTF_LIST=( "ib0" "ib0" )                                                          #"em2"
-# RI_MANAGER_DATA_LINTF_LIST=( "em2" "em2" )
-RI_MANAGER_DATA_GFTP_LPORT_LIST=( "60100" "61100" )
-RI_MANAGER_DATA_TMPFS_DIR_LIST=( $TMPFS_DIR"/put" $TMPFS_DIR"/get" )
+# 
+RI_MANAGER_LCONTROL_LINTF_LIST=( "em2" "em2" )
+RI_MANAGER_LCONTROL_LPORT_LIST=( 8000 8000 )
+RI_MANAGER_CONTROL_LINTF_LIST=( "em2" "em2" )
+RI_MANAGER_CONTROL_LPORT_LIST=( 7000 7001 )
+RI_MANAGER_JOIN_CONTROL_LIP_LIST=( "" "192.168.2.151" )
+RI_MANAGER_JOIN_CONTROL_LPORT_LIST=( 0 7000 )
+RI_MANAGER_IB_LINTF_LIST=( "ib0" "ib0" )
+RI_MANAGER_TCP_LINTF_LIST=( "em2" "em2" )
+RI_MANAGER_TCP_LPORT_LIST=( 6000 6000 )
+RI_MANAGER_GFTP_LINTF_LIST=( "em2" "em2" )
+RI_MANAGER_GFTP_LPORT_LIST=( 6000 6000 )
+RI_MANAGER_TMPFS_DIR_LIST=( $TMPFS_DIR"/put" $TMPFS_DIR"/get" )
 
 MPIRUN=mpirun # /usr/lib64/openmpi/bin/mpirun
 PKILL=/usr/bin/pkill
@@ -33,7 +36,7 @@ if [ $1  = 'r' ]; then
     echo "which site? 0-1"
   else
     if [ -a conf ]; then
-      rm conf                                                                                         #dataspaces_server cannot overwrite this so before every new run this should be removed
+      rm conf                                                                                       #dataspaces_server cannot overwrite this so before every new run this should be removed
     fi
     
     $MPIRUN -npernode 1 ${DS_NODE_LIST[$2]} \
@@ -45,22 +48,15 @@ if [ $1  = 'r' ]; then
                               -port ${RI_MANAGER_DATA_GFTP_LPORT_LIST[$2]} \
                               -d error,warn,info,dump,all &
     fi
-    
     sleep 1
     
     $MPIRUN -npernode 1 -x LD_LIBRARY_PATH -x GLOG_logtostderr ${RI_MANAGER_NODE_LIST[$2]} \
-      $DSPACESWA_BIN_DIR/exp --type="ri" \
-                             --app_id=${RI_MANAGER_APP_ID_LIST[$2]} \
-                             --num_dscnodes=$((${NUM_DSPACESWA_CLIENT_LIST[$2]}+1)) \
-                             --dht_id=$2 \
-                             --dht_lintf=${RI_MANAGER_CONTROL_LINTF_LIST[$2]} \
-                             --dht_lport=${RI_MANAGER_CONTROL_LPORT_LIST[$2]} \
-                             --ipeer_dht_laddr=${RI_MANAGER_CONTROL_CONNECT_TO_LADDR_LIST[$2]} \
-                             --ipeer_dht_lport=${RI_MANAGER_CONTROL_CONNECT_TO_LPORT_LIST[$2]} \
-                             --trans_protocol=$TRANS_PROTOCOL \
-                             --wa_lintf=${RI_MANAGER_DATA_LINTF_LIST[$2]} \
-                             --gftp_lport=${RI_MANAGER_DATA_GFTP_LPORT_LIST[$2]} \
-                             --tmpfs_dir=${RI_MANAGER_DATA_TMPFS_DIR_LIST[$2]} &
+      $DSPACESWA_BIN_DIR/exp --type="ri" --cl_id=111 --num_client=${NUM_DSPACESWA_CLIENT_LIST[$2]} --base_client_id=$(($2*10)) \
+                             --lcontrol_lintf=${RI_MANAGER_LCONTROL_LINTF_LIST[$2]} --lcontrol_lport=${RI_MANAGER_LCONTROL_LPORT_LIST[$2]} \
+                             --ds_id=$2 --control_lintf=${RI_MANAGER_CONTROL_LINTF_LIST[$2]} --control_lport=${RI_MANAGER_CONTROL_LPORT_LIST[$2]} --join_control_lip=${RI_MANAGER_JOIN_CONTROL_LIP_LIST[$2]} --join_control_lport=${RI_MANAGER_JOIN_CONTROL_LPORT_LIST[$2]} \
+                             --trans_protocol=$TRANS_PROTOCOL --ib_lintf=${RI_MANAGER_IB_LINTF_LIST[$2]} \
+                             --tcp_lintf=${RI_MANAGER_TCP_LINTF_LIST[$2]} --tcp_lport=${RI_MANAGER_TCP_LPORT_LIST[$2]} \
+                             --gftp_lintf=${RI_MANAGER_GFTP_LINTF_LIST[$2]} --gftp_lport=${RI_MANAGER_GFTP_LPORT_LIST[$2]} --tmpfs_dir=${RI_MANAGER_TMPFS_DIR_LIST[$2]} &
   fi
 elif [ $1  = 'k' ]; then
   for i in "${DS_NODE_LIST[@]}"

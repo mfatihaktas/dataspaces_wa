@@ -37,6 +37,22 @@ int get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_)
   return volume;
 }
 
+std::string intf_to_ip(std::string intf)
+{
+  int fd;
+  struct ifreq ifr;
+  // 
+  fd = socket(AF_INET, SOCK_DGRAM, 0);
+  // Type of address to retrieve - IPv4 IP address
+  ifr.ifr_addr.sa_family = AF_INET;
+  // Copy the interface name in the ifreq structure
+  std::memcpy(ifr.ifr_name, intf.c_str(), IFNAMSIZ - 1);
+  ioctl(fd, SIOCGIFADDR, &ifr);
+  close(fd);
+  // 
+  return boost::lexical_cast<std::string>(inet_ntoa( ( (struct sockaddr_in*)&ifr.ifr_addr)->sin_addr) );
+}
+
 std::map<std::string, std::string> parse_opts(int argc, char** argv)
 {
   std::map<std::string, std::string> opt_map;
@@ -48,8 +64,12 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
     {"cl_id", optional_argument, NULL, 1},
     {"base_client_id", optional_argument, NULL, 2},
     {"num_client", optional_argument, NULL, 3},
-    {"num_putget", optional_argument, NULL, 4},
-    {"inter_time_sec", optional_argument, NULL, 5},
+    {"lcontrol_lintf", optional_argument, NULL, 4},
+    {"lcontrol_lport", optional_argument, NULL, 5},
+    {"join_lcontrol_lip", optional_argument, NULL, 6},
+    {"join_lcontrol_lport", optional_argument, NULL, 7},
+    {"num_putget", optional_argument, NULL, 8},
+    {"inter_time_sec", optional_argument, NULL, 9},
     {0, 0, 0, 0}
   };
   
@@ -77,9 +97,21 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
         opt_map["num_client"] = optarg;
         break;
       case 4:
-        opt_map["num_putget"] = optarg;
+        opt_map["lcontrol_lintf"] = optarg;
         break;
       case 5:
+        opt_map["lcontrol_lport"] = optarg;
+        break;
+      case 6:
+        opt_map["join_lcontrol_lip"] = optarg;
+        break;
+      case 7:
+        opt_map["join_lcontrol_lport"] = optarg;
+        break;
+      case 8:
+        opt_map["num_putget"] = optarg;
+        break;
+      case 9:
         opt_map["inter_time_sec"] = optarg;
         break;
       default:
@@ -179,8 +211,8 @@ int main(int argc , char **argv)
   
   TProfiler<std::string> tprofiler;
   if (str_cstr_equals(opt_map["type"], "mput") ) {
-    WADSDriver wads_driver(boost::lexical_cast<int>(opt_map["cl_id"] ), boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_client"] ),
-                           LUCOOR_DATA_ID);
+    MWADSDriver wads_driver(boost::lexical_cast<int>(opt_map["cl_id"] ), boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_client"] ),
+                            intf_to_ip(opt_map["lcontrol_lintf"] ), boost::lexical_cast<int>(opt_map["lcontrol_lport"] ), opt_map["join_lcontrol_lip"], boost::lexical_cast<int>(opt_map["join_lcontrol_lport"] ) );
     
     std::cout << "Enter for multi_put_test...\n";
     getline(std::cin, temp);
@@ -195,8 +227,8 @@ int main(int argc , char **argv)
     getline(std::cin, temp);
   }
   else if (str_cstr_equals(opt_map["type"], "mget") ) {
-    WADSDriver wads_driver(boost::lexical_cast<int>(opt_map["cl_id"] ), boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_client"] ),
-                           LUCOOR_DATA_ID);
+    MWADSDriver wads_driver(boost::lexical_cast<int>(opt_map["cl_id"] ), boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_client"] ),
+                            intf_to_ip(opt_map["lcontrol_lintf"] ), boost::lexical_cast<int>(opt_map["lcontrol_lport"] ), opt_map["join_lcontrol_lip"], boost::lexical_cast<int>(opt_map["join_lcontrol_lport"] ) );
     
     std::cout << "Enter for multi_get_test...\n";
     getline(std::cin, temp);

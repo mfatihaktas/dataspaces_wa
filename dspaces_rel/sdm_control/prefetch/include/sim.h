@@ -16,7 +16,7 @@ class PCSim { // P-C Simulator
   protected:
     bool w_prefetch;
     int num_p, num_c;
-    std::vector<char> p_id__ds_id_v, c_id__ds_id_v;
+    std::vector<int> p_id__ds_id_v, c_id__ds_id_v;
     std::vector<int> p_id__num_put_v, c_id__num_get_v;
     std::vector<float> p_id__put_rate_v, c_id__get_rate_v;
     std::vector<std::vector<float> > p_id__inter_arr_time_v_v, c_id__inter_arr_time_v_v;
@@ -27,9 +27,9 @@ class PCSim { // P-C Simulator
     std::map<int, std::vector<char> > c_id__get_type_v_map;
     std::vector<boost::shared_ptr<boost::thread> > thread_v;
   public:
-    PCSim(std::vector<char> ds_id_v, bool w_prefetch,
+    PCSim(std::vector<int> ds_id_v, bool w_prefetch,
           int num_p, int num_c,
-          std::vector<char> p_id__ds_id_v, std::vector<char> c_id__ds_id_v,
+          std::vector<int> p_id__ds_id_v, std::vector<int> c_id__ds_id_v,
           std::vector<int> p_id__num_put_v, std::vector<int> c_id__num_get_v,
           std::vector<float> p_id__put_rate_v, std::vector<float> c_id__get_rate_v,
           std::vector<std::vector<float> > p_id__inter_arr_time_v_v, std::vector<std::vector<float> > c_id__inter_arr_time_v_v);
@@ -43,7 +43,7 @@ class PCSim { // P-C Simulator
     
     std::map<int, float> get_c_id__get_lperc_map();
     
-    void handle_data_act(PREFETCH_DATA_ACT_T data_act_t, char ds_id, key_ver_pair kv, lcoor_ucoor_pair lucoor);
+    void handle_data_act(PREFETCH_DATA_ACT_T data_act_t, int ds_id, key_ver_pair kv, lcoor_ucoor_pair lucoor);
 };
 
 /************************************************  MPCSim  ****************************************/
@@ -52,9 +52,9 @@ class MPCSim : public PCSim { // Markov
     patch_all::syncer<key_ver_pair> bget_syncer;
     
   public:
-    MPCSim(std::vector<char> ds_id_v, bool w_prefetch,
+    MPCSim(std::vector<int> ds_id_v, bool w_prefetch,
            int num_p, int num_c,
-           std::vector<char> p_id__ds_id_v, std::vector<char> c_id__ds_id_v,
+           std::vector<int> p_id__ds_id_v, std::vector<int> c_id__ds_id_v,
            std::vector<int> p_id__num_put_v, std::vector<int> c_id__num_get_v,
            std::vector<float> p_id__put_rate_v, std::vector<float> c_id__get_rate_v,
            std::vector<std::vector<float> > p_id__inter_arr_time_v_v, std::vector<std::vector<float> > c_id__inter_arr_time_v_v,
@@ -73,8 +73,8 @@ class SPCSim : public PCSim { // Spatial
   private:
     spatial_syncer s_syncer;
   public:
-    SPCSim(std::vector<char> ds_id_v, int num_p, int num_c,
-           std::vector<char> p_id__ds_id_v, std::vector<char> c_id__ds_id_v,
+    SPCSim(std::vector<int> ds_id_v, int num_p, int num_c,
+           std::vector<int> p_id__ds_id_v, std::vector<int> c_id__ds_id_v,
            std::vector<int> p_id__num_put_v, std::vector<int> c_id__num_get_v,
            std::vector<float> p_id__put_rate_v, std::vector<float> c_id__get_rate_v,
            std::vector<std::vector<float> > p_id__inter_arr_time_v_v, std::vector<std::vector<float> > c_id__inter_arr_time_v_v,

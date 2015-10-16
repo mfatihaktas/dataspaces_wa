@@ -13,6 +13,10 @@ Packet::Packet(char type, std::map<std::string, std::string> msg_map)
   std::string msg_str(ss.str() );
   
   this->msg_size = msg_str.length();
+  if (msg_size > MAX_MSG_SIZE) {
+    LOG(WARNING) << "Packet:: msg_size=" << msg_size << " > MAX_MSG_SIZE=" << MAX_MSG_SIZE;
+    msg_size = MAX_MSG_SIZE;
+  }
   this->packet_size = SIZE_SIZE + TYPE_SIZE + msg_size + TAIL_SIZE;
   this->data_ = (char*)malloc(packet_size*sizeof(char) );
   
@@ -80,10 +84,10 @@ char* Packet::int_to_char_(int char_size, int number) const
     return NULL;
   }
   std::string final_str = std::string(padding_size, '0').append(str);
-  char* arr = (char*)malloc(char_size*sizeof(char) );
-  strcpy(arr, final_str.c_str() );
+  char* arr_ = (char*)malloc(char_size*sizeof(char) );
+  strcpy(arr_, final_str.c_str() );
   
-  return arr;
+  return arr_;
 }
 
 Packet::~Packet()

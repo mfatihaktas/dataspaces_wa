@@ -1,7 +1,7 @@
 #include "prefetch.h"
 
 /******************************************  MPBuffer  *********************************************/
-MPBuffer::MPBuffer(char ds_id, int max_num_key_ver, MALGO_T malgo_t,
+MPBuffer::MPBuffer(int ds_id, int max_num_key_ver, MALGO_T malgo_t,
                    bool w_prefetch, func_handle_mpbuffer_data_act_cb handle_mpbuffer_data_act_cb)
 : ds_id(ds_id), max_num_key_ver(max_num_key_ver),
   w_prefetch(w_prefetch), handle_mpbuffer_data_act_cb(handle_mpbuffer_data_act_cb),
@@ -253,7 +253,7 @@ void MPBuffer::sim_prefetch_accuracy(std::vector<int> p_id_v, std::vector<key_ve
 }
 
 /*******************************************  WASpace  ********************************************/
-WASpace::WASpace(std::vector<char> ds_id_v, func_handle_data_act_cb handle_data_act_cb)
+WASpace::WASpace(std::vector<int> ds_id_v, func_handle_data_act_cb handle_data_act_cb)
 : ds_id_v(ds_id_v), handle_data_act_cb(handle_data_act_cb)
 {
   // 
@@ -268,7 +268,7 @@ std::string WASpace::to_str()
   return ss.str();
 }
 
-int WASpace::reg_ds(char ds_id)
+int WASpace::reg_ds(int ds_id)
 {
   if (std::find(ds_id_v.begin(), ds_id_v.end(), ds_id) != ds_id_v.end() ) {
     LOG(WARNING) << "reg_ds:: ds_id= " << ds_id << " is already reged!";
@@ -279,7 +279,7 @@ int WASpace::reg_ds(char ds_id)
   return 0;
 }
 
-int WASpace::reg_app(int app_id, char ds_id)
+int WASpace::reg_app(int app_id, int ds_id)
 {
   if (app_id__ds_id_map.contains(app_id) ) {
     LOG(ERROR) << "reg_app:: already reged app_id= " << app_id;
@@ -291,12 +291,12 @@ int WASpace::reg_app(int app_id, char ds_id)
 }
 
 /******************************************  MWASpace  ********************************************/
-MWASpace::MWASpace(std::vector<char> ds_id_v,
+MWASpace::MWASpace(std::vector<int> ds_id_v,
                    MALGO_T malgo_t, int max_num_key_ver_in_mpbuffer, bool w_prefetch, func_handle_data_act_cb handle_data_act_cb)
 : WASpace(ds_id_v, handle_data_act_cb),
   max_num_key_ver_in_mpbuffer(max_num_key_ver_in_mpbuffer), malgo_t(malgo_t), w_prefetch(w_prefetch)
 {
-  for (std::vector<char>::iterator it = ds_id_v.begin(); it != ds_id_v.end(); it++) {
+  for (std::vector<int>::iterator it = ds_id_v.begin(); it != ds_id_v.end(); it++) {
     ds_id__kv_vp_map[*it] = boost::make_shared<patch_all::thread_safe_vector<key_ver_pair> >();
     
     ds_id__mpbuffer_map[*it] = boost::make_shared<MPBuffer>(*it, max_num_key_ver_in_mpbuffer, malgo_t,
@@ -330,7 +330,7 @@ std::string MWASpace::to_str_end()
   ss << "\n";
   
   ss << "ds_id__kv_vp_map= \n";
-  for (std::map<char, boost::shared_ptr<patch_all::thread_safe_vector<key_ver_pair> > >::iterator map_it = ds_id__kv_vp_map.begin(); map_it != ds_id__kv_vp_map.end(); map_it++) {
+  for (std::map<int, boost::shared_ptr<patch_all::thread_safe_vector<key_ver_pair> > >::iterator map_it = ds_id__kv_vp_map.begin(); map_it != ds_id__kv_vp_map.end(); map_it++) {
     ss << ">>> ds_id= " << map_it->first << " : ";
     for (std::vector<key_ver_pair>::iterator vec_it = (map_it->second)->begin(); vec_it != (map_it->second)->end(); vec_it++)
       ss << "\t <" << vec_it->first << ", " << vec_it->second << "> \n ";
@@ -338,12 +338,12 @@ std::string MWASpace::to_str_end()
   }
   
   ss << "ds_id__mpbuffer_map= \n";
-  for (std::map<char, boost::shared_ptr<MPBuffer> >::iterator it = ds_id__mpbuffer_map.begin(); it != ds_id__mpbuffer_map.end(); it++) {
+  for (std::map<int, boost::shared_ptr<MPBuffer> >::iterator it = ds_id__mpbuffer_map.begin(); it != ds_id__mpbuffer_map.end(); it++) {
     ss << ">>> ds_id= " << it->first << "\n"
        << "\t mpbuffer= \n" << (it->second)->to_str() << "\n";
   }
   
-  for (std::vector<char>::iterator it = ds_id_v.begin(); it != ds_id_v.end(); it++) {
+  for (std::vector<int>::iterator it = ds_id_v.begin(); it != ds_id_v.end(); it++) {
     patch_all::thread_safe_vector<key_ver_pair>& ds_kv_v = *ds_id__kv_vp_map[*it];
     std::sort(ds_kv_v.begin(), ds_kv_v.end() );
     
@@ -365,7 +365,7 @@ std::string MWASpace::to_str_end()
   return ss.str();
 }
 
-int MWASpace::reg_ds(char ds_id)
+int MWASpace::reg_ds(int ds_id)
 {
   if (WASpace::reg_ds(ds_id) ) {
     LOG(ERROR) << "reg_ds:: WASpace::reg_ds failed; ds_id= " << ds_id;
@@ -378,7 +378,7 @@ int MWASpace::reg_ds(char ds_id)
   return 0;
 }
 
-int MWASpace::del(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, char ds_id)
+int MWASpace::del(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, int ds_id)
 {
   key_ver_pair kv = std::make_pair(key, ver);
   if (!kv_v.contains(kv) ) {
@@ -396,7 +396,7 @@ int MWASpace::del(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* uco
   return 0;
 }
 
-int MWASpace::put(int p_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, char ds_id)
+int MWASpace::put(int p_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, int ds_id)
 {
   // if (!p_id__key_map.contains(p_id) ) {
   //   std::vector<std::string> key_v;
@@ -405,22 +405,22 @@ int MWASpace::put(int p_id, std::string key, unsigned int ver, COOR_T* lcoor_, C
   // p_id__key_map[p_id].push_back(key);
   // 
   key_ver_pair kv = std::make_pair(key, ver);
-  if (ds_id != '\0' && contains(ds_id, kv) ) {
+  if (ds_id != -1 && contains(ds_id, kv) ) {
     LOG(ERROR) << "put:: already in ds_id= " << ds_id << "; " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_);
     return 1;
   }
-  else if (ds_id == '\0' && contains('*', kv) ) {
+  else if (ds_id == -1 && contains('*', kv) ) {
     LOG(ERROR) << "put:: already in space; " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_);
     return 1;
   }
   
-  if (ds_id == '\0') { // New data put
+  if (ds_id == -1) { // New data put
     if (!app_id__ds_id_map.contains(p_id) )
       return 1;
     ds_id = app_id__ds_id_map[p_id];
     
     // Immediately broadcast it to every ds peer so mpbuffers can be updated
-    for (std::map<char, boost::shared_ptr<MPBuffer> >::iterator it = ds_id__mpbuffer_map.begin(); it != ds_id__mpbuffer_map.end(); it++)
+    for (std::map<int, boost::shared_ptr<MPBuffer> >::iterator it = ds_id__mpbuffer_map.begin(); it != ds_id__mpbuffer_map.end(); it++)
       (it->second)->reg_key_ver(p_id, kv);
   
     kv__p_id_map[kv] = p_id;
@@ -432,13 +432,13 @@ int MWASpace::put(int p_id, std::string key, unsigned int ver, COOR_T* lcoor_, C
   return 0;
 }
 
-int MWASpace::query(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, std::vector<char>& ds_id_v)
+int MWASpace::query(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, std::vector<int>& ds_id_v)
 {
   key_ver_pair kv = std::make_pair(key, ver);
   if (!contains('*', kv) )
     return 1;
   
-  for (std::vector<char>::iterator it = this->ds_id_v.begin(); it != this->ds_id_v.end(); it++) {
+  for (std::vector<int>::iterator it = this->ds_id_v.begin(); it != this->ds_id_v.end(); it++) {
     if (contains(*it, kv) )
       ds_id_v.push_back(*it);
   }
@@ -453,7 +453,7 @@ int MWASpace::add_access(int c_id, std::string key, unsigned int ver, COOR_T* lc
   return ds_id__mpbuffer_map[app_id__ds_id_map[c_id] ]->add_access(kv);
 }
 
-bool MWASpace::contains(char ds_id, key_ver_pair kv)
+bool MWASpace::contains(int ds_id, key_ver_pair kv)
 {
   if (ds_id == '*')
     return kv_v.contains(kv);
@@ -461,17 +461,17 @@ bool MWASpace::contains(char ds_id, key_ver_pair kv)
     return ds_id__kv_vp_map[ds_id]->contains(kv) || ds_id__mpbuffer_map[ds_id]->contains(kv);
 }
 
-void MWASpace::handle_mpbuffer_data_act(PREFETCH_DATA_ACT_T data_act_t, char ds_id, key_ver_pair kv) {
+void MWASpace::handle_mpbuffer_data_act(PREFETCH_DATA_ACT_T data_act_t, int ds_id, key_ver_pair kv) {
   if (handle_data_act_cb != 0)
     handle_data_act_cb(data_act_t, ds_id, kv, kv__lucoor_map[kv] );
 }
 
 /******************************************  SWASpace  ********************************************/
-SWASpace::SWASpace(std::vector<char> ds_id_v,
+SWASpace::SWASpace(std::vector<int> ds_id_v,
                    SALGO_T salgo_t, COOR_T* lcoor_, COOR_T* ucoor_, int sexpand_length, bool w_prefetch, func_handle_data_act_cb handle_data_act_cb)
 : WASpace(ds_id_v, handle_data_act_cb),
   w_prefetch(w_prefetch),
-  qtable_(boost::make_shared<RTable<char> >() )
+  qtable_(boost::make_shared<RTable<int> >() )
 {
   IS_VALID_BOX("SWASpace", lcoor_, ucoor_, exit(1) )
   
@@ -494,7 +494,7 @@ std::string SWASpace::to_str()
   return ss.str();
 }
 
-int SWASpace::put(int p_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, char ds_id)
+int SWASpace::put(int p_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, int ds_id)
 {
   IS_VALID_BOX("put", lcoor_, ucoor_, return 1)
   
@@ -505,7 +505,7 @@ int SWASpace::put(int p_id, std::string key, unsigned int ver, COOR_T* lcoor_, C
     }
   }
   
-  if (ds_id == '\0')
+  if (ds_id == -1)
     ds_id = app_id__ds_id_map[p_id];
   
   if (qtable_->add(key, ver, lcoor_, ucoor_, ds_id) ) {
@@ -516,9 +516,9 @@ int SWASpace::put(int p_id, std::string key, unsigned int ver, COOR_T* lcoor_, C
   return 0;
 }
 
-int SWASpace::del(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, char ds_id)
+int SWASpace::del(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, int ds_id)
 {
-  std::vector<char> ds_id_v;
+  std::vector<int> ds_id_v;
   if (query(key, ver, lcoor_, ucoor_, ds_id_v) ) {
     LOG(ERROR) << "del:: does not contain; " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_);
     return 1;
@@ -527,7 +527,7 @@ int SWASpace::del(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* uco
   return qtable_->del(key, ver, lcoor_, ucoor_);
 }
 
-int SWASpace::query(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, std::vector<char>& ds_id_v)
+int SWASpace::query(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, std::vector<int>& ds_id_v)
 { 
   return qtable_->query(key, ver, lcoor_, ucoor_, ds_id_v);
 }
@@ -538,7 +538,7 @@ int SWASpace::add_access(int c_id, std::string key, unsigned int ver, COOR_T* lc
   
   salgo_->add_access(lcoor_, ucoor_);
   
-  char ds_id = app_id__ds_id_map[c_id];
+  int ds_id = app_id__ds_id_map[c_id];
   if (w_prefetch) {
     std::vector<lcoor_ucoor_pair> lucoor_to_fetch_v;
     salgo_->get_to_fetch(lcoor_, ucoor_, lucoor_to_fetch_v);

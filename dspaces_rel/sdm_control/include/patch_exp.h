@@ -99,7 +99,7 @@ void master_test(std::map<std::string, std::string> opt_map)
   COOR_T lcoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 0) };
   COOR_T ucoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 10) };
   
-  MSDMMaster master(opt_map["id"].c_str()[0], intf_to_ip(opt_map["lintf"] ), boost::lexical_cast<int>(opt_map["lport"] ), opt_map["joinhost_lip"], boost::lexical_cast<int>(opt_map["joinhost_lport"] ),
+  MSDMMaster master(boost::lexical_cast<int>(opt_map["id"] ), intf_to_ip(opt_map["lintf"] ), boost::lexical_cast<int>(opt_map["lport"] ), opt_map["joinhost_lip"], boost::lexical_cast<int>(opt_map["joinhost_lport"] ),
                     boost::bind(&handle_rimsg_recv, _1), boost::bind(&handle_dm_act, _1),
                     MALGO_W_PPM, max_num_key_ver_in_mpbuffer, false);
   
@@ -120,18 +120,18 @@ void master_test(std::map<std::string, std::string> opt_map)
 
 void slave_test(std::map<std::string, std::string> opt_map)
 {
-  MSDMSlave slave(opt_map["id"].c_str()[0], intf_to_ip(opt_map["lintf"] ), boost::lexical_cast<int>(opt_map["lport"] ), opt_map["joinhost_lip"], boost::lexical_cast<int>(opt_map["joinhost_lport"] ),
+  MSDMSlave slave(boost::lexical_cast<int>(opt_map["id"] ), intf_to_ip(opt_map["lintf"] ), boost::lexical_cast<int>(opt_map["lport"] ), opt_map["joinhost_lip"], boost::lexical_cast<int>(opt_map["joinhost_lport"] ),
                   boost::bind(&handle_rimsg_recv, _1), boost::bind(&handle_dm_act, _1) );
   std::cout << "Enter for test... \n";
   getline(std::cin, temp);
   
   COOR_T s_lcoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 0) };
   COOR_T s_ucoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 2) };
-  if (opt_map["id"].c_str()[0] == '1') {
+  if (boost::lexical_cast<int>(opt_map["id"] ) == 1) {
     slave.reg_app(0);
     slave.put(true, "dummy", 0, s_lcoor_, s_ucoor_, 0);
   }
-  else if (opt_map["id"].c_str()[0] == '2') {
+  else if (boost::lexical_cast<int>(opt_map["id"] ) == 2) {
     if (slave.get(true, "dummy", 0, s_lcoor_, s_ucoor_) )
       LOG(ERROR) << "main:: slave.get failed; " << LUCOOR_TO_STR(s_lcoor_, s_ucoor_);
     else

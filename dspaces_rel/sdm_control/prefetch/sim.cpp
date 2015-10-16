@@ -1,9 +1,9 @@
 #include "sim.h"
 
 /********************************************  PCSim  *********************************************/
-PCSim::PCSim(std::vector<char> ds_id_v, bool w_prefetch,
+PCSim::PCSim(std::vector<int> ds_id_v, bool w_prefetch,
              int num_p, int num_c,
-             std::vector<char> p_id__ds_id_v, std::vector<char> c_id__ds_id_v,
+             std::vector<int> p_id__ds_id_v, std::vector<int> c_id__ds_id_v,
              std::vector<int> p_id__num_put_v, std::vector<int> c_id__num_get_v,
              std::vector<float> p_id__put_rate_v, std::vector<float> c_id__get_rate_v,
              std::vector<std::vector<float> > p_id__inter_arr_time_v_v, std::vector<std::vector<float> > c_id__inter_arr_time_v_v)
@@ -30,7 +30,7 @@ std::string PCSim::to_str()
   std::stringstream ss;
   ss << "w_prefetch= " << w_prefetch << "\n"
      << "num_p= " << num_p << "\n"
-     << "p_id__ds_id_v= " << patch_all::vec_to_str<char>(p_id__ds_id_v) << "\n"
+     << "p_id__ds_id_v= " << patch_all::vec_to_str<int>(p_id__ds_id_v) << "\n"
      << "p_id__num_put_v= " << patch_all::vec_to_str<int>(p_id__num_put_v) << "\n"
      << "p_id__put_rate_v= " << patch_all::vec_to_str<float>(p_id__put_rate_v) << "\n"
      << "p_id__inter_arr_time_v_v= \n";
@@ -38,7 +38,7 @@ std::string PCSim::to_str()
     ss << "\t" << patch_all::vec_to_str<>(*it) << "\n";
      
   ss << "num_c= " << num_c << "\n"
-     << "c_id__ds_id_v= " << patch_all::vec_to_str<char>(c_id__ds_id_v) << "\n"
+     << "c_id__ds_id_v= " << patch_all::vec_to_str<int>(c_id__ds_id_v) << "\n"
      << "c_id__num_get_v= " << patch_all::vec_to_str<int>(c_id__num_get_v) << "\n"
      << "c_id__get_rate_v= " << patch_all::vec_to_str<float>(c_id__get_rate_v) << "\n"
      << "c_id__inter_arr_time_v_v= \n";
@@ -88,7 +88,7 @@ void PCSim::sim_all()
     thread_v.push_back(boost::make_shared<boost::thread>(&PCSim::sim_c, this, i, w_prefetch) );
 }
 
-void PCSim::handle_data_act(PREFETCH_DATA_ACT_T data_act_t, char ds_id, key_ver_pair kv, lcoor_ucoor_pair lucoor)
+void PCSim::handle_data_act(PREFETCH_DATA_ACT_T data_act_t, int ds_id, key_ver_pair kv, lcoor_ucoor_pair lucoor)
 {
   // if (data_act_t == PREFETCH_DATA_ACT_DEL)
   //   wa_space_->del(kv.first, kv.second, lucoor.first, lucoor.second, ds_id);
@@ -100,9 +100,9 @@ void PCSim::handle_data_act(PREFETCH_DATA_ACT_T data_act_t, char ds_id, key_ver_
 }
 
 /************************************************  MPCSim  ****************************************/
-MPCSim::MPCSim(std::vector<char> ds_id_v, bool w_prefetch,
+MPCSim::MPCSim(std::vector<int> ds_id_v, bool w_prefetch,
                int num_p, int num_c,
-               std::vector<char> p_id__ds_id_v, std::vector<char> c_id__ds_id_v,
+               std::vector<int> p_id__ds_id_v, std::vector<int> c_id__ds_id_v,
                std::vector<int> p_id__num_put_v, std::vector<int> c_id__num_get_v,
                std::vector<float> p_id__put_rate_v, std::vector<float> c_id__get_rate_v,
                std::vector<std::vector<float> > p_id__inter_arr_time_v_v, std::vector<std::vector<float> > c_id__inter_arr_time_v_v,
@@ -185,7 +185,7 @@ void MPCSim::sim_c(int c_id, bool blocking_get)
     
     std::string key = "d_" + boost::lexical_cast<std::string>(c_id) + "_" + boost::lexical_cast<std::string>(c);
     unsigned int ver = 0;
-    std::vector<char> ds_id_v;
+    std::vector<int> ds_id_v;
     // LOG(INFO) << "sim_c:: before query wa_space= \n" << wa_space_->to_str() << "\n";
     if (wa_space_->query(key, ver, lcoor_, ucoor_, ds_id_v) ) {
       if (blocking_get) {
@@ -201,7 +201,7 @@ void MPCSim::sim_c(int c_id, bool blocking_get)
       }
     }
     
-    char ds_id = c_id__ds_id_v[c_id];
+    int ds_id = c_id__ds_id_v[c_id];
     if (std::find(ds_id_v.begin(), ds_id_v.end(), ds_id) != ds_id_v.end() ) {
       LOG(INFO) << "sim_c:: c_id= " << c_id << ", found in local ds_id= " << ds_id << "; " << KV_TO_STR(key, ver);
       c_id__get_type_v_map[c_id].push_back('l');
@@ -225,8 +225,8 @@ void MPCSim::sim_c(int c_id, bool blocking_get)
 }
 
 /*******************************************  SPCSim  *********************************************/
-SPCSim::SPCSim(std::vector<char> ds_id_v, int num_p, int num_c,
-               std::vector<char> p_id__ds_id_v, std::vector<char> c_id__ds_id_v,
+SPCSim::SPCSim(std::vector<int> ds_id_v, int num_p, int num_c,
+               std::vector<int> p_id__ds_id_v, std::vector<int> c_id__ds_id_v,
                std::vector<int> p_id__num_put_v, std::vector<int> c_id__num_get_v,
                std::vector<float> p_id__put_rate_v, std::vector<float> c_id__get_rate_v,
                std::vector<std::vector<float> > p_id__inter_arr_time_v_v, std::vector<std::vector<float> > c_id__inter_arr_time_v_v,
@@ -298,7 +298,7 @@ void SPCSim::sim_c(int c_id, bool blocking_get)
     // LOG(INFO) << "sim_c:: c_id= " << c_id << ", inter_arr_time= " << inter_arr_time_vec[c];
     sleep(inter_arr_time_vec[c] );
     
-    std::vector<char> ds_id_v;
+    std::vector<int> ds_id_v;
     if (wa_space_->query(key, 0, it->first, it->second, ds_id_v) ) {
       if (blocking_get) {
         CREATE_BOX(0, b, it->first, it->second)
@@ -312,7 +312,7 @@ void SPCSim::sim_c(int c_id, bool blocking_get)
       }
     }
     
-    char ds_id = c_id__ds_id_v[c_id];
+    int ds_id = c_id__ds_id_v[c_id];
     if (std::find(ds_id_v.begin(), ds_id_v.end(), ds_id) != ds_id_v.end() )
       c_id__get_type_v_map[c_id].push_back('l');
     else { // Remote fetch

@@ -234,12 +234,12 @@ const int NULL_P_ID = -1;
 typedef char PREFETCH_DATA_ACT_T;
 const PREFETCH_DATA_ACT_T PREFETCH_DATA_ACT_DEL = 'd';
 const PREFETCH_DATA_ACT_T PREFETCH_DATA_ACT_PREFETCH = 'p';
-typedef boost::function<void(PREFETCH_DATA_ACT_T, char, key_ver_pair) > func_handle_mpbuffer_data_act_cb;
+typedef boost::function<void(PREFETCH_DATA_ACT_T, int, key_ver_pair) > func_handle_mpbuffer_data_act_cb;
 
 // Note: Mapping between app_id and <key, ver> will be given to MPBuffer
 class MPBuffer { // Markov Prefetching
   private:
-    char ds_id;
+    int ds_id;
     int max_num_key_ver; // # of <key, ver>
     int app_context_size;
     bool w_prefetch;
@@ -260,7 +260,7 @@ class MPBuffer { // Markov Prefetching
     boost::shared_ptr<MAlgo> malgo_to_pick_app_;
     boost::mutex add_acc_mutex;
   public:
-    MPBuffer(char ds_id, int max_num_key_ver, MALGO_T malgo_t,
+    MPBuffer(int ds_id, int max_num_key_ver, MALGO_T malgo_t,
              bool w_prefetch, func_handle_mpbuffer_data_act_cb handle_mpbuffer_data_act_cb = 0);
     ~MPBuffer();
     std::string to_str();
@@ -279,25 +279,25 @@ class MPBuffer { // Markov Prefetching
 };
 
 /******************************************  MWASpace  ********************************************/
-typedef boost::function<void(PREFETCH_DATA_ACT_T, char, key_ver_pair, lcoor_ucoor_pair) > func_handle_data_act_cb;
+typedef boost::function<void(PREFETCH_DATA_ACT_T, int, key_ver_pair, lcoor_ucoor_pair) > func_handle_data_act_cb;
 
 class WASpace {
   protected:
-    std::vector<char> ds_id_v;
+    std::vector<int> ds_id_v;
     func_handle_data_act_cb handle_data_act_cb;
     
-    patch_all::thread_safe_map<int, char> app_id__ds_id_map;
+    patch_all::thread_safe_map<int, int> app_id__ds_id_map;
   public:
-    WASpace(std::vector<char> ds_id_v, func_handle_data_act_cb handle_data_act_cb = 0);
+    WASpace(std::vector<int> ds_id_v, func_handle_data_act_cb handle_data_act_cb = 0);
     ~WASpace() {}
     virtual std::string to_str();
     
-    virtual int reg_ds(char ds_id);
-    int reg_app(int app_id, char ds_id);
+    virtual int reg_ds(int ds_id);
+    int reg_app(int app_id, int ds_id);
     
-    virtual int put(int p_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, char ds_id = '\0') = 0;
-    virtual int del(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, char ds_id) = 0;
-    virtual int query(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, std::vector<char>& ds_id_v) = 0;
+    virtual int put(int p_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, int ds_id = -1) = 0;
+    virtual int del(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, int ds_id) = 0;
+    virtual int query(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, std::vector<int>& ds_id_v) = 0;
     virtual int add_access(int c_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_) = 0;
 };
 
@@ -309,29 +309,29 @@ class MWASpace : public WASpace {
     bool w_prefetch;
     
     patch_all::thread_safe_vector<key_ver_pair> kv_v;
-    patch_all::thread_safe_map<char, boost::shared_ptr<patch_all::thread_safe_vector<key_ver_pair> > > ds_id__kv_vp_map;
-    std::map<char, boost::shared_ptr<MPBuffer> >  ds_id__mpbuffer_map;
+    patch_all::thread_safe_map<int, boost::shared_ptr<patch_all::thread_safe_vector<key_ver_pair> > > ds_id__kv_vp_map;
+    std::map<int, boost::shared_ptr<MPBuffer> >  ds_id__mpbuffer_map;
     
     patch_all::thread_safe_map<key_ver_pair, int> kv__p_id_map;
     patch_all::thread_safe_map<key_ver_pair, lcoor_ucoor_pair> kv__lucoor_map;
     
     // patch_all::thread_safe_map<int, std::vector<std::string> > p_id__key_map;
   public:
-    MWASpace(std::vector<char> ds_id_v,
+    MWASpace(std::vector<int> ds_id_v,
              MALGO_T malgo_t, int max_num_key_ver_in_mpbuffer, bool w_prefetch, func_handle_data_act_cb handle_data_act_cb = 0);
     ~MWASpace();
     std::string to_str();
     std::string to_str_end();
     
-    int reg_ds(char ds_id);
+    int reg_ds(int ds_id);
     
-    int put(int p_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, char ds_id = '\0');
-    int del(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, char ds_id);
-    int query(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, std::vector<char>& ds_id_v);
+    int put(int p_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, int ds_id = -1);
+    int del(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, int ds_id);
+    int query(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, std::vector<int>& ds_id_v);
     int add_access(int c_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_);
     
-    bool contains(char ds_id, key_ver_pair kv);
-    void handle_mpbuffer_data_act(PREFETCH_DATA_ACT_T mpbuffer_PREFETCH_data_act_t, char ds_id, key_ver_pair kv);
+    bool contains(int ds_id, key_ver_pair kv);
+    void handle_mpbuffer_data_act(PREFETCH_DATA_ACT_T mpbuffer_PREFETCH_data_act_t, int ds_id, key_ver_pair kv);
 };
 
 /******************************************  SWASpace  ********************************************/
@@ -339,19 +339,19 @@ class SWASpace : public WASpace {
   private:
     bool w_prefetch;
     
-    boost::shared_ptr<QTable<char> > qtable_;
+    boost::shared_ptr<QTable<int> > qtable_;
     
     // std::vector<box_t> acced_box_v;
     boost::shared_ptr<SAlgo> salgo_;
   public:
-    SWASpace(std::vector<char> ds_id_v,
+    SWASpace(std::vector<int> ds_id_v,
              SALGO_T salgo_t, COOR_T* lcoor_, COOR_T* ucoor_, int sexpand_length, bool w_prefetch, func_handle_data_act_cb handle_data_act_cb = 0);
     ~SWASpace() {}
     std::string to_str();
     
-    int put(int p_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, char ds_id = '\0');
-    int del(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, char ds_id);
-    int query(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, std::vector<char>& ds_id_v);
+    int put(int p_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, int ds_id = '\0');
+    int del(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, int ds_id);
+    int query(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, std::vector<int>& ds_id_v);
     int add_access(int c_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_);
 };
 

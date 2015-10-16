@@ -2,7 +2,7 @@
 echo $1 $2 $3
 
 LINTF="em2"
-JOINHOST_LIP="192.168.2.151"
+JOINHOST_LIP="192.168.2.152"
 LPORT=6633
 
 if [ $1  = 's' ]; then

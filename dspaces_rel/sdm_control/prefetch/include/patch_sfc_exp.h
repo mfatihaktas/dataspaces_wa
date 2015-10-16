@@ -155,7 +155,6 @@ void check_3d_hilbert_curve()
 
 void test_hsalgo()
 {
-  char ds_id_[] = {'a', 'b', 'c'};
   srand(time(NULL) );
   COOR_T lcoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 0) };
   COOR_T ucoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 16) };
@@ -182,9 +181,9 @@ void test_hsalgo()
 
 void spcsim_test()
 {
-  // std::vector<char> ds_id_v = boost::assign::list_of('a')('b');
+  // std::vector<int> ds_id_v = boost::assign::list_of(0)(1);
   int num_p, num_c;
-  std::vector<char> p_id__ds_id_v, c_id__ds_id_v;
+  std::vector<int> p_id__ds_id_v, c_id__ds_id_v;
   std::vector<int> p_id__num_put_v, c_id__num_get_v;
   std::vector<float> p_id__put_rate_v, c_id__get_rate_v;
   std::vector<std::vector<float> > p_id__inter_arr_time_v_v, c_id__inter_arr_time_v_v;
@@ -196,7 +195,7 @@ void spcsim_test()
   float put_rate_mean = 5;
   float get_rate_mean = 0.2;
   
-  std::vector<char> ds_id_v;
+  std::vector<int> ds_id_v;
   gen_scenario(num_ds, ds_id_v,
                max_num_p, max_num_c, num_putget_mean, put_rate_mean, get_rate_mean,
                num_p, num_c,
