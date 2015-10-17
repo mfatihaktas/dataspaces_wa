@@ -58,6 +58,7 @@ class TCPServer {
     int init(std::string data_id, data_recv_cb_func recv_cb);
     void init_listen();
     void init_recv(boost::shared_ptr<boost::asio::ip::tcp::socket> socket_);
+    void handle_recv(std::string data_id, int data_size, void* data_);
 };
 
 #endif //_TCP_SERVER_H_

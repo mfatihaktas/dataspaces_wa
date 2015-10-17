@@ -247,7 +247,7 @@ int SDMNode::send_msg(int to_id, PACKET_T packet_t, std::map<std::string, std::s
 void SDMNode::handle_recv(char* type__srlzed_msg_map)
 {
   boost::shared_ptr<Packet> p_ = boost::make_shared<Packet>((int)strlen(type__srlzed_msg_map), type__srlzed_msg_map);
-  LOG(INFO) << "handle_recv:: p= \n" << p_->to_str();
+  // LOG(INFO) << "handle_recv:: p= \n" << p_->to_str();
   
   switch (p_->get_type() ) {
     case PACKET_JOIN_REQUEST:

@@ -15,6 +15,7 @@ const DATA_ID_T LUCOOR_DATA_ID = 'l';
 
 namespace patch_sdm {
   std::string get_data_id(DATA_ID_T data_id_t, std::string key, unsigned int ver, COOR_T* lb_, COOR_T* ub_);
+  std::string get_data_id(DATA_ID_T data_id_t, std::map<std::string, std::string> msg_map);
   
   #define HASH_PRIME 54059
   #define HASH_PRIME_2 76963

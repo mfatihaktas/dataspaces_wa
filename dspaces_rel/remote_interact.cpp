@@ -121,7 +121,7 @@ int RFPManager::wa_get(std::string lip, std::string lport, std::string tmpfs_dir
 void RFPManager::handle_recv(std::string data_id, int data_size, void* data_)
 {
   if (!data_id__recved_size_map.count(data_id) ) {
-    LOG(ERROR) << "handle_recv:: data is received for an data_id= " << data_id;
+    LOG(ERROR) << "handle_recv:: data is received for a non-existing data_id= " << data_id;
     return;
   }
   
@@ -278,22 +278,12 @@ int RIManager::trans_info_query(int to_id, std::map<std::string, std::string> ms
     return 1;
   }
   
-  int ndim;
-  std::string key;
-  unsigned ver;
-  uint64_t *lb_, *ub_;
-  if (msg_coder.decode_msg_map(msg_map, ndim, key, ver, lb_, ub_) ) {
-    LOG(ERROR) << "trans_info_query:: msg_coder.decode_msg_map failed; msg_map= \n" << patch_all::map_to_str<>(msg_map);
-    return 1;
-  }
-  
   unsigned int sync_point = patch_sdm::hash_str(
-    RI_TINFO_QUERY + "_" + patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_) );
+    RI_TINFO_QUERY + "_" + patch_sdm::get_data_id(data_id_t, msg_map) );
   ri_syncer.add_sync_point(sync_point, 1);
   ri_syncer.wait(sync_point);
   ri_syncer.del_sync_point(sync_point);
   
-  patch_all::free_all<uint64_t>(2, lb_, ub_);
   return 0;
 }
 
@@ -398,19 +388,9 @@ void RIManager::handle_tinfo_query_reply(std::map<std::string, std::string> msg_
     LOG(WARNING) << "handle_tinfo_query_reply:: updating ds_id__trans_info_map for ds_id= " << from_id;
   
   ds_id__trans_info_map[from_id] = boost::make_shared<trans_info>(msg_map["lip"], msg_map["lport"], msg_map["tmpfs_dir"] );
-  // 
-  int ndim;
-  std::string key;
-  unsigned ver;
-  uint64_t *lb_, *ub_;
-  if (msg_coder.decode_msg_map(msg_map, ndim, key, ver, lb_, ub_) ) {
-    LOG(ERROR) << "handle_tinfo_query_reply:: msg_coder.decode_msg_map failed; msg_map= \n" << patch_all::map_to_str<>(msg_map);
-    return;
-  }
-  ri_syncer.notify(patch_sdm::hash_str(
-    RI_TINFO_QUERY + "_" + patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_) ) );
   
-  patch_all::free_all<uint64_t>(2, lb_, ub_);
+  ri_syncer.notify(patch_sdm::hash_str(
+    RI_TINFO_QUERY + "_" + patch_sdm::get_data_id(data_id_t, msg_map) ) );
 }
 
 void RIManager::handle_gridftp_put(std::map<std::string, std::string> msg_map)
@@ -441,18 +421,9 @@ void RIManager::handle_dm_move(std::map<std::string, std::string> msg_map)
   LOG(INFO) << "handle_dm_move:: msg_map= \n" << patch_all::map_to_str<>(msg_map);
   
   int to_id = boost::lexical_cast<int>(msg_map["to_id"] );
-  if (!ds_id__trans_info_map.contains(to_id) || str_str_equals(data_trans_protocol, INFINIBAND) ) {
-    int ndim;
-    std::string key;
-    unsigned ver;
-    uint64_t *lb_, *ub_;
-    if (msg_coder.decode_msg_map(msg_map, ndim, key, ver, lb_, ub_) ) {
-      LOG(ERROR) << "handle_dm_move:: msg_coder.decode_msg_map failed; msg_map= \n" << patch_all::map_to_str<>(msg_map);
-      return;
-    }
-    
+  if (!ds_id__trans_info_map.contains(to_id) || str_str_equals(data_trans_protocol, INFINIBAND) || str_str_equals(data_trans_protocol, TCP) ) {
     boost::shared_ptr<data_info> data_info_ =
-      data_id_hash__data_info_map[patch_sdm::hash_str(patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_) ) ];
+      data_id_hash__data_info_map[patch_sdm::hash_str(patch_sdm::get_data_id(data_id_t, msg_map) ) ];
     
     msg_map["data_type"] = data_info_->data_type;
     msg_map["size"] = boost::lexical_cast<std::string>(data_info_->size);

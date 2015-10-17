@@ -13,6 +13,7 @@ TCPTrans::~TCPTrans()
   if (!closed)
     close();
   // 
+  closed = true;
   LOG(INFO) << "TCPTrans:: destructed.";
 }
 

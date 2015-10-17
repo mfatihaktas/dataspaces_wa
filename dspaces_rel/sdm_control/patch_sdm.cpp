@@ -11,6 +11,16 @@ namespace patch_sdm {
       LOG(ERROR) << "get_data_id:: unknown data_id_t= " << data_id_t;
   }
   
+  std::string get_data_id(DATA_ID_T data_id_t, std::map<std::string, std::string> msg_map)
+  {
+    if (data_id_t == KV_DATA_ID)
+      return msg_map["key"] + "_" + msg_map["ver"];
+    else if (data_id_t == LUCOOR_DATA_ID)
+      return msg_map["lb_"] + "_" + msg_map["ub_"];
+    else
+      LOG(ERROR) << "get_data_id:: unknown data_id_t= " << data_id_t;
+  }
+  
   unsigned int hash_str(std::string str)
   {
     unsigned int h = 31; // Also prime

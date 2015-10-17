@@ -86,10 +86,9 @@ int TCPServer::init(std::string data_id, data_recv_cb_func recv_cb)
 {
   this->recv_cb = recv_cb;
   if (!inited) {
-    boost::make_shared<boost::thread>(&TCPServer::init_listen, this);
+    boost::thread t(&TCPServer::init_listen, this);
     inited = true;
   }
-  
   unsigned int sync_point = hash_str(data_id);
   syncer.add_sync_point(sync_point, 1);
   syncer.wait(sync_point);
@@ -120,7 +119,7 @@ void TCPServer::init_listen()
       LOG(INFO) << "init_listen:: server= " << server_name << " got connection from " << socket_v.back()->remote_endpoint().address().to_string();
       // acceptor_->close();
       // init_recv(socket_v.back() );
-      boost::make_shared<boost::thread>(&TCPServer::init_recv, this, socket_v.back() );
+      boost::thread t(&TCPServer::init_recv, this, socket_v.back() );
     }
     catch(std::exception& ex) {
       LOG(ERROR) << "init_listen:: Exception=" << ex.what();
@@ -130,31 +129,26 @@ void TCPServer::init_listen()
 
 void TCPServer::init_recv(boost::shared_ptr<boost::asio::ip::tcp::socket> socket_)
 {
-  std::string data_id;
-  int data_size;
-  if (!closed) {
-    // First read data_id of length < MAX_DATA_ID_LENGTH
+  while (!closed) {
     char* data_id_ = (char*)malloc(MAX_DATA_ID_LENGTH);
     boost::asio::read(*socket_, boost::asio::buffer(data_id_, MAX_DATA_ID_LENGTH) );
-    data_id = boost::lexical_cast<std::string>(data_id_);
+    std::string data_id = boost::lexical_cast<std::string>(data_id_);
     free(data_id_);
     
     char* data_size_ = (char*)malloc(MAX_DATA_SIZE_LENGTH);
     boost::asio::read(*socket_, boost::asio::buffer(data_size_, MAX_DATA_ID_LENGTH) );
-    data_size = boost::lexical_cast<int>(data_size_);
+    int data_size = boost::lexical_cast<int>(data_size_);
     free(data_size_);
-  }
-  
-  int total_recved_size = 0;
-  while (!closed) {
-    try {
-      void* chunk_ = malloc(CHUNK_LENGTH);
+    
+    int total_to_recv_size = data_size;
+    while (!closed) {
       int recved_size;
-      
-      boost::system::error_code ec;
+      void* chunk_;
       try {
-        recved_size = (socket_->read_some(boost::asio::buffer(chunk_, CHUNK_LENGTH) ) );
-        total_recved_size += recved_size;
+        int to_recv_size = (total_to_recv_size < CHUNK_LENGTH) ? total_to_recv_size : CHUNK_LENGTH;
+        chunk_ = malloc(to_recv_size);
+        recved_size = (socket_->read_some(boost::asio::buffer(chunk_, to_recv_size) ) );
+        total_to_recv_size -= recved_size;
       }
       catch(boost::system::system_error& err) {
         // LOG(ERROR) << "init_recv:: err= " << err.what();
@@ -163,23 +157,18 @@ void TCPServer::init_recv(boost::shared_ptr<boost::asio::ip::tcp::socket> socket
       }
       
       // handle_recv_thread_v.push_back(boost::make_shared<boost::thread>(&TCPServer::handle_recv, this, chunk_) );
-      recv_cb(data_id, recved_size, chunk_);
-      if (total_recved_size >= data_size) {
+      // recv_cb(data_id, recved_size, chunk_);
+      boost::thread t(&TCPServer::handle_recv, this, data_id, recved_size, chunk_);
+      if (total_to_recv_size == 0) {
         LOG(INFO) << "init_recv:: server= " << server_name << " completed receiving data_id= " << data_id;
         syncer.notify(hash_str(data_id) );
-        
-        boost::system::error_code ec;
-        socket_->shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
-        // socket_->shutdown(boost::asio::ip::tcp::socket::shutdown_receive, ec);
-        socket_->close(ec);
-        if (ec)
-          LOG(ERROR) << "init_recv:: socket_->shutdown or socket_->close failed with ec= " << ec;
-        
-        return;
+        break;
       }
     }
-    catch(std::exception& ex) {
-      LOG(ERROR) << "init_recv:: Exception=" << ex.what();
-    }
   }
+}
+
+void TCPServer::handle_recv(std::string data_id, int data_size, void* data_)
+{
+  recv_cb(data_id, data_size, data_);
 }

@@ -8,6 +8,12 @@ if [ $1  = 's' ]; then
   GLOG_logtostderr=1 ./exp --type=server --lintf=em2 --lport=$LPORT
 elif [ $1  = 'c' ]; then
   GLOG_logtostderr=1 ./exp --type=client --s_lip=$S_LIP --lport=$LPORT
+elif [ $1  = 'ds' ]; then
+  export GLOG_logtostderr=1
+  gdb --args ./exp --type=server --lintf=em2 --lport=$LPORT
+elif [ $1  = 'dc' ]; then
+  export GLOG_logtostderr=1
+  gdb --args ./exp --type=client --s_lip=$S_LIP --lport=$LPORT
 elif [ $1  = 'init' ]; then
   if [ $2  = 'd' ]; then
     export CC=/opt/gcc-4.8.2/bin/gcc

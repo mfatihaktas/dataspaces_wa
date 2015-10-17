@@ -151,6 +151,7 @@ class SDMMaster : public SDMSlave {
     void handle_sdm_reg_app(std::map<std::string, std::string> msg_map);
     void handle_sdm_put_notification(std::map<std::string, std::string> msg_map);
     void handle_sdm_squery(std::map<std::string, std::string> msg_map);
+    void wait_for_move(int from_id, std::map<std::string, std::string> msg_map);
     void handle_sdm_move_reply(std::map<std::string, std::string> msg_map);
     void handle_sdm_del_reply(std::map<std::string, std::string> msg_map);
     

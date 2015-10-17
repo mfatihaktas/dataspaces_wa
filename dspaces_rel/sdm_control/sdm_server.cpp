@@ -14,7 +14,7 @@ SDMServer::SDMServer(std::string host_name, std::string lip, int lport,
 {
   acceptor_ = boost::make_shared<boost::asio::ip::tcp::acceptor>(boost::ref(*io_service_) );
 
-  boost::make_shared<boost::thread>(&SDMServer::init_listen, this);
+  boost::thread t(&SDMServer::init_listen, this);
   
   // io_service_->run();
   // 
@@ -95,7 +95,7 @@ void SDMServer::init_listen()
       socket_v.push_back(socket_);
       LOG(INFO) << "init_listen:: server= " << host_name << " got connection...";
       // acceptor_->close();
-      boost::make_shared<boost::thread>(&SDMServer::init_recv, this, socket_v.back() );
+      boost::thread t(&SDMServer::init_recv, this, socket_v.back() );
       // boost::thread t(&SDMServer::init_recv, this, socket);
     }
     catch(std::exception& ex) {
@@ -128,7 +128,7 @@ void SDMServer::init_recv(boost::shared_ptr<boost::asio::ip::tcp::socket>& socke
       char* msg = (char*)malloc(msgsize*sizeof(char) );
       boost::asio::read(*socket_, boost::asio::buffer(msg, msgsize) );
       // LOG(INFO) << "init_recv:: msg=" << msg;
-      boost::make_shared<boost::thread>(&SDMServer::handle_recv, this, msg);
+      boost::thread t(&SDMServer::handle_recv, this, msg);
     }
     catch(std::exception& ex) {
       LOG(ERROR) << "init_recv:: Exception=" << ex.what();

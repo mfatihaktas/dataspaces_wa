@@ -24,14 +24,14 @@ GFTP_LINTF="em2"
 GFTP_LPORT="6000"
 TMPFS_DIR=$DSPACESWA_DIR/tmpfs
 
-if [ -z "$2" ]; then
-  echo "Which site?"
-elif [ $1  = 's' ]; then
+if [ $1  = 's' ]; then
   if [ -a conf ]; then
     rm srv.lck
     rm conf                                                                                         #dataspaces_server cannot overwrite this so before every new run this should be removed
   fi
   $DSPACES_DIR/bin/./dataspaces_server --server $NUM_SNODE --cnodes $NUM_DSCNODE
+elif [ -z "$2" ]; then
+  echo "Which site?"
 elif [ $1  = 'p' ]; then
   if [ -z "$3" ]; then
     echo "Which app?"

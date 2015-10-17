@@ -98,11 +98,13 @@ int SDMSlave::get(bool blocking, std::string key, unsigned int ver, COOR_T* lcoo
       LOG(ERROR) << "get:: msg_coder.encode_msg_map failed for msg_map= " << patch_all::map_to_str<>(sq_msg_map);
       return 1;
     }
+    LOG(INFO) << "get:: sending to master; sq_msg_map= \n" << patch_all::map_to_str<>(sq_msg_map);
     if (send_cmsg_to_master(sq_msg_map) ) {
       LOG(ERROR) << "get:: send_cmsg_to_master failed; " << patch_all::map_to_str<>(sq_msg_map);
       return 1;
     }
     // sdm_squery_reply is received if data is not available or data is available and moved to slave's dspaces
+    LOG(INFO) << "get:: waiting on sdm_squery_reply; " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_);
     unsigned int sync_point = patch_sdm::hash_str(
       SDM_SQUERY + "_" + patch_sdm::get_data_id(data_id_t, key, ver, lcoor_, ucoor_) );
     sdm_s_syncer.add_sync_point(sync_point, 1);
@@ -515,6 +517,8 @@ void SDMMaster::handle_sdm_squery(std::map<std::string, std::string> msg_map)
     LOG(INFO) << "handle_sdm_squery:: move_act= " << move_act << ", ds_id_v= " << patch_all::vec_to_str<>(ds_id_v);
     // TODO: choose from ds_id_v wisely -- considering proximity, load etc.
     int from_id = ds_id_v[0];
+    boost::thread(&SDMMaster::wait_for_move, this, from_id, msg_map);
+    
     std::map<std::string, std::string> move_act_msg_map;
     if (msg_coder.encode_msg_map(move_act_msg_map, ndim, key, ver, lcoor_, ucoor_) ) {
       LOG(ERROR) << "handle_sdm_squery:: msg_coder.encode_msg_map failed; " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_);
@@ -532,21 +536,26 @@ void SDMMaster::handle_sdm_squery(std::map<std::string, std::string> msg_map)
         return;
       }
     }
-    LOG(INFO) << "handle_sdm_squery:: waiting for move; from_id= " << from_id << ", to_id= " << msg_map["id"] << ", " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_);
-    unsigned int sync_point = patch_sdm::hash_str(
-      SDM_MOVE + "_" + patch_sdm::get_data_id(data_id_t, key, ver, lcoor_, ucoor_) );
-    sdm_m_syncer.add_sync_point(sync_point, 1);
-    sdm_m_syncer.wait(sync_point);
-    sdm_m_syncer.del_sync_point(sync_point);
-    LOG(INFO) << "handle_sdm_squery:: done waiting for move; from_id= " << from_id << ", to_id= " << msg_map["id"] << ", " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_);
   }
+
+  patch_all::free_all<COOR_T>(2, lcoor_, ucoor_);
+}
+
+void SDMMaster::wait_for_move(int from_id, std::map<std::string, std::string> msg_map)
+{
+  LOG(INFO) << "wait_for_move:: waiting; from_id= " << from_id << ", to_id= " << msg_map["id"] << ", msg_map= \n" << patch_all::map_to_str<>(msg_map);
+  unsigned int sync_point = patch_sdm::hash_str(
+    SDM_MOVE + "_" + patch_sdm::get_data_id(data_id_t, msg_map) );
+  sdm_m_syncer.add_sync_point(sync_point, 1);
+  sdm_m_syncer.wait(sync_point);
+  sdm_m_syncer.del_sync_point(sync_point);
+  LOG(INFO) << "wait_for_move:: done waiting; from_id= " << from_id << ", to_id= " << msg_map["id"] << ", msg_map= \n" << patch_all::map_to_str<>(msg_map);
+
   msg_map["type"] = SDM_SQUERY_REPLY;
   if (send_cmsg(boost::lexical_cast<int>(msg_map["id"] ), msg_map) ) {
     LOG(ERROR) << "handle_sdm_squery:: send_cmsg failed for msg_map= \n" << patch_all::map_to_str<>(msg_map);
     return;
   }
-  
-  patch_all::free_all<COOR_T>(2, lcoor_, ucoor_);
 }
 
 void SDMMaster::handle_sdm_move_reply(std::map<std::string, std::string> msg_map)
@@ -603,21 +612,14 @@ void SDMMaster::handle_wa_space_data_act(PREFETCH_DATA_ACT_T data_act_t, int to_
     }
     // TODO: choose from ds_id_v wisely -- considering proximity, load etc.
     int from_id = ds_id_v[0];
+    boost::thread(&SDMMaster::wait_for_move, this, from_id, msg_map);
+    
     msg_map["type"] = SDM_MOVE;
     msg_map["to_id"] = to_id;
-    
     if (send_cmsg(from_id, msg_map) ) {
       LOG(ERROR) << "handle_wa_space_data_act:: send_cmsg failed for msg_map= " << patch_all::map_to_str<>(msg_map);
       return;
     }
-    
-    LOG(INFO) << "handle_wa_space_data_act:: waiting for move; from_id= " << from_id << ", to_id= " << to_id << ", " << KV_LUCOOR_TO_STR(kv.first, kv.second, lucoor_.first, lucoor_.second);
-    unsigned int sync_point = patch_sdm::hash_str(
-      SDM_MOVE + "_" + patch_sdm::get_data_id(data_id_t, kv.first, kv.second, lucoor_.first, lucoor_.second) );
-    sdm_m_syncer.add_sync_point(sync_point, 1);
-    sdm_m_syncer.wait(sync_point);
-    sdm_m_syncer.del_sync_point(sync_point);
-    LOG(INFO) << "handle_wa_space_data_act:: done waiting; from_id= " << from_id << ", to_id= " << to_id << ", " << KV_LUCOOR_TO_STR(kv.first, kv.second, lucoor_.first, lucoor_.second);
   }
   else if (data_act_t == PREFETCH_DATA_ACT_DEL) {
     msg_map["type"] = SDM_DEL;

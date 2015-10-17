@@ -87,8 +87,8 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
 
 }
 
-typedef int DATA_T;
-const int data_length = 200*1000*1000;
+typedef char DATA_T;
+const int data_length = 1000;
 
 int recved_size = 0;
 void handle_recv(std::string data_id, int chunk_size, void* chunk_)
@@ -109,6 +109,7 @@ int main (int argc, char **argv)
   if (str_cstr_equals(opt_map["type"], "server") ) {
     TCPTrans tcp_trans(intf_to_ip(opt_map["lintf"] ), boost::lexical_cast<int>(opt_map["lport"] ) );
     tcp_trans.init_server("dummy", boost::bind(&handle_recv, _1, _2, _3) );
+    tcp_trans.init_server("dummy_1", boost::bind(&handle_recv, _1, _2, _3) );
     
     std::cout << "Enter \n";
     getline(std::cin, temp);
@@ -119,12 +120,15 @@ int main (int argc, char **argv)
     
     DATA_T* data_ = (DATA_T*)malloc(sizeof(DATA_T)*data_length);
     for (int i = 0; i < data_length; i++)
-      data_[i] = i;
-      // data_[i] = alphabet_[i % alphabet_size];
+      data_[i] = alphabet_[i % alphabet_size];
+      // data_[i] = i;
     
     TCPTrans tcp_trans(intf_to_ip(opt_map["lintf"] ), boost::lexical_cast<int>(opt_map["lport"] ) + 1);
     tcp_trans.send(opt_map["s_lip"], boost::lexical_cast<int>(opt_map["lport"] ),
-                   "dummy", data_length*sizeof(DATA_T), data_);
+                  "dummy", data_length*sizeof(DATA_T), data_);
+    tcp_trans.send(opt_map["s_lip"], boost::lexical_cast<int>(opt_map["lport"] ),
+                  "dummy_1", data_length*sizeof(DATA_T), data_);
+    
     free(data_);
     
     std::cout << "Enter \n";
