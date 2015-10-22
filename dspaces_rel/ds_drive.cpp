@@ -75,7 +75,7 @@ int DSDriver::init(int num_peers, int app_id)
 }
 
 int DSDriver::sync_put(const char* var_name, unsigned int ver, int size,
-                            int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
+                       int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
 {
   boost::lock_guard<boost::mutex> guard(dspaces_sync_put_mtx);
   // dspaces_define_gdim(var_name, ndim, gdim_);
@@ -126,7 +126,7 @@ int DSDriver::sync_put(const char* var_name, unsigned int ver, int size,
 }
 
 int DSDriver::get_(const char* var_name, unsigned int ver, int size,
-                        int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
+                   int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
 {
   boost::lock_guard<boost::mutex> guard(dspaces_get__mtx);
   // dspaces_define_gdim(var_name, ndim, gdim_);
@@ -179,7 +179,7 @@ int DSDriver::get_(const char* var_name, unsigned int ver, int size,
 }
 
 int DSDriver::get(const char* var_name, unsigned int ver, int size,
-                       int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
+                  int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
 {
   boost::lock_guard<boost::mutex> guard(dspaces_get_mtx);
   
@@ -251,7 +251,7 @@ int DSDriver::get(const char* var_name, unsigned int ver, int size,
 }
 
 int DSDriver::sync_put_without_lock(const char* var_name, unsigned int ver, int size,
-                                         int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
+                                    int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
 {
   // dspaces_define_gdim(var_name, ndim, gdim_);
   
@@ -382,7 +382,7 @@ time_t DSDriver::get_inter_lock_time(struct timeval *result)
   return 0;
 }
 
-void DSDriver::timeval_subtract (struct timeval *result, struct timeval *x, struct timeval *y)
+void DSDriver::timeval_subtract(struct timeval *result, struct timeval *x, struct timeval *y)
 {
   //Perform the carry for the later subtraction by updating y.
   if (x->tv_usec < y->tv_usec) {

@@ -189,45 +189,6 @@ class Cache {
     }
 };
 
-template <typename MALGO>
-void sim_prefetch_accuracy(MALGO& malgo,
-                           int cache_size, std::vector<acc_step_pair> acc_step_v, 
-                           float& hit_rate, std::vector<char>& accuracy_v )
-{
-  Cache<ACC_T, acc_step_pair> cache(cache_size, boost::function<void(acc_step_pair)>() );
-  int num_miss = 0;
-  
-  std::map<ACC_T, int> acc__last_acced_step_map;
-  
-  for (std::vector<acc_step_pair>::iterator it = acc_step_v.begin(); it != acc_step_v.end(); it++) {
-    // std::cout << "sim_prefetch_accuracy:: is <" << it->first << ", " << it->second << ">"
-    //           << " in the cache= \n" << cache.to_str() << "\n";
-    acc__last_acced_step_map[it->first] = it->second;
-    
-    if (!cache.contains(*it) ) {
-      accuracy_v.push_back('f');
-      num_miss++;
-    }
-    else
-      accuracy_v.push_back('-');
-    
-    // In wa-dataspaces scenario data is used only once
-    cache.del(it->first, *it);
-    
-    malgo.add_access(it->first); // Reg only the acc
-    
-    int num_acc = 1; //cache_size;
-    std::vector<ACC_T> acc_v, eacc_v;
-    malgo.get_to_prefetch(num_acc, acc_v, std::vector<ACC_T>(), eacc_v);
-    
-    // Update cache
-    for (std::vector<ACC_T>::iterator iit = acc_v.begin(); iit != acc_v.end(); iit++)
-      cache.push(*iit, std::make_pair(*iit, acc__last_acced_step_map[*iit] + 1) );
-  }
-  
-  hit_rate = 1.0 - (float)num_miss / acc_step_v.size();
-}
-
 /******************************************  MPBuffer  ********************************************/
 const int NULL_P_ID = -1;
 
@@ -309,7 +270,7 @@ class MWASpace : public WASpace {
     bool w_prefetch;
     
     patch_all::thread_safe_vector<key_ver_pair> kv_v;
-    patch_all::thread_safe_map<int, boost::shared_ptr<patch_all::thread_safe_vector<key_ver_pair> > > ds_id__kv_vp_map;
+    patch_all::thread_safe_map<int, boost::shared_ptr<patch_all::thread_safe_vector<key_ver_pair> > > ds_id__kv_map;
     std::map<int, boost::shared_ptr<MPBuffer> >  ds_id__mpbuffer_map;
     
     patch_all::thread_safe_map<key_ver_pair, int> kv__p_id_map;
@@ -352,6 +313,7 @@ class SWASpace : public WASpace {
     int put(int p_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, int ds_id = '\0');
     int del(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, int ds_id);
     int query(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, std::vector<int>& ds_id_v);
+    int get_to_fetch(COOR_T* lcoor_, COOR_T* ucoor_, std::vector<lcoor_ucoor_pair>& lucoor_to_fetch_v);
     int add_access(int c_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_);
 };
 

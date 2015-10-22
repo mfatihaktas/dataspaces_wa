@@ -27,9 +27,11 @@ class WADSDriver { // Wide Area Dataspaces
     std::string to_str();
     
     int put(std::string key, unsigned int ver, std::string data_type, 
-            int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
+            int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_,
+            int app_id = -1);
     int get(bool blocking, std::string key, unsigned int ver, std::string data_type,
-            int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
+            int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_,
+            int app_id = -1);
     void handle_ri_msg(std::map<std::string, std::string> msg_map);
 };
 

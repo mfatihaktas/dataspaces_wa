@@ -179,6 +179,45 @@ void test_hsalgo()
   LOG(INFO) << "hsalgo= \n" << hsalgo.to_str();
 }
 
+void test_locality_prefetching()
+{
+  int dim_length = 4;
+  bitmask_t sexpand_length = 1;
+  
+  COOR_T lcoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 0) };
+  COOR_T ucoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, dim_length) };
+  HSAlgo hsalgo(lcoor_, ucoor_, sexpand_length);
+  
+  std::vector<lcoor_ucoor_pair> lucoor_to_acc_v;
+  MULTI_FOR(lcoor_, ucoor_)
+  // MULTI_FOR_W_INC(lcoor_, ucoor_, 10)
+    COOR_T _walk_lcoor_[NDIM] = { BOOST_PP_ENUM(NDIM, VAR_REP, d) };
+    
+    COOR_T* walk_lcoor_ = (COOR_T*)malloc(NDIM*sizeof(COOR_T) );
+    COOR_T* walk_ucoor_ = (COOR_T*)malloc(NDIM*sizeof(COOR_T) );
+    for (int i = 0; i < NDIM; i++) {
+      walk_lcoor_[i] = _walk_lcoor_[i];
+      walk_ucoor_[i] = walk_lcoor_[i] + 1;
+    }
+    
+    // LOG(INFO) << "test_locality_prefetching:: walk_lucoor_= " << LUCOOR_TO_STR(walk_lcoor_, walk_ucoor_) << "\n";
+    
+    lucoor_to_acc_v.push_back(std::make_pair(walk_lcoor_, walk_ucoor_) );
+  END_MULTI_FOR()
+  
+  // LOG(INFO) << "test_locality_prefetching:: lucoor_to_acc_v= \n";
+  // for (std::vector<lcoor_ucoor_pair>::iterator it = lucoor_to_acc_v.begin(); it != lucoor_to_acc_v.end(); it++)
+  //   std::cout << LUCOOR_TO_STR(it->first, it->second) << "\n";
+  
+  float hit_rate;
+  std::vector<char> accuracy_v;
+  sim_prefetch_accuracy<HSAlgo>(hsalgo, lucoor_to_acc_v, hit_rate, accuracy_v);
+  
+  LOG(INFO) << "test_locality_prefetching:: HSALGO: \n"
+            << "hit_rate= " << hit_rate << "\n"
+            << "accuracy_v= " << patch_all::vec_to_str<>(accuracy_v) << "\n";
+}
+
 void spcsim_test()
 {
   // std::vector<int> ds_id_v = boost::assign::list_of(0)(1);

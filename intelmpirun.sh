@@ -57,9 +57,11 @@ echo $1 $2 $3
 # ulam11$ ./intelmpirun.sh r 1
 # ulam11$ ./run.sh p
 
-NUM_DS_NODE_LIST=( 4 4 )
-DS_NODE_LIST=( "ulam10\nulam11\nulam12\nulam13" "ulam14\nulam15\nulam16\nulam17" )
-RI_MANAGER_NODE_LIST=( "ulam10" "ulam11" )
+NUM_DS_NODE_LIST=( 2 1 )
+# DS_NODE_LIST=( "ulam10\nulam11\nulam12\nulam13" "ulam14\nulam15\nulam16\nulam17" )
+DS_NODE_LIST=( "ulam\narcher1" "" )
+RI_MANAGER_NODE_LIST=( "ulam" "ulam" )
+# RI_MANAGER_NODE_LIST=( "ulam10" "ulam11" )
 NUM_DSPACESWA_CLIENT_LIST=( 1 1 )
 
 DS_NODE_FILE_LIST=( ds_node_file_0 ds_node_file_1 )
@@ -92,24 +94,24 @@ if [ $1  = 'r' ]; then
     fi
     
     echo -e ${DS_NODE_LIST[$2]} > ${DS_NODE_FILE_LIST[$2]}
-    $MPIRUN -ppn 1 -f ${DS_NODE_FILE_LIST[$2]} \
+    $MPIRUN -npernode 1 -f ${DS_NODE_FILE_LIST[$2]} \
       $DSPACES_BIN_DIR/dataspaces_server --server ${NUM_DS_NODE_LIST[$2]} \
                                          --cnodes $((${NUM_DSPACESWA_CLIENT_LIST[$2]}+1)) &
-    sleep 2
+    # sleep 2
     
-    echo -e ${RI_MANAGER_NODE_LIST[$2]} > ${RI_MANAGER_NODE_FILE_LIST[$2]}
-    $MPIRUN -ppn 1 -envall -f ${RI_MANAGER_NODE_FILE_LIST[$2]} \
-      $DSPACESWA_BIN_DIR/exp --type="ri" --dht_id=$2 \
-                             --num_dscnodes=$((${NUM_DSPACESWA_CLIENT_LIST[$2]}+1)) \
-                             --app_id=${RI_MANAGER_APP_ID_LIST[$2]} \
-                             --dht_lintf=${RI_MANAGER_CONTROL_LINTF_LIST[$2]} \
-                             --dht_lport=${RI_MANAGER_CONTROL_LPORT_LIST[$2]} \
-                             --ipeer_dht_laddr=${RI_MANAGER_CONTROL_CONNECT_TO_LADDR_LIST[$2]} \
-                             --ipeer_dht_lport=${RI_MANAGER_CONTROL_CONNECT_TO_LPORT_LIST[$2]} \
-                             --trans_protocol=$TRANS_PROTOCOL \
-                             --wa_lintf=${RI_MANAGER_DATA_LINTF_LIST[$2]} \
-                             --gftp_lport=${RI_MANAGER_DATA_GFTP_LPORT_LIST[$2]} \
-                             --tmpfs_dir=${RI_MANAGER_DATA_TMPFS_DIR_LIST[$2]} &
+    # echo -e ${RI_MANAGER_NODE_LIST[$2]} > ${RI_MANAGER_NODE_FILE_LIST[$2]}
+    # $MPIRUN -npernode 1 -envall -f ${RI_MANAGER_NODE_FILE_LIST[$2]} \
+    #   $DSPACESWA_BIN_DIR/exp --type="ri" --dht_id=$2 \
+    #                         --num_dscnodes=$((${NUM_DSPACESWA_CLIENT_LIST[$2]}+1)) \
+    #                         --app_id=${RI_MANAGER_APP_ID_LIST[$2]} \
+    #                         --dht_lintf=${RI_MANAGER_CONTROL_LINTF_LIST[$2]} \
+    #                         --dht_lport=${RI_MANAGER_CONTROL_LPORT_LIST[$2]} \
+    #                         --ipeer_dht_laddr=${RI_MANAGER_CONTROL_CONNECT_TO_LADDR_LIST[$2]} \
+    #                         --ipeer_dht_lport=${RI_MANAGER_CONTROL_CONNECT_TO_LPORT_LIST[$2]} \
+    #                         --trans_protocol=$TRANS_PROTOCOL \
+    #                         --wa_lintf=${RI_MANAGER_DATA_LINTF_LIST[$2]} \
+    #                         --gftp_lport=${RI_MANAGER_DATA_GFTP_LPORT_LIST[$2]} \
+    #                         --tmpfs_dir=${RI_MANAGER_DATA_TMPFS_DIR_LIST[$2]} &
     #intelmpi
   fi
 elif [ $1  = 'k' ]; then

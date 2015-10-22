@@ -3,11 +3,11 @@ echo $1 $2 $3
 
 TRANS_PROTOCOL="t" # "i" # "g"
 IB_LINTF="ib0"
-TCP_LINTF="em2"
-GFTP_LINTF="em2"
+TCP_LINTF="eth0" # "em2"
+GFTP_LINTF="eth0" # "em2"
 TMPFS_DIR=""
 
-S_LIP=192.168.2.151 # 10.0.0.151 # 192.168.2.151 # 10.0.0.151
+S_LIP=192.168.210.161 # 192.168.2.151 # 10.0.0.151
 S_LPORT=1234
 
 if [ $1  = 'g' ]; then
@@ -42,7 +42,7 @@ elif [ $1  = 'init' ]; then
     export BOOST_DIR=/cac/u01/mfa51/Desktop/boost_1_56_0/install
     export GFTPINC_DIR=/usr/include/globus
     export GFTPLIB_DIR=/usr/lib64
-    export DSPACES_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.4.0/install
+    export DSPACES_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.5.0/install
     export DSPACESWA_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa
     export ADIOS_DIR=/cac/u01/mfa51/Desktop/adios-1.7.0/install
     export OPENCV_DIR=/cac/u01/mfa51/Desktop/opencv/install
@@ -71,7 +71,7 @@ elif [ $1  = 'init' ]; then
     export BOOST_DIR=/home/sc14demo/common-apps/boost_1_56_0/install
     export GFTPINC_DIR=/usr/include/globus
     export GFTPLIB_DIR=/usr/lib64
-    export DSPACES_DIR=/home/sc14demo/common-apps/dataspaces-1.4.0/install
+    export DSPACES_DIR=/home/sc14demo/common-apps/dataspaces-1.5.0/install
     export DSPACESWA_DIR=/home/sc14demo/common-apps/dataspaces_wa
     export ADIOS_DIR=/home/sc14demo/common-apps/adios-1.7.0/install
     export OPENCV_DIR=/home/sc14demo/common-apps/opencv/2.4.9/gcc4.8.3
@@ -86,17 +86,17 @@ elif [ $1  = 'init' ]; then
     export LD_LIBRARY_PATH
     echo LD_LIBRARY_PATH
     echo $LD_LIBRARY_PATH
-  elif [ $2  = 'm' ]; then
+  elif [ $2  = 'k' ]; then
     # export MAQUIS=MAQUIS
     export CC=gcc
     export CPP=g++
     export MPICPP=mpicxx
     export MPICPP_OPTS='-DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX'
     export GLOG_DIR=/net/hp101/ihpcsc/maktas7/glog-0.3.3/install
-    export BOOST_DIR=/net/hp101/ihpcsc/maktas7/boost_1_56_0/install
+    export BOOST_DIR=/net/hp101/ihpcsc/maktas7/boost_1_59_0/install
     export GFTPINC_DIR=/usr/include/globus
     export GFTPLIB_DIR=/usr/lib64
-    export DSPACES_DIR=/net/hp101/ihpcsc/maktas7/dataspaces-1.4.0/install
+    export DSPACES_DIR=/net/hp101/ihpcsc/maktas7/dataspaces-1.5.0/install
     export DSPACESWA_DIR=/net/hp101/ihpcsc/maktas7/dataspaces_wa
     
     LD_LIBRARY_PATH=/net/hp101/ihpcsc/maktas7/boost_1_56_0/install/lib:$LD_LIBRARY_PATH
@@ -105,7 +105,7 @@ elif [ $1  = 'init' ]; then
     echo "LD_LIBRARY_PATH="
     echo $LD_LIBRARY_PATH
     
-    export PATH=/net/hj1/ihpcl/bin:$PATH
+    export PATH=/net/hj1/ihpcl/bin:/sbin:$PATH
     echo "PATH="
     echo $PATH
   fi

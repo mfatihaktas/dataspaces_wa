@@ -1,10 +1,10 @@
 #!/bin/bash
 echo $1 $2 $3
 
-NUM_DS_NODE_LIST=( 1 1 )
+NUM_DS_NODE_LIST=( 3 1 )
 # DS_NODE_LIST=( "-host dell01 -host dell03 -host dell04 -host dell05" "-host dell02 -host dell06 -host dell07 -host dell08" )
 # DS_NODE_LIST=( "-host dell01 -host dell03" "-host dell02 -host dell04" )
-DS_NODE_LIST=( "-host dell01" "-host dell02" )
+DS_NODE_LIST=( "-host dell01 -host dell03 -host dell04" "-host dell02" )
 RI_MANAGER_NODE_LIST=( "-host dell01" "-host dell02" )
 NUM_DSPACESWA_CLIENT_LIST=( 1 1 )
 
@@ -27,7 +27,7 @@ RI_MANAGER_GFTP_LINTF_LIST=( "em2" "em2" )
 RI_MANAGER_GFTP_LPORT_LIST=( 6000 6000 )
 RI_MANAGER_TMPFS_DIR_LIST=( $TMPFS_DIR"/put" $TMPFS_DIR"/get" )
 
-MPIRUN=mpirun # /usr/lib64/openmpi/bin/mpirun
+MPIRUN=/usr/lib64/openmpi/bin/mpirun
 PKILL=/usr/bin/pkill
 if [ $1  = 'r' ]; then
   export GLOG_logtostderr=1
@@ -42,21 +42,21 @@ if [ $1  = 'r' ]; then
     $MPIRUN -npernode 1 ${DS_NODE_LIST[$2]} \
       $DSPACES_BIN_DIR/dataspaces_server --server ${NUM_DS_NODE_LIST[$2]} \
                                          --cnodes $((${NUM_DSPACESWA_CLIENT_LIST[$2]}+1)) &
-    if [ $TRANS_PROTOCOL = "g" ]; then
-      $MPIRUN -npernode 1 ${RI_MANAGER_NODE_LIST[$2]} \
-        globus-gridftp-server -aa -password-file pwfile -c None \
-                              -port ${RI_MANAGER_DATA_GFTP_LPORT_LIST[$2]} \
-                              -d error,warn,info,dump,all &
-    fi
-    sleep 1
+    # if [ $TRANS_PROTOCOL = "g" ]; then
+    #   $MPIRUN -npernode 1 ${RI_MANAGER_NODE_LIST[$2]} \
+    #     globus-gridftp-server -aa -password-file pwfile -c None \
+    #                           -port ${RI_MANAGER_DATA_GFTP_LPORT_LIST[$2]} \
+    #                           -d error,warn,info,dump,all &
+    # fi
+    # sleep 1
     
-    $MPIRUN -npernode 1 -x LD_LIBRARY_PATH -x GLOG_logtostderr ${RI_MANAGER_NODE_LIST[$2]} \
-      $DSPACESWA_BIN_DIR/exp --type="ri" --cl_id=111 --num_client=${NUM_DSPACESWA_CLIENT_LIST[$2]} --base_client_id=$(($2*10)) \
-                             --lcontrol_lintf=${RI_MANAGER_LCONTROL_LINTF_LIST[$2]} --lcontrol_lport=${RI_MANAGER_LCONTROL_LPORT_LIST[$2]} \
-                             --ds_id=$2 --control_lintf=${RI_MANAGER_CONTROL_LINTF_LIST[$2]} --control_lport=${RI_MANAGER_CONTROL_LPORT_LIST[$2]} --join_control_lip=${RI_MANAGER_JOIN_CONTROL_LIP_LIST[$2]} --join_control_lport=${RI_MANAGER_JOIN_CONTROL_LPORT_LIST[$2]} \
-                             --trans_protocol=$TRANS_PROTOCOL --ib_lintf=${RI_MANAGER_IB_LINTF_LIST[$2]} \
-                             --tcp_lintf=${RI_MANAGER_TCP_LINTF_LIST[$2]} --tcp_lport=${RI_MANAGER_TCP_LPORT_LIST[$2]} \
-                             --gftp_lintf=${RI_MANAGER_GFTP_LINTF_LIST[$2]} --gftp_lport=${RI_MANAGER_GFTP_LPORT_LIST[$2]} --tmpfs_dir=${RI_MANAGER_TMPFS_DIR_LIST[$2]} &
+    # $MPIRUN -npernode 1 -x LD_LIBRARY_PATH -x GLOG_logtostderr ${RI_MANAGER_NODE_LIST[$2]} \
+    #   $DSPACESWA_BIN_DIR/exp --type="ri" --cl_id=111 --num_client=${NUM_DSPACESWA_CLIENT_LIST[$2]} --base_client_id=$(($2*10)) \
+    #                         --lcontrol_lintf=${RI_MANAGER_LCONTROL_LINTF_LIST[$2]} --lcontrol_lport=${RI_MANAGER_LCONTROL_LPORT_LIST[$2]} \
+    #                         --ds_id=$2 --control_lintf=${RI_MANAGER_CONTROL_LINTF_LIST[$2]} --control_lport=${RI_MANAGER_CONTROL_LPORT_LIST[$2]} --join_control_lip=${RI_MANAGER_JOIN_CONTROL_LIP_LIST[$2]} --join_control_lport=${RI_MANAGER_JOIN_CONTROL_LPORT_LIST[$2]} \
+    #                         --trans_protocol=$TRANS_PROTOCOL --ib_lintf=${RI_MANAGER_IB_LINTF_LIST[$2]} \
+    #                         --tcp_lintf=${RI_MANAGER_TCP_LINTF_LIST[$2]} --tcp_lport=${RI_MANAGER_TCP_LPORT_LIST[$2]} \
+    #                         --gftp_lintf=${RI_MANAGER_GFTP_LINTF_LIST[$2]} --gftp_lport=${RI_MANAGER_GFTP_LPORT_LIST[$2]} --tmpfs_dir=${RI_MANAGER_TMPFS_DIR_LIST[$2]} &
   fi
 elif [ $1  = 'k' ]; then
   for i in "${DS_NODE_LIST[@]}"

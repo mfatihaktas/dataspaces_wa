@@ -11,6 +11,73 @@
 
 #include "prefetch.h"
 
+template <typename MALGO>
+void sim_prefetch_accuracy(MALGO& malgo,
+                           int cache_size, std::vector<acc_step_pair> acc_step_v,
+                           float& hit_rate, std::vector<char>& accuracy_v)
+{
+  Cache<ACC_T, acc_step_pair> cache(cache_size, boost::function<void(acc_step_pair)>() );
+  int num_miss = 0;
+  
+  std::map<ACC_T, int> acc__last_acced_step_map;
+  
+  for (std::vector<acc_step_pair>::iterator it = acc_step_v.begin(); it != acc_step_v.end(); it++) {
+    // std::cout << "sim_prefetch_accuracy:: is <" << it->first << ", " << it->second << ">"
+    //           << " in the cache= \n" << cache.to_str() << "\n";
+    acc__last_acced_step_map[it->first] = it->second;
+    
+    if (!cache.contains(*it) ) {
+      accuracy_v.push_back('f');
+      num_miss++;
+    }
+    else
+      accuracy_v.push_back('-');
+    
+    // In wa-dataspaces scenario data is used only once
+    cache.del(it->first, *it);
+    
+    malgo.add_access(it->first); // Reg only the acc
+    
+    int num_acc = 1; //cache_size;
+    std::vector<ACC_T> acc_v, eacc_v;
+    malgo.get_to_prefetch(num_acc, acc_v, std::vector<ACC_T>(), eacc_v);
+    
+    // Update cache
+    for (std::vector<ACC_T>::iterator iit = acc_v.begin(); iit != acc_v.end(); iit++)
+      cache.push(*iit, std::make_pair(*iit, acc__last_acced_step_map[*iit] + 1) );
+  }
+  
+  hit_rate = 1.0 - (float)num_miss/acc_step_v.size();
+}
+
+template <typename SALGO>
+void sim_prefetch_accuracy(SALGO& salgo,
+                           std::vector<lcoor_ucoor_pair>& lucoor_to_acc_v,
+                           float& hit_rate, std::vector<char>& accuracy_v)
+{
+  boost::shared_ptr<QTable<int> > qtable_ = boost::make_shared<RTable<int> >();
+  int num_miss = 0;
+  
+  for (std::vector<lcoor_ucoor_pair>::iterator it = lucoor_to_acc_v.begin(); it != lucoor_to_acc_v.end(); it++) {
+    std::vector<int> ds_id_v;
+    if (qtable_->query("dummy", 0, it->first, it->second, ds_id_v) ) {
+      accuracy_v.push_back('f');
+      num_miss++;
+    }
+    else
+      accuracy_v.push_back('-');
+    
+    std::vector<lcoor_ucoor_pair> lucoor_to_fetch_v;
+    salgo.get_to_fetch(it->first, it->second, lucoor_to_fetch_v);
+    
+    for (std::vector<lcoor_ucoor_pair>::iterator sub_it = lucoor_to_fetch_v.begin(); sub_it != lucoor_to_fetch_v.end(); sub_it++)
+      qtable_->add("dummy", 0, sub_it->first, sub_it->second, 0);
+  }
+  // LOG(INFO) << "sim_prefetch_accuracy:: qtable= \n" << qtable_->to_str();
+  
+  hit_rate = 1.0 - (float)num_miss/lucoor_to_acc_v.size();
+}
+
 /************************************************  PCSim  *****************************************/
 class PCSim { // P-C Simulator
   protected:

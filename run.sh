@@ -4,6 +4,7 @@ echo $1 $2 $3
 NUM_SNODE=1
 NUM_CLIENT=1
 NUM_DSCNODE=$(($NUM_CLIENT+1)) # +1: RIManager
+# NUM_CLIENT=$NUM_DSCNODE
 
 LCONTROL_LINTF="em2"
 RI_MANAGER_LCONTROL_LPORT_LIST=( 8000 8000 8000 )
@@ -12,16 +13,16 @@ APP_JOIN_LCONTROL_LIP_LIST=( "192.168.2.151" "192.168.2.152" "192.168.2.153" )
 APP_JOIN_LCONTROL_LPORT_LIST=( 8000 8000 8000 )
 
 CONTROL_LINTF="em2" # "lo"
-RI_MANAGER_CONTROL_LPORT_LIST=( "7000" "7001" "7002" )
+RI_MANAGER_CONTROL_LPORT_LIST=( 7000 7001 7002 )
 RI_MANAGER_JOIN_CONTROL_LIP_LIST=( "" "192.168.2.151" "192.168.2.151" )
-RI_MANAGER_JOIN_CONTROL_LPORT_LIST=( "0" "7000" "7000" )
+RI_MANAGER_JOIN_CONTROL_LPORT_LIST=( 0 7000 7000 )
 
 TRANS_PROTOCOL="t" # "i" # "g"
 IB_LINTF="ib0"
 TCP_LINTF="em2"
-TCP_LPORT="6000"
+TCP_LPORT=6000
 GFTP_LINTF="em2"
-GFTP_LPORT="6000"
+GFTP_LPORT=6000
 TMPFS_DIR=$DSPACESWA_DIR/tmpfs
 
 if [ $1  = 's' ]; then
@@ -29,6 +30,7 @@ if [ $1  = 's' ]; then
     rm srv.lck
     rm conf                                                                                         #dataspaces_server cannot overwrite this so before every new run this should be removed
   fi
+  export MPIRUN_OPTIONS="-e MPI_RDMA_MSGSIZE=32768,1048576,1048576"
   $DSPACES_DIR/bin/./dataspaces_server --server $NUM_SNODE --cnodes $NUM_DSCNODE
 elif [ -z "$2" ]; then
   echo "Which site?"
@@ -36,32 +38,45 @@ elif [ $1  = 'p' ]; then
   if [ -z "$3" ]; then
     echo "Which app?"
   else
-    GLOG_logtostderr=1 ./exp --type="put" --cl_id=1 --base_client_id=$(($2*10)) --num_client=$NUM_CLIENT \
+    GLOG_logtostderr=1 ./exp --type="put" --cl_id=$3 --base_client_id=$(($2*10)) --num_client=$NUM_CLIENT \
+                             --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=${APP_LCONTROL_LPORT_LIST[$3] } --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2] } --join_lcontrol_lport=${APP_JOIN_LCONTROL_LPORT_LIST[$2] }
+  fi
+elif [ $1  = 'g' ]; then
+  if [ -z "$3" ]; then
+    echo "Which app?"
+  else
+    GLOG_logtostderr=1 ./exp --type="get" --cl_id=$3 --base_client_id=$(($2*10)) --num_client=$NUM_CLIENT \
                              --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=${APP_LCONTROL_LPORT_LIST[$3] } --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2] } --join_lcontrol_lport=${APP_JOIN_LCONTROL_LPORT_LIST[$2] }
   fi
 elif [ $1  = 'mp' ]; then
   if [ -z "$3" ]; then
     echo "Which app?"
   else
-    GLOG_logtostderr=1 ./ds_wa_test --type="mput" --cl_id=1 --base_client_id=$(($2*10)) --num_client=$NUM_CLIENT \
-                                    --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=${APP_LCONTROL_LPORT_LIST[$3] } --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2] } --join_lcontrol_lport=${APP_JOIN_LCONTROL_LPORT_LIST[$2] } \
-                                    --num_putget=10 --inter_time_sec=0
-  fi
-elif [ $1  = 'g' ]; then
-  if [ -z "$3" ]; then
-    echo "Which app?"
-  else
-    GLOG_logtostderr=1 ./exp --type="get" --cl_id=1 --base_client_id=$(($2*10)) --num_client=$NUM_CLIENT \
-                             --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=${APP_LCONTROL_LPORT_LIST[$3] } --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2] } --join_lcontrol_lport=${APP_JOIN_LCONTROL_LPORT_LIST[$2] }
+    GLOG_logtostderr=1 ./mput_mget_test --type="mput" --cl_id=$3 --base_client_id=$(($2*10)) --num_client=$NUM_CLIENT \
+                                        --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=${APP_LCONTROL_LPORT_LIST[$3] } --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2] } --join_lcontrol_lport=${APP_JOIN_LCONTROL_LPORT_LIST[$2] } \
+                                        --num_putget=10 --inter_time_sec=0
   fi
 elif [ $1  = 'mg' ]; then
   if [ -z "$3" ]; then
     echo "Which app?"
   else
-    GLOG_logtostderr=1 ./ds_wa_test --type="mget" --cl_id=1 --base_client_id=$(($2*10)) --num_client=$NUM_CLIENT \
-                                    --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=${APP_LCONTROL_LPORT_LIST[$3] } --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2] } --join_lcontrol_lport=${APP_JOIN_LCONTROL_LPORT_LIST[$2] } \
-                                    --num_putget=10 --inter_time_sec=1
+    GLOG_logtostderr=1 ./mput_mget_test --type="mget" --cl_id=$3 --base_client_id=$(($2*10)) --num_client=$NUM_CLIENT \
+                                        --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=${APP_LCONTROL_LPORT_LIST[$3] } --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2] } --join_lcontrol_lport=${APP_JOIN_LCONTROL_LPORT_LIST[$2] } \
+                                        --num_putget=10 --inter_time_sec=0
   fi
+elif [ $1  = 'map' ]; then
+  GLOG_logtostderr=1 ./mapp_test --type="mput" --cl_id=$3 --base_client_id=$(($2*10)) --num_client=$NUM_CLIENT \
+                                 --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=${APP_LCONTROL_LPORT_LIST[$3] } --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2] } --join_lcontrol_lport=${APP_JOIN_LCONTROL_LPORT_LIST[$2] } \
+                                 --num_app=$NUM_CLIENT --num_putget=2
+elif [ $1  = 'mag' ]; then
+  GLOG_logtostderr=1 ./mapp_test --type="mget" --cl_id=$3 --base_client_id=$(($2*10)) --num_client=$NUM_CLIENT \
+                                 --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=${APP_LCONTROL_LPORT_LIST[$3] } --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2] } --join_lcontrol_lport=${APP_JOIN_LCONTROL_LPORT_LIST[$2] } \
+                                 --num_app=$NUM_CLIENT --num_putget=2
+elif [ $1  = 'dmap' ]; then
+  export GLOG_logtostderr=1
+  gdb --args ./mapp_test --type="mput" --cl_id=$3 --base_client_id=$(($2*10)) --num_client=$NUM_CLIENT \
+                         --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=${APP_LCONTROL_LPORT_LIST[$3] } --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2] } --join_lcontrol_lport=${APP_JOIN_LCONTROL_LPORT_LIST[$2] } \
+                         --num_app=$NUM_CLIENT --num_putget=2
 elif [ $1  = 'dp' ]; then
   if [ -z "$3" ]; then
     echo "Which app?"
@@ -132,17 +147,27 @@ elif [ $1  = 'init' ]; then
   if [ $2  = 'd' ]; then
     # ENV VARIABLES FOR MAKE
     # export GRIDFTP=GRIDFTP
-    export CC=/opt/gcc-4.8.2/bin/gcc
-    export CPP=/opt/gcc-4.8.2/bin/g++
-    export MPICPP=/cac/u01/mfa51/Desktop/mpich-3.1.2/install/bin/mpicxx
-    export MPI_DIR=/cac/u01/mfa51/Desktop/mpich-3.1.2/install
+    # export CC=/opt/gcc-4.8.2/bin/gcc
+    # export CPP=/opt/gcc-4.8.2/bin/g++
+    # export MPICPP=/cac/u01/mfa51/Desktop/mpich-3.1.2/install/bin/mpicxx
+    export CC=gcc #/opt/gcc-4.8.2/bin/gcc
+    export CPP=g++ #/opt/gcc-4.8.2/bin/g++
+    export MPICPP=mpicxx #/cac/u01/mfa51/Desktop/mpich-3.1.2/install/bin/mpicxx
+    # export MPI_DIR=/cac/u01/mfa51/Desktop/mpich-3.1.2/install
+    unset MPI_DIR
     export GLOG_DIR=/cac/u01/mfa51/Desktop/glog-0.3.3/install
+    echo $GLOG_DIR
     export BOOST_DIR=/cac/u01/mfa51/Desktop/boost_1_56_0/install
+    echo $BOOST_DIR
     export GFTPINC_DIR=/usr/include/globus
+    echo $GFTPINC_DIR
     export GFTPLIB_DIR=/usr/lib64
+    echo $GFTPLIB_DIR
     export DSPACES_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.5.0/install
+    echo $DSPACES_DIR
     export DSPACESWA_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa
-  
+    echo $DSPACESWA_DIR
+    
     # source /opt/rh/devtoolset-2/enable
     unset LD_LIBRARY_PATH
     LD_LIBRARY_PATH=/cac/u01/mfa51/Desktop/mpich-3.1.2/install/lib:$LD_LIBRARY_PATH
@@ -171,26 +196,26 @@ elif [ $1  = 'init' ]; then
     export LD_LIBRARY_PATH
     echo "LD_LIBRARY_PATH="
     echo $LD_LIBRARY_PATH
-  elif [ $2  = 'm' ]; then
+  elif [ $2  = 'k' ]; then
     export MAQUIS=MAQUIS
     export CC=gcc
     export CPP=g++
     export MPICPP=mpicxx
     export MPICPP_OPTS='-DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX'
     export GLOG_DIR=/net/hp101/ihpcsc/maktas7/glog-0.3.3/install
-    export BOOST_DIR=/net/hp101/ihpcsc/maktas7/boost_1_56_0/install
+    export BOOST_DIR=/net/hp101/ihpcsc/maktas7/boost_1_59_0/install
     export GFTPINC_DIR=/usr/include/globus
     export GFTPLIB_DIR=/usr/lib64
     export DSPACES_DIR=/net/hp101/ihpcsc/maktas7/dataspaces-1.5.0/install
     export DSPACESWA_DIR=/net/hp101/ihpcsc/maktas7/dataspaces_wa
     
-    LD_LIBRARY_PATH=/net/hp101/ihpcsc/maktas7/boost_1_56_0/install/lib:$LD_LIBRARY_PATH
+    LD_LIBRARY_PATH=/net/hp101/ihpcsc/maktas7/boost_1_59_0/install/lib:$LD_LIBRARY_PATH
     LD_LIBRARY_PATH=/net/hp101/ihpcsc/maktas7/glog-0.3.3/install/lib:$LD_LIBRARY_PATH
     export LD_LIBRARY_PATH
     echo "LD_LIBRARY_PATH="
     echo $LD_LIBRARY_PATH
     
-    export PATH=/net/hj1/ihpcl/bin:$PATH
+    export PATH=/net/hj1/ihpcl/bin:/sbin:$PATH
     echo "PATH="
     echo $PATH
   fi

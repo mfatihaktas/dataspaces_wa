@@ -70,14 +70,23 @@ int RFPManager::wa_put(std::string lip, std::string lport, std::string tmpfs_dir
   }
   void* data_ = malloc(size*data_length);
   // patch_ds::debug_print(key, ver, size, ndim, gdim_, lb_, ub_, NULL, 0);
-  if (ds_driver_->get(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_) ) {
-    LOG(ERROR) << "wa_put:: ds_driver_->get for " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
+  int get_return = ds_driver_->get(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_);
+  if (get_return == -EINVAL)
+    LOG(ERROR) << "wa_put:: -EINVAL !!!";
+  else if (get_return == -ENOMEM)
+    LOG(ERROR) << "wa_put:: -ENOMEM !!!";
+  else if (get_return == -EAGAIN)
+    LOG(ERROR) << "wa_put:: -EAGAIN !!!";
+    
+    
+  if (get_return) {
+    LOG(ERROR) << "wa_put:: ds_driver_->get failed; get_return= " << get_return << ", " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
     return 1;
   }
   
   std::string data_id = patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_);
   if (trans_->init_put(lip, lport, tmpfs_dir, data_type, data_id, data_length, data_) ) {
-    LOG(ERROR) << "wa_put:: trans_->init_put failed for " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
+    LOG(ERROR) << "wa_put:: trans_->init_put failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
     return 1;
   }
   free(data_);
@@ -94,7 +103,6 @@ int RFPManager::wa_get(std::string lip, std::string lport, std::string tmpfs_dir
             << "\t" << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
   
   std::string data_id = patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_);
-  
   data_id__recved_size_map[data_id] = 0;
   data_id__data_map[data_id] = malloc(size*get_data_length(ndim, gdim_, lb_, ub_) );
   
@@ -110,17 +118,36 @@ int RFPManager::wa_get(std::string lip, std::string lport, std::string tmpfs_dir
   
   free(data_id__data_map[data_id] );
   
-  data_id__data_map.erase(data_id__data_map.find(data_id) );
-  data_id__recved_size_map.erase(data_id__recved_size_map.find(data_id) );
+  data_id__data_map.del(data_id);
+  data_id__recved_size_map.del(data_id);
+  // rfp_syncer.notify(patch_sdm::hash_str(patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_) ) );
   // 
   LOG(INFO) << "wa_get:: done for " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
   
   return 0;
 }
 
+int RFPManager::wait_for_get(std::string key, unsigned int ver, uint64_t *lb_, uint64_t *ub_)
+{
+  std::string data_id = patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_);
+  if (data_id__recved_size_map.contains(data_id) ) {
+    LOG(INFO) << "wait_for_get:: waiting on " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
+    unsigned int sync_point = patch_sdm::hash_str(patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_) );
+    rfp_syncer.add_sync_point(sync_point, 1);
+    rfp_syncer.wait(sync_point);
+    rfp_syncer.del_sync_point(sync_point);
+    LOG(INFO) << "wait_for_get:: done waiting on " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
+  }
+}
+
+int RFPManager::notify_remote_get_done(std::string key, unsigned int ver, uint64_t *lb_, uint64_t *ub_)
+{
+  return rfp_syncer.notify(patch_sdm::hash_str(patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_) ) );
+}
+
 void RFPManager::handle_recv(std::string data_id, int data_size, void* data_)
 {
-  if (!data_id__recved_size_map.count(data_id) ) {
+  if (!data_id__recved_size_map.contains(data_id) ) {
     LOG(ERROR) << "handle_recv:: data is received for a non-existing data_id= " << data_id;
     return;
   }
@@ -223,12 +250,16 @@ void RIManager::handle_get(bool blocking, int cl_id, std::map<std::string, std::
     get_map["ds_id"] = -1;
   }
   else {
-    if (sdm_slave_->get(blocking, key, ver, lb_, ub_) ) {
+    rfp_manager_->wait_for_get(key, ver, lb_, ub_);
+    if (sdm_slave_->get(cl_id, blocking, key, ver, lb_, ub_) ) {
       LOG(INFO) << "handle_get:: does not exist " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
       get_map["ds_id"] = -1;
     }
-    else
+    else {
       get_map["ds_id"] = boost::lexical_cast<std::string>(sdm_slave_->get_id() );
+      if (sdm_slave_->add_access(cl_id, key, ver, lb_, ub_) )
+        LOG(ERROR) << "handle_get:: sdm_slave_->add_access failed; c_id= " << cl_id << ", " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
+    }
   }
   if (lsdm_node_->send_msg(cl_id, PACKET_RIMSG, get_map) )
     LOG(ERROR) << "handle_get:: lsdm_node_->send_msg_to_master failed; get_map= \n" << patch_all::map_to_str<>(get_map);
@@ -344,6 +375,8 @@ void RIManager::remote_get(std::map<std::string, std::string> msg_map)
   else
     data_id_hash__data_info_map[patch_sdm::hash_str(patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_) ) ] =
       boost::make_shared<data_info>(data_type, size, gdim_);
+  // Note: To avoid sdm_slave_->get to fail when wa_get is done but sdm_slave_->put is not done yet.
+  rfp_manager_->notify_remote_get_done(key, ver, lb_, ub_);
   
   msg_map["type"] = SDM_MOVE_REPLY;
   if (sdm_slave_->send_cmsg_to_master(msg_map) ) {
@@ -412,6 +445,8 @@ void RIManager::handle_dm_act(std::map<std::string, std::string> dm_act_map)
   
   if (str_str_equals(type, SDM_MOVE) )
     handle_dm_move(dm_act_map);
+  else if (str_str_equals(type, SDM_DEL) )
+    handle_dm_del(dm_act_map);
   else
     LOG(ERROR) << "handle_dm_act:: unknown type= " << type;
 }
@@ -441,4 +476,10 @@ void RIManager::handle_dm_move(std::map<std::string, std::string> msg_map)
       return;
     }
   }
+}
+
+void RIManager::handle_dm_del(std::map<std::string, std::string> msg_map)
+{
+  LOG(INFO) << "handle_dm_del:: msg_map= \n" << patch_all::map_to_str<>(msg_map);
+  
 }

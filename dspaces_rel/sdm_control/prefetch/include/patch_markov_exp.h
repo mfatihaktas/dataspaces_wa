@@ -61,8 +61,7 @@ void make_plot(std::vector<T> x1_v, std::vector<T> y1_v, std::string title1,
 template<typename T>
 void make_plot(std::vector<std::vector<T> > x_v_v, std::vector<std::vector<T> > y_v_v, std::vector<std::string> title_v,
                std::string x_label, std::string y_label,
-               std::string plot_title,
-               std::string out_url)
+               std::string plot_title, std::string out_url)
 {
   std::cout << "x_v_v= \n";
   for (typename std::vector<std::vector<T> >::iterator it = x_v_v.begin(); it != x_v_v.end(); it++)
@@ -72,7 +71,7 @@ void make_plot(std::vector<std::vector<T> > x_v_v, std::vector<std::vector<T> > 
   for (typename std::vector<std::vector<T> >::iterator it = y_v_v.begin(); it != y_v_v.end(); it++)
     std::cout << patch_all::vec_to_str<>(*it) << "\n";
   // 
-  std::string color_code_[] = {"#DAA520", "#7F7F7F", "#0060ad", "#D2691E", "#556B2F", "#DC143C", "#DA70D6", "#8B008B", "#1E90FF"};
+  std::string color_code_[] = {"#0060ad", "#DAA520", "#7F7F7F", "#D2691E", "#556B2F", "#DC143C", "#DA70D6", "#8B008B", "#1E90FF"};
   Gnuplot gp;
   
   std::vector<T> x_v;
@@ -90,19 +89,20 @@ void make_plot(std::vector<std::vector<T> > x_v_v, std::vector<std::vector<T> > 
   T max_y = *std::max_element(y_v.begin(), y_v.end() );
   
   if (out_url.compare("") != 0) {
-    gp << "set term png size 1000,600 enhanced font '/usr/share/fonts/dejavu/DejaVuSans.ttf' 12\n";
+    // gp << "set term png size 1000,600 enhanced font '/usr/share/fonts/dejavu/DejaVuSans.ttf' 12\n";
+    gp << "set term png enhanced font '/usr/share/fonts/dejavu/DejaVuSans.ttf' 12\n";
     gp << "set output \"" << out_url << "\"\n";
   }
   gp << "set key right top\n";
   gp << "set title '" << plot_title << "'\n";
-  gp << "set xrange [" << min_x << ":" << max_x*1.4 << "]\nset yrange [" << min_y << ":" << max_y*1.2 << "]\n";
+  gp << "set xrange [" << min_x << ":" << max_x*1.05 << "]\nset yrange [" << min_y << ":" << max_y*1.05 << "]\n";
   gp << "set xlabel '" << x_label << "'\n";
   gp << "set ylabel '" << y_label << "'\n";
   gp << "set grid\n";
   
   
   for (int i = 0; i < x_v_v.size(); i++)
-    gp << "set style line " << boost::lexical_cast<std::string>(i + 1) << " lc rgb '" << color_code_[i] << "' " << "pt " << boost::lexical_cast<std::string>(i + 1) << " lt 1 lw 1 ps 1\n";
+    gp << "set style line " << boost::lexical_cast<std::string>(i + 1) << " lc rgb '" << color_code_[i] << "' " << "pt " << boost::lexical_cast<std::string>(i + 1) << " lt 1 lw 2 ps 1\n";
     // gp << "set style line " << boost::lexical_cast<std::string>(i + 1) << " lc rgb '" << color_code_[i] << "' lt 1 lw 2 pt 5 ps 1.5\n";
   
   // gp << "set logscale xy\n";

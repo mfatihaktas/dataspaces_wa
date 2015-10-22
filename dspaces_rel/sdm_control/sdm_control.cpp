@@ -58,6 +58,24 @@ int SDMSlave::reg_app(int app_id)
   return 0;
 }
 
+int SDMSlave::add_access(int c_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_)
+{
+  std::map<std::string, std::string> msg_map;
+  msg_map["type"] = SDM_ACCESS;
+  msg_map["app_id"] = boost::lexical_cast<std::string>(c_id);
+  if (msg_coder.encode_msg_map(msg_map, NDIM, key, ver, lcoor_, ucoor_) ) {
+    LOG(ERROR) << "add_access:: msg_coder.encode_msg_map failed for msg_map= \n" << patch_all::map_to_str<>(msg_map);
+    return 1;
+  }
+  
+  if (send_cmsg_to_master(msg_map) ) {
+    LOG(ERROR) << "add_access:: send_cmsg_to_master failed; msg_map= \n" << patch_all::map_to_str<>(msg_map);
+    return 1;
+  }
+  
+  return 0;
+}
+
 int SDMSlave::put(bool notify, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, int p_id)
 {
   LOG(INFO) << "put:: notify= " << notify << ", " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_);
@@ -82,7 +100,7 @@ int SDMSlave::put(bool notify, std::string key, unsigned int ver, COOR_T* lcoor_
 }
 
 // Does not return data, returns 0 if data is available in local dspaces
-int SDMSlave::get(bool blocking, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_)
+int SDMSlave::get(int app_id, bool blocking, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_)
 {
   LOG(INFO) << "get:: " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_);
   
@@ -92,13 +110,13 @@ int SDMSlave::get(bool blocking, std::string key, unsigned int ver, COOR_T* lcoo
   
     std::map<std::string, std::string> sq_msg_map;
     sq_msg_map["type"] = SDM_SQUERY;
+    sq_msg_map["app_id"] = boost::lexical_cast<std::string>(app_id);
     if (blocking)
       sq_msg_map["blocking"] = "";
     if (msg_coder.encode_msg_map(sq_msg_map, NDIM, key, ver, lcoor_, ucoor_) ) {
       LOG(ERROR) << "get:: msg_coder.encode_msg_map failed for msg_map= " << patch_all::map_to_str<>(sq_msg_map);
       return 1;
     }
-    LOG(INFO) << "get:: sending to master; sq_msg_map= \n" << patch_all::map_to_str<>(sq_msg_map);
     if (send_cmsg_to_master(sq_msg_map) ) {
       LOG(ERROR) << "get:: send_cmsg_to_master failed; " << patch_all::map_to_str<>(sq_msg_map);
       return 1;
@@ -277,7 +295,7 @@ SDMMaster::SDMMaster(DATA_ID_T data_id_t,
 {
   wa_space_->reg_ds(ds_id);
   // 
-  LOG(INFO) << "SDMMaster:: constructed; \n" << to_str();
+  LOG(INFO) << "SDMMaster:: constructed.";
 }
 
 SDMMaster::~SDMMaster() { LOG(INFO) << "SDMMaster:: destructed"; }
@@ -325,11 +343,16 @@ int SDMMaster::reg_app(int app_id)
 {
   int ds_id = get_id();
   if (wa_space_->reg_app(app_id, ds_id) ) {
-    LOG(ERROR) << "handle_sdm_reg_app:: wa_space_->reg_app failed for <app_id= " << app_id << ", ds_id= " << ds_id << ">.";
+    // LOG(ERROR) << "handle_sdm_reg_app:: wa_space_->reg_app failed for <app_id= " << app_id << ", ds_id= " << ds_id << ">.";
     return 1;
   }
   
   return 0;
+}
+
+int SDMMaster::add_access(int c_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_)
+{
+  return wa_space_->add_access(c_id, key, ver, lcoor_, ucoor_);
 }
 
 int SDMMaster::put(bool notify, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, int p_id)
@@ -349,9 +372,9 @@ int SDMMaster::put(bool notify, std::string key, unsigned int ver, COOR_T* lcoor
 }
 
 // Does not return data, returns 0 if data is available in local dspaces
-int SDMMaster::get(bool blocking, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_)
+int SDMMaster::get(int c_id, bool blocking, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_)
 {
-  LOG(INFO) << "get:: " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_);
+  LOG(INFO) << "get:: c_id= " << c_id << ", " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_);
   
   std::vector<int> p_id_v;
   if (qtable_->query(key, ver, lcoor_, ucoor_, p_id_v) ) {
@@ -368,6 +391,9 @@ int SDMMaster::get(bool blocking, std::string key, unsigned int ver, COOR_T* lco
       return 1;
     }
   }
+  
+  if (add_access(c_id, key, ver, lcoor_, ucoor_) )
+    LOG(ERROR) << "get:: add_access failed; c_id= " << c_id << "," << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_);
   
   return 0;
 }
@@ -406,6 +432,8 @@ void SDMMaster::handle_msg_in(std::map<std::string, std::string> msg_map)
     handle_sdm_move_reply(msg_map);
   else if (type.compare(SDM_DEL_REPLY) == 0)
     handle_sdm_del_reply(msg_map);
+  else if (type.compare(SDM_ACCESS) == 0)
+    handle_sdm_access(msg_map);
   else {
     LOG(ERROR) << "handle_msg_in:: unknown type= " << type;
     SDMSlave::handle_msg_in(msg_map);
@@ -447,7 +475,7 @@ void SDMMaster::handle_sdm_reg_app(std::map<std::string, std::string> msg_map)
   }
   msg_map["type"] = SDM_REG_APP_REPLY;
   if (send_cmsg(boost::lexical_cast<int>(msg_map["id"] ), msg_map) ) {
-    LOG(ERROR) << "handle_sdm_squery:: send_cmsg failed for msg_map= " << patch_all::map_to_str<>(msg_map);
+    LOG(ERROR) << "handle_sdm_reg_app:: send_cmsg failed for msg_map= " << patch_all::map_to_str<>(msg_map);
     return;
   }
 }
@@ -517,7 +545,7 @@ void SDMMaster::handle_sdm_squery(std::map<std::string, std::string> msg_map)
     LOG(INFO) << "handle_sdm_squery:: move_act= " << move_act << ", ds_id_v= " << patch_all::vec_to_str<>(ds_id_v);
     // TODO: choose from ds_id_v wisely -- considering proximity, load etc.
     int from_id = ds_id_v[0];
-    boost::thread(&SDMMaster::wait_for_move, this, from_id, msg_map);
+    boost::thread(&SDMMaster::wait_for_move, this, from_id, boost::lexical_cast<int>(msg_map["id"] ), msg_map);
     
     std::map<std::string, std::string> move_act_msg_map;
     if (msg_coder.encode_msg_map(move_act_msg_map, ndim, key, ver, lcoor_, ucoor_) ) {
@@ -525,9 +553,9 @@ void SDMMaster::handle_sdm_squery(std::map<std::string, std::string> msg_map)
       return;
     }
     move_act_msg_map["type"] = SDM_MOVE;
+    move_act_msg_map["id"] = boost::lexical_cast<std::string>(from_id);
     move_act_msg_map["to_id"] = msg_map["id"];
     if (from_id == get_id() ) {
-      move_act_msg_map["id"] = from_id;
       dm_act_cb(move_act_msg_map);
     }
     else {
@@ -541,18 +569,18 @@ void SDMMaster::handle_sdm_squery(std::map<std::string, std::string> msg_map)
   patch_all::free_all<COOR_T>(2, lcoor_, ucoor_);
 }
 
-void SDMMaster::wait_for_move(int from_id, std::map<std::string, std::string> msg_map)
+void SDMMaster::wait_for_move(int from_id, int to_id, std::map<std::string, std::string> msg_map)
 {
-  LOG(INFO) << "wait_for_move:: waiting; from_id= " << from_id << ", to_id= " << msg_map["id"] << ", msg_map= \n" << patch_all::map_to_str<>(msg_map);
+  LOG(INFO) << "wait_for_move:: waiting; from_id= " << from_id << ", to_id= " << to_id << ", msg_map= \n" << patch_all::map_to_str<>(msg_map);
   unsigned int sync_point = patch_sdm::hash_str(
     SDM_MOVE + "_" + patch_sdm::get_data_id(data_id_t, msg_map) );
   sdm_m_syncer.add_sync_point(sync_point, 1);
   sdm_m_syncer.wait(sync_point);
   sdm_m_syncer.del_sync_point(sync_point);
-  LOG(INFO) << "wait_for_move:: done waiting; from_id= " << from_id << ", to_id= " << msg_map["id"] << ", msg_map= \n" << patch_all::map_to_str<>(msg_map);
+  LOG(INFO) << "wait_for_move:: done waiting; from_id= " << from_id << ", to_id= " << to_id << ", msg_map= \n" << patch_all::map_to_str<>(msg_map);
 
   msg_map["type"] = SDM_SQUERY_REPLY;
-  if (send_cmsg(boost::lexical_cast<int>(msg_map["id"] ), msg_map) ) {
+  if (send_cmsg(boost::lexical_cast<int>(to_id), msg_map) ) {
     LOG(ERROR) << "handle_sdm_squery:: send_cmsg failed for msg_map= \n" << patch_all::map_to_str<>(msg_map);
     return;
   }
@@ -581,23 +609,31 @@ void SDMMaster::handle_sdm_del_reply(std::map<std::string, std::string> msg_map)
 {
   LOG(INFO) << "handle_sdm_del_reply:: msg_map= \n" << patch_all::map_to_str<>(msg_map);
   
+  sdm_m_syncer.notify(patch_sdm::hash_str(SDM_DEL + "_" + patch_sdm::get_data_id(data_id_t, msg_map) ) );
+}
+
+void SDMMaster::handle_sdm_access(std::map<std::string, std::string> msg_map)
+{
+  LOG(INFO) << "handle_sdm_access:: msg_map= \n" << patch_all::map_to_str<>(msg_map);
+  
   int ndim;
   std::string key;
   unsigned int ver;
   COOR_T *lcoor_, *ucoor_;
   if (msg_coder.decode_msg_map(msg_map, ndim, key, ver, lcoor_, ucoor_) ) {
-    LOG(ERROR) << "handle_sdm_del_reply:: msg_coder.decode_msg_map failed for msg_map= \n" << patch_all::map_to_str<>(msg_map);
+    LOG(ERROR) << "handle_sdm_access:: msg_coder.decode_msg_map failed for msg_map= \n" << patch_all::map_to_str<>(msg_map);
     return;
   }
   
-  sdm_m_syncer.notify(patch_sdm::hash_str(
-    SDM_DEL + "_" + patch_sdm::get_data_id(data_id_t, key, ver, lcoor_, ucoor_) ) );
-
-  patch_all::free_all<COOR_T>(2, lcoor_, ucoor_);
+  if (add_access(boost::lexical_cast<int>(msg_map["app_id"] ), key, ver, lcoor_, ucoor_) )
+    LOG(ERROR) << "handle_sdm_access:: add_access failed; app_id= " << msg_map["app_id"] << ", " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_);
 }
 
 void SDMMaster::handle_wa_space_data_act(PREFETCH_DATA_ACT_T data_act_t, int to_id, key_ver_pair kv, lcoor_ucoor_pair lucoor_)
 {
+  LOG(INFO) << "handle_wa_space_data_act:: started; data_act_t= " << data_act_t << ", to_id= " << to_id
+            << ", " << KV_LUCOOR_TO_STR(kv.first, kv.second, lucoor_.first, lucoor_.second);
+  
   std::map<std::string, std::string> msg_map;
   if (msg_coder.encode_msg_map(msg_map, NDIM, kv.first, kv.second, lucoor_.first, lucoor_.second) ) {
     LOG(ERROR) << "handle_wa_space_data_act:: msg_coder.encode_msg_map failed; " << KV_LUCOOR_TO_STR(kv.first, kv.second, lucoor_.first, lucoor_.second);
@@ -612,13 +648,19 @@ void SDMMaster::handle_wa_space_data_act(PREFETCH_DATA_ACT_T data_act_t, int to_
     }
     // TODO: choose from ds_id_v wisely -- considering proximity, load etc.
     int from_id = ds_id_v[0];
-    boost::thread(&SDMMaster::wait_for_move, this, from_id, msg_map);
+    boost::thread(&SDMMaster::wait_for_move, this, from_id, to_id, msg_map);
     
     msg_map["type"] = SDM_MOVE;
-    msg_map["to_id"] = to_id;
-    if (send_cmsg(from_id, msg_map) ) {
-      LOG(ERROR) << "handle_wa_space_data_act:: send_cmsg failed for msg_map= " << patch_all::map_to_str<>(msg_map);
-      return;
+    msg_map["id"] = boost::lexical_cast<std::string>(from_id);
+    msg_map["to_id"] = boost::lexical_cast<std::string>(to_id);
+    if (from_id == get_id() ) {
+      dm_act_cb(msg_map);
+    }
+    else {
+      if (send_cmsg(from_id, msg_map) ) {
+        LOG(ERROR) << "handle_wa_space_data_act:: send_cmsg failed for msg_map= " << patch_all::map_to_str<>(msg_map);
+        return;
+      }
     }
   }
   else if (data_act_t == PREFETCH_DATA_ACT_DEL) {
@@ -659,6 +701,7 @@ MSDMMaster::~MSDMMaster() { LOG(INFO) << "MSDMMaster:: destructed."; }
 std::string MSDMMaster::to_str()
 {
   std::stringstream ss;
+  ss << "SDMMaster::to_str= \n" << SDMMaster::to_str() << "\n";
   
   return ss.str();
 }
@@ -683,6 +726,7 @@ SSDMMaster::~SSDMMaster() { LOG(INFO) << "SSDMMaster:: destructed."; }
 std::string SSDMMaster::to_str()
 {
   std::stringstream ss;
+  ss << "SDMMaster::to_str= \n" << SDMMaster::to_str() << "\n";
   
   return ss.str();
 }

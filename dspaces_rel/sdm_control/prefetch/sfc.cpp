@@ -19,8 +19,10 @@ SAlgo::SAlgo(COOR_T* lcoor_, COOR_T* ucoor_)
 std::string SAlgo::to_str()
 {
   std::stringstream ss;
-  ss << "\t lcoor_= " << patch_all::arr_to_str<>(NDIM, lcoor_) << "\n"
-     << "\t ucoor_= " << patch_all::arr_to_str<>(NDIM, ucoor_) << "\n";
+  ss << "lcoor_= " << patch_all::arr_to_str<>(NDIM, lcoor_) << "\n"
+     << "ucoor_= " << patch_all::arr_to_str<>(NDIM, ucoor_) << "\n"
+     << "hilbert_num_bits= " << hilbert_num_bits << "\n"
+     << "max_index= " << max_index << "\n";
   // ss << "\t index_interval__ds_id_set_map= \n";
   // for (index_interval__ds_id_set_map_t::iterator it = index_interval__ds_id_set_map.begin(); it != index_interval__ds_id_set_map.end(); it++)
   //   ss << "\t" << it->first << " : " << patch_all::set_to_str<>(it->second) << "\n";
@@ -41,35 +43,34 @@ boost::shared_ptr<index_interval_set_t> SAlgo::coor_to_index_interval_set_(COOR_
   return index_interval_set_;
 }
 
-void SAlgo::index_interval_set_to_coor_v(index_interval_set_t interval_set, std::vector<COOR_T*>& coor_v)
+void SAlgo::index_interval_set_to_coor_v(const index_interval_set_t& interval_set, std::vector<COOR_T*>& coor_v)
 {
   for (index_interval_set_t::iterator it = interval_set.begin(); it != interval_set.end(); it++) {
     for (bitmask_t index = it->lower(); index <= it->upper(); index++) {
-      bitmask_t* coor_ = (bitmask_t*)malloc(NDIM*sizeof(bitmask_t) );
+      bitmask_t coor_[NDIM];
       // std::cout << "index_interval_set_to_coor_v:: index= " << index << "\n";
       mfa_hilbert_i2c(NDIM, hilbert_num_bits, index, coor_);
-      // TODO: Why ?
-      COOR_T* good_t_coor_ = (COOR_T*)malloc(NDIM*sizeof(int) );
+      // std::cout << "index_interval_set_to_coor_v:: coor_= " << patch_all::arr_to_str<>(NDIM, coor_) << "\n";
+
+      COOR_T* good_t_coor_ = (COOR_T*)malloc(NDIM*sizeof(COOR_T) );
       for (int i = 0; i < NDIM; i++)
         good_t_coor_[i] = (COOR_T) coor_[i];
-      
-      free(coor_);
       
       coor_v.push_back(good_t_coor_);
     }
   }
 }
 
-// Expands interval_set by expand_length from both sides
-void SAlgo::expand_interval_set(bitmask_t expand_length, index_interval_set_t& ii_set)
+// Expands interval_set by sexpand_length from both sides
+void SAlgo::expand_interval_set(bitmask_t sexpand_length, index_interval_set_t& ii_set)
 {
   index_interval_set_t _ii_set;
   for (index_interval_set_t::iterator it = ii_set.begin(); it != ii_set.end(); it++) {
-    bitmask_t lower = it->lower() - expand_length;
-    if (it->lower() < expand_length) // bitmask_t > 0
+    bitmask_t lower = it->lower() - sexpand_length;
+    if (it->lower() < sexpand_length) // bitmask_t > 0
       lower = 0;
     
-    _ii_set.insert(boost::icl::interval<bitmask_t>::closed(lower, std::min<bitmask_t>(max_index, it->upper() + expand_length) ) );
+    _ii_set.insert(boost::icl::interval<bitmask_t>::closed(lower, std::min<bitmask_t>(max_index, it->upper() + sexpand_length) ) );
   }
   ii_set = _ii_set;
 }
@@ -86,20 +87,19 @@ int SAlgo::add_access(COOR_T* lcoor_, COOR_T* ucoor_)
 
 /********************************************  HSAlgo  ********************************************/
 HSAlgo::HSAlgo(COOR_T* lcoor_, COOR_T* ucoor_,
-               bitmask_t expand_length)
+               bitmask_t sexpand_length)
 : SAlgo(lcoor_, ucoor_),
-  expand_length(expand_length)
+  sexpand_length(sexpand_length)
 {
   // 
-  LOG(INFO) << "HSAlgo:: constructed.";
+  LOG(INFO) << "HSAlgo:: constructed; \n" << to_str();
 }
 
 std::string HSAlgo::to_str()
 {
   std::stringstream ss;
-  ss << "hilbert_num_bits= " << hilbert_num_bits << "\n"
-     << "max_index= " << max_index << "\n"
-     << "SAlgo::to_str= " << SAlgo::to_str();
+  ss << "SAlgo::to_str= \n" << SAlgo::to_str() << "\n"
+     << "sexpand_length= " << sexpand_length << "\n";
   
   return ss.str();
 }
@@ -118,17 +118,20 @@ std::string HSAlgo::to_str()
 
 int HSAlgo::get_to_fetch(COOR_T* lcoor_, COOR_T* ucoor_, std::vector<lcoor_ucoor_pair>& lucoor_to_fetch_v)
 {
-  // Using the last acced index_interval_set predict from locality
-  index_interval_set_t& ii_set = *(acced_index_interval_set_v.back() );
+  IS_VALID_BOX("get_to_fetch", lcoor_, ucoor_, return 1)
   
-  LOG(INFO) << "get_to_prefetch:: " << LUCOOR_TO_STR(lcoor_, ucoor_) << ", ii_set= " << ii_set << "\n";
-  expand_interval_set(expand_length, ii_set);
-  LOG(INFO) << "get_to_prefetch:: after expand_interval_set= " << ii_set << "\n";
+  // Using the last acced index_interval_set predict from locality
+  // index_interval_set_t& ii_set = *(acced_index_interval_set_v.back() );
+  
+  boost::shared_ptr<index_interval_set_t> ii_set_ = coor_to_index_interval_set_(lcoor_, ucoor_);
+  // LOG(INFO) << "get_to_fetch:: " << LUCOOR_TO_STR(lcoor_, ucoor_) << ", ii_set= " << *ii_set_ << "\n";
+  expand_interval_set(sexpand_length, *ii_set_);
+  // LOG(INFO) << "get_to_fetch:: after expand_interval_set= " << *ii_set_ << "\n";
   
   RTable<int> rtable;
   
   std::vector<COOR_T*> lcoor_v;
-  index_interval_set_to_coor_v(ii_set, lcoor_v);
+  index_interval_set_to_coor_v(*ii_set_, lcoor_v);
   for (std::vector<COOR_T*>::iterator lcoor__ = lcoor_v.begin(); lcoor__ != lcoor_v.end(); lcoor__++) {
     COOR_T* ucoor_ = (COOR_T*)malloc(NDIM*sizeof(COOR_T) );
     for (int i = 0; i < NDIM; i++)

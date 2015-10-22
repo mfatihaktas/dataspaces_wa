@@ -1,7 +1,7 @@
 #include "prefetch.h"
 #include "sim.h"
-#include "patch_markov_exp.h"
-#include "patch_sfc_exp.h"
+// #include "patch_markov_exp.h"
+// #include "patch_sfc_exp.h"
 
 
 #include <getopt.h>
@@ -105,7 +105,7 @@ int main(int argc, char **argv)
   
   if (str_cstr_equals(opt_map["type"], "markov") ) {
     // test_fixed_train();
-    test_rand_shuffle_train(); 
+    // test_rand_shuffle_train(); 
     // test_malgo();
     // test_bmmalgo();
     // m_prefetch_test();
@@ -161,7 +161,54 @@ int main(int argc, char **argv)
     // check_hilbert_api();
     // test_hpredictor();
     // check_3d_hilbert_curve();
-    spcsim_test();
+    
+    // COOR_T lcoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 0) };
+    // COOR_T ucoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 10) };
+    // HSAlgo hsalgo(lcoor_, ucoor_, 1);
+    
+    // COOR_T exp_lcoor_[] = {4, 4};
+    // COOR_T exp_ucoor_[] = {6, 5};
+    // boost::shared_ptr<index_interval_set_t> ii_set_ = hsalgo.coor_to_index_interval_set_(exp_lcoor_, exp_ucoor_);
+    // std::cout << "ii_set= " << *ii_set_ << "\n";
+    
+    // hsalgo.expand_interval_set(1, *ii_set_);
+    
+    // RTable<int> rtable;
+    
+    // std::vector<COOR_T*> lcoor_v;
+    // hsalgo.index_interval_set_to_coor_v(*ii_set_, lcoor_v);
+    // for (std::vector<COOR_T*>::iterator lcoor__ = lcoor_v.begin(); lcoor__ != lcoor_v.end(); lcoor__++) {
+    //   COOR_T* ucoor_ = (COOR_T*)malloc(NDIM*sizeof(COOR_T) );
+    //   for (int i = 0; i < NDIM; i++)
+    //     ucoor_[i] = (*lcoor__)[i] + 1;
+  
+    //   // lucoor_to_fetch_v.push_back(std::make_pair(*lcoor__, ucoor_) );
+    //   rtable.add("", 0, *lcoor__, ucoor_, -1);
+    // }
+    
+    // std::cout << "rtable= " << rtable.to_str() << "\n";
+    // COOR_T* to_fetch_lcoor_ = (COOR_T*)malloc(NDIM*sizeof(COOR_T) );
+    // COOR_T* to_fetch_ucoor_ = (COOR_T*)malloc(NDIM*sizeof(COOR_T) );
+    // rtable.get_bound_lucoor(to_fetch_lcoor_, to_fetch_ucoor_);
+    // std::cout << "to_fetch_lucoor_= " << LUCOOR_TO_STR(to_fetch_lcoor_, to_fetch_ucoor_) << "\n";
+    // patch_all::free_all<COOR_T>(2, to_fetch_lcoor_, to_fetch_ucoor_);
+    
+    // test_locality_prefetching();
+    // std::vector<std::vector<float> > ndim_v_v;
+    // ndim_v_v.push_back(boost::assign::list_of(1)(2)(3)(4)(5)(6)(7)(8)(9)(10) );
+    // // std::vector<float> ndim_v = boost::assign::list_of(1)(2)(3)(4)(5)(6)(7)(8)(9)(10);
+    // std::vector<std::vector<float> > hit_rate_v_v;
+    // hit_rate_v_v.push_back(boost::assign::list_of(0.99)(0.8748)(0.831021)(0.8021)(0.78947)(0.785147)(0.713115)(0.783218)(0.756847)(0.753909) );
+    // // std::vector<float> hit_rate_v = boost::assign::list_of(0.99)(0.8748)(0.831021)(0.8021)(0.78947)(0.785147)(0.713115)(0.783218)(0.756847)(0.753909);
+    // std::vector<std::string> title_v = boost::assign::list_of("");
+    
+    // std::string out_url = "/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/sdm_control/prefetch/fig_hit_rate_w_varying_ndim.png";
+    // make_plot<float>(ndim_v_v, hit_rate_v_v, title_v,
+    //                 "Number of dimensions", "Hit rate",
+    //                 "Hit rate for deterministic access walk with varying dimensionality", out_url);
+    
+    
+    // spcsim_test();
     
     // COOR_T get_lcoor_[] = {2, 2};
     // COOR_T get_ucoor_[] = {2, 3};

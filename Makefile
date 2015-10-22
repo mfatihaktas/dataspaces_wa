@@ -10,7 +10,7 @@
 # MPI_DIR ?= /cac/u01/mfa51/Desktop/mpich-3.1.2/install
 # ##################################################################################################
 DSPACES_INC = -I$(DSPACES_DIR)/include
-DSPACES_LIB = -L$(DSPACES_DIR)/lib -ldspaces -ldscommon -ldart -lrdmacm
+DSPACES_LIB = -L$(DSPACES_DIR)/lib -ldspaces -ldscommon -ldart -lrdmacm # -ldspacesf
 
 BOOST_INC = -I$(BOOST_DIR)/include
 BOOST_LIB = -L$(BOOST_DIR)/lib -lboost_system -lpthread -lboost_thread -lboost_serialization
@@ -83,18 +83,24 @@ LIBDIR = lib
 
 .PHONY: all lib lclean clean submake_dspaces_rel
 
-APPS := exp ds_wa_test
-
+# deneme
+APPS := exp mput_mget_test mapp_test
 all: submake_dspaces_rel ${APPS}
 
 submake_dspaces_rel:
 	make -C $(DSPACESREL_DIR)
 
-ds_wa_test: $(ODIR)/ds_wa_test.o $(OBJS)
-	$(MPICPP) $(MPICPP_OPTS) -g -o $@ $^ $(INC) $(LIB)
-	
 exp: $(ODIR)/exp.o $(OBJS)
 	$(MPICPP) $(MPICPP_OPTS) -g -o $@ $^ $(INC) $(LIB)
+
+mput_mget_test: $(ODIR)/mput_mget_test.o $(OBJS)
+	$(MPICPP) $(MPICPP_OPTS) -g -o $@ $^ $(INC) $(LIB)
+
+mapp_test: $(ODIR)/mapp_test.o $(OBJS)
+	$(MPICPP) $(MPICPP_OPTS) -g -o $@ $^ $(INC) $(LIB)
+
+deneme: $(ODIR)/deneme.o
+	$(CPP) $(MPICPP_OPTS) -g -o $@ $^
 
 $(ODIR)/%.o: %.cpp
 	$(MPICPP) $(MPICPP_OPTS) -g -c -o $@ $< $(INC) $(LIB)

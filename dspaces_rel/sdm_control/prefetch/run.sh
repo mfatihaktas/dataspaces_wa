@@ -8,9 +8,12 @@ elif [ $1  = 'dm' ]; then
   gdb --args ./exp --type="markov"
 elif [ $1  = 's' ]; then
   GLOG_logtostderr=1 ./exp --type="sfc"
-elif [ $1  = 'dm' ]; then
+elif [ $1  = 'ds' ]; then
   export GLOG_logtostderr=1
   gdb --args ./exp --type="sfc"
+elif [ $1  = 'vs' ]; then
+  export GLOG_logtostderr=1
+  valgrind -v --leak-check=yes ./exp --type="sfc"
 elif [ $1  = 'init' ]; then
   if [ $2  = 'd' ]; then
     # ENV VARIABLES FOR MAKE

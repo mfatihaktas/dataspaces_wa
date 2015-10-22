@@ -69,6 +69,7 @@ const std::string SDM_MOVE = "sdm_m";
 const std::string SDM_MOVE_REPLY = "sdm_mr";
 const std::string SDM_DEL = "sdm_d";
 const std::string SDM_DEL_REPLY = "sdm_dr";
+const std::string SDM_ACCESS = "sdm_a";
 
 const int REMOTE_P_ID = -1;
 
@@ -95,8 +96,9 @@ class SDMSlave : public SDMCEntity {
     virtual std::string to_str();
     
     virtual int reg_app(int app_id);
+    virtual int add_access(int c_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_);
     virtual int put(bool notify, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, int p_id);
-    virtual int get(bool blocking, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_);
+    virtual int get(int app_id, bool blocking, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_);
     
     virtual void handle_conn_up(std::map<std::string, std::string> msg_map);
     virtual void handle_msg_in(std::map<std::string, std::string> msg_map);
@@ -142,8 +144,9 @@ class SDMMaster : public SDMSlave {
     int sdm_mquery(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_);
     
     int reg_app(int app_id);
+    int add_access(int c_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_);
     int put(bool notify, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, int p_id);
-    int get(bool blocking, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_);
+    int get(int c_id, bool blocking, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_);
     
     void handle_conn_up(std::map<std::string, std::string> msg_map);
     void handle_msg_in(std::map<std::string, std::string> msg_map);
@@ -151,9 +154,10 @@ class SDMMaster : public SDMSlave {
     void handle_sdm_reg_app(std::map<std::string, std::string> msg_map);
     void handle_sdm_put_notification(std::map<std::string, std::string> msg_map);
     void handle_sdm_squery(std::map<std::string, std::string> msg_map);
-    void wait_for_move(int from_id, std::map<std::string, std::string> msg_map);
+    void wait_for_move(int from_id, int to_id, std::map<std::string, std::string> msg_map);
     void handle_sdm_move_reply(std::map<std::string, std::string> msg_map);
     void handle_sdm_del_reply(std::map<std::string, std::string> msg_map);
+    void handle_sdm_access(std::map<std::string, std::string> msg_map);
     
     void handle_wa_space_data_act(PREFETCH_DATA_ACT_T data_act_t, int to_id, key_ver_pair kv, lcoor_ucoor_pair lucoor_);
 };

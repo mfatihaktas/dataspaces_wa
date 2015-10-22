@@ -161,8 +161,8 @@ int main(int argc , char **argv)
     //TODO: for now
     if (str_cstr_equals(opt_map["trans_protocol"], "t") )
       data_length *= sizeof(DATA_T);
-    trans.init_put(opt_map["s_lip"], opt_map["s_lport"], opt_map["tmpfs_dir"],
-                   DATA_T_STR, "dummy", data_length, data_);
+      trans.init_put(opt_map["s_lip"], opt_map["s_lport"], opt_map["tmpfs_dir"],
+                     DATA_T_STR, "dummy", data_length, data_);
     
     if (gettimeofday(&end_time, NULL) ) {
       LOG(ERROR) << "main:: gettimeofday returned non-zero.";

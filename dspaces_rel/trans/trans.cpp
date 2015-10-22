@@ -106,11 +106,25 @@ int Trans::init_get(std::string data_type, std::string s_lport, std::string data
 int Trans::init_put(std::string s_lip, std::string s_lport, std::string tmpfs_dir,
                     std::string data_type, std::string data_id, int data_length, void* data_)
 {
-  // TODO: data_length should data_size for TCP
   if (str_str_equals(trans_protocol, INFINIBAND) )
     ib_trans_->init_client(s_lip.c_str(), s_lport.c_str(), data_type, data_length, data_);
-  else if (str_str_equals(trans_protocol, TCP) )
-    tcp_trans_->send(s_lip, boost::lexical_cast<int>(s_lport), data_id, data_length, data_);
+  else if (str_str_equals(trans_protocol, TCP) ) {
+    // Note: data_length should be data_size for TCP
+    int data_size = data_length;
+    if (data_type == "char")
+      data_size *= sizeof(char);
+    else if (data_type == "int")
+      data_size *= sizeof(int);
+    else if (data_type == "float")
+      data_size *= sizeof(float);
+    else if (data_type == "double")
+      data_size *= sizeof(double);
+    else {
+      LOG(ERROR) << "init_put:: unknown data_type= " << data_type;
+      return 1;
+    }
+    tcp_trans_->send(s_lip, boost::lexical_cast<int>(s_lport), data_id, data_size, data_);
+  }
 #ifdef _GRIDFTP_
   else if (str_str_equals(trans_protocol, GRIDFTP) ) {
     if (gftp_trans_->put(s_lip, boost::lexical_cast<int>(s_lport), tmpfs_dir, data_id, data_length, data_) ) {

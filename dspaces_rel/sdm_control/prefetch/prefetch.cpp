@@ -25,7 +25,7 @@ MPBuffer::MPBuffer(int ds_id, int max_num_key_ver, MALGO_T malgo_t,
   // malgo_t__weight_map[MALGO_W_PO] = 0.33;
   // malgo_to_pick_app_ = boost::make_shared<MPrefetchAlgo>(malgo_t, malgo_t__weight_map);
   // 
-  LOG(INFO) << "MPBuffer:: constructed.";
+  LOG(INFO) << "MPBuffer:: constructed; \n" << to_str();
 }
 
 MPBuffer::~MPBuffer() { LOG(INFO) << "MPBuffer:: destructed."; }
@@ -33,7 +33,8 @@ MPBuffer::~MPBuffer() { LOG(INFO) << "MPBuffer:: destructed."; }
 std::string MPBuffer::to_str()
 {
   std::stringstream ss;
-  ss << "w_prefetch= " << w_prefetch << "\n"
+  ss << "ds_id= " << ds_id << "\n"
+     << "w_prefetch= " << w_prefetch << "\n"
      << "max_num_key_ver= " << max_num_key_ver << "\n";
   
   // ss << "kv__p_id_map= \n";
@@ -79,6 +80,7 @@ int MPBuffer::reg_key_ver(int p_id, key_ver_pair kv)
     p_id__reged_kv_deq_map[p_id] = kv_deq;
     p_id__front_step_in_deq_map[p_id] = 0;
   }
+  // LOG(INFO) << "reg_key_ver:: reged p_id= " << p_id << ", " << KV_TO_STR(kv.first, kv.second);
 }
 
 // ----------------------------------------  operational  --------------------------------------- //
@@ -91,18 +93,20 @@ int MPBuffer::del(key_ver_pair kv)
   
   int p_id = kv__p_id_map[kv];
   if (cache.del(p_id, kv) ) {
-    LOG(ERROR) << "del:: cache.del failed for p_id= " << p_id << ", " << KV_TO_STR(kv.first, kv.second);
+    LOG(WARNING) << "del:: cache.del failed for p_id= " << p_id << ", " << KV_TO_STR(kv.first, kv.second);
     return 1;
   }
   
-  if (handle_mpbuffer_data_act_cb != 0)
-    handle_mpbuffer_data_act_cb(PREFETCH_DATA_ACT_DEL, ds_id, kv);
+  // Note: Causes duplicate call on handle_mpbuffer_data_act_cb for deling the same data since cache.del does it already
+  // if (handle_mpbuffer_data_act_cb != 0)
+  //   handle_mpbuffer_data_act_cb(PREFETCH_DATA_ACT_DEL, ds_id, kv);
   
   return 0;
 }
 
 int MPBuffer::add_access(key_ver_pair kv)
 {
+  LOG(INFO) << "add_access:: started; " << KV_TO_STR(kv.first, kv.second);
   if (!kv__p_id_map.contains(kv) ) {
     LOG(ERROR) << "add_access:: kv__p_id_map does not contain; non-registered " << KV_TO_STR(kv.first, kv.second);
     return 1;
@@ -257,7 +261,7 @@ WASpace::WASpace(std::vector<int> ds_id_v, func_handle_data_act_cb handle_data_a
 : ds_id_v(ds_id_v), handle_data_act_cb(handle_data_act_cb)
 {
   // 
-  LOG(INFO) << "WASpace:: constructed; \n" << to_str();
+  LOG(INFO) << "WASpace:: constructed.";
 }
 
 std::string WASpace::to_str()
@@ -275,6 +279,7 @@ int WASpace::reg_ds(int ds_id)
     return 1;
   }
   ds_id_v.push_back(ds_id);
+  LOG(INFO) << "reg_ds:: reged ds_id= " << ds_id;
   
   return 0;
 }
@@ -282,7 +287,7 @@ int WASpace::reg_ds(int ds_id)
 int WASpace::reg_app(int app_id, int ds_id)
 {
   if (app_id__ds_id_map.contains(app_id) ) {
-    LOG(ERROR) << "reg_app:: already reged app_id= " << app_id;
+    // LOG(ERROR) << "reg_app:: already reged app_id= " << app_id;
     return 1;
   }
   app_id__ds_id_map[app_id] = ds_id;
@@ -297,13 +302,13 @@ MWASpace::MWASpace(std::vector<int> ds_id_v,
   max_num_key_ver_in_mpbuffer(max_num_key_ver_in_mpbuffer), malgo_t(malgo_t), w_prefetch(w_prefetch)
 {
   for (std::vector<int>::iterator it = ds_id_v.begin(); it != ds_id_v.end(); it++) {
-    ds_id__kv_vp_map[*it] = boost::make_shared<patch_all::thread_safe_vector<key_ver_pair> >();
+    ds_id__kv_map[*it] = boost::make_shared<patch_all::thread_safe_vector<key_ver_pair> >();
     
     ds_id__mpbuffer_map[*it] = boost::make_shared<MPBuffer>(*it, max_num_key_ver_in_mpbuffer, malgo_t,
                                                             w_prefetch, boost::bind(&MWASpace::handle_mpbuffer_data_act, this, _1, _2, _3) );
   }
   // 
-  LOG(INFO) << "MWASpace:: constructed.";
+  LOG(INFO) << "MWASpace:: constructed; " << to_str();
 }
 
 MWASpace::~MWASpace()
@@ -314,7 +319,8 @@ MWASpace::~MWASpace()
 std::string MWASpace::to_str()
 {
   std::stringstream ss;
-  ss << "max_num_key_ver_in_mpbuffer= " << max_num_key_ver_in_mpbuffer << "\n"
+  ss << "WASpace::to_str= \n" << WASpace::to_str() << "\n"
+     << "max_num_key_ver_in_mpbuffer= " << max_num_key_ver_in_mpbuffer << "\n"
      << "malgo_t= " << malgo_t << "\n"
      << "w_prefetch= " << w_prefetch << "\n";
   
@@ -329,8 +335,8 @@ std::string MWASpace::to_str_end()
     ss << KV_TO_STR(it->first, it->second) << ", ";
   ss << "\n";
   
-  ss << "ds_id__kv_vp_map= \n";
-  for (std::map<int, boost::shared_ptr<patch_all::thread_safe_vector<key_ver_pair> > >::iterator map_it = ds_id__kv_vp_map.begin(); map_it != ds_id__kv_vp_map.end(); map_it++) {
+  ss << "ds_id__kv_map= \n";
+  for (std::map<int, boost::shared_ptr<patch_all::thread_safe_vector<key_ver_pair> > >::iterator map_it = ds_id__kv_map.begin(); map_it != ds_id__kv_map.end(); map_it++) {
     ss << ">>> ds_id= " << map_it->first << " : ";
     for (std::vector<key_ver_pair>::iterator vec_it = (map_it->second)->begin(); vec_it != (map_it->second)->end(); vec_it++)
       ss << "\t <" << vec_it->first << ", " << vec_it->second << "> \n ";
@@ -344,7 +350,7 @@ std::string MWASpace::to_str_end()
   }
   
   for (std::vector<int>::iterator it = ds_id_v.begin(); it != ds_id_v.end(); it++) {
-    patch_all::thread_safe_vector<key_ver_pair>& ds_kv_v = *ds_id__kv_vp_map[*it];
+    patch_all::thread_safe_vector<key_ver_pair>& ds_kv_v = *ds_id__kv_map[*it];
     std::sort(ds_kv_v.begin(), ds_kv_v.end() );
     
     std::vector<key_ver_pair> mpbuffer_kv_v = ds_id__mpbuffer_map[*it]->get_kv_v();
@@ -371,10 +377,15 @@ int MWASpace::reg_ds(int ds_id)
     LOG(ERROR) << "reg_ds:: WASpace::reg_ds failed; ds_id= " << ds_id;
     return 1;
   }
-  ds_id__kv_vp_map[ds_id] = boost::make_shared<patch_all::thread_safe_vector<key_ver_pair> >();
+  ds_id__kv_map[ds_id] = boost::make_shared<patch_all::thread_safe_vector<key_ver_pair> >();
   ds_id__mpbuffer_map[ds_id] = boost::make_shared<MPBuffer>(ds_id, max_num_key_ver_in_mpbuffer, malgo_t,
                                                             w_prefetch, boost::bind(&MWASpace::handle_mpbuffer_data_act, this, _1, _2, _3) );
-
+  // Note: DS joins dynamically, its MPBuffer needs to be updated
+  for (std::map<key_ver_pair, int>::iterator it = kv__p_id_map.begin(); it != kv__p_id_map.end(); it++)
+    ds_id__mpbuffer_map[ds_id]->reg_key_ver(it->second, it->first);
+  
+  LOG(INFO) << "reg_ds:: reged ds_id= " << ds_id;
+  
   return 0;
 }
 
@@ -386,10 +397,11 @@ int MWASpace::del(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* uco
     return 1;
   }
   
-  ds_id__kv_vp_map[ds_id]->del(kv);
+  ds_id__kv_map[ds_id]->del(kv);
   ds_id__mpbuffer_map[ds_id]->del(kv);
   
   kv__p_id_map.del(kv);
+  patch_all::free_all<COOR_T>(2, kv__lucoor_map[kv].first, kv__lucoor_map[kv].second);
   kv__lucoor_map.del(kv);
   kv_v.del(kv);
   
@@ -422,12 +434,16 @@ int MWASpace::put(int p_id, std::string key, unsigned int ver, COOR_T* lcoor_, C
     // Immediately broadcast it to every ds peer so mpbuffers can be updated
     for (std::map<int, boost::shared_ptr<MPBuffer> >::iterator it = ds_id__mpbuffer_map.begin(); it != ds_id__mpbuffer_map.end(); it++)
       (it->second)->reg_key_ver(p_id, kv);
-  
+    
     kv__p_id_map[kv] = p_id;
-    kv__lucoor_map[kv] = std::make_pair(lcoor_, ucoor_);
+    COOR_T* _lcoor_ = (COOR_T*)malloc(NDIM*sizeof(COOR_T) );
+    COOR_T* _ucoor_ = (COOR_T*)malloc(NDIM*sizeof(COOR_T) );
+    memcpy(_lcoor_, lcoor_, NDIM*sizeof(COOR_T) );
+    memcpy(_ucoor_, ucoor_, NDIM*sizeof(COOR_T) );
+    kv__lucoor_map[kv] = std::make_pair(_lcoor_, _ucoor_);
     kv_v.push_back(kv);
   }
-  ds_id__kv_vp_map[ds_id]->push_back(kv);
+  ds_id__kv_map[ds_id]->push_back(kv);
   
   return 0;
 }
@@ -449,8 +465,7 @@ int MWASpace::query(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* u
 
 int MWASpace::add_access(int c_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_)
 {
-  key_ver_pair kv = std::make_pair(key, ver);
-  return ds_id__mpbuffer_map[app_id__ds_id_map[c_id] ]->add_access(kv);
+  return ds_id__mpbuffer_map[app_id__ds_id_map[c_id] ]->add_access(std::make_pair(key, ver) );
 }
 
 bool MWASpace::contains(int ds_id, key_ver_pair kv)
@@ -458,12 +473,15 @@ bool MWASpace::contains(int ds_id, key_ver_pair kv)
   if (ds_id == '*')
     return kv_v.contains(kv);
   else
-    return ds_id__kv_vp_map[ds_id]->contains(kv) || ds_id__mpbuffer_map[ds_id]->contains(kv);
+    return ds_id__kv_map[ds_id]->contains(kv) || ds_id__mpbuffer_map[ds_id]->contains(kv);
 }
 
 void MWASpace::handle_mpbuffer_data_act(PREFETCH_DATA_ACT_T data_act_t, int ds_id, key_ver_pair kv) {
-  if (handle_data_act_cb != 0)
+  if (handle_data_act_cb != 0) {
+    LOG(INFO) << "handle_mpbuffer_data_act:: data_act_t= " << data_act_t << ", ds_id= " << ds_id
+              << ", " << KV_LUCOOR_TO_STR(kv.first, kv.second, kv__lucoor_map[kv].first, kv__lucoor_map[kv].second);
     handle_data_act_cb(data_act_t, ds_id, kv, kv__lucoor_map[kv] );
+  }
 }
 
 /******************************************  SWASpace  ********************************************/
@@ -473,8 +491,6 @@ SWASpace::SWASpace(std::vector<int> ds_id_v,
   w_prefetch(w_prefetch),
   qtable_(boost::make_shared<RTable<int> >() )
 {
-  IS_VALID_BOX("SWASpace", lcoor_, ucoor_, exit(1) )
-  
   if (salgo_t == SALGO_H)
     salgo_ = boost::make_shared<HSAlgo>(lcoor_, ucoor_, sexpand_length);
   else {
@@ -482,13 +498,14 @@ SWASpace::SWASpace(std::vector<int> ds_id_v,
     exit(1);
   }
   // 
-  LOG(INFO) << "SWASpace:: constructed.";
+  LOG(INFO) << "SWASpace:: constructed; " << to_str();
 }
 
 std::string SWASpace::to_str()
 {
   std::stringstream ss;
-  ss << "salgo= \n" << salgo_->to_str() << "\n";
+  ss << "WASpace::to_str= \n" << WASpace::to_str() << "\n"
+     << "salgo= \n" << salgo_->to_str() << "\n";
     // << "qtable= \n" << qtable_->to_str() << "\n";
   
   return ss.str();
@@ -496,8 +513,6 @@ std::string SWASpace::to_str()
 
 int SWASpace::put(int p_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, int ds_id)
 {
-  IS_VALID_BOX("put", lcoor_, ucoor_, return 1)
-  
   if (p_id != NULL_P_ID) {
     if (!app_id__ds_id_map.contains(p_id) ) {
       LOG(ERROR) << "put:: non-reged p_id= " << p_id;
@@ -505,7 +520,7 @@ int SWASpace::put(int p_id, std::string key, unsigned int ver, COOR_T* lcoor_, C
     }
   }
   
-  if (ds_id == -1)
+  if (ds_id == -1) // New data put
     ds_id = app_id__ds_id_map[p_id];
   
   if (qtable_->add(key, ver, lcoor_, ucoor_, ds_id) ) {
@@ -532,20 +547,26 @@ int SWASpace::query(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* u
   return qtable_->query(key, ver, lcoor_, ucoor_, ds_id_v);
 }
 
+int SWASpace::get_to_fetch(COOR_T* lcoor_, COOR_T* ucoor_, std::vector<lcoor_ucoor_pair>& lucoor_to_fetch_v)
+{
+  return salgo_->get_to_fetch(lcoor_, ucoor_, lucoor_to_fetch_v);
+}
+
 int SWASpace::add_access(int c_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_)
 {
-  IS_VALID_BOX("add_access", lcoor_, ucoor_, return 1)
+//   IS_VALID_BOX("add_access", lcoor_, ucoor_, return 1)
   
-  salgo_->add_access(lcoor_, ucoor_);
+//   salgo_->add_access(lcoor_, ucoor_);
   
-  int ds_id = app_id__ds_id_map[c_id];
-  if (w_prefetch) {
-    std::vector<lcoor_ucoor_pair> lucoor_to_fetch_v;
-    salgo_->get_to_fetch(lcoor_, ucoor_, lucoor_to_fetch_v);
+//   int ds_id = app_id__ds_id_map[c_id];
+//   if (w_prefetch) {
+//     std::vector<lcoor_ucoor_pair> lucoor_to_fetch_v;
+//     salgo_->get_to_fetch(lcoor_, ucoor_, lucoor_to_fetch_v);
     
-    for (std::vector<lcoor_ucoor_pair>::iterator it = lucoor_to_fetch_v.begin(); it != lucoor_to_fetch_v.end(); it++)
-      handle_data_act_cb(PREFETCH_DATA_ACT_PREFETCH, ds_id, std::make_pair(key, ver), *it);
-  }
+//     for (std::vector<lcoor_ucoor_pair>::iterator it = lucoor_to_fetch_v.begin(); it != lucoor_to_fetch_v.end(); it++)
+//         handle_data_act_cb(PREFETCH_DATA_ACT_PREFETCH, ds_id, std::make_pair(key, ver), *it);
+//   }
   
-  return 0;
+//   return 0;
 }
+

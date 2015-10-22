@@ -79,7 +79,12 @@ typedef boost::geometry::model::box<point_t> box_t;
   for(int VAR(d, n) = BOOST_PP_TUPLE_ELEM(2, 0, ll_ul_)[n]; VAR(d, n) < BOOST_PP_TUPLE_ELEM(2, 1, ll_ul_)[n]; VAR(d, n)++) {
   // for(int VAR(d, FOR_I(n) ) = BOOST_PP_TUPLE_ELEM(2, 0, ll_ul_)[FOR_I(n) ]; \
   //     VAR(d, FOR_I(n) ) < BOOST_PP_TUPLE_ELEM(2, 1, ll_ul_)[FOR_I(n) ]; VAR(d, FOR_I(n) )++) {
+#define FOR_REP_W_INC(z, n, ll_ul_inc) \
+  for(int VAR(d, n) = BOOST_PP_TUPLE_ELEM(3, 0, ll_ul_inc)[n]; VAR(d, n) < BOOST_PP_TUPLE_ELEM(3, 1, ll_ul_inc)[n]; VAR(d, n) += BOOST_PP_TUPLE_ELEM(3, 2, ll_ul_inc) ) {
+
 #define MULTI_FOR(ll_, ul_) BOOST_PP_REPEAT(NDIM, FOR_REP, (ll_, ul_) )
+
+#define MULTI_FOR_W_INC(ll_, ul_, inc) BOOST_PP_REPEAT(NDIM, FOR_REP_W_INC, (ll_, ul_, inc) )
 
 #define END_FOR_REP(z, n, data) }
 #define END_MULTI_FOR() BOOST_PP_REPEAT(NDIM, END_FOR_REP, ~)
@@ -327,8 +332,8 @@ class SAlgo {
     virtual std::string to_str();
     
     boost::shared_ptr<index_interval_set_t> coor_to_index_interval_set_(COOR_T* lcoor_, COOR_T* ucoor_);
-    void index_interval_set_to_coor_v(index_interval_set_t interval_set, std::vector<COOR_T*>& coor_v);
-    void expand_interval_set(bitmask_t expand_length, index_interval_set_t& interval_set);
+    void index_interval_set_to_coor_v(const index_interval_set_t& interval_set, std::vector<COOR_T*>& coor_v);
+    void expand_interval_set(bitmask_t sexpand_length, index_interval_set_t& interval_set);
     
     int add_access(COOR_T* lcoor_, COOR_T* ucoor_);
     virtual int get_to_fetch(COOR_T* lcoor_, COOR_T* ucoor_, std::vector<lcoor_ucoor_pair>& lucoor_to_fetch_v) = 0;
@@ -341,11 +346,11 @@ class SAlgo {
 /*****************************************  HSAlgo  *******************************************/
 class HSAlgo : public SAlgo { // Hilbert
   private:
-    bitmask_t expand_length;
+    bitmask_t sexpand_length;
     
   public:
     HSAlgo(COOR_T* lcoor_, COOR_T* ucoor_,
-           bitmask_t expand_length);
+           bitmask_t sexpand_length);
     ~HSAlgo() {}
     std::string to_str();
     

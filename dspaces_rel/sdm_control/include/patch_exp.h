@@ -132,7 +132,7 @@ void slave_test(std::map<std::string, std::string> opt_map)
     slave.put(true, "dummy", 0, s_lcoor_, s_ucoor_, 0);
   }
   else if (boost::lexical_cast<int>(opt_map["id"] ) == 2) {
-    if (slave.get(true, "dummy", 0, s_lcoor_, s_ucoor_) )
+    if (slave.get(0, true, "dummy", 0, s_lcoor_, s_ucoor_) )
       LOG(ERROR) << "main:: slave.get failed; " << LUCOOR_TO_STR(s_lcoor_, s_ucoor_);
     else
       LOG(ERROR) << "main:: slave.get succeeded; " << LUCOOR_TO_STR(s_lcoor_, s_ucoor_);
