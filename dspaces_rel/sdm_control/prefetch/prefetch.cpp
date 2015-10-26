@@ -112,9 +112,9 @@ int MPBuffer::add_access(key_ver_pair kv)
     return 1;
   }
   
-  if (del(kv) ) {
+  if (del(kv) )
     LOG(WARNING) << "add_access:: del failed; " << KV_TO_STR(kv.first, kv.second);
-  }
+  
   // acced_kv_v.push_back(kv);
   // app_id__acced_kv_v_map[p_id].push_back(kv);
   
@@ -123,7 +123,7 @@ int MPBuffer::add_access(key_ver_pair kv)
     p_id__last_acced_step_map[p_id] = -1;
   p_id__last_acced_step_map[p_id] += 1;
   // 
-  int num_app = 1;
+  int num_app = 1; //cache.get_available_size();
   std::vector<key_ver_pair> kv_v;
   {// Causes problems while building the parse tree for multi-threaded scenario
     boost::lock_guard<boost::mutex> guard(add_acc_mutex);

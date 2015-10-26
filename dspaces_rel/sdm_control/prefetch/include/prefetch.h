@@ -158,6 +158,12 @@ class Cache {
       return (std::find(cache.begin(), cache.end(), e) != cache.end() );
     }
     
+    int get_available_size()
+    {
+      boost::lock_guard<boost::mutex> guard(mutex);
+      return (cache_size - cache.size() );
+    }
+    
     int size() 
     { 
       boost::lock_guard<boost::mutex> guard(mutex);

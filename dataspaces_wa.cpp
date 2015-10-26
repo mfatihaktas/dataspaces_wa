@@ -27,7 +27,7 @@ WADSDriver::WADSDriver(int app_id, int base_client_id, int num_local_peers,
 }
 
 WADSDriver::WADSDriver(int app_id, int base_client_id, int num_local_peers,
-                       DATA_ID_T data_id_t, MPI_Comm mpi_comm,
+                       DATA_ID_T data_id_t, MPI_Comm& mpi_comm,
                        std::string lcontrol_lip, int lcontrol_lport, std::string joinhost_lcontrol_lip, int joinhost_lcontrol_lport)
 : app_id(app_id), base_client_id(base_client_id), num_local_peers(num_local_peers), data_id_t(data_id_t),
   _app_id(base_client_id + app_id),
@@ -61,8 +61,7 @@ std::string WADSDriver::to_str()
 }
 
 int WADSDriver::put(std::string key, unsigned int ver, std::string data_type,
-                    int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_,
-                    int app_id)
+                    int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
 {
   if (ds_driver_->sync_put(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_) ) {
     LOG(ERROR) << "put:: ds_driver_->sync_put failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
@@ -71,10 +70,7 @@ int WADSDriver::put(std::string key, unsigned int ver, std::string data_type,
   
   std::map<std::string, std::string> msg_map;
   msg_map["type"] = PUT;
-  if (app_id == -1)
-    msg_map["cl_id"] = boost::lexical_cast<std::string>(_app_id);
-  else
-    msg_map["cl_id"] = boost::lexical_cast<std::string>(base_client_id + app_id);
+  msg_map["cl_id"] = boost::lexical_cast<std::string>(_app_id);
   msg_coder.encode_msg_map(msg_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_);
   if (lsdm_node_->send_msg_to_master(PACKET_RIMSG, msg_map) ) {
     LOG(ERROR) << "put:: lsdm_node_->send_msg_to_master failed; msg_map= " << patch_all::map_to_str<>(msg_map);
@@ -97,8 +93,7 @@ int WADSDriver::put(std::string key, unsigned int ver, std::string data_type,
 }
 
 int WADSDriver::get(bool blocking, std::string key, unsigned int ver, std::string data_type,
-                    int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_,
-                    int app_id)
+                    int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
 {
   LOG(INFO) << "get:: started for " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
   // 
@@ -107,13 +102,10 @@ int WADSDriver::get(bool blocking, std::string key, unsigned int ver, std::strin
     msg_map["type"] = BLOCKING_GET;
   else
     msg_map["type"] = GET;
-  if (app_id == -1)
-    msg_map["cl_id"] = boost::lexical_cast<std::string>(_app_id);
-  else
-    msg_map["cl_id"] = boost::lexical_cast<std::string>(base_client_id + app_id);
+  msg_map["cl_id"] = boost::lexical_cast<std::string>(_app_id);
   msg_coder.encode_msg_map(msg_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_);
   if (lsdm_node_->send_msg_to_master(PACKET_RIMSG, msg_map) ) {
-    LOG(ERROR) << "put:: lsdm_node_->send_msg_to_master failed; msg_map= " << patch_all::map_to_str<>(msg_map);
+    LOG(ERROR) << "get:: lsdm_node_->send_msg_to_master failed; msg_map= " << patch_all::map_to_str<>(msg_map);
     return 1;
   }
   // 

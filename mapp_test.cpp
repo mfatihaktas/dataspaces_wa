@@ -63,7 +63,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
     {"type", optional_argument, NULL, 0},
     {"cl_id", optional_argument, NULL, 1},
     {"base_client_id", optional_argument, NULL, 2},
-    {"num_client", optional_argument, NULL, 3},
+    {"num_peer", optional_argument, NULL, 3},
     {"lcontrol_lintf", optional_argument, NULL, 4},
     {"lcontrol_lport", optional_argument, NULL, 5},
     {"join_lcontrol_lip", optional_argument, NULL, 6},
@@ -94,7 +94,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
         opt_map["base_client_id"] = optarg;
         break;
       case 3:
-        opt_map["num_client"] = optarg;
+        opt_map["num_peer"] = optarg;
         break;
       case 4:
         opt_map["lcontrol_lintf"] = optarg;
@@ -135,31 +135,16 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
 #define TEST_VER 0
 #define TEST_SGDIM TEST_SIZE
 
-void mget_test(int app_id, int num_get, std::string base_var_name, boost::shared_ptr<WADSDriver> wads_driver_);
-void mapp_mget_test(int num_app, int num_get, std::string base_var_name, std::map<std::string, std::string> opt_map)
+/*******************************************  get  ************************************************/
+void mget_test(MPI_Comm& mpi_comm, int cl_id, int num_get, std::string base_var_name, std::map<std::string, std::string> opt_map)
 {
-  // for (int i = 0; i < num_app; i++) {
-  //   MWADSDriver wads_driver(i, boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_client"] ),
-  //                           intf_to_ip(opt_map["lcontrol_lintf"] ), boost::lexical_cast<int>(opt_map["lcontrol_lport"] ), opt_map["join_lcontrol_lip"], boost::lexical_cast<int>(opt_map["join_lcontrol_lport"] ) );
-    
-  //   std::string app_base_var_name = base_var_name + "_" + boost::lexical_cast<std::string>(i);
-  //   boost::thread t(mget_test, num_get, app_base_var_name,
-  //                   boost::make_shared<MWADSDriver>(
-  //                     i, boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_client"] ),
-  //                     intf_to_ip(opt_map["lcontrol_lintf"] ), boost::lexical_cast<int>(opt_map["lcontrol_lport"] ), opt_map["join_lcontrol_lip"], boost::lexical_cast<int>(opt_map["join_lcontrol_lport"] ) ) );
-    
-  // }
+  LOG(INFO) << "mget_test:: started; cl_id= " << cl_id;
   
   boost::shared_ptr<MWADSDriver> wads_driver_ = boost::make_shared<MWADSDriver>(
-    boost::lexical_cast<int>(opt_map["cl_id"] ), boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_client"] ),
-    intf_to_ip(opt_map["lcontrol_lintf"] ), boost::lexical_cast<int>(opt_map["lcontrol_lport"] ), opt_map["join_lcontrol_lip"], boost::lexical_cast<int>(opt_map["join_lcontrol_lport"] ) );
+    cl_id, boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_peer"] ), mpi_comm,
+    intf_to_ip(opt_map["lcontrol_lintf"] ), boost::lexical_cast<int>(opt_map["lcontrol_lport"] ) + cl_id,
+    opt_map["join_lcontrol_lip"], boost::lexical_cast<int>(opt_map["join_lcontrol_lport"] ) );
   
-  for (int i = 0; i < num_app; i++)
-    boost::thread t(mget_test, boost::lexical_cast<int>(opt_map["base_client_id"] ) + i, num_get, base_var_name, wads_driver_);
-}
-
-void mget_test(int app_id, int num_get, std::string base_var_name, boost::shared_ptr<WADSDriver> wads_driver_)
-{
   uint64_t* gdim_ = (uint64_t*)malloc(NDIM*sizeof(uint64_t) );
   for (int i = 0; i < NDIM; i++)
     gdim_[i] = TEST_SGDIM;
@@ -174,10 +159,9 @@ void mget_test(int app_id, int num_get, std::string base_var_name, boost::shared
   
   TProfiler<int> get_time_profiler;
   for (int i = 0; i < num_get; i++) {
-    std::string var_name = base_var_name + "_" + boost::lexical_cast<std::string>(app_id) + "_" + boost::lexical_cast<std::string>(i);
-    std::cout << "\n"; // to see better on terminal
+    std::string var_name = base_var_name + "_" + boost::lexical_cast<std::string>(i);
     get_time_profiler.add_event(i, var_name);
-    if (wads_driver_->get(true, var_name, TEST_VER, "int", sizeof(int), NDIM, gdim_, lb_, ub_, data_, app_id) ) {
+    if (wads_driver_->get(true, var_name, TEST_VER, "int", sizeof(int), NDIM, gdim_, lb_, ub_, data_) ) {
       LOG(ERROR) << "mget_test:: wads_driver_->get failed for var_name= " << var_name;
       return;
     }
@@ -189,10 +173,38 @@ void mget_test(int app_id, int num_get, std::string base_var_name, boost::shared
   
   patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
   free(data_);
+  
+  LOG(INFO) << "Enter to end mget_test; cl_id= " << cl_id;
+  std::string temp;
+  getline(std::cin, temp);
 }
 
-void mput_test(int app_id, int num_put, std::string base_var_name, boost::shared_ptr<WADSDriver> wads_driver_)
+void mapp_mget_test(MPI_Comm& mpi_comm, int num_app, int num_get, std::string base_var_name, std::map<std::string, std::string> opt_map)
 {
+  LOG(INFO) << "mapp_mget_test:: started; num_app= " << num_app << ", num_get= " << num_get << ", base_var_name= " << base_var_name;
+
+  for (int i = 1; i <= num_app; i++) {
+    std::string app_base_var_name = base_var_name + "_" + boost::lexical_cast<std::string>(i);
+    boost::thread t(mget_test, mpi_comm, i, num_get, app_base_var_name, opt_map);
+  }
+  
+  LOG(INFO) << "Enter to end mapp_mget_test.";
+  std::string temp;
+  getline(std::cin, temp);
+}
+
+/*******************************************  put  ************************************************/
+void mput_test(MPI_Comm& mpi_comm, int cl_id, int num_put, std::string base_var_name, std::map<std::string, std::string> opt_map)
+{
+  LOG(INFO) << "mput_test:: started; cl_id= " << cl_id;
+  std::cout << "mput_test:: sleeping for " << cl_id << "sec \n";
+  sleep(cl_id);
+  
+  boost::shared_ptr<MWADSDriver> wads_driver_ = boost::make_shared<MWADSDriver>(
+    cl_id, boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_peer"] ), mpi_comm,
+    intf_to_ip(opt_map["lcontrol_lintf"] ), boost::lexical_cast<int>(opt_map["lcontrol_lport"] ) + cl_id,
+    opt_map["join_lcontrol_lip"], boost::lexical_cast<int>(opt_map["join_lcontrol_lport"] ) );
+  
   uint64_t* gdim_ = (uint64_t*)malloc(NDIM*sizeof(uint64_t) );
   for (int i = 0; i < NDIM; i++)
     gdim_[i] = TEST_SGDIM;
@@ -209,36 +221,35 @@ void mput_test(int app_id, int num_put, std::string base_var_name, boost::shared
     data_[i] = i + 1;
   
   for (int i = 0; i < num_put; i++) {
-    std::string var_name = base_var_name + "_" + boost::lexical_cast<std::string>(app_id) + "_" + boost::lexical_cast<std::string>(i);
-    std::cout << "\n"; // to see better on terminal
-    if (wads_driver_->put(var_name, TEST_VER, "int", sizeof(int), NDIM, gdim_, lb_, ub_, data_, app_id) ) {
-      LOG(ERROR) << "mput_test:: wads_driver_->put failed for var_name= " << var_name;
-      return;
-    }
-    
+    std::string var_name = base_var_name + "_" + boost::lexical_cast<std::string>(i);
+    // if (wads_driver_->put(var_name, TEST_VER, "int", sizeof(int), NDIM, gdim_, lb_, ub_, data_) ) {
+    //   LOG(ERROR) << "mput_test:: wads_driver_->put failed for var_name= " << var_name;
+    //   return;
+    // }
     // float inter_put_time = -1 * log(1.0 - std::abs(static_cast<float>(rand() ) / static_cast<float>(RAND_MAX) - 0.001) ) / put_rate
     // sleep(inter_put_time_sec);
   }
   
   patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
   free(data_);
+  
+  LOG(INFO) << "Enter to end mput_test; cl_id= " << cl_id;
+  std::string temp;
+  getline(std::cin, temp);
 }
 
-void mapp_mput_test(int num_app, int num_put, std::string base_var_name, std::map<std::string, std::string> opt_map)
+void mapp_mput_test(MPI_Comm& mpi_comm, int num_app, int num_put, std::string base_var_name, std::map<std::string, std::string> opt_map)
 {
-  // for (int i = 0; i < num_app; i++) {
-  //   MWADSDriver wads_driver(i, boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_client"] ),
-  //                           intf_to_ip(opt_map["lcontrol_lintf"] ), boost::lexical_cast<int>(opt_map["lcontrol_lport"] ), opt_map["join_lcontrol_lip"], boost::lexical_cast<int>(opt_map["join_lcontrol_lport"] ) );
-    
-  //   std::string app_base_var_name = base_var_name + "_" + boost::lexical_cast<std::string>(i);
-  //   boost::thread t(mput_test, num_put, app_base_var_name,
-  //                   boost::make_shared<MWADSDriver>(
-  //                     i, boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_client"] ),
-  //                     intf_to_ip(opt_map["lcontrol_lintf"] ), boost::lexical_cast<int>(opt_map["lcontrol_lport"] ), opt_map["join_lcontrol_lip"], boost::lexical_cast<int>(opt_map["join_lcontrol_lport"] ) ) );
-    
-  // }
-  for (int i = 0; i < num_app; i++)
-    boost::thread t(mput_test, boost::lexical_cast<int>(opt_map["base_client_id"] ) + i, num_put, base_var_name, wads_driver_);
+  LOG(INFO) << "mapp_mput_test:: started; num_app= " << num_app << ", num_put= " << num_put << ", base_var_name= " << base_var_name;
+  
+  for (int i = 1; i <= num_app; i++) {
+    std::string app_base_var_name = base_var_name + "_" + boost::lexical_cast<std::string>(i);
+    boost::thread t(mput_test, mpi_comm, i, num_put, app_base_var_name, opt_map);
+  }
+  
+  LOG(INFO) << "Enter to end mapp_mput_test.";
+  std::string temp;
+  getline(std::cin, temp);
 }
 
 int main(int argc , char **argv)
@@ -248,37 +259,29 @@ int main(int argc , char **argv)
   // 
   std::map<std::string, std::string> opt_map = parse_opts(argc, argv);
   
-  boost::shared_ptr<MWADSDriver> wads_driver_ = boost::make_shared<MWADSDriver>(
-    boost::lexical_cast<int>(opt_map["cl_id"] ), boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_client"] ),
-    intf_to_ip(opt_map["lcontrol_lintf"] ), boost::lexical_cast<int>(opt_map["lcontrol_lport"] ), opt_map["join_lcontrol_lip"], boost::lexical_cast<int>(opt_map["join_lcontrol_lport"] ) );
+  int nprocs, rank;
+  MPI_Init(NULL, NULL);
+  MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Comm mpi_comm = MPI_COMM_WORLD;
   
   TProfiler<std::string> tprofiler;
   if (str_cstr_equals(opt_map["type"], "mput") ) {
-    std::cout << "Enter for mapp_mput_test...\n";
+    std::cout << "Enter for mapp_mput_test... \n";
     getline(std::cin, temp);
     
     // tprofiler.add_event("mapp_mput_test", "mapp_mput_test");
-    mapp_mput_test(boost::lexical_cast<float>(opt_map["num_app"] ), boost::lexical_cast<int>(opt_map["num_putget"] ),
-                   "dummy", opt_map);
+    mapp_mput_test(mpi_comm, boost::lexical_cast<int>(opt_map["num_app"] ), boost::lexical_cast<int>(opt_map["num_putget"] ), "dummy", opt_map);
     // tprofiler.end_event("mapp_mput_test");
-    
-    std::cout << "Enter \n";
-    getline(std::cin, temp);
   }
   else if (str_cstr_equals(opt_map["type"], "mget") ) {
-    MWADSDriver wads_driver(boost::lexical_cast<int>(opt_map["cl_id"] ), boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_client"] ),
-                            intf_to_ip(opt_map["lcontrol_lintf"] ), boost::lexical_cast<int>(opt_map["lcontrol_lport"] ), opt_map["join_lcontrol_lip"], boost::lexical_cast<int>(opt_map["join_lcontrol_lport"] ) );
-    
-    std::cout << "Enter for mapp_mget_test...\n";
+    std::cout << "Enter for mapp_mget_test... \n";
     getline(std::cin, temp);
     
     // tprofiler.add_event("mapp_mget_test", "mapp_mget_test");
-    mapp_mget_test(boost::lexical_cast<float>(opt_map["num_app"] ), boost::lexical_cast<int>(opt_map["num_putget"] ),
-                   "dummy", opt_map);
+    mapp_mget_test(mpi_comm, boost::lexical_cast<int>(opt_map["num_app"] ), boost::lexical_cast<int>(opt_map["num_putget"] ), "dummy", opt_map);
     // tprofiler.end_event("mapp_mget_test");
-    
-    std::cout << "Enter \n";
-    getline(std::cin, temp);
   }
   else
     LOG(ERROR) << "main:: unknown type= " << opt_map["type"];

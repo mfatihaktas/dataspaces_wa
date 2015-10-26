@@ -59,7 +59,7 @@ int DSDriver::close()
     MPI_Finalize();
   }
   
-  catch(std::exception & ex) {
+  catch(std::exception& ex) {
     LOG(ERROR) << "close:: Exception=" << ex.what();
     return 1;
   }

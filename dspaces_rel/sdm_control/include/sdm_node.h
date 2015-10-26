@@ -65,6 +65,7 @@ class SDMNode {
     Commer commer;
     int sdm_master_id;
     
+    patch_all::syncer<int> syncer;
   public:
     SDMNode(std::string type, bool master_slave,
             int id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,

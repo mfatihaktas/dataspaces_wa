@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <getopt.h>
 #include <map>
+#include <fstream>
 
 #include <boost/lexical_cast.hpp>
 #include <glog/logging.h>
@@ -63,13 +64,14 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
     {"type", optional_argument, NULL, 0},
     {"cl_id", optional_argument, NULL, 1},
     {"base_client_id", optional_argument, NULL, 2},
-    {"num_client", optional_argument, NULL, 3},
+    {"num_peer", optional_argument, NULL, 3},
     {"lcontrol_lintf", optional_argument, NULL, 4},
     {"lcontrol_lport", optional_argument, NULL, 5},
     {"join_lcontrol_lip", optional_argument, NULL, 6},
     {"join_lcontrol_lport", optional_argument, NULL, 7},
     {"num_putget", optional_argument, NULL, 8},
     {"inter_time_sec", optional_argument, NULL, 9},
+    {"sleep_time_sec", optional_argument, NULL, 10},
     {0, 0, 0, 0}
   };
   
@@ -94,7 +96,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
         opt_map["base_client_id"] = optarg;
         break;
       case 3:
-        opt_map["num_client"] = optarg;
+        opt_map["num_peer"] = optarg;
         break;
       case 4:
         opt_map["lcontrol_lintf"] = optarg;
@@ -114,6 +116,9 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
       case 9:
         opt_map["inter_time_sec"] = optarg;
         break;
+      case 10:
+        opt_map["sleep_time_sec"] = optarg;
+        break;
       default:
         break;
     }
@@ -129,12 +134,14 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
   return opt_map;
 }
 // 10*1024*
-#define TEST_SIZE 200*1024*1024
+#define TEST_SIZE 100*1024*1024
 #define TEST_DATASIZE pow(TEST_SIZE, NDIM)
 #define TEST_VER 0
 #define TEST_SGDIM TEST_SIZE
 
-void mget_test(int num_get, float inter_get_time_sec, std::string base_var_name, WADSDriver& wads_driver)
+void mget_test(int sleep_time_sec, int num_get, float inter_get_time_sec,
+               std::string base_var_name, WADSDriver& wads_driver, TProfiler<int>& get_tprofiler,
+               std::ofstream& log_file)
 {
   uint64_t* gdim_ = (uint64_t*)malloc(NDIM*sizeof(uint64_t) );
   for (int i = 0; i < NDIM; i++)
@@ -148,20 +155,30 @@ void mget_test(int num_get, float inter_get_time_sec, std::string base_var_name,
     ub_[i] = TEST_SIZE - 1;
   }
   
-  TProfiler<int> get_time_profiler;
+  sleep(sleep_time_sec);
+  
+  std::ofstream mget_log_file("mget_log", std::ios::out | std::ios::app);
+  if (!mget_log_file.is_open() ) {
+    LOG(ERROR) << "main:: mget_log_file is not open.";
+    return;
+  }
+  // TProfiler<int> get_tprofiler;
   for (int i = 0; i < num_get; i++) {
     std::string var_name = base_var_name + "_" + boost::lexical_cast<std::string>(i);
-    std::cout << "\n"; // to see better on terminal
-    get_time_profiler.add_event(i, var_name);
+    get_tprofiler.add_event(i, std::string("get_") + var_name);
     if (wads_driver.get(true, var_name, TEST_VER, "int", sizeof(int), NDIM, gdim_, lb_, ub_, data_) ) {
       LOG(ERROR) << "mget_test:: wads_driver.get failed for var_name= " << var_name;
+      log_file << "mget_test:: wads_driver.get failed for var_name= " << var_name;
       return;
     }
-    get_time_profiler.end_event(i);
+    get_tprofiler.end_event(i);
     
     sleep(inter_get_time_sec);
   }
-  LOG(INFO) << "mget_test:: get_time_profiler= \n" << get_time_profiler.to_str();
+  // LOG(INFO) << "mget_test:: get_tprofiler= \n" << get_tprofiler.to_str();
+  mget_log_file << "get_tprofiler= \n" << get_tprofiler.to_brief_str()";
+  mget_log_file.close();
+  
   // int data_length = patch::get_data_length(NDIM, gdim, lb, ub);
   // patch_ds::debug_print(var_name, TEST_VER, sizeof(int), NDIM, gdim_, lb_, ub_, data_, data_length);
   
@@ -169,7 +186,9 @@ void mget_test(int num_get, float inter_get_time_sec, std::string base_var_name,
   free(data_);
 }
 
-void mput_test(int num_put, float inter_put_time_sec, std::string base_var_name, WADSDriver& wads_driver)
+void mput_test(int sleep_time_sec, int num_put, float inter_put_time_sec, 
+               std::string base_var_name, WADSDriver& wads_driver, TProfiler<int>& put_tprofiler,
+               std::ofstream& log_file)
 {
   uint64_t* gdim_ = (uint64_t*)malloc(NDIM*sizeof(uint64_t) );
   for (int i = 0; i < NDIM; i++)
@@ -186,13 +205,17 @@ void mput_test(int num_put, float inter_put_time_sec, std::string base_var_name,
   for (int i = 0; i < TEST_DATASIZE; i++)
     data_[i] = i + 1;
   
+  sleep(sleep_time_sec);
   for (int i = 0; i < num_put; i++) {
     std::string var_name = base_var_name + "_" + boost::lexical_cast<std::string>(i);
-    std::cout << "\n"; // to see better on terminal
+    put_tprofiler.add_event(i, std::string("put_") + var_name);
     if (wads_driver.put(var_name, TEST_VER, "int", sizeof(int), NDIM, gdim_, lb_, ub_, data_) ) {
       LOG(ERROR) << "mput_test:: wads_driver.put failed for var_name= " << var_name;
+      log_file << "mput_test:: wads_driver.put failed for var_name= " << var_name;
       return;
     }
+    put_tprofiler.end_event(i);
+    
     sleep(inter_put_time_sec);
   }
   // patch_ds::debug_print(var_name, TEST_VER, sizeof(int), NDIM, gdim_, lb_, ub_, data_, patch::get_data_length(NDIM, gdim_, lb_, ub_) );
@@ -208,42 +231,45 @@ int main(int argc , char **argv)
   // 
   std::map<std::string, std::string> opt_map = parse_opts(argc, argv);
   
-  TProfiler<std::string> tprofiler;
+  std::ofstream log_file("log", std::ios::out | std::ios::app);
+  if (!log_file.is_open() ) {
+    LOG(ERROR) << "main:: log_file is not open.";
+    return 1;
+  }
+  
+  MWADSDriver wads_driver(
+    boost::lexical_cast<int>(opt_map["cl_id"] ), boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_peer"] ),
+    intf_to_ip(opt_map["lcontrol_lintf"] ), boost::lexical_cast<int>(opt_map["lcontrol_lport"] ), opt_map["join_lcontrol_lip"], boost::lexical_cast<int>(opt_map["join_lcontrol_lport"] ) );
+  
+  TProfiler<int> putget_tprofiler;
   if (str_cstr_equals(opt_map["type"], "mput") ) {
-    MWADSDriver wads_driver(boost::lexical_cast<int>(opt_map["cl_id"] ), boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_client"] ),
-                            intf_to_ip(opt_map["lcontrol_lintf"] ), boost::lexical_cast<int>(opt_map["lcontrol_lport"] ), opt_map["join_lcontrol_lip"], boost::lexical_cast<int>(opt_map["join_lcontrol_lport"] ) );
-    
     std::cout << "Enter for mput_test...\n";
     getline(std::cin, temp);
     
-    tprofiler.add_event("mput_test", "mput_test");
-    mput_test(boost::lexical_cast<float>(opt_map["num_putget"] ), boost::lexical_cast<float>(opt_map["inter_time_sec"] ),
-                   "dummy", wads_driver);
-    tprofiler.end_event("mput_test");
-    // mput_test(num_putget, "dummy2", wads_driver);
+    mput_test(boost::lexical_cast<float>(opt_map["sleep_time_sec"] ),
+              boost::lexical_cast<float>(opt_map["num_putget"] ), boost::lexical_cast<float>(opt_map["inter_time_sec"] ),
+              std::string("dummy") + "_" + opt_map["cl_id"], wads_driver, putget_tprofiler, log_file);
     
     std::cout << "Enter\n";
     getline(std::cin, temp);
   }
   else if (str_cstr_equals(opt_map["type"], "mget") ) {
-    MWADSDriver wads_driver(boost::lexical_cast<int>(opt_map["cl_id"] ), boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_client"] ),
-                            intf_to_ip(opt_map["lcontrol_lintf"] ), boost::lexical_cast<int>(opt_map["lcontrol_lport"] ), opt_map["join_lcontrol_lip"], boost::lexical_cast<int>(opt_map["join_lcontrol_lport"] ) );
-    
     std::cout << "Enter for mget_test...\n";
     getline(std::cin, temp);
     
-    tprofiler.add_event("mget_test", "mget_test");
-    mget_test(boost::lexical_cast<float>(opt_map["num_putget"] ), boost::lexical_cast<float>(opt_map["inter_time_sec"] ),
-                   "dummy", wads_driver);
-    tprofiler.end_event("mget_test");
+    mget_test(boost::lexical_cast<float>(opt_map["sleep_time_sec"] ),
+              boost::lexical_cast<float>(opt_map["num_putget"] ), boost::lexical_cast<float>(opt_map["inter_time_sec"] ),
+              std::string("dummy") + "_" + opt_map["cl_id"], wads_driver, putget_tprofiler, log_file);
     
     std::cout << "Enter\n";
     getline(std::cin, temp);
   }
   else
     LOG(ERROR) << "main:: unknown type= " << opt_map["type"];
-  
-  std::cout << "main:: tprofiler= \n" << tprofiler.to_str();
+  // 
+  std::cout << "main:: putget_tprofiler= \n" << putget_tprofiler.to_str();
+  log_file << putget_tprofiler.to_str() << "\n";
+  log_file.close();
   // 
   return 0;
 }

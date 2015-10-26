@@ -129,6 +129,18 @@ class TProfiler { // Time Profiler
       return ss.str();
     }
     
+    std::string to_brief_str()
+    {
+      std::stringstream ss;
+      
+      float total_dur_sec = 0;
+      for (typename std::map<T, Event>::iterator it = event_map.begin(); it != event_map.end(); it++)
+        total_dur_sec += (it->second).get_dur_sec();
+      ss << "\t" << "total_dur_sec= " << total_dur_sec << "\n";
+      
+      return ss.str();
+    }
+    
     void add_event(T event_key, std::string event_name)
     {
       Event e(event_name, created_time);

@@ -147,6 +147,12 @@ SDMNode::SDMNode(std::string type, bool master_slave,
       close();
       exit(1);
     }
+    
+    LOG(INFO) << "SDMNode:: waiting for join...; id= " << id;
+    syncer.add_sync_point(0, 1);
+    syncer.wait(0);
+    LOG(INFO) << "SDMNode:: done waiting for join; id= " << id;
+    syncer.del_sync_point(0);
   }
 }
 
@@ -316,6 +322,8 @@ void SDMNode::handle_join_reply(std::map<std::string, std::string> msg_map)
     else {
       commer.send_to_peer(from_id, *gen_packet(PACKET_JOIN_ACK) );
       LOG(INFO) << "handle_join_reply:: joined :) to peer_id= " << from_id;
+      syncer.notify(0);
+      
       LOG(INFO) << "handle_join_reply:: commer= \n" << commer.to_str();
       commer.send_to_peer(from_id, *gen_packet(PACKET_PING) );
       // Join others

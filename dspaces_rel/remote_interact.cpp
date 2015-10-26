@@ -247,13 +247,13 @@ void RIManager::handle_get(bool blocking, int cl_id, std::map<std::string, std::
   std::string data_type;
   if (msg_coder.decode_msg_map(get_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_) ) {
     LOG(ERROR) << "handle_get:: msg_coder.decode_msg_map failed! get_map= \n" << patch_all::map_to_str<>(get_map);
-    get_map["ds_id"] = -1;
+    get_map["ds_id"] = "-1";
   }
   else {
     rfp_manager_->wait_for_get(key, ver, lb_, ub_);
     if (sdm_slave_->get(cl_id, blocking, key, ver, lb_, ub_) ) {
       LOG(INFO) << "handle_get:: does not exist " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
-      get_map["ds_id"] = -1;
+      get_map["ds_id"] = "-1";
     }
     else {
       get_map["ds_id"] = boost::lexical_cast<std::string>(sdm_slave_->get_id() );
@@ -281,12 +281,12 @@ void RIManager::handle_put(int p_id, std::map<std::string, std::string> put_map)
   uint64_t *gdim_, *lb_, *ub_;
   if (msg_coder.decode_msg_map(put_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_) ) {
     LOG(ERROR) << "handle_put:: msg_coder.decode_msg_map failed! get_map= \n" << patch_all::map_to_str<>(put_map);
-    put_map["ds_id"] = -1;
+    put_map["ds_id"] = "-1";
   }
   else {
     if (sdm_slave_->put(true, key, ver, lb_, ub_, p_id) ) {
       LOG(ERROR) << "handle_put:: sdm_slave_->put failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
-      put_map["ds_id"] = -1;
+      put_map["ds_id"] = "-1";
     }
     else {
       put_map["ds_id"] = boost::lexical_cast<std::string>(sdm_slave_->get_id() );

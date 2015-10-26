@@ -21,17 +21,15 @@ class WADSDriver { // Wide Area Dataspaces
                DATA_ID_T data_id_t,
                std::string lcontrol_lip, int lcontrol_lport, std::string joinhost_lcontrol_lip, int joinhost_lcontrol_lport);
     WADSDriver(int app_id, int base_client_id, int num_local_peers,
-               DATA_ID_T data_id_t, MPI_Comm mpi_comm,
+               DATA_ID_T data_id_t, MPI_Comm& mpi_comm,
                std::string lcontrol_lip, int lcontrol_lport, std::string joinhost_lcontrol_lip, int joinhost_lcontrol_lport);
     ~WADSDriver();
     std::string to_str();
     
     int put(std::string key, unsigned int ver, std::string data_type, 
-            int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_,
-            int app_id = -1);
+            int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
     int get(bool blocking, std::string key, unsigned int ver, std::string data_type,
-            int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_,
-            int app_id = -1);
+            int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
     void handle_ri_msg(std::map<std::string, std::string> msg_map);
 };
 

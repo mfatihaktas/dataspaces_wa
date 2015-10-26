@@ -152,7 +152,7 @@ void TCPServer::init_recv(boost::shared_ptr<boost::asio::ip::tcp::socket> socket
       }
       catch(boost::system::system_error& err) {
         // LOG(ERROR) << "init_recv:: err= " << err.what();
-        LOG(INFO) << "init_recv:: server= " << server_name << " client closed the conn.";
+        LOG(INFO) << "init_recv:: server= " << server_name << "; client closed the conn.err= " << err.what();
         return;
       }
       

@@ -38,7 +38,7 @@ if [ $1  = 'r' ]; then
     fi
     
     $MPIRUN -npernode 1 ${DS_NODE_LIST[$2]} \
-      /home/sc14demo/common-apps/dataspaces-1.5.0/install/bin/dataspaces_server \
+      $DSPACES_BIN_DIR/dataspaces_server \
       --server ${NUM_DS_NODE_LIST[$2]} --cnodes $((${NUM_DSPACESWA_CLIENT_LIST[$2]}+1)) &
     # if [ $TRANS_PROTOCOL = "g" ]; then
     #   $MPIRUN -npernode 1 ${RI_MANAGER_NODE_LIST[$2]} \
@@ -48,10 +48,10 @@ if [ $1  = 'r' ]; then
     # fi
     # sleep 1
     
-    # $MPIRUN -npernode 1 -x LD_LIBRARY_PATH -x GLOG_logtostderr ${RI_MANAGER_NODE_LIST[$2]} \
-    #   $DSPACESWA_BIN_DIR/exp --type="ri" --cl_id=111 --num_client=${NUM_DSPACESWA_CLIENT_LIST[$2]} --base_client_id=$(($2*10)) \
+    #   $DSPACESWA_BIN_DIR/exp --type="ri" --cl_id=111 --num_peer=1 --base_client_id=$(($2*10)) \
     #                         --lcontrol_lintf=${RI_MANAGER_LCONTROL_LINTF_LIST[$2]} --lcontrol_lport=${RI_MANAGER_LCONTROL_LPORT_LIST[$2]} \
-    #                         --ds_id=$2 --control_lintf=${RI_MANAGER_CONTROL_LINTF_LIST[$2]} --control_lport=${RI_MANAGER_CONTROL_LPORT_LIST[$2]} --join_control_lip=${RI_MANAGER_JOIN_CONTROL_LIP_LIST[$2]} --join_control_lport=${RI_MANAGER_JOIN_CONTROL_LPORT_LIST[$2]} \
+    #                         --ds_id=$2 --control_lintf=${RI_MANAGER_CONTROL_LINTF_LIST[$2]} --control_lport=${RI_MANAGER_CONTROL_LPORT_LIST[$2]} \
+    #                         --join_control_lip=${RI_MANAGER_JOIN_CONTROL_LIP_LIST[$2]} --join_control_lport=${RI_MANAGER_JOIN_CONTROL_LPORT_LIST[$2]} \
     #                         --trans_protocol=$TRANS_PROTOCOL --ib_lintf=${RI_MANAGER_IB_LINTF_LIST[$2]} \
     #                         --tcp_lintf=${RI_MANAGER_TCP_LINTF_LIST[$2]} --tcp_lport=${RI_MANAGER_TCP_LPORT_LIST[$2]} \
     #                         --gftp_lintf=${RI_MANAGER_GFTP_LINTF_LIST[$2]} --gftp_lport=${RI_MANAGER_GFTP_LPORT_LIST[$2]} --tmpfs_dir=${RI_MANAGER_TMPFS_DIR_LIST[$2]} &

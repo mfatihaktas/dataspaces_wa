@@ -23,7 +23,7 @@
 
 void rc_die(const char *reason);
 
-const size_t BUFFER_LENGTH = 10 * 1024 * 1024;
+const size_t BUFFER_LENGTH = 10*1024*1024;
 const size_t MAX_QP__CQ_LENGTH = 100;
 
 struct context {

@@ -100,7 +100,7 @@ elif [ $1  = 'tr' ]; then #scp only source code
   if [ $2 = 'm' ]; then
     rsync -avz --exclude-from .gitignore $TMAQUIS_DIR maktas7@maquis1.cc.gatech.edu:$MAQUIS_DIR
   elif [ $2 = 'k' ]; then
-    rsync -avz --exclude-from .gitignore $TMAQUIS_DIR maktas7@kid41.cc.gatech.edu:$MAQUIS_DIR
+    rsync -avz --exclude-from .gitignore $TMAQUIS_DIR maktas7@kid43.cc.gatech.edu:$MAQUIS_DIR
   elif [ $2 = 'u' ]; then
     # ssh -p $PORT_KNOCKING_NUM maktas@$ULAM_HEAD_NODE_IP &
     # PIDSAVE=$!
