@@ -152,8 +152,7 @@ class IBServer {
               LOG(INFO) << "on_completion:: EOF received.";
               ctx->msg->id = MSG_DONE;
               send_message(id);
-              
-              connector_->rc_disconnect(id);
+              // connector_->rc_disconnect(id);
               
               return;
             }

@@ -341,11 +341,16 @@ int SDMMaster::sdm_mquery(std::string key, unsigned int ver, COOR_T* lcoor_, COO
 
 int SDMMaster::reg_app(int app_id)
 {
-  int ds_id = get_id();
-  if (wa_space_->reg_app(app_id, ds_id) ) {
-    // LOG(ERROR) << "handle_sdm_reg_app:: wa_space_->reg_app failed for <app_id= " << app_id << ", ds_id= " << ds_id << ">.";
+  if (std::find(app_id_v.begin(), app_id_v.end(), app_id) != app_id_v.end() ) {
+    LOG(ERROR) << "reg_app:: already reged app_id= " << app_id;
     return 1;
   }
+  
+  if (wa_space_->reg_app(app_id, get_id() ) ) {
+    LOG(ERROR) << "reg_app:: wa_space_->reg_app failed for <app_id= " << app_id << ", ds_id= " << get_id() << ">";
+    return 1;
+  }
+  app_id_v.push_back(app_id);
   
   return 0;
 }
@@ -375,6 +380,10 @@ int SDMMaster::put(bool notify, std::string key, unsigned int ver, COOR_T* lcoor
 int SDMMaster::get(int c_id, bool blocking, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_)
 {
   LOG(INFO) << "get:: c_id= " << c_id << ", " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_);
+  if (std::find(app_id_v.begin(), app_id_v.end(), c_id) == app_id_v.end() ) {
+    LOG(ERROR) << "get:: non-reged c_id= " << c_id;
+    return 1;
+  }
   
   std::vector<int> p_id_v;
   if (qtable_->query(key, ver, lcoor_, ucoor_, p_id_v) ) {

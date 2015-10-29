@@ -134,7 +134,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
   return opt_map;
 }
 // 10*1024*
-#define TEST_SIZE 100*1024*1024
+#define TEST_SIZE 12.5*1024*1024
 #define TEST_DATASIZE pow(TEST_SIZE, NDIM)
 #define TEST_VER 0
 #define TEST_SGDIM TEST_SIZE
@@ -176,7 +176,7 @@ void mget_test(int sleep_time_sec, int num_get, float inter_get_time_sec,
     sleep(inter_get_time_sec);
   }
   // LOG(INFO) << "mget_test:: get_tprofiler= \n" << get_tprofiler.to_str();
-  mget_log_file << "get_tprofiler= \n" << get_tprofiler.to_brief_str()";
+  mget_log_file << "base_var_name= " << base_var_name << ", " << get_tprofiler.to_brief_str();
   mget_log_file.close();
   
   // int data_length = patch::get_data_length(NDIM, gdim, lb, ub);
@@ -206,6 +206,12 @@ void mput_test(int sleep_time_sec, int num_put, float inter_put_time_sec,
     data_[i] = i + 1;
   
   sleep(sleep_time_sec);
+  
+  std::ofstream mput_log_file("mput_log", std::ios::out | std::ios::app);
+  if (!mput_log_file.is_open() ) {
+    LOG(ERROR) << "main:: mput_log_file is not open.";
+    return;
+  }
   for (int i = 0; i < num_put; i++) {
     std::string var_name = base_var_name + "_" + boost::lexical_cast<std::string>(i);
     put_tprofiler.add_event(i, std::string("put_") + var_name);
@@ -218,6 +224,9 @@ void mput_test(int sleep_time_sec, int num_put, float inter_put_time_sec,
     
     sleep(inter_put_time_sec);
   }
+  mput_log_file << "base_var_name= " << base_var_name << ", " << put_tprofiler.to_brief_str();
+  mput_log_file.close();
+  
   // patch_ds::debug_print(var_name, TEST_VER, sizeof(int), NDIM, gdim_, lb_, ub_, data_, patch::get_data_length(NDIM, gdim_, lb_, ub_) );
   
   patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);

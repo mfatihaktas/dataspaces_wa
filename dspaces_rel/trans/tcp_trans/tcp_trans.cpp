@@ -33,8 +33,10 @@ int TCPTrans::close()
   }
   
   tcp_server_->close();
-  for (std::map<lip_lport_pair, boost::shared_ptr<TCPClient> >::iterator it = lip_lport__tcp_client_map.begin(); it != lip_lport__tcp_client_map.end(); it++)
-    (it->second)->close();
+  // for (std::map<lip_lport_pair, boost::shared_ptr<TCPClient> >::iterator it = lip_lport__tcp_client_map.begin(); it != lip_lport__tcp_client_map.end(); it++)
+  //   (it->second)->close();
+  for (std::vector<boost::shared_ptr<TCPClient> >::iterator it = active_tcp_client_v.begin(); it != active_tcp_client_v.begin(); it++)
+    (*it)->close();
   
   LOG(INFO) << "close:: done.";
   return 0;
@@ -47,9 +49,13 @@ int TCPTrans::init_server(std::string data_id, data_recv_cb_func data_recv_cb) {
 
 int TCPTrans::send(std::string s_lip, int s_lport, std::string data_id, int data_size, void* data_)
 {
-  lip_lport_pair ll_pair = std::make_pair(s_lip, s_lport);
-  if (lip_lport__tcp_client_map.count(ll_pair) == 0)
-    lip_lport__tcp_client_map[ll_pair] = boost::make_shared<TCPClient>(s_lip, s_lport);
+  // TODO: This obviously fails when multiple coupling data streams over the same tcp_client
+  // lip_lport_pair ll_pair = std::make_pair(s_lip, s_lport);
+  // if (lip_lport__tcp_client_map.count(ll_pair) == 0)
+  //   lip_lport__tcp_client_map[ll_pair] = boost::make_shared<TCPClient>(s_lip, s_lport);
   
-  return lip_lport__tcp_client_map[ll_pair]->send(data_id, data_size, data_);
+  // return lip_lport__tcp_client_map[ll_pair]->send(data_id, data_size, data_);
+  
+  active_tcp_client_v.push_back(boost::make_shared<TCPClient>(s_lip, s_lport) );
+  return active_tcp_client_v.back()->send(data_id, data_size, data_);
 }

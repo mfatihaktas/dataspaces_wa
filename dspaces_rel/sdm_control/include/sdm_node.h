@@ -76,6 +76,7 @@ class SDMNode {
     
     int get_id();
     int get_num_peers();
+    int join();
     
     boost::shared_ptr<Packet> gen_join_req();
     boost::shared_ptr<Packet> gen_join_reply(int peer_id, bool pos);

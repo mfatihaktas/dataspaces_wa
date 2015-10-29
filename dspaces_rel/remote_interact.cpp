@@ -77,8 +77,6 @@ int RFPManager::wa_put(std::string lip, std::string lport, std::string tmpfs_dir
     LOG(ERROR) << "wa_put:: -ENOMEM !!!";
   else if (get_return == -EAGAIN)
     LOG(ERROR) << "wa_put:: -EAGAIN !!!";
-    
-    
   if (get_return) {
     LOG(ERROR) << "wa_put:: ds_driver_->get failed; get_return= " << get_return << ", " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
     return 1;
@@ -257,6 +255,8 @@ void RIManager::handle_get(bool blocking, int cl_id, std::map<std::string, std::
     }
     else {
       get_map["ds_id"] = boost::lexical_cast<std::string>(sdm_slave_->get_id() );
+      // Note: If an app local-peer to SDMMaster initiated this get and data is put by another local-peer, 
+      // add_access should not be called.
       if (sdm_slave_->add_access(cl_id, key, ver, lb_, ub_) )
         LOG(ERROR) << "handle_get:: sdm_slave_->add_access failed; c_id= " << cl_id << ", " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
     }
@@ -404,10 +404,20 @@ void RIManager::remote_put(std::map<std::string, std::string> msg_map)
   boost::shared_ptr<trans_info> trans_info_ = ds_id__trans_info_map[boost::lexical_cast<int>(msg_map["to_id"] ) ];
   
   if (rfp_manager_->wa_put(trans_info_->lip, trans_info_->lport, trans_info_->tmpfs_dir,
-                           key, ver, data_info_->data_type, data_info_->size, ndim, data_info_->gdim_, lb_, ub_) ) {
+                          key, ver, data_info_->data_type, data_info_->size, ndim, data_info_->gdim_, lb_, ub_) ) {
     LOG(ERROR) << "remote_put:: rfp_manager_->wa_put failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
     return;
   }
+  
+  // Note: To resolve unexpected data_size and data_id received by the tcp_server.
+  // unsigned int data_id_hash = patch_sdm::hash_str(patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_) );
+  // boost::shared_ptr<trans_info> trans_info_ = ds_id__trans_info_map[boost::lexical_cast<int>(msg_map["to_id"] ) ];
+  
+  // if (rfp_manager_->wa_put(trans_info_->lip, trans_info_->lport, trans_info_->tmpfs_dir,
+  //                         key, ver, data_id_hash__data_info_map[data_id_hash]->data_type, data_id_hash__data_info_map[data_id_hash]->size, ndim, data_id_hash__data_info_map[data_id_hash]->gdim_, lb_, ub_) ) {
+  //   LOG(ERROR) << "remote_put:: rfp_manager_->wa_put failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
+  //   return;
+  // }
   
   patch_all::free_all<uint64_t>(2, lb_, ub_);
 }
@@ -417,10 +427,15 @@ void RIManager::handle_tinfo_query_reply(std::map<std::string, std::string> msg_
   LOG(INFO) << "handle_tinfo_query_reply:: msg_map= \n" << patch_all::map_to_str<>(msg_map);
   
   int from_id = boost::lexical_cast<int>(msg_map["id"] );
-  if (ds_id__trans_info_map.contains(from_id) )
-    LOG(WARNING) << "handle_tinfo_query_reply:: updating ds_id__trans_info_map for ds_id= " << from_id;
   
-  ds_id__trans_info_map[from_id] = boost::make_shared<trans_info>(msg_map["lip"], msg_map["lport"], msg_map["tmpfs_dir"] );
+  if (ds_id__trans_info_map.contains(from_id) ) {
+    if (str_str_equals(data_trans_protocol, INFINIBAND) ) {
+      ds_id__trans_info_map[from_id] = boost::make_shared<trans_info>(msg_map["lip"], msg_map["lport"], msg_map["tmpfs_dir"] );
+      LOG(WARNING) << "handle_tinfo_query_reply:: updating ds_id__trans_info_map for ds_id= " << from_id;
+    }
+  }
+  else
+    ds_id__trans_info_map[from_id] = boost::make_shared<trans_info>(msg_map["lip"], msg_map["lport"], msg_map["tmpfs_dir"] );
   
   ri_syncer.notify(patch_sdm::hash_str(
     RI_TINFO_QUERY + "_" + patch_sdm::get_data_id(data_id_t, msg_map) ) );

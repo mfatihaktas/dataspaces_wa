@@ -87,7 +87,12 @@ int TCPClient::send_control_data(std::string control_data, int max_size)
   if (control_data.size() < max_size)
     control_data_[control_data.size() ] = '\0';
   
-  boost::asio::write(*socket_, boost::asio::buffer(control_data_, MAX_DATA_ID_LENGTH) );
+  int num_B = boost::asio::write(*socket_, boost::asio::buffer(control_data_, max_size) );
+  if (num_B != max_size) {
+    LOG(ERROR) << "send_control_data:: boost::asio::write wrote num_B= " << num_B << " != max_size= " << max_size;
+    free(control_data_);
+    return 1;
+  }
   free(control_data_);
   
   return 0;
@@ -123,6 +128,7 @@ int TCPClient::send(std::string data_id, int data_size, void* data_)
     // data_ += data_size_sent;
     data_ = static_cast<char*>(data_) + data_size_sent;
   }
+  free(data_);
   
   return 0;
 }

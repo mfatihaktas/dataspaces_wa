@@ -5,11 +5,12 @@
 #include "tcp_client.h"
 
 class TCPTrans {
-  typedef std::pair<std::string, int> lip_lport_pair;
+  // typedef std::pair<std::string, int> lip_lport_pair;
   
   private:
     boost::shared_ptr<TCPServer> tcp_server_;
-    std::map<lip_lport_pair, boost::shared_ptr<TCPClient> > lip_lport__tcp_client_map;
+    // std::map<lip_lport_pair, boost::shared_ptr<TCPClient> > lip_lport__tcp_client_map;
+    std::vector<boost::shared_ptr<TCPClient> > active_tcp_client_v;
     
     bool closed;
   public:

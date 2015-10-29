@@ -133,11 +133,13 @@ void TCPServer::init_recv(boost::shared_ptr<boost::asio::ip::tcp::socket> socket
     char* data_id_ = (char*)malloc(MAX_DATA_ID_LENGTH);
     boost::asio::read(*socket_, boost::asio::buffer(data_id_, MAX_DATA_ID_LENGTH) );
     std::string data_id = boost::lexical_cast<std::string>(data_id_);
-    free(data_id_);
     
     char* data_size_ = (char*)malloc(MAX_DATA_SIZE_LENGTH);
     boost::asio::read(*socket_, boost::asio::buffer(data_size_, MAX_DATA_ID_LENGTH) );
+    LOG(INFO) << "init_recv:: server= " << server_name << ", data_id_= " << data_id_ << ", data_size_= " << data_size_;
     int data_size = boost::lexical_cast<int>(data_size_);
+    
+    free(data_id_);
     free(data_size_);
     
     int total_to_recv_size = data_size;
@@ -145,9 +147,12 @@ void TCPServer::init_recv(boost::shared_ptr<boost::asio::ip::tcp::socket> socket
       int recved_size;
       void* chunk_;
       try {
-        int to_recv_size = (total_to_recv_size < CHUNK_LENGTH) ? total_to_recv_size : CHUNK_LENGTH;
+        // int to_recv_size = (total_to_recv_size < CHUNK_LENGTH) ? total_to_recv_size : CHUNK_LENGTH;
+        int to_recv_size = total_to_recv_size;
         chunk_ = malloc(to_recv_size);
-        recved_size = (socket_->read_some(boost::asio::buffer(chunk_, to_recv_size) ) );
+        // recved_size = (socket_->read_some(boost::asio::buffer(chunk_, to_recv_size) ) );
+        boost::asio::read(*socket_, boost::asio::buffer(chunk_, to_recv_size) );
+        recved_size = to_recv_size;
         total_to_recv_size -= recved_size;
       }
       catch(boost::system::system_error& err) {

@@ -757,7 +757,7 @@ void test_bmmalgo()
 
 void handle_mpbuffer_data_act(PREFETCH_DATA_ACT_T data_act_t, int ds_id, key_ver_pair kv)
 {
-  // LOG(INFO) << "handle_mpbuffer_data_act:: data_act_t= " << data_act_t << ", ds_id= " << ds_id << KV_TO_STR(key, ver);
+  LOG(INFO) << "handle_mpbuffer_data_act:: data_act_t= " << data_act_t << ", ds_id= " << ds_id << KV_TO_STR(kv.first, kv.second);
 }
 
 void add_access(MPBuffer* mpbuffer, key_ver_pair kv) { mpbuffer->add_access(kv); }
@@ -765,14 +765,14 @@ void add_access(MPBuffer* mpbuffer, key_ver_pair kv) { mpbuffer->add_access(kv);
 void m_prefetch_test()
 {
   int buffer_size = 10;
-  MPBuffer pbuffer('a', buffer_size, MALGO_W_PPM, //Mixed-most confident, // MALGO_W_LZ
+  MPBuffer pbuffer(0, buffer_size, MALGO_W_PPM, //Mixed-most confident, // MALGO_W_LZ
                    true, boost::bind(handle_mpbuffer_data_act, _1, _2, _3) );
   
   int p_id_[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   int num_p = sizeof(p_id_)/sizeof(*p_id_);
   // int num_put = 20;
   
-  int num_acc = 100; // 30 * (rand() % 10) / 10;
+  int num_acc = 50; // 30 * (rand() % 10) / 10;
   std::vector<int> p_id_v;
   std::vector<key_ver_pair> key_ver_v;
   std::map<int, int> p_id__last_step_map;
@@ -783,7 +783,7 @@ void m_prefetch_test()
     if (p_id__last_step_map.count(p_id) == 0)
       p_id__last_step_map[p_id] = -1;
     
-    key_ver_v.push_back( std::make_pair("d_" + boost::lexical_cast<std::string>(p_id) + "_" + boost::lexical_cast<std::string>(p_id__last_step_map[p_id] + 1), 0) );
+    key_ver_v.push_back(std::make_pair("d_" + boost::lexical_cast<std::string>(p_id) + "_" + boost::lexical_cast<std::string>(p_id__last_step_map[p_id] + 1), 0) );
     p_id__last_step_map[p_id] += 1;
   }
   

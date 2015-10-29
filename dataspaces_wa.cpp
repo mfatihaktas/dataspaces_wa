@@ -1,5 +1,7 @@
 #include "dataspaces_wa.h"
 
+const int SLEEP_FOR_RI = 2000000;
+
 /***************************************  WADSDriver  ****************************************/
 // Note: Reason why base_client_id is added in BCClient's arg rather than eliminating it by taking 
 // app_id arg as base_client_id + app_id is because DS throws segmentation fault in a weird way while
@@ -17,7 +19,7 @@ WADSDriver::WADSDriver(int app_id, int base_client_id, int num_local_peers,
   //   boost::bind(&WADSDriver::handle_ri_msg, this, _1) ) )
 {
   // Note: To give time to ri_manager to start the lsdm_server
-  usleep(100000);
+  usleep(SLEEP_FOR_RI);
   lsdm_node_ = boost::make_shared<SDMNode>(
     "s", true,
     _app_id, lcontrol_lip, lcontrol_lport, joinhost_lcontrol_lip, joinhost_lcontrol_lport,
@@ -38,7 +40,7 @@ WADSDriver::WADSDriver(int app_id, int base_client_id, int num_local_peers,
   //   boost::bind(&WADSDriver::handle_ri_msg, this, _1) ) )
 {
   // Note: To give time to ri_manager to start the lsdm_server
-  usleep(100000);
+  usleep(SLEEP_FOR_RI);
   lsdm_node_ = boost::make_shared<SDMNode>(
     "s", true,
     _app_id, lcontrol_lip, lcontrol_lport, joinhost_lcontrol_lip, joinhost_lcontrol_lport,

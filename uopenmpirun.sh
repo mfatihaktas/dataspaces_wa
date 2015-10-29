@@ -2,9 +2,10 @@
 echo $1 $2 $3
 
 NUM_DS_NODE_LIST=( 2 2 )
-DS_NODE_LIST=( "-host archer1 -host archer2" "-host archer1 -host archer2" )
+DS_NODE_LIST=( "-host ulam -host archer1" "-host archer1 -host archer2" )
+# DS_NODE_LIST=( "-host ulam -host archer1 -host archer2" "-host ulam -host archer1 -host archer2" )
 RI_MANAGER_NODE_LIST=( "-host archer1" "-host archer2" )
-NUM_DSPACESWA_CLIENT_LIST=( 1 1 )
+NUM_DSPACESWA_CLIENT_LIST=( 10 10 )
 
 DSPACES_BIN_DIR=$DSPACES_DIR/bin                                                                    # DSPACES_DIR, DSPACESWA_DIR is set with ". run.sh init ?"
 DSPACESWA_BIN_DIR=$DSPACESWA_DIR
@@ -65,7 +66,9 @@ elif [ $1  = 'k' ]; then
   for i in "${RI_MANAGER_NODE_LIST[@]}"
   do
     $MPIRUN -npernode 1 $i $PKILL -f ./exp
-    $MPIRUN -npernode 1 $i $PKILL -f globus-gridftp-server
+    $MPIRUN -npernode 1 $i $PKILL -f ./mput
+    $MPIRUN -npernode 1 $i $PKILL -f ./dataspaces_server
+    # $MPIRUN -npernode 1 $i $PKILL -f globus-gridftp-server
   done
 else
   echo "Argument did not match!"

@@ -8,17 +8,17 @@ NUM_PEER=1
 NUM_PUTGET=20
 
 LCONTROL_LINTF="eth0"
-RI_MANAGER_LCONTROL_LPORT_LIST=( 8000 8000 )
-APP_JOIN_LCONTROL_LIP_LIST=( "130.207.110.51" "130.207.110.52" )
+RI_MANAGER_LCONTROL_LPORT_LIST=( 9000 8000 )
+APP_JOIN_LCONTROL_LIP_LIST=( "192.168.2.100" "130.207.110.52" )
 
 CONTROL_LINTF="eth0" # "lo"
-RI_MANAGER_CONTROL_LPORT_LIST=( 7000 7001 7002 )
-RI_MANAGER_JOIN_CONTROL_LIP_LIST=( "" "130.207.110.51" "130.207.110.51" )
-RI_MANAGER_JOIN_CONTROL_LPORT_LIST=( 0 7000 7000 )
+RI_MANAGER_CONTROL_LPORT_LIST=( 7000 7001 )
+RI_MANAGER_JOIN_CONTROL_LIP_LIST=( "" "192.168.2.100" )
+RI_MANAGER_JOIN_CONTROL_LPORT_LIST=( 0 7000 )
 
 TRANS_PROTOCOL="t" # "i" # "g"
 IB_LINTF="ib0"
-TCP_LINTF="eth0"
+TCP_LINTF="ib0"
 TCP_LPORT=6000
 GFTP_LINTF="eth0"
 GFTP_LPORT=6000
@@ -160,21 +160,6 @@ elif [ $1  = 'dr' ]; then
   echo "Killing stubborns..."
   fuser -k -n tcp $GFTP_LPORT
   # fuser -k -n tcp $RM1_DHT_LPORT
-elif [ $1  = 'iperf' ]; then
-  IPERF_BIN_DIR=/net/hp101/ihpcsc/jchoi446/sw/iperf/2.0.5/bin
-  if [ -z "$2" ]; then
-    echo "Which s-c"
-  else
-    if [ $2  = 's' ]; then
-      $IPERF_BIN_DIR/./iperf -s
-    elif [ $2  = 'c' ]; then
-      if [ -z "$3" ]; then
-        echo "Client ip?"
-      else
-        $IPERF_BIN_DIR/./iperf -c $3
-      fi
-    fi
-  fi
 else
   echo "Argument did not match !"
 fi

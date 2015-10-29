@@ -1,11 +1,12 @@
 #!/bin/bash
 echo $1 $2 $3
 
-NUM_DS_NODE_LIST=( 2 2 )
-DS_NODE_LIST=( "-host kid43 -host kid44 " "-host kid45 -host kid46" )
-# DS_NODE_LIST=( "-host kid41 -host kid43 -host kid44 -host kid45" "-host kid42 -host kid46 -host kid47 -host kid48" )
+NUM_DS_NODE_LIST=( 8 8 )
+# DS_NODE_LIST=( "-host kid43 -host kid44 " "-host kid45 -host kid46" )
+# DS_NODE_LIST=( "-host kid43 -host kid44 -host kid45 -host kid46" "-host kid47 -host kid48 -host kid49 -host kid50" )
+DS_NODE_LIST=( "-host kid41 -host kid42 -host kid43 -host kid44 -host kid45 -host kid46 -host kid47 -host kid48" "-host kid49 -host kid50 -host kid51 -host kid52 -host kid53 -host kid54 -host kid55 -host kid56" )
 RI_MANAGER_NODE_LIST=( "-host kid41" "-host kid42" )
-NUM_DSPACESWA_CLIENT_LIST=( 20 20 )
+NUM_DSPACESWA_CLIENT_LIST=( 10 10 )
 
 DSPACES_BIN_DIR=$DSPACES_DIR/bin                                                                    # DSPACES_DIR, DSPACESWA_DIR is set with ". run.sh init ?"
 DSPACESWA_BIN_DIR=$DSPACESWA_DIR

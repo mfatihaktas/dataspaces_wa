@@ -130,19 +130,27 @@ int MPBuffer::add_access(key_ver_pair kv)
     
     if (malgo_to_pick_app_->add_access(p_id) )
       LOG(ERROR) << "add_access:: malgo_to_pick_app_->add_access failed for p_id= " << p_id;
-  
+    
+    // std::cout << "add_access:: before calling get_to_prefetch; p_id__reged_kv_deq_map= \n";
+    // for (std::map<int, std::deque<key_ver_pair> >::iterator it = p_id__reged_kv_deq_map.begin(); it != p_id__reged_kv_deq_map.end(); it++)
+    //   std::cout << it->first << " : " << patch_all::pdeque_to_str<key_ver_pair>(it->second) << "\n";
     get_to_prefetch(num_app, kv_v);
     // LOG(INFO) << "add_access:: get_to_prefetch returned kv_v= " << patch_all::pvec_to_str<key_ver_pair>(kv_v) << "\n";
-    // To avoid remote fetching while a kv is being prefetched -- assuming prefetching will never fail
-    if (cache.size() + kv_v.size() != max_num_key_ver)
-      std::cout << "ADD_ACCESS:: " << KV_TO_STR(kv.first, kv.second) << "\n"
-                << "\t cache= \n" << patch_all::pvec_to_str<key_ver_pair>(cache.get_content_v() ) << "\n"
-                << ">> Will prefetch kv_v= \n" << patch_all::pvec_to_str<key_ver_pair>(kv_v) << "\n";
+    
+    // Note: To avoid remote fetching while a kv is being prefetched -- assuming prefetching will never fail
+    // if (cache.size() + kv_v.size() != max_num_key_ver)
+    std::cout << "ADD_ACCESS:: " << KV_TO_STR(kv.first, kv.second) << "\n"
+              << "\t cache= \n" << patch_all::pvec_to_str<key_ver_pair>(cache.get_content_v() ) << "\n"
+              << ">> Will prefetch kv_v= \n" << patch_all::pvec_to_str<key_ver_pair>(kv_v) << "\n";
     
     for (std::vector<key_ver_pair>::iterator it = kv_v.begin(); it != kv_v.end(); it++) {
-      if (cache.push(kv__p_id_map[*it], *it) )
-        LOG(ERROR) << "add_access:: cache.push failed for <" << it->first << ", " << it->second << "> \n"
-                   << "\t cache= \n" << patch_all::pvec_to_str<key_ver_pair>(cache.get_content_v() );
+      if (cache.size() < max_num_key_ver) {
+        if (cache.push(kv__p_id_map[*it], *it) )
+          LOG(ERROR) << "add_access:: cache.push failed for <" << it->first << ", " << it->second << "> \n"
+                     << "\t cache= \n" << patch_all::pvec_to_str<key_ver_pair>(cache.get_content_v() );
+      }
+      else
+        break;
     }
   }
   
@@ -170,7 +178,7 @@ int MPBuffer::get_to_prefetch(int& num_app, std::vector<key_ver_pair>& kv_v)
             << "GET_TO_PREFETCH:: \n"
             << "p_id_v= " << patch_all::vec_to_str<ACC_T>(p_id_v) << "\n"
             << "ep_id_v= " << patch_all::vec_to_str<ACC_T>(ep_id_v) << "\n"
-            << "\t cache= " << patch_all::vec_to_str<>(cache.get_cached_acc_v() ) << "\n";
+            << "cache= " << patch_all::vec_to_str<>(cache.get_cached_acc_v() ) << "\n";
   
   for (std::vector<ACC_T>::iterator jt = ep_id_v.begin(); jt != ep_id_v.end(); jt++)
     p_id_v.push_back(*jt);
@@ -291,6 +299,7 @@ int WASpace::reg_app(int app_id, int ds_id)
     return 1;
   }
   app_id__ds_id_map[app_id] = ds_id;
+  LOG(INFO) << "reg_app:: done; <app_id= " << app_id << ", ds_id= " << ds_id << ">";
   
   return 0;
 }
@@ -381,8 +390,8 @@ int MWASpace::reg_ds(int ds_id)
   ds_id__mpbuffer_map[ds_id] = boost::make_shared<MPBuffer>(ds_id, max_num_key_ver_in_mpbuffer, malgo_t,
                                                             w_prefetch, boost::bind(&MWASpace::handle_mpbuffer_data_act, this, _1, _2, _3) );
   // Note: DS joins dynamically, its MPBuffer needs to be updated
-  for (std::map<key_ver_pair, int>::iterator it = kv__p_id_map.begin(); it != kv__p_id_map.end(); it++)
-    ds_id__mpbuffer_map[ds_id]->reg_key_ver(it->second, it->first);
+  for (std::vector<key_ver_pair>::iterator it = kv_v.begin(); it != kv_v.end(); it++)
+    ds_id__mpbuffer_map[ds_id]->reg_key_ver(kv__p_id_map[*it], *it);
   
   LOG(INFO) << "reg_ds:: reged ds_id= " << ds_id;
   
@@ -465,7 +474,14 @@ int MWASpace::query(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* u
 
 int MWASpace::add_access(int c_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_)
 {
-  return ds_id__mpbuffer_map[app_id__ds_id_map[c_id] ]->add_access(std::make_pair(key, ver) );
+  key_ver_pair kv = std::make_pair(key, ver);
+  if (app_id__ds_id_map[kv__p_id_map[kv] ] == app_id__ds_id_map[c_id] ) {
+    LOG(INFO) << "add_access:: c_id= " << c_id << " and p_id= " << app_id__ds_id_map[kv__p_id_map[kv] ]
+              << "are in the same locality; ds_id= " << app_id__ds_id_map[c_id];
+    return 1;
+  }
+  
+  return ds_id__mpbuffer_map[app_id__ds_id_map[c_id] ]->add_access(kv);
 }
 
 bool MWASpace::contains(int ds_id, key_ver_pair kv)

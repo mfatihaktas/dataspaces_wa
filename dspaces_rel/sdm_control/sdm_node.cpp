@@ -137,23 +137,8 @@ SDMNode::SDMNode(std::string type, bool master_slave,
 {
   // 
   LOG(INFO) << "SDMNode:: constructed; \n" << to_str();
-  // 
-  if (joinhost_lip.compare("") == 0) // First node
-    LOG(INFO) << "SDMNode:: FIRST NODE.";
-  else {
-    // To get check joinhost status and get the join_reply
-    if (commer.connect_send_to(joinhost_lip, joinhost_lport, *gen_join_req() ) ) {
-      LOG(ERROR) << "SDMNode:: commer.connect_send_to failed for initial join; joinhost_lip= " << joinhost_lip << ", joinhost_lport= " << joinhost_lport;
-      close();
-      exit(1);
-    }
-    
-    LOG(INFO) << "SDMNode:: waiting for join...; id= " << id;
-    syncer.add_sync_point(0, 1);
-    syncer.wait(0);
-    LOG(INFO) << "SDMNode:: done waiting for join; id= " << id;
-    syncer.del_sync_point(0);
-  }
+  
+  join();
 }
 
 SDMNode::~SDMNode() { LOG(INFO) << "destructed."; }
@@ -179,6 +164,33 @@ std::string SDMNode::to_str()
 
 int SDMNode::get_id() { return id; }
 int SDMNode::get_num_peers() { return commer.get_num_peers(); }
+
+int SDMNode::join()
+{
+  if (joinhost_lip.compare("") == 0) { // First node
+    LOG(INFO) << "join:: FIRST NODE.";
+    return 1;
+  }
+  else {
+    // To get check joinhost status and get the join_reply
+    while (1) {
+      if (commer.connect_send_to(joinhost_lip, joinhost_lport, *gen_join_req() ) ) {
+        LOG(ERROR) << "join:: commer.connect_send_to failed for initial join; joinhost_lip= " << joinhost_lip << ", joinhost_lport= " << joinhost_lport << "\n"
+                   << "trying again in 1 sec...";
+        usleep(1000000);
+      }
+      else
+       break;
+    }
+    LOG(INFO) << "join:: waiting for join...; id= " << id;
+    syncer.add_sync_point(0, 1);
+    syncer.wait(0);
+    LOG(INFO) << "join:: done waiting for join; id= " << id;
+    syncer.del_sync_point(0);
+    
+    return 0;
+  }
+}
 
 //--------------------------------------------  gen_packet  --------------------------------------//
 boost::shared_ptr<Packet> SDMNode::gen_join_req()
