@@ -281,7 +281,7 @@ namespace patch_all {
       int add_sync_point(T point, int num_peers)
       {
         if (point_cv_map.contains(point) ) {
-          LOG(ERROR) << "add_sync_point:: already added point.";
+          LOG(ERROR) << "add_sync_point:: already added point; point.";
           return 1;
         }
         

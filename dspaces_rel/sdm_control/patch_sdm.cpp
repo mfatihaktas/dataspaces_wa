@@ -33,29 +33,41 @@ namespace patch_sdm {
   }
   
   /********************************************  MsgCoder  ******************************************/
-  MsgCoder::MsgCoder() { LOG(INFO) << "MsgCoder:: constructed."; }
-  MsgCoder::~MsgCoder() { LOG(INFO) << "MsgCoder:: destructed."; }
+  MsgCoder::MsgCoder() { /* LOG(INFO) << "MsgCoder:: constructed."; */ }
+  MsgCoder::~MsgCoder() { /* LOG(INFO) << "MsgCoder:: destructed."; */ }
   
-  std::map<std::string, std::string> MsgCoder::decode(char* msg)
+  // msg: serialized std::map<std::string, std::string>
+  int MsgCoder::decode(char* msg, std::map<std::string, std::string>& msg_map)
   {
-    // msg: serialized std::map<std::string, std::string>
-    std::map<std::string, std::string> msg_map;
+    try {
+      std::stringstream ss;
+      ss << msg;
+      boost::archive::text_iarchive ia(ss);
+      ia >> msg_map;
+    }
+    catch(boost::archive::archive_exception &e) {
+      LOG(ERROR) << "decode:: exceptioon e= " << e.what();
+      return 1;
+    }
     
-    std::stringstream ss;
-    ss << msg;
-    boost::archive::text_iarchive ia(ss);
-    ia >> msg_map;
-    
-    return msg_map;
+    return 0;
   }
   
-  std::string MsgCoder::encode(std::map<std::string, std::string> msg_map)
+  int MsgCoder::encode(std::map<std::string, std::string> msg_map, std::string& str)
   {
-    std::stringstream ss;
-    boost::archive::text_oarchive oa(ss);
-    oa << msg_map;
+    try {
+      std::stringstream ss;
+      boost::archive::text_oarchive oa(ss);
+      oa << msg_map;
+      
+      str = ss.str();
+    }
+    catch(boost::archive::archive_exception &e) {
+      LOG(ERROR) << "encode:: exceptioon e= " << e.what();
+      return 1;
+    }
     
-    return ss.str();
+    return 0;
   }
   
   int MsgCoder::decode_msg_map(std::map<std::string, std::string> msg_map,

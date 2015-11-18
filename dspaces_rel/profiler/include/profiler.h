@@ -98,9 +98,9 @@ struct Event
     std::string to_str()
     {
       std::stringstream ss;
-      ss << "name= " << name << ", dur_sec= " << boost::lexical_cast<std::string>(dur_sec)
-         << ", start_time_sec= " << boost::lexical_cast<std::string>(start_time_sec)
-         << ", end_time_sec= " << boost::lexical_cast<std::string>(end_time_sec);
+      ss << "name= " << name << ", dur_sec= " << boost::lexical_cast<std::string>(dur_sec);
+        // << ", start_time_sec= " << boost::lexical_cast<std::string>(start_time_sec)
+        // << ", end_time_sec= " << boost::lexical_cast<std::string>(end_time_sec);
       
       return ss.str();
     }

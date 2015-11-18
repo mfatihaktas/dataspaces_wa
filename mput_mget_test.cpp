@@ -5,6 +5,7 @@
 #include <getopt.h>
 #include <map>
 #include <fstream>
+#include <math.h>
 
 #include <boost/lexical_cast.hpp>
 #include <glog/logging.h>
@@ -134,7 +135,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
   return opt_map;
 }
 // 10*1024*
-#define TEST_SIZE 12.5*1024*1024
+#define TEST_SIZE pow(12.5*1024*1024, (float)1/NDIM)
 #define TEST_DATASIZE pow(TEST_SIZE, NDIM)
 #define TEST_VER 0
 #define TEST_SGDIM TEST_SIZE

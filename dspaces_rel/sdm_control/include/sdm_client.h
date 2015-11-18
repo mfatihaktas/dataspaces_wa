@@ -14,6 +14,13 @@
 #include <glog/logging.h>
 
 class SDMClient {
+  private:
+    std::string s_lip, client_name;
+    int s_lport;
+    bool closed;
+    
+    boost::shared_ptr<boost::asio::io_service> io_service_;
+    boost::shared_ptr<boost::asio::ip::tcp::socket> socket_;
   public:
     SDMClient(std::string client_name, std::string s_lip, int s_lport);
     ~SDMClient();
@@ -22,13 +29,6 @@ class SDMClient {
     int connect();
     int close();
     int send(int datasize, char* data);
-  private:
-    std::string s_lip, client_name;
-    int s_lport;
-    bool closed;
-    
-    boost::shared_ptr<boost::asio::io_service> io_service_;
-    boost::shared_ptr<boost::asio::ip::tcp::socket> socket_;
 };
 
 #endif // _SDM_CLIENT_H_

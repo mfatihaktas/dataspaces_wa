@@ -125,12 +125,17 @@ int RFPManager::wa_get(std::string lip, std::string lport, std::string tmpfs_dir
   return 0;
 }
 
+bool RFPManager::is_being_get(std::string key, unsigned int ver, uint64_t *lb_, uint64_t *ub_)
+{
+  return data_id__recved_size_map.contains(patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_) );
+}
+
 int RFPManager::wait_for_get(std::string key, unsigned int ver, uint64_t *lb_, uint64_t *ub_)
 {
   std::string data_id = patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_);
   if (data_id__recved_size_map.contains(data_id) ) {
     LOG(INFO) << "wait_for_get:: waiting on " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
-    unsigned int sync_point = patch_sdm::hash_str(patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_) );
+    unsigned int sync_point = patch_sdm::hash_str(data_id);
     rfp_syncer.add_sync_point(sync_point, 1);
     rfp_syncer.wait(sync_point);
     rfp_syncer.del_sync_point(sync_point);
@@ -170,10 +175,6 @@ RIManager::RIManager(int cl_id, int base_client_id, int num_client, DATA_ID_T da
 : cl_id(cl_id), base_client_id(base_client_id), num_client(num_client), data_id_t(data_id_t),
   data_trans_protocol(data_trans_protocol),
   ds_driver_(new DSDriver(cl_id, num_client) ),
-  lsdm_node_(boost::make_shared<SDMNode>(
-    "m", true,
-    boost::lexical_cast<int>(cl_id), lcontrol_lip, lcontrol_lport, join_lcontrol_lip, join_lcontrol_lport,
-    boost::bind(&RIManager::handle_app_msg, this, _1) ) ),
   rfp_manager_(new RFPManager(data_id_t, data_trans_protocol,
                               ib_lip, ib_lport_list,
                               tcp_lip, tcp_lport,
@@ -189,8 +190,8 @@ RIManager::~RIManager() { LOG(INFO) << "RIManager:: destructed."; }
 void RIManager::close()
 {
   LOG(INFO) << "close:: closing...";
-  lsdm_node_->close();
   sdm_slave_->close();
+  lsdm_node_->close();
   ds_driver_->close();
   ri_syncer.close();
   // 
@@ -205,7 +206,6 @@ std::string RIManager::to_str()
   std::stringstream ss;
   ss << "\t cl_id= " << cl_id << "\n"
      << "\t num_client= " << num_client << "\n"
-     << "\t lsdm_node= \n" << lsdm_node_->to_str() << "\n"
      << "\t rfp_manager= \n" << rfp_manager_->to_str() << "\n";
   
   return ss.str();
@@ -363,6 +363,12 @@ void RIManager::remote_get(std::map<std::string, std::string> msg_map)
     return;
   }
   
+  // Note: Some get requests may get through wait_for_get in handle_get so will check here once again
+  // if (rfp_manager_->is_being_get(key, ver, lb_, ub_) ) {
+  //   LOG(WARNING) << "remote_get:: rfp_manager_->is_being_get data so cancel this blasphemy remote_get; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
+  //   return;
+  // }
+  
   if (rfp_manager_->wa_get(msg_map["lip"], msg_map["lport"], msg_map["tmpfs_dir"],
                            key, ver, data_type, size, ndim, gdim_, lb_, ub_) ) {
     LOG(ERROR) << "remote_get:: rfp_manager_->wa_get failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
@@ -477,7 +483,7 @@ void RIManager::handle_dm_move(std::map<std::string, std::string> msg_map)
     
     msg_map["data_type"] = data_info_->data_type;
     msg_map["size"] = boost::lexical_cast<std::string>(data_info_->size);
-    msg_map["gdim_"] = patch_all::arr_to_str(NDIM, data_info_->gdim_);
+    msg_map["gdim_"] = patch_all::arr_to_str<>(NDIM, data_info_->gdim_);
     
     trans_info_query(to_id, msg_map);
   }

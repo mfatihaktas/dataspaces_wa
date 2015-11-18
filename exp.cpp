@@ -1,12 +1,17 @@
 //for intf_to_ip
-#include <cstring>
-#include <sys/types.h>
+// #include <cstring>
+// #include <sys/types.h>
+// #include <sys/socket.h>
+// #include <sys/ioctl.h>
+// #include <netinet/in.h>
+// #include <net/if.h>
+// #include <unistd.h>
+// #include <arpa/inet.h>
+
 #include <sys/socket.h>
-#include <sys/ioctl.h>
-#include <netinet/in.h>
-#include <net/if.h>
-#include <unistd.h>
 #include <arpa/inet.h>
+#include <netdb.h>
+#include <ifaddrs.h>
 // 
 #include <getopt.h>
 
@@ -40,19 +45,53 @@ int get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_)
 
 std::string intf_to_ip(std::string intf)
 {
-  int fd;
-  struct ifreq ifr;
-  // 
-  fd = socket(AF_INET, SOCK_DGRAM, 0);
-  // Type of address to retrieve - IPv4 IP address
-  ifr.ifr_addr.sa_family = AF_INET;
-  // Copy the interface name in the ifreq structure
-  std::memcpy(ifr.ifr_name, intf.c_str(), IFNAMSIZ - 1);
-  ioctl(fd, SIOCGIFADDR, &ifr);
-  close(fd);
-  // 
-  return boost::lexical_cast<std::string>(inet_ntoa( ( (struct sockaddr_in*)&ifr.ifr_addr)->sin_addr) );
+  struct ifaddrs *ifaddr, *ifa;
+  int family, s;
+  char host[NI_MAXHOST];
+
+  if (getifaddrs(&ifaddr) == -1) {
+    perror("getifaddrs");
+    exit(EXIT_FAILURE);
+  }
+
+  for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+      if (ifa->ifa_addr == NULL)
+        continue;  
+
+      s=getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+
+      if((strcmp(ifa->ifa_name, intf.c_str() ) == 0) && (ifa->ifa_addr->sa_family == AF_INET) ) {
+        if (s != 0) {
+          printf("getnameinfo() failed: %s\n", gai_strerror(s) );
+          exit(EXIT_FAILURE);
+        }
+        printf("\t Interface : <%s>\n",ifa->ifa_name);
+        printf("\t   Address : <%s>\n", host);
+        break;
+      }
+  }
+
+  freeifaddrs(ifaddr);
+  
+  return boost::lexical_cast<std::string>(host);
 }
+
+
+// std::string intf_to_ip(std::string intf)
+// {
+//   int fd;
+//   struct ifreq ifr;
+//   // 
+//   fd = socket(AF_INET, SOCK_DGRAM, 0);
+//   // Type of address to retrieve - IPv4 IP address
+//   ifr.ifr_addr.sa_family = AF_INET;
+//   // Copy the interface name in the ifreq structure
+//   std::memcpy(ifr.ifr_name, intf.c_str(), IFNAMSIZ - 1);
+//   ioctl(fd, SIOCGIFADDR, &ifr);
+//   close(fd);
+//   // 
+//   return boost::lexical_cast<std::string>(inet_ntoa( ( (struct sockaddr_in*)&ifr.ifr_addr)->sin_addr) );
+// }
 
 std::map<std::string, std::string> parse_opts(int argc, char** argv)
 {
@@ -82,6 +121,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
     {"gftp_lintf", optional_argument, NULL, 17},
     {"gftp_lport", optional_argument, NULL, 18},
     {"tmpfs_dir", optional_argument, NULL, 19},
+    {"w_prefetch", optional_argument, NULL, 20},
     {0, 0, 0, 0}
   };
   
@@ -154,6 +194,9 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
         break;
       case 19:
         opt_map["tmpfs_dir"] = optarg;
+        break;
+      case 20:
+        opt_map["w_prefetch"] = optarg;
         break;
       case '?':
         break; //getopt_long already printed an error message.
@@ -275,19 +318,28 @@ int main(int argc , char **argv)
     COOR_T ucoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 16) };
     int sexpand_length = 1;
     
-    bool w_prefetch = true;
-    
     if (opt_map.count("join_lcontrol_lip") == 0) {
       opt_map["join_lcontrol_lip"] = "";
       opt_map["join_lcontrol_lport"] = "0";
     }
+    
+    // std::string lcontrol_lip = intf_to_ip(opt_map["lcontrol_lintf"] );
+    // std::string control_lip = intf_to_ip(opt_map["control_lintf"] );
+    // std::string ib_lip = intf_to_ip(opt_map["ib_lintf"] );
+    // std::string tcp_lip = intf_to_ip(opt_map["tcp_lintf"] );
+    // std::string gftp_lip = intf_to_ip(opt_map["gftp_lintf"] );
+    // LOG(INFO) << "main:: lcontrol_lip= " << lcontrol_lip << "\n"
+    //           << "control_lip= " << control_lip << "\n"
+    //           << "ib_lip= " << ib_lip << "\n"
+    //           << "tcp_lip= " << tcp_lip << "\n"
+    //           << "gftp_lip= " << gftp_lip << "\n";
     
     if (str_cstr_equals(opt_map["join_control_lip"], "") ) {
       MMRIManager ri_manager(
         boost::lexical_cast<int>(opt_map["cl_id"] ), boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_peer"] ),
         intf_to_ip(opt_map["lcontrol_lintf"] ), boost::lexical_cast<int>(opt_map["lcontrol_lport"] ), opt_map["join_lcontrol_lip"], boost::lexical_cast<int>(opt_map["join_lcontrol_lport"] ),
         boost::lexical_cast<int>(opt_map["ds_id"] ), intf_to_ip(opt_map["control_lintf"] ), boost::lexical_cast<int>(opt_map["control_lport"] ), opt_map["join_control_lip"], boost::lexical_cast<int>(opt_map["join_control_lport"] ),
-        malgo_t, max_num_key_ver_in_mpbuffer, w_prefetch,
+        malgo_t, max_num_key_ver_in_mpbuffer, boost::lexical_cast<bool>(opt_map["w_prefetch"] ),
         opt_map["trans_protocol"], intf_to_ip(opt_map["ib_lintf"] ), ib_lport_list,
         intf_to_ip(opt_map["tcp_lintf"] ), boost::lexical_cast<int>(opt_map["tcp_lport"] ),
         opt_map["gftp_lintf"], intf_to_ip(opt_map["gftp_lintf"] ), opt_map["gftp_lport"], opt_map["tmpfs_dir"] );
@@ -296,7 +348,7 @@ int main(int argc , char **argv)
       //   boost::lexical_cast<int>(opt_map["cl_id"] ), boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_peer"] ),
       //   intf_to_ip(opt_map["lcontrol_lintf"] ), boost::lexical_cast<int>(opt_map["lcontrol_lport"] ), opt_map["join_lcontrol_lip"], boost::lexical_cast<int>(opt_map["join_lcontrol_lport"] ),
       //   boost::lexical_cast<int>(opt_map["ds_id"] ), intf_to_ip(opt_map["control_lintf"] ), boost::lexical_cast<int>(opt_map["control_lport"] ), opt_map["join_control_lip"], boost::lexical_cast<int>(opt_map["join_control_lport"] ),
-      //   salgo_t, lcoor_, ucoor_, sexpand_length, w_prefetch,
+      //   salgo_t, lcoor_, ucoor_, sexpand_length, boost::lexical_cast<bool>(opt_map["w_prefetch"] ),
       //   opt_map["trans_protocol"], intf_to_ip(opt_map["ib_lintf"] ), ib_lport_list,
       //   intf_to_ip(opt_map["tcp_lintf"] ), boost::lexical_cast<int>(opt_map["tcp_lport"] ),
       //   opt_map["gftp_lintf"], intf_to_ip(opt_map["gftp_lintf"] ), opt_map["gftp_lport"], opt_map["tmpfs_dir"] );

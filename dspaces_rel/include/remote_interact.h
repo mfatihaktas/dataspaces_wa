@@ -42,6 +42,7 @@ class RFPManager { // Remote Fetch & Place
     int wa_get(std::string lip, std::string lport, std::string tmpfs_dir,
                std::string key, unsigned int ver, std::string data_type,
                int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
+    bool is_being_get(std::string key, unsigned int ver, uint64_t *lb_, uint64_t *ub_);
     int wait_for_get(std::string key, unsigned int ver, uint64_t *lb_, uint64_t *ub_);
     int notify_remote_get_done(std::string key, unsigned int ver, uint64_t *lb_, uint64_t *ub_);
     
@@ -148,6 +149,13 @@ class MSRIManager : public RIManager { // Markov Slave
     {
       sdm_slave_ = boost::make_shared<MSDMSlave>(ds_id, control_lip, control_lport, join_control_lip, join_control_lport,
                                                  boost::bind(&RIManager::handle_rimsg, this, _1), boost::bind(&RIManager::handle_dm_act, this, _1) );
+      // Note: sdm_node within sdm_slave takes longer to connect especially for wide-area scenario which
+      // makes the wait for join within sdm_node constructor useless. I had to move initialization of
+      // lsdm_node here after sdm_slave is ready
+      lsdm_node_ = boost::make_shared<SDMNode>(
+                     "m", true,
+                     boost::lexical_cast<int>(cl_id), lcontrol_lip, lcontrol_lport, join_lcontrol_lip, join_lcontrol_lport,
+                     boost::bind(&RIManager::handle_app_msg, this, _1) );
       // 
       LOG(INFO) << "MSRIManager:: constructed; \n" << to_str();
       
@@ -159,7 +167,8 @@ class MSRIManager : public RIManager { // Markov Slave
     std::string to_str()
     {
       std::stringstream ss;
-      ss << "\t sdm_slave= \n" << sdm_slave_->to_str() << "\n";
+      ss << "\t sdm_slave= \n" << sdm_slave_->to_str() << "\n"
+         << "\t lsdm_node= \n" << lsdm_node_->to_str() << "\n";
       return ss.str();
     }
 };
@@ -181,6 +190,10 @@ class SSRIManager : public RIManager { // Spatial Slave
     {
       sdm_slave_ = boost::make_shared<SSDMSlave>(ds_id, control_lip, control_lport, join_control_lip, join_control_lport,
                                                  boost::bind(&RIManager::handle_rimsg, this, _1), boost::bind(&RIManager::handle_dm_act, this, _1) );
+      lsdm_node_ = boost::make_shared<SDMNode>(
+                     "m", true,
+                     boost::lexical_cast<int>(cl_id), lcontrol_lip, lcontrol_lport, join_lcontrol_lip, join_lcontrol_lport,
+                     boost::bind(&RIManager::handle_app_msg, this, _1) );
       // 
       LOG(INFO) << "SSRIManager:: constructed; \n" << to_str();
       
@@ -192,7 +205,8 @@ class SSRIManager : public RIManager { // Spatial Slave
     std::string to_str()
     {
       std::stringstream ss;
-      ss << "\t sdm_slave= \n" << sdm_slave_->to_str() << "\n";
+      ss << "\t sdm_slave= \n" << sdm_slave_->to_str() << "\n"
+         << "\t lsdm_node= \n" << lsdm_node_->to_str() << "\n";
       return ss.str();
     }
 };
@@ -218,6 +232,11 @@ class MMRIManager : public RIManager { // Markov Master
                        boost::bind(&RIManager::handle_rimsg, this, _1), boost::bind(&RIManager::handle_dm_act, this, _1),
                        malgo_t, max_num_key_ver_in_mpbuffer, w_prefetch) );
       sdm_slave_ = t_sdm_slave_;
+      
+      lsdm_node_ = boost::make_shared<SDMNode>(
+                     "m", true,
+                     boost::lexical_cast<int>(cl_id), lcontrol_lip, lcontrol_lport, join_lcontrol_lip, join_lcontrol_lport,
+                     boost::bind(&RIManager::handle_app_msg, this, _1) );
       // 
       LOG(INFO) << "MMRIManager:: constructed; \n" << to_str();
       
@@ -229,7 +248,8 @@ class MMRIManager : public RIManager { // Markov Master
     std::string to_str()
     {
       std::stringstream ss;
-      ss << "\t sdm_slave= \n" << sdm_slave_->to_str() << "\n";
+      ss << "\t sdm_slave= \n" << sdm_slave_->to_str() << "\n"
+         << "\t lsdm_node= \n" << lsdm_node_->to_str() << "\n";
       return ss.str();
     }
 };
@@ -255,6 +275,11 @@ class SMRIManager : public RIManager { // Spatial Master
                        boost::bind(&RIManager::handle_rimsg, this, _1), boost::bind(&RIManager::handle_dm_act, this, _1),
                        salgo_t, lcoor_, ucoor_, sexpand_length, w_prefetch) );
       sdm_slave_ = t_sdm_slave_;
+      
+      lsdm_node_ = boost::make_shared<SDMNode>(
+                     "m", true,
+                     boost::lexical_cast<int>(cl_id), lcontrol_lip, lcontrol_lport, join_lcontrol_lip, join_lcontrol_lport,
+                     boost::bind(&RIManager::handle_app_msg, this, _1) );
       // 
       LOG(INFO) << "SMRIManager:: constructed; \n" << to_str();
       
@@ -266,7 +291,8 @@ class SMRIManager : public RIManager { // Spatial Master
     std::string to_str()
     {
       std::stringstream ss;
-      ss << "\t sdm_slave= \n" << sdm_slave_->to_str() << "\n";
+      ss << "\t sdm_slave= \n" << sdm_slave_->to_str() << "\n"
+         << "\t lsdm_node= \n" << lsdm_node_->to_str() << "\n";
       return ss.str();
     }
 };

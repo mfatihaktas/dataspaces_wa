@@ -1,193 +1,60 @@
-dataspaces_wa
-=============
-Implementing dataspaces abstraction over multiple dataspaces instances.
-=============
-Dependencies and dataspaces_wa is currently present and compiling, running on ULAM, Archer and Maquis clusters.
-- for ULAM and ARCHER
-DATASPACES_WA_DIR=/home/sc14demo/common-apps/dataspaces_wa
-DATASPACES_DIR=/home/sc14demo/common-apps/dataspaces-1.4.0
-DATASPACES_WA_NSTX_DIR=/home/sc14demo/fusion/dataspaces_wa_nstx-sc14-demo
-- for Maquis
-DATASPACES_WA_DIR=/net/hp101/ihpcsc/maktas7/dataspaces_wa
-DATASPACES_DIR=/net/hp101/ihpcsc/maktas7/dataspaces-1.4.0
-DATASPACES_WA_NSTX_DIR=/net/hp101/ihpcsc/maktas7/dataspaces_wa_nstx-sc14-demo
-============= Architecture
-Suppose there are two applications, putter and getter.
+This directory contains multi-platform user environment start-up files (or
+dot files).  We have a dot file setup here in the College of Computing that
+allows us to use different systems (Sun, SGI, DECs, IBM, etc) without them
+interfering with each other.  The way we do it is using separate dot files
+for each system and having a common dot file to choose which system your on.
 
-getter    RI_manager---------- TCP/IP ---------RI_manager    putter
-  |           |     \.......RDMA, Gridftp...../    |           |
-dataspaces_server                                dataspaces_server
+You copy these files into your startup directory (actually, you only need
+to copy .cshrc, .login, .profile, .kshrc, and .xinitrc; they will copy
+the other files you need).  Unless they are told otherwise, "Everything is
+a Sun."  This works for most platforms, but fails for sure on IRIX 5.2
+(SGI) systems.  
 
-User applications put or get data only to and from their local dataspaces_server. If data needs to be 
-carried to or fetched from a remote dataspaces_server RI_managers handle data query (over the control 
-path shown as --- TCP/IP -----)and transport (over the data path shown as ....RDMA, Gridftp....) 
-between dataspaces_servers.
-============= API
-- For comparison dataspaces API: (for more detail $DATASPACES_DIR/include):
+There is a configuration file, /etc/env.path, on each system that
+determines which versions of files are to be used.  For example, the
+file env.path for a Sun SparcStation II running SunOS 4.1.3 is:
 
-/**
- * @brief Query the space to insert data specified by a geometric
- *    descriptor.
- * 
- * Memory buffer pointed by pointer "data" is a sub-region of the
- * global n-dimensional array in user application, which is described
- * by the local bounding box {(lb[0],lb[1],..,lb[n-1]), (ub[0],ub[1],..,ub[n-1])}.
- *
- * This routine is non-blocking, and successful return of the routine does not 
- * guarantee the completion of data transfer from client process to dataspaces 
- * staging server. User applications need to call dspaces_put_sync to check if
- * the most recent dspaces_put is complete or not.
- *
- * Note: ordering of dimension (fast->slow) is 0, 1, ..., n-1. For C row-major
- * array, the dimensions need to be reordered to construct the bounding box. For
- * example, the bounding box for C array c[2][4] is lb: {0,0}, ub: {3,1}. 
- * 
- * @param[in] var_name:     Name of the variable.
- * @param[in] ver:      Version of the variable.
- * @param[in] size:     Size (in bytes) for each element of the global
- *              array.
- * @param[in] ndim:     the number of dimensions for the local bounding
- *              box. 
- * @param[in] lb:       coordinates for the lower corner of the local
- *                  bounding box.
- * @param[in] ub:       coordinates for the upper corner of the local
- *                  bounding box. 
- * @param[in] data:     Pointer to user data buffer. 
- *
- * @return  0 indicates success.
- */
-int dspaces_put (const char *var_name,
-                 unsigned int ver, int size,
-                 int ndim, uint64_t *lb, uint64_t *ub,
-                 void *data);
+     sun-4.1.3:sun:gen
 
+This means that, for a csh user, the first found of the following files 
+will be used: .login-sun-4.1.3, .login-sun, and .login-gen.  If none is
+found, the first found in /usr/local/dotfiles will be copied and used.
 
-/**
- * @brief Query the space to retrieve data specified by a geometric descriptor.
- *
- * Memory buffer pointed by pointer "data" is a sub-region of the
- * global n-dimensional array in user application, which is described
- * by the local bounding box {(lb[0],lb[1],..,lb[n-1]), (ub[0],ub[1],..,ub[n-1])}.
- *
- * After successful return of the routine, received data is copied into user
- * buffer pointed by "data".
- *
- * Note: ordering of dimension (fast->slow) is 0, 1, ..., n-1. For row-major
- * array, the dimensions need to be reordered to construct the bounding box. For
- * example, the bounding box for C array c[2][4] is lb: {0,0}, ub: {3,1}.
- *
- * @param[in] var_name:     Name of the variable.
- * @param[in] ver:      Version of the variable.
- * @param[in] size:     Size (in bytes) for each element of the global
- *              array.
- * @param[in] ndim:     the number of dimensions for the local bounding
- *              box. 
- * @param[in] lb:       coordinates for the lower corner of the local
- *              bounding box.
- * @param[in] ub:       coordinates for the upper corner of the local
- *              bounding box.
- * @param[in] data:     Pointer to user data buffer. 
- * 
- * @return  0 indicates success.
- */
-int dspaces_get (const char *var_name,
-                 unsigned int ver, int size,
-                 int ndim, uint64_t *lb, uint64_t *ub,
-                 void *data);
+As another example, the file env.path for a SGI Indy running IRIX 5.2 is:
 
-- Dataspaces_wa API:
-(can be also seen in $DATASPACES_WA_DIR/include/dataspaces_wa.h)
+     sgi-5.2:sgi:gen
 
-int put(std::string data_type, std::string key, unsigned int ver, int size,
-        int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
-int get(bool blocking, std::string data_type, std::string key, unsigned int ver,
-        int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
+...where "gen" stands for generic.
 
-put() and get() returns zero at success and nonzero at any error or requested data is not available 
-in case of get.
+To make changes to your environment, please modify (or create) files named
+for the specific platform you are using.  You may find the need to create
+operating system level dependent start-up files (e.g. .cshrc-sun-4.1.3)
+or you may want to create platform dependent start-up files (e.g.
+.cshrc-sun) or you may even decide to have a generic start-up file
+(e.g. .cshrc-gen).  Now you have the ability to customize your start-up
+files as much as you like.  Just don't change .cshrc, .login, etc.
 
-Differences;
-  std::string data_type = e.g. "int", "double" etc. Used for exclusively to comfort IB Verbs API to 
-  transport data between dataspaces_server's.
-  
-  bool blocking = If set to true, application is blocked until the get operation is completed i.e.
-  requested data is placed in data_. If data is not present in any of the dataspaces_server's this 
-  option will keep blocking application until data is put and brought to the application. If set to 
-  false, data is placed in data_ and get() returns if data is available, otherwise a nonzero int is 
-  returned.
+If you don't have a start-up file specific to your platform, look in
+/usr/local/dotfiles for an example.  Example of filenames are:
 
-============= How to Run (refer to $DATASPACES_WA_DIR/run.sh)
-First environment variables should be set e.g. for ulam
-$DATASPACES_WA_DIR/./run.sh init u
-(This is necessary because ULAM,ARCHER and MAQUIS differ in configuration)
+     .cshrc-sun-4.1.3  - for Sun Sparc systems running SunOS 4.1.3
+     .cshrc-sun-5.3    - for Sun Sparc systems running SunOS 5.3
+     .cshrc-sun        - for Sun Sparc systems running SunOS
+     .cshrc-sgi-5.2    - for SGI systems running IRIX 5.2
+     .cshrc-sgi        - for SGI systems running IRIX
+     .cshrc-dec-1.3    - for DEC systems running OSF/1 1.3
+     .cshrc-ibm-3.2.2  - for IBM systems running AIX 3.2.2
+     .cshrc-hp-9.1     - for HP  systems running HP/UX 9.1
+     .cshrc-gen        - generic start-up file for any system (good luck!)
 
-As described in Architecture section, there are two components that needs to be run before getter
-or putter application is run.  
+Please note that if you delete the "*-sun" versions of the files, it
+will upset the SGIs, since they assume you have an unusable profile if
+it hasn't been tailored in this way.
 
-RI_managers are dataspaces_server clients. Hence first, dataspaces_server should be run e.g.
-$DATASPACES_DIR/install/bin/./dataspaces_server --server 1 --cnodes $NUM_DSCNODES
-(for further detail $DATASPACES_DIR/README)
-Without PBS scheduler dataspaces_server can only be run on one node with the command above. dataspaces_server
-typically crashes if application puts more data than the available memory at dataspaces_server. So for
-now small scaled tests can be done only with PBS scheduler. NUM_DSCNODES is the number of dataspaces_server
-clients to be run. RI_manager is also a dataspaces_server client so e.g. if there is only one getter 
-application NUM_DSCNODES should be two i.e. one for getter one for RI_manager.
-
-Next RI_manager should be run. Currently running this is not very user friendly but run.sh should help e.g.
-$DATASPACES_WA_DIR/./run.sh rm 2
-
-will run a RI_manager which is listening on eth0 (suppose IP address is "192.168.100.201") on TCP/IP:65000
-for control communication, ib0 for data communication. run.sh executes a simple program exp.cpp to initiate
-RIManager program. 
-
-Important things to remember are
-- For RI_managers to be able to connect to each over the control path, first a head RI_manager should
-be run (--ipeer_dht_laddr and --ipeer_dht_lport are not given to exp.cpp). Then other RI_managers
-should be run by setting --ipeer_dht_laddr (e.g. "192.168.100.201") and --ipeer_dht_lport(e.g. 65000) 
-options to exp.cpp correctly.
-
-We implemented Jong's nstx_demo code with dataspaces_wa and it is in $DATASPACES_WA_NSTX_DIR. nstx_getter.cpp
-and nstx_putter.cpp are very explanatory themselves for understanding how to dataspaces_wa API.
-Let's work on a simple scenario: nstx_putter app will put data to dataspaces_server running at ulam19
-and nstx_getter app will get data from dataspaces_server running at ulam0 (or any other ulam/archer node).
-- ulam19 side:
-[maktas@haswellnode9-ulam dataspaces_wa_nstx-sc14-demo]$ . run.sh init u
-[maktas@haswellnode9-ulam dataspaces_wa_nstx-sc14-demo]$ ./run.sh s
-This will run dataspaces_server
-
-[maktas@haswellnode9-ulam dataspaces_wa_nstx-sc14-demo]$ . run.sh init u
-[maktas@haswellnode9-ulam dataspaces_wa_nstx-sc14-demo]$ ./run.sh rm 2
-This will run RI_manager listening on eth0(TCP/IP:"192.168.100.120:65100") for control communication and ib0
-for data communication.
-
-[maktas@haswellnode9-ulam dataspaces_wa_nstx-sc14-demo]$ . run.sh init u
-[maktas@haswellnode9-ulam dataspaces_wa_nstx-sc14-demo]$ ./run.sh g
-This will run nstx_getter
-
-- ulam10 side:
-[maktas@haswellnode0-ulam dataspaces_wa_nstx-sc14-demo]$ . run.sh init u
-[maktas@haswellnode0-ulam dataspaces_wa_nstx-sc14-demo]$ ./run.sh s
-This will run dataspaces_server
-
-[maktas@haswellnode0-ulam dataspaces_wa_nstx-sc14-demo]$ . run.sh init u
-[maktas@haswellnode0-ulam dataspaces_wa_nstx-sc14-demo]$ ./run.sh rm 1
-This will run RI_manager listening on eth0(TCP/IP:"192.168.100.111:60100") for control communication 
-and ib0 for data communication. It will connect to RI_manager at ulam19 (look at --ipeer_dht_laddr=
-$RM2_DHT_LIP --ipeer_dht_lport=$RM2_DHT_LPORT).
-
-[maktas@haswellnode0-ulam dataspaces_wa_nstx-sc14-demo]$ . run.sh init u
-[maktas@haswellnode0-ulam dataspaces_wa_nstx-sc14-demo]$ ./run.sh p
-This will run nstx_putter
-
-You will see that nstx_putter will put data and nstx_getter will get the data as soon as it is available
-in its local dataspaces_server.
-
-============= How to Compile (refer to $DATASPACES_WA_DIR/Makefile and $DATASPACES_WA_NSTX_DIR/Makefile)
-Compiling dataspaces_wa
-- Setting up environment variables e..g for ulam
-[maktas@service-ulam dataspaces_wa]$ . run.sh init u
-[maktas@service-ulam dataspaces_wa]$ make clean; make; make lib
-
-Compiling nstx_demo code
-[maktas@service-ulam dataspaces_wa_nstx-sc14-demo]$ . run.sh init u
-[maktas@service-ulam dataspaces_wa_nstx-sc14-demo]$ make clean; make
+Note for .xsession/.xinitrc users:  
+	- Suns consoles start the apps in .xinitrc.
+	- X terminals attached to Suns use .xsession or .xinitrc if there's
+		no .xsession.  
+	- SGI IRIX 5.2 systems start up the apps that were on your desktop
+		when you logged out last, *unless* you have a .xsession-sgi. 
+		Then they start the apps in your .xsession-sgi.

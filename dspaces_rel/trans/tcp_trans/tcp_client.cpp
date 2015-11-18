@@ -40,8 +40,8 @@ int TCPClient::close()
   }
   try {
     boost::system::error_code ec;
-    socket_->shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
-    // socket_->shutdown(boost::asio::ip::tcp::socket::shutdown_send, ec);
+    // socket_->shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
+    socket_->shutdown(boost::asio::ip::tcp::socket::shutdown_send, ec);
     socket_->close(ec);
     if (ec) {
       LOG(ERROR) << "close:: ec= " << ec;
@@ -72,6 +72,7 @@ int TCPClient::connect()
   }
   catch(std::exception& ex) {
     LOG(ERROR) << "connect:: Exception=" << ex.what();
+    close();
     return 1;
   }
 }
@@ -101,12 +102,12 @@ int TCPClient::send_control_data(std::string control_data, int max_size)
 int TCPClient::send_chunk(int chunk_length, void* chunk_)
 {
   try {
-    // return (int)socket_->send(boost::asio::buffer(chunk_, chunk_length) ) / sizeof(data_type);
     return (int)socket_->send(boost::asio::buffer(chunk_, chunk_length) );
   }
   catch(std::exception& ex) {
     LOG(ERROR) << "send:: Exception=" << ex.what();
-    return 1;
+    close();
+    return -1;
   }
 }
 
@@ -115,11 +116,12 @@ int TCPClient::send(std::string data_id, int data_size, void* data_)
   send_control_data(boost::lexical_cast<std::string>(data_id), MAX_DATA_ID_LENGTH);
   send_control_data(boost::lexical_cast<std::string>(data_size), MAX_DATA_SIZE_LENGTH);
   
+  void* _data_ = data_;
   int data_size_to_send = data_size;
   while(data_size_to_send > 0) {
     int chunk_length = (data_size_to_send > CHUNK_LENGTH) ? CHUNK_LENGTH : data_size_to_send;
     int data_size_sent = send_chunk(chunk_length, data_);
-    if (!data_size_sent) {
+    if (data_size_sent == -1) {
       LOG(ERROR) << "init:: client_name= " << client_name << " send_chunk failed!";
       return 1;
     }
@@ -128,7 +130,9 @@ int TCPClient::send(std::string data_id, int data_size, void* data_)
     // data_ += data_size_sent;
     data_ = static_cast<char*>(data_) + data_size_sent;
   }
-  free(data_);
+  // Note: To see if read_some: Bad address can be solved by this
+  // usleep(1000000);
+  // free(_data_);
   
   return 0;
 }

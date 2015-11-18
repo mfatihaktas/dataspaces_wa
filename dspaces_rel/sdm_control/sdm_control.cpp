@@ -515,6 +515,19 @@ void SDMMaster::handle_sdm_squery(std::map<std::string, std::string> msg_map)
 {
   LOG(INFO) << "handle_sdm_squery:: msg_map= \n" << patch_all::map_to_str<>(msg_map);
   
+  std::string data_id = patch_sdm::get_data_id(data_id_t, msg_map);
+  int to_id = boost::lexical_cast<int>(msg_map["id"] );
+  // Note: Some get requests may get through wait_for_get in handle_get so will check here to avoid double remote_put/get
+  std::vector<std::string>& moving_data_id_v = ds_id__moving_data_id_v_map[to_id];
+  if (std::find(moving_data_id_v.begin(), moving_data_id_v.end(), data_id) != moving_data_id_v.end() ) {
+    LOG(WARNING) << "handle_sdm_squery:: already moving the data to_id= " << to_id << ", data_id= " << data_id;
+    return;
+  }
+  // Note: Reason for doing this here rather than in wait_for_move is handle_sdm_squery and handle_wa_space_data_act
+  // can still be called for the same data_id otherwise
+  moving_data_id_v.push_back(data_id);
+  LOG(INFO) << "handle_sdm_squery:: to_id= " << to_id << ", moving_data_id_v= " << patch_all::vec_to_str<>(moving_data_id_v);
+  
   int ndim;
   std::string key;
   unsigned int ver;
@@ -536,8 +549,7 @@ void SDMMaster::handle_sdm_squery(std::map<std::string, std::string> msg_map)
         move_act = false;
       else {
         LOG(INFO) << "handle_sdm_squery:: blocking for " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_);
-        unsigned int sync_point = patch_sdm::hash_str(
-          "B" + SDM_SQUERY + "_" + patch_sdm::get_data_id(data_id_t, key, ver, lcoor_, ucoor_) );
+        unsigned int sync_point = patch_sdm::hash_str("B" + SDM_SQUERY + "_" + data_id);
         sdm_m_syncer.add_sync_point(sync_point, 1);
         sdm_m_syncer.wait(sync_point);
         sdm_m_syncer.del_sync_point(sync_point);
@@ -554,7 +566,7 @@ void SDMMaster::handle_sdm_squery(std::map<std::string, std::string> msg_map)
     LOG(INFO) << "handle_sdm_squery:: move_act= " << move_act << ", ds_id_v= " << patch_all::vec_to_str<>(ds_id_v);
     // TODO: choose from ds_id_v wisely -- considering proximity, load etc.
     int from_id = ds_id_v[0];
-    boost::thread(&SDMMaster::wait_for_move, this, from_id, boost::lexical_cast<int>(msg_map["id"] ), msg_map);
+    boost::thread(&SDMMaster::wait_for_move, this, from_id, to_id, msg_map);
     
     std::map<std::string, std::string> move_act_msg_map;
     if (msg_coder.encode_msg_map(move_act_msg_map, ndim, key, ver, lcoor_, ucoor_) ) {
@@ -581,12 +593,18 @@ void SDMMaster::handle_sdm_squery(std::map<std::string, std::string> msg_map)
 void SDMMaster::wait_for_move(int from_id, int to_id, std::map<std::string, std::string> msg_map)
 {
   LOG(INFO) << "wait_for_move:: waiting; from_id= " << from_id << ", to_id= " << to_id << ", msg_map= \n" << patch_all::map_to_str<>(msg_map);
+  std::string data_id = patch_sdm::get_data_id(data_id_t, msg_map);
+  // ds_id__moving_data_id_v_map[to_id].push_back(data_id);
+  // LOG(INFO) << "wait_for_move:: to_id= " << to_id << ", moving_data_id_v= " << patch_all::vec_to_str<>(ds_id__moving_data_id_v_map[to_id] );
+  
   unsigned int sync_point = patch_sdm::hash_str(
-    SDM_MOVE + "_" + patch_sdm::get_data_id(data_id_t, msg_map) );
+    SDM_MOVE + "_" + data_id);
   sdm_m_syncer.add_sync_point(sync_point, 1);
   sdm_m_syncer.wait(sync_point);
   sdm_m_syncer.del_sync_point(sync_point);
   LOG(INFO) << "wait_for_move:: done waiting; from_id= " << from_id << ", to_id= " << to_id << ", msg_map= \n" << patch_all::map_to_str<>(msg_map);
+  std::vector<std::string>& moving_data_id_v = ds_id__moving_data_id_v_map[to_id];
+  moving_data_id_v.erase(std::find(moving_data_id_v.begin(), moving_data_id_v.end(), data_id) );
 
   msg_map["type"] = SDM_SQUERY_REPLY;
   if (send_cmsg(boost::lexical_cast<int>(to_id), msg_map) ) {
@@ -650,6 +668,17 @@ void SDMMaster::handle_wa_space_data_act(PREFETCH_DATA_ACT_T data_act_t, int to_
   }
   
   if (data_act_t == PREFETCH_DATA_ACT_PREFETCH) {
+    // Note: Some get requests may get through wait_for_get in handle_get so will check here to avoid double remote_put/get
+    std::string data_id = patch_sdm::get_data_id(data_id_t, kv.first, kv.second, lucoor_.first, lucoor_.second);
+    std::vector<std::string>& moving_data_id_v = ds_id__moving_data_id_v_map[to_id];
+    if (std::find(moving_data_id_v.begin(), moving_data_id_v.end(), data_id) != moving_data_id_v.end() ) {
+      LOG(WARNING) << "handle_sdm_squery:: already moving the data to_id= " << to_id << ", data_id= " << data_id;
+      return;
+    }
+    
+    moving_data_id_v.push_back(data_id);
+    LOG(INFO) << "handle_wa_space_data_act:: to_id= " << to_id << ", moving_data_id_v= " << patch_all::vec_to_str<>(moving_data_id_v);
+    
     std::vector<int> ds_id_v;
     if (wa_space_->query(kv.first, kv.second, lucoor_.first, lucoor_.second, ds_id_v) ) {
       LOG(ERROR) << "handle_wa_space_data_act:: data_act_t= " << data_act_t << ", non-existing data; " << KV_LUCOOR_TO_STR(kv.first, kv.second, lucoor_.first, lucoor_.second);

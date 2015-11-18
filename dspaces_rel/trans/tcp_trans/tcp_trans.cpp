@@ -56,6 +56,7 @@ int TCPTrans::send(std::string s_lip, int s_lport, std::string data_id, int data
   
   // return lip_lport__tcp_client_map[ll_pair]->send(data_id, data_size, data_);
   
-  active_tcp_client_v.push_back(boost::make_shared<TCPClient>(s_lip, s_lport) );
-  return active_tcp_client_v.back()->send(data_id, data_size, data_);
+  boost::shared_ptr<TCPClient> tcp_client_ = boost::make_shared<TCPClient>(s_lip, s_lport);
+  active_tcp_client_v.push_back(tcp_client_);
+  return tcp_client_->send(data_id, data_size, data_);
 }

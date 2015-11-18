@@ -92,7 +92,11 @@ BCClient::~BCClient()
 
 int BCClient::send(std::map<std::string, std::string> msg_map)
 {
-  std::string msg_str = msg_coder.encode(msg_map);
+  std::string msg_str;
+  if (msg_coder.encode(msg_map, msg_str) ) {
+    LOG(ERROR) << "send:: msg_coder.encode failed; msg_map= \n" << patch_all::map_to_str<>(msg_map);
+    return 1;
+  }
   
   int msg_size = msg_str.size();
   if (msg_size > max_msg_size) {

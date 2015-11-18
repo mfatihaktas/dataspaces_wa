@@ -1,6 +1,8 @@
 #ifndef _PATCH_SFC_EXP_H_
 #define _PATCH_SFC_EXP_H_
 
+#include "gnuplot_iostream.h"
+
 /***************************************  Check Hilbert  ******************************************/
 template<typename T>
 void make_2dscatter_plot(std::vector<T> x_v, std::vector<T> y_v,
@@ -181,7 +183,7 @@ void test_hsalgo()
 
 void test_locality_prefetching()
 {
-  int dim_length = 4;
+  int dim_length = 10;
   bitmask_t sexpand_length = 1;
   
   COOR_T lcoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 0) };

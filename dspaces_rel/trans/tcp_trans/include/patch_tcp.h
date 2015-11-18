@@ -109,7 +109,7 @@ namespace patch_tcp {
       int add_sync_point(T point, int num_peers)
       {
         if (point_cv_map.contains(point) ) {
-          LOG(ERROR) << "add_sync_point:: already added point.";
+          LOG(ERROR) << "add_sync_point:: already added point; point= " << point;
           return 1;
         }
         
@@ -123,7 +123,7 @@ namespace patch_tcp {
       int del_sync_point(T point)
       {
         if (!point_cv_map.contains(point) ) {
-          LOG(ERROR) << "del_sync_point:: non-existing point.";
+          LOG(ERROR) << "del_sync_point:: non-existing point= " << boost::lexical_cast<std::string>(point);
           return 1;
         }
         point_cv_map.del(point);

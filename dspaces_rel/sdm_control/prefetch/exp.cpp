@@ -198,10 +198,11 @@ int main(int argc, char **argv)
     // ndim_v_v.push_back(boost::assign::list_of(1)(2)(3)(4)(5)(6)(7)(8)(9)(10) );
     // // std::vector<float> ndim_v = boost::assign::list_of(1)(2)(3)(4)(5)(6)(7)(8)(9)(10);
     // std::vector<std::vector<float> > hit_rate_v_v;
-    // hit_rate_v_v.push_back(boost::assign::list_of(0.99)(0.8748)(0.831021)(0.8021)(0.78947)(0.785147)(0.713115)(0.783218)(0.756847)(0.753909) );
+    // hit_rate_v_v.push_back(boost::assign::list_of(0.99)(0.8748)(0.831021)(0.8021)(0.78947)(0.785147)(0.784252)(0.783218)(0.756847)(0.753909) );
     // // std::vector<float> hit_rate_v = boost::assign::list_of(0.99)(0.8748)(0.831021)(0.8021)(0.78947)(0.785147)(0.713115)(0.783218)(0.756847)(0.753909);
     // std::vector<std::string> title_v = boost::assign::list_of("");
     
+    // // std::string out_url = "";
     // std::string out_url = "/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/sdm_control/prefetch/fig_hit_rate_w_varying_ndim.png";
     // make_plot<float>(ndim_v_v, hit_rate_v_v, title_v,
     //                 "Number of dimensions", "Hit rate",

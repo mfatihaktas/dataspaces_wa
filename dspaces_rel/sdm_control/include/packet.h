@@ -6,9 +6,7 @@
 #include <cstring>
 #include <boost/lexical_cast.hpp>
 #include <map>
-//for boost serialization
-#include <fstream>
-#include <sstream>
+
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/archive/text_iarchive.hpp>
@@ -55,6 +53,8 @@ class Packet {
     std::map<std::string, std::string> get_msg_map() const;
     
     char* int_to_char_(int char_size, int number) const;
+    int decode(char* msg, std::map<std::string, std::string>& msg_map);
+    int encode(std::map<std::string, std::string> msg_map, std::string& str);
 };
 
 #endif // _PACKET_H_

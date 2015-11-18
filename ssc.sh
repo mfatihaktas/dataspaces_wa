@@ -6,17 +6,19 @@ echo $1 $2 $3
 ULAM_HEAD_NODE_IP=202.83.248.124
 PORT_KNOCKING_NUM=46022
 
+FMAQUIS_DIR=/net/hp101/ihpcsc/maktas7/dataspaces_wa_nstx-sc14-demo/img-chunk
 # TMAQUIS_DIR=/cac/u01/mfa51/Desktop/nstx-sc14-demo_on_dell_cluster
 # TMAQUIS_DIR=/cac/u01/mfa51/Desktop/ib_verbs_test
 # TMAQUIS_DIR=/cac/u01/mfa51/Desktop/adios-1.7.0
 # TMAQUIS_DIR=/cac/u01/mfa51/Desktop/boost_1_56_0
-TMAQUIS_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa
+# TMAQUIS_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa
+TMAQUIS_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa_nstx-sc14-demo
 MAQUIS_DIR=/net/hp101/ihpcsc/maktas7
 
 # TULAM_DIR=/cac/u01/mfa51/Desktop/ib_verbs_test
 # TULAM_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.5.0
-TULAM_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa
-# TULAM_DIR=/cac/u01/mfa51/Desktop/mpich-3.1.2
+# TULAM_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa
+TULAM_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa_nstx-sc14-demo
 ULAM_DIR=/home/sc14demo/common-apps
 
 FULAM_TARCHER_DIR=/home/sc14demo/common-apps/dataspaces_wa
@@ -75,7 +77,7 @@ elif [ $1  = 'ssh' ]; then
   elif [ $2 = 'r' ]; then
     ssh -p $PORT_KNOCKING_NUM maktas@$ULAM_HEAD_NODE_IP &
     PIDSAVE=$!
-    sleep 1; kill $PIDSAVE
+    sleep 0.1; kill $PIDSAVE
     if [ -z "$3" ]; then
       echo "which Romeo node? 1-15"
     else
@@ -98,26 +100,26 @@ elif [ $1  = 'ssh' ]; then
   fi
 elif [ $1  = 'tr' ]; then #scp only source code
   if [ $2 = 'm' ]; then
-    rsync -avz --exclude-from .gitignore $TMAQUIS_DIR maktas7@maquis1.cc.gatech.edu:$MAQUIS_DIR
+    rsync -avz --exclude-from=$TMAQUIS_DIR/.gitignore $TMAQUIS_DIR maktas7@maquis1.cc.gatech.edu:$MAQUIS_DIR
   elif [ $2 = 'k' ]; then
-    rsync -avz --exclude-from .gitignore $TMAQUIS_DIR maktas7@kid43.cc.gatech.edu:$MAQUIS_DIR
+    rsync -avz --exclude-from=$TMAQUIS_DIR/.gitignore $TMAQUIS_DIR maktas7@kid43.cc.gatech.edu:$MAQUIS_DIR
   elif [ $2 = 'u' ]; then
-    # ssh -p $PORT_KNOCKING_NUM maktas@$ULAM_HEAD_NODE_IP &
-    # PIDSAVE=$!
-    # sleep 0.5; kill $PIDSAVE
+    ssh -p $PORT_KNOCKING_NUM maktas@$ULAM_HEAD_NODE_IP &
+    PIDSAVE=$!
+    sleep 0.1; kill $PIDSAVE
     #
-    rsync -avz --exclude-from .gitignore $TULAM_DIR maktas@$ULAM_HEAD_NODE_IP:$ULAM_DIR
-    # ssh maktas@$ULAM_HEAD_NODE_IP rsync --exclude-from $FULAM_TARCHER_DIR/.gitignore -avz $FULAM_TARCHER_DIR archer5:$ARCHER_DIR
+    rsync -avz --exclude-from=$TULAM_DIR/.gitignore $TULAM_DIR maktas@$ULAM_HEAD_NODE_IP:$ULAM_DIR
+    # ssh maktas@$ULAM_HEAD_NODE_IP rsync --exclude-from=$FULAM_TARCHER_DIR/.gitignore -avz $FULAM_TARCHER_DIR archer5:$ARCHER_DIR
     
-    # rsync -avz --exclude-from .gitignore $TMAQUIS_DIR maktas7@maquis1.cc.gatech.edu:$MAQUIS_DIR
-    # ssh maktas7@maquis1.cc.gatech.edu rsync -avz --exclude-from $FMAQUIS_TULAM_DIR/.gitignore $FMAQUIS_TULAM_DIR maktas@$ULAM_HEAD_NODE_IP:$ULAM_DIR
+    # rsync -avz --exclude-from=.gitignore $TMAQUIS_DIR maktas7@maquis1.cc.gatech.edu:$MAQUIS_DIR
+    # ssh maktas7@maquis1.cc.gatech.edu rsync -avz --exclude-from=$FMAQUIS_TULAM_DIR/.gitignore $FMAQUIS_TULAM_DIR maktas@$ULAM_HEAD_NODE_IP:$ULAM_DIR
     
   elif [ $2 = 'a' ]; then
     # ssh -p $PORT_KNOCKING_NUM maktas@$ULAM_HEAD_NODE_IP &
     # PIDSAVE=$!
     # sleep 1; kill $PIDSAVE
     #
-    ssh maktas@$ULAM_HEAD_NODE_IP rsync --exclude-from $FULAM_TARCHER_DIR/.rsyncignore -avz $FULAM_TARCHER_DIR archer1:$ARCHER_DIR
+    ssh maktas@$ULAM_HEAD_NODE_IP rsync --exclude-from=$FULAM_TARCHER_DIR/.rsyncignore -avz $FULAM_TARCHER_DIR archer1:$ARCHER_DIR
     # ssh maktas@$ULAM_HEAD_NODE_IP rsync -avz /home/sc14demo/fusion archer$3:/home/sc14demo
     # ssh maktas@$ULAM_HEAD_NODE_IP rsync -avz /home/sc14demo/common-apps archer$3:/home/sc14demo
   elif [ $2 = 'r' ]; then
@@ -127,6 +129,10 @@ elif [ $1  = 'tr' ]; then #scp only source code
     
     ssh maktas@$ULAM_HEAD_NODE_IP rsync -avz $FULAM_TROMEO_DIR romeo43:$ROMEO_DIR
   fi
+elif [ $1  = 'fr' ]; then #scp only source code
+  if [ $2 = 'k' ]; then
+    rsync -avz --exclude-from=$TMAQUIS_DIR/.gitignore maktas7@kid43.cc.gatech.edu:$FMAQUIS_DIR $TMAQUIS_DIR 
+  fi  
 else
   echo "Argument did not match !"
 fi

@@ -132,6 +132,10 @@ class SDMMaster : public SDMSlave {
     
     int num_slaves;
     patch_all::syncer<unsigned int> sdm_m_syncer;
+    patch_all::thread_safe_map<int, std::vector<std::string> > ds_id__moving_data_id_v_map;
+    
+    // boost::mutex handle_sdm_squery__handle_wa_space_data_act
+    // boost::lock_guard<boost::mutex> guard(this->mutex);
   public:
     SDMMaster(DATA_ID_T data_id_t,
               int ds_id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,

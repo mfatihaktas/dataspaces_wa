@@ -1,0 +1,29 @@
+#!/bin/sh
+#
+# updateprofile --- convert the profile in your home directory to use
+#		    the interludes in /usr/local/dotfiles for selecting
+#		    platform specific startup files.  This can be run by
+#		    hand and is run automatically by Xsession.dt on IRIX5.2
+#		    when it sees an unconverted home directory.
+#
+#	Note to zsh, bash, and tcsh users:  The startup files specific to
+#	these shells are *NOT* converted.  You may copy and modify the
+#	.cshrc/.login/.profile interludes to work for you.
+
+FILESTOCONVERT=".cshrc .login .kshrc .profile .xinitrc .xsession"
+DEFAULTPLATFORM=sun
+for x in $FILESTOCONVERT; do
+	if [ -f $HOME/$x-$DEFAULTPLATFORM ]; then
+		echo "You've already been updated."
+		exit 1
+	fi
+done
+
+for x in $FILESTOCONVERT; do
+	if [ -f $HOME/$x ]; then
+		echo "Moving $x to $x-$DEFAULTPLATFORM and installing new $x. . ."
+		mv $HOME/$x $HOME/$x-$DEFAULTPLATFORM || exit 1
+		cp /usr/local/dotfiles/$x $HOME/$x
+		chmod 600 $HOME/$x
+	fi
+done

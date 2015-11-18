@@ -75,8 +75,8 @@ namespace patch_sdm {
       MsgCoder();
       ~MsgCoder();
       
-      std::map<std::string, std::string> decode(char* msg);
-      std::string encode(std::map<std::string, std::string> msg_map);
+      int decode(char* msg, std::map<std::string, std::string>& msg_map);
+      int encode(std::map<std::string, std::string> msg_map, std::string& str);
       
       int decode_msg_map(std::map<std::string, std::string> msg_map,
                          int &ndim, std::string& key, unsigned int& ver, COOR_T* &lb_, COOR_T* &ub_);

@@ -386,7 +386,11 @@ int MWASpace::reg_ds(int ds_id)
     LOG(ERROR) << "reg_ds:: WASpace::reg_ds failed; ds_id= " << ds_id;
     return 1;
   }
-  ds_id__kv_map[ds_id] = boost::make_shared<patch_all::thread_safe_vector<key_ver_pair> >();
+  // ds_id__kv_map[ds_id] = boost::make_shared<patch_all::thread_safe_vector<key_ver_pair> >();
+  boost::shared_ptr<patch_all::thread_safe_vector<key_ver_pair> > kv_v_(
+    new patch_all::thread_safe_vector<key_ver_pair>() );
+  ds_id__kv_map[ds_id] = kv_v_;
+  
   ds_id__mpbuffer_map[ds_id] = boost::make_shared<MPBuffer>(ds_id, max_num_key_ver_in_mpbuffer, malgo_t,
                                                             w_prefetch, boost::bind(&MWASpace::handle_mpbuffer_data_act, this, _1, _2, _3) );
   // Note: DS joins dynamically, its MPBuffer needs to be updated

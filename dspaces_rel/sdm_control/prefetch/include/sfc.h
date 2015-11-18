@@ -26,7 +26,7 @@
 #include "hilbert.h"
 #include "patch_pre.h"
 
-#define NDIM 1
+#define NDIM 3
 typedef uint64_t COOR_T;
 typedef boost::geometry::model::point<int, NDIM, boost::geometry::cs::cartesian> point_t;
 typedef boost::geometry::model::box<point_t> box_t;

@@ -138,7 +138,8 @@ SDMNode::SDMNode(std::string type, bool master_slave,
   // 
   LOG(INFO) << "SDMNode:: constructed; \n" << to_str();
   
-  join();
+  if (join() )
+    LOG(ERROR) << "SDMNode:: join failed; \n" << to_str();
 }
 
 SDMNode::~SDMNode() { LOG(INFO) << "destructed."; }
@@ -169,7 +170,7 @@ int SDMNode::join()
 {
   if (joinhost_lip.compare("") == 0) { // First node
     LOG(INFO) << "join:: FIRST NODE.";
-    return 1;
+    return 0;
   }
   else {
     // To get check joinhost status and get the join_reply
