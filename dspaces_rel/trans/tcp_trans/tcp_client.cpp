@@ -99,10 +99,10 @@ int TCPClient::send_control_data(std::string control_data, int max_size)
   return 0;
 }
 
-int TCPClient::send_chunk(int chunk_length, void* chunk_)
+int TCPClient::send_chunk(int chunk_size, void* chunk_)
 {
   try {
-    return (int)socket_->send(boost::asio::buffer(chunk_, chunk_length) );
+    return (int)socket_->send(boost::asio::buffer(chunk_, chunk_size) );
   }
   catch(std::exception& ex) {
     LOG(ERROR) << "send:: Exception=" << ex.what();
@@ -119,8 +119,8 @@ int TCPClient::send(std::string data_id, int data_size, void* data_)
   void* _data_ = data_;
   int data_size_to_send = data_size;
   while(data_size_to_send > 0) {
-    int chunk_length = (data_size_to_send > CHUNK_LENGTH) ? CHUNK_LENGTH : data_size_to_send;
-    int data_size_sent = send_chunk(chunk_length, data_);
+    int chunk_size = (data_size_to_send > CHUNK_SIZE) ? CHUNK_SIZE : data_size_to_send;
+    int data_size_sent = send_chunk(chunk_size, data_);
     if (data_size_sent == -1) {
       LOG(ERROR) << "init:: client_name= " << client_name << " send_chunk failed!";
       return 1;

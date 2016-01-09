@@ -28,6 +28,16 @@
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/tokenizer.hpp>
 
+// #define DEBUG_IB
+#ifdef DEBUG_IB
+#define log_(type, msg) \
+  LOG(type) << __func__ << ":: " << msg;
+  // std::cerr << #type " "<< __FILE__ << ":" << __LINE__ << "] " << __func__ << ":: " << msg << std::endl;
+  // std::clog << #type " "<< __FILE__ << ":" << __LINE__ << "] " << __func__ << ":: " << msg << std::endl;
+#else
+  #define log_(type, msg) ;
+#endif // DEBUG_IB
+
 namespace patch_ds {
   // template <typename T>
   // void free_all(int num, ...)

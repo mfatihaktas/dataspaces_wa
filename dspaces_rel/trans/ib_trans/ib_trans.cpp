@@ -6,10 +6,10 @@ IBTrans::IBTrans(std::string s_lip, std::list<std::string> s_lport_list)
   for (std::list<std::string>::iterator it = s_lport_list.begin(); it != s_lport_list.end(); it++)
     s_lport_queue.push(*it);
   // 
-  LOG(INFO) << "IBTrans:: constructed; \n" << to_str();
+  log_(INFO, "constructed; \n" << to_str() )
 }
 
-IBTrans::~IBTrans() { LOG(INFO) << "IBTrans:: destructed."; }
+IBTrans::~IBTrans() { log_(INFO, "destructed.") }
 
 std::string IBTrans::to_str()
 {
@@ -24,49 +24,15 @@ std::string IBTrans::get_s_lip() { return s_lip; }
 std::string IBTrans::get_s_lport() { return s_lport_queue.pop(); }
 void IBTrans::return_s_lport(std::string s_lport) { s_lport_queue.push(s_lport); }
 
-void IBTrans::init_server(std::string data_type, const char* lport,
-                          RECV_ID_T recv_id, boost::function<void(RECV_ID_T, int, void*)> data_recv_cb)
+void IBTrans::init_server(const char* lport_, msg_recv_cb_func msg_recv_cb, data_recv_cb_func data_recv_cb)
 {
-  if (str_equals(data_type, "int") ) {
-    IBServer<int, RECV_ID_T> ib_server(lport, recv_id, data_recv_cb);
-    ib_server.init();
-  }
-  else if (str_equals(data_type, "char") ) {
-    IBServer<char, RECV_ID_T> ib_server(lport, recv_id, data_recv_cb);
-    ib_server.init();
-  }
-  else if (str_equals(data_type, "double") ) {
-    IBServer<double, RECV_ID_T> ib_server(lport, recv_id, data_recv_cb);
-    ib_server.init();
-  }
-  else if (str_equals(data_type, "float") ) {
-    IBServer<float, RECV_ID_T> ib_server(lport, recv_id, data_recv_cb);
-    ib_server.init();
-  }
-  else
-    LOG(ERROR) << "init_ib_server:: unknown data_type= " << data_type;
+  IBServer ib_server(lport_, msg_recv_cb, data_recv_cb);
 }
 
-void IBTrans::init_client(const char* s_laddr, const char* s_lport,
-                          std::string data_type, int data_length, void* data_)
+void IBTrans::init_client(const char* s_lip_, const char* s_lport_,
+                          std::string data_id, int data_size, void* data_)
 {
-  if (str_equals(data_type, "int") ) {
-    IBClient<int> ib_client(s_laddr, s_lport, data_length, static_cast<int*>(data_) );
-    ib_client.init();
-  }
-  else if (str_equals(data_type, "char") ) {
-    IBClient<char> ib_client(s_laddr, s_lport, data_length, static_cast<char*>(data_) );
-    ib_client.init();
-  }
-  else if (str_equals(data_type, "double") ) {
-    IBClient<double> ib_client(s_laddr, s_lport, data_length, static_cast<double*>(data_) );
-    ib_client.init();
-  }
-  else if (str_equals(data_type, "float") ) {
-    IBClient<float> ib_client(s_laddr, s_lport, data_length, static_cast<float*>(data_) );
-    ib_client.init();
-  }
-  else
-    LOG(ERROR) << "init_ib_client:: unknown data_type= " << data_type;
+  IBClient ib_client(s_lip_, s_lport_);
+  ib_client.send_data(data_id, data_size, data_);
 }
 

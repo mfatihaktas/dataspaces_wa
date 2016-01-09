@@ -216,7 +216,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
 }
 
 #define TEST_SIZE 256
-#define TEST_NDIM 1
+#define TEST_NDIM 3
 #define TEST_DATASIZE pow(TEST_SIZE, TEST_NDIM)
 #define TEST_VER 0
 #define TEST_SGDIM TEST_DATASIZE
@@ -288,7 +288,7 @@ int main(int argc , char **argv)
     put_test("dummy", wads_driver);
     tprofiler.end_event("put_test");
     
-    std::cout << "Enter\n";
+    std::cout << "Enter \n";
     getline(std::cin, temp);
   }
   else if (str_cstr_equals(opt_map["type"], "get") ) {
@@ -303,7 +303,7 @@ int main(int argc , char **argv)
     get_test("dummy", wads_driver);
     tprofiler.end_event("get_test");
     
-    std::cout << "Enter\n";
+    std::cout << "Enter \n";
     getline(std::cin, temp);
   }
   else if (str_cstr_equals(opt_map["type"], "ri") ) {
@@ -353,7 +353,7 @@ int main(int argc , char **argv)
       //   intf_to_ip(opt_map["tcp_lintf"] ), boost::lexical_cast<int>(opt_map["tcp_lport"] ),
       //   opt_map["gftp_lintf"], intf_to_ip(opt_map["gftp_lintf"] ), opt_map["gftp_lport"], opt_map["tmpfs_dir"] );
     
-      std::cout << "Enter\n";
+      std::cout << "Enter \n";
       getline(std::cin, temp);
     }
     else {
@@ -373,7 +373,7 @@ int main(int argc , char **argv)
       //   intf_to_ip(opt_map["tcp_lintf"] ), boost::lexical_cast<int>(opt_map["tcp_lport"] ),
       //   opt_map["gftp_lintf"], intf_to_ip(opt_map["gftp_lintf"] ), opt_map["gftp_lport"], opt_map["tmpfs_dir"] );
       
-      std::cout << "Enter\n";
+      std::cout << "Enter \n";
       getline(std::cin, temp);
     }
     // patch_all::syncer<char> dummy_syncer;

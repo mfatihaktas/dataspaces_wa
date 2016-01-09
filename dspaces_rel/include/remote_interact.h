@@ -157,12 +157,12 @@ class MSRIManager : public RIManager { // Markov Slave
                      boost::lexical_cast<int>(cl_id), lcontrol_lip, lcontrol_lport, join_lcontrol_lip, join_lcontrol_lport,
                      boost::bind(&RIManager::handle_app_msg, this, _1) );
       // 
-      LOG(INFO) << "MSRIManager:: constructed; \n" << to_str();
+      log_(INFO, "constructed; \n" << to_str() )
       
       signals.async_wait(boost::bind(&RIManager::close, this) );
       io_service.run();
     }
-    ~MSRIManager() { LOG(INFO) << "MSRIManager:: destructed."; }
+    ~MSRIManager() { log_(INFO, "destructed.") }
     
     std::string to_str()
     {
@@ -195,12 +195,12 @@ class SSRIManager : public RIManager { // Spatial Slave
                      boost::lexical_cast<int>(cl_id), lcontrol_lip, lcontrol_lport, join_lcontrol_lip, join_lcontrol_lport,
                      boost::bind(&RIManager::handle_app_msg, this, _1) );
       // 
-      LOG(INFO) << "SSRIManager:: constructed; \n" << to_str();
+      log_(INFO, "constructed; \n" << to_str() )
       
       signals.async_wait(boost::bind(&RIManager::close, this) );
       io_service.run();
     }
-    ~SSRIManager() { LOG(INFO) << "SSRIManager:: destructed."; }
+    ~SSRIManager() { log_(INFO, "destructed.") }
     
     std::string to_str()
     {
@@ -238,12 +238,12 @@ class MMRIManager : public RIManager { // Markov Master
                      boost::lexical_cast<int>(cl_id), lcontrol_lip, lcontrol_lport, join_lcontrol_lip, join_lcontrol_lport,
                      boost::bind(&RIManager::handle_app_msg, this, _1) );
       // 
-      LOG(INFO) << "MMRIManager:: constructed; \n" << to_str();
+      log_(INFO, "constructed; \n" << to_str() )
       
       signals.async_wait(boost::bind(&RIManager::close, this) );
       io_service.run();
     }
-    ~MMRIManager() { LOG(INFO) << "MMRIManager:: destructed."; }
+    ~MMRIManager() { log_(INFO, "destructed.") }
     
     std::string to_str()
     {
@@ -281,12 +281,12 @@ class SMRIManager : public RIManager { // Spatial Master
                      boost::lexical_cast<int>(cl_id), lcontrol_lip, lcontrol_lport, join_lcontrol_lip, join_lcontrol_lport,
                      boost::bind(&RIManager::handle_app_msg, this, _1) );
       // 
-      LOG(INFO) << "SMRIManager:: constructed; \n" << to_str();
+      log_(INFO, "constructed; \n" << to_str() )
       
       signals.async_wait(boost::bind(&RIManager::close, this) );
       io_service.run();
     }
-    ~SMRIManager() { LOG(INFO) << "SMRIManager:: destructed."; }
+    ~SMRIManager() { log_(INFO, "destructed.") }
     
     std::string to_str()
     {

@@ -14,20 +14,20 @@ Trans::Trans(std::string trans_protocol,
   else if (str_str_equals(trans_protocol, GRIDFTP) ) {
     gftp_trans_ = boost::make_shared<GFTPTrans>(gftp_lintf, gftp_lip, boost::lexical_cast<int>(gftp_lport), tmpfs_dir);
     if (gftp_trans_->init_server() ) {
-      LOG(ERROR) << "Trans:: gftp_trans_->init_server failed!";
+      log_(ERROR, "gftp_trans_->init_server failed!")
       exit(1);
     }
   }
 #endif // _GRIDFTP_
   else {
-    LOG(ERROR) << "Trans:: unknown trans_protocol= " << trans_protocol;
+    log_(ERROR, "unknown trans_protocol= " << trans_protocol)
     exit(1);
   }
   // 
-  LOG(INFO) << "Trans:: constructed; \n" << to_str();
+  log_(INFO, "constructed; \n" << to_str() )
 }
 
-Trans::~Trans() { LOG(INFO) << "Trans:: destructed."; }
+Trans::~Trans() { log_(INFO, "destructed.";) }
 
 std::string Trans::to_str()
 {
@@ -93,7 +93,7 @@ int Trans::init_get(std::string data_type, std::string s_lport, std::string data
     int datasize_inB;
     void* data_;
     if (gftp_trans_->read_del_datafile(data_id, datasize_inB, data_) ) {
-      LOG(ERROR) << "init_get:: gftp_trans_->read_del_datafile failed!";
+      log_(ERROR, "init_get:: gftp_trans_->read_del_datafile failed!")
       return 1;
     }
     recv_cb(data_id, datasize_inB, data_);
@@ -120,7 +120,7 @@ int Trans::init_put(std::string s_lip, std::string s_lport, std::string tmpfs_di
     else if (data_type == "double")
       data_size *= sizeof(double);
     else {
-      LOG(ERROR) << "init_put:: unknown data_type= " << data_type;
+      log_(ERROR, "init_put:: unknown data_type= " << data_type)
       return 1;
     }
     tcp_trans_->send(s_lip, boost::lexical_cast<int>(s_lport), data_id, data_size, data_);
@@ -128,7 +128,7 @@ int Trans::init_put(std::string s_lip, std::string s_lport, std::string tmpfs_di
 #ifdef _GRIDFTP_
   else if (str_str_equals(trans_protocol, GRIDFTP) ) {
     if (gftp_trans_->put(s_lip, boost::lexical_cast<int>(s_lport), tmpfs_dir, data_id, data_length, data_) ) {
-      LOG(ERROR) << "init_put:: gftp_trans_->put for data_id= " << data_id <<" failed!";
+      log_(ERROR, "init_put:: gftp_trans_->put for data_id= " << data_id <<" failed!")
       return 1;
     }
   }

@@ -17,7 +17,7 @@
 #define TRANS_PARS
 const int MAX_DATA_ID_LENGTH = 50;
 const int MAX_DATA_SIZE_LENGTH = 50;
-const int CHUNK_LENGTH = 10*1024*1024;
+const int CHUNK_SIZE = 10*1024*1024;
 #endif // TRANS_PARS
 
 class TCPClient {

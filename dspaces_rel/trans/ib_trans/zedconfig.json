@@ -3,22 +3,22 @@
         "/default.json"
     ],
     "preferences": {
-        "theme": "monokai",
-        "fontSize": 12,
+        "editorTheme": "solarized_light",
+        "fontSize": 11,
         "tabSize": 2,
         "printMarginColumn": 100
     },
     "modes": {},
     "keys": {
-        "Split:Switch Focus": {
-            "mac": "Command-Tab",
-            "win": "Ctrl-Tab"
-        },
-        "Navigate:Goto": {
-            "mac": "Command-O",
-            "win": "Ctrl-O"
-        }
-     },
+      "Split:Switch Focus": {
+          "mac": "Command-Tab",
+          "win": "Ctrl-Tab"
+      },
+      "Navigate:Goto": {
+          "mac": "Command-O",
+          "win": "Ctrl-O"
+      }
+    },
     "commands": {},
     "handlers": {},
     "themes": {},

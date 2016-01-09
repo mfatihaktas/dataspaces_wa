@@ -15,6 +15,8 @@
 #include <boost/thread.hpp>
 #include <boost/function.hpp>
 
+#include "patch_ds.h"
+
 extern "C" {
   #include "dataspaces.h"
 }

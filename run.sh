@@ -1,5 +1,5 @@
 #!/bin/bash
-$1 $2 $3
+echo $1 $2 $3
 
 NUM_SNODE=1
 NUM_CLIENT=1
@@ -38,8 +38,18 @@ elif [ -n "$KID" ]; then
   IB_LINTF="ib0"
   TCP_LINTF="eth0"
   GFTP_LINTF="eth0"
+elif [ -n "$BOOTH" ]; then
+  LCONTROL_LINTF="eth0"
+  APP_JOIN_LCONTROL_LIP_LIST=( "192.168.2.241" "192.168.2.241" )
+  
+  CONTROL_LINTF="eth0"
+  RI_MANAGER_JOIN_CONTROL_LIP_LIST=( "" "192.168.2.241" )
+  
+  IB_LINTF="ib0"
+  TCP_LINTF="eth0"
+  GFTP_LINTF="eth0"
 else
-  echo "Which system DELL | ULAM | KID"
+  echo "Which system DELL | ULAM | KID | BOOTH"
 fi
 
 RI_MANAGER_LCONTROL_LPORT_LIST=( 9000 9000 )
@@ -195,7 +205,8 @@ elif [ $1  = 'init' ]; then
     export BOOST_DIR=/cac/u01/mfa51/Desktop/boost_1_56_0/install
     export GFTPINC_DIR=/usr/include/globus
     export GFTPLIB_DIR=/usr/lib64
-    export DSPACES_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.5.0/install
+    # export DSPACES_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.5.0/install
+    export DSPACES_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces/install
     export DSPACESWA_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa
     
     # source /opt/rh/devtoolset-2/enable
@@ -244,6 +255,22 @@ elif [ $1  = 'init' ]; then
     
     export PATH=/net/hj1/ihpcl/bin:/sbin:$PATH
     echo "PATH=" $PATH
+  elif [ $2  = 'b' ]; then
+    export BOOTH=BOOTH
+    export CC=gcc
+    export CPP=g++
+    export MPICPP=mpicxx
+    export GLOG_DIR=/home/jchoi/project/glog-0.3.3/install
+    export BOOST_DIR=/home/jchoi/project/boost_1_56_0/install
+    export GFTPINC_DIR=/usr/include/globus
+    export GFTPLIB_DIR=/usr/lib64
+    export DSPACES_DIR=/home/jchoi/project/dataspaces-1.6.0/install
+    export DSPACESWA_DIR=/home/jchoi/project/dataspaces_wa
+    
+    LD_LIBRARY_PATH=$BOOST_DIR/lib:$LD_LIBRARY_PATH
+    LD_LIBRARY_PATH=$GLOG_DIR/lib:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH
+    echo "LD_LIBRARY_PATH= " $LD_LIBRARY_PATH
   fi
 elif [ $1  = 'iperf' ]; then
   if [ -n "$DELL" ]; then

@@ -1,23 +1,21 @@
 #!/bin/bash
 echo $1 $2 $3
 
-S_LIP=192.168.210.161 # 10.0.0.151 #192.168.200.120
+S_LIP=10.0.0.151 # 192.168.210.161 #192.168.200.120
 S_LPORT=1234
 
 if [ $1  = 's' ]; then
   GLOG_logtostderr=1 ./exp --type=server --s_lport=$S_LPORT
 elif [ $1  = 'c' ]; then
   GLOG_logtostderr=1 ./exp --type=client --s_lport=$S_LPORT --s_lip=$S_LIP
-elif [ $1  = 'rc' ]; then
-  GLOG_logtostderr=1 ./exp --type=client --s_lport=$S_LPORT --s_lip=$S_LIP
-elif [ $1  = 'bq' ]; then
-  GLOG_logtostderr=1 ./exp --type=bqueue
 elif [ $1  = 'ds' ]; then
   export GLOG_logtostderr=1
   gdb --args ./exp --type=server --s_lport=$S_LPORT
 elif [ $1  = 'dc' ]; then
   export GLOG_logtostderr=1
   gdb --args ./exp --type=client --s_lport=$S_LPORT --s_lip=$S_LIP
+elif [ $1  = 'bq' ]; then
+  GLOG_logtostderr=1 ./exp --type=bqueue
 elif [ $1  = 'init' ]; then
   if [ $2  = 'd' ]; then
     export CC=/opt/gcc-4.8.2/bin/gcc

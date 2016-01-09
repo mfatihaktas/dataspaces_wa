@@ -226,7 +226,7 @@ int main(int argc , char **argv)
     getline(std::cin, temp);
   }
   else
-    LOG(ERROR) << "main:: unknown type= " << opt_map["type"];
+    log_(ERROR, "unknown type= " << opt_map["type"] )
   
   return 0;
 }

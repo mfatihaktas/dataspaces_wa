@@ -3,8 +3,8 @@
         "/default.json"
     ],
     "preferences": {
-        "editorTheme": "github",
-        "fontSize": 12,
+        "editorTheme": "solarized_light",
+        "fontSize": 11,
         "tabSize": 2,
         "printMarginColumn": 100
     },

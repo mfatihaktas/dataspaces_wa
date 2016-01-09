@@ -11,13 +11,13 @@ if [ -n "$ULAM" ]; then
   
   RI_MANAGER_LCONTROL_LINTF="eth0"
   
-  RI_MANAGER_CONTROL_LINTF="ib2"
+  RI_MANAGER_CONTROL_LINTF="ib0:2"
   RI_MANAGER_CONTROL_LPORT=8800
   RI_MANAGER_JOIN_CONTROL_LIP=""
   RI_MANAGER_JOIN_CONTROL_LPORT=0
   
-  RI_MANAGER_IB_LINTF="ib2"
-  RI_MANAGER_TCP_LINTF="ib2"
+  RI_MANAGER_IB_LINTF="ib0:2"
+  RI_MANAGER_TCP_LINTF="ib0:2"
   RI_MANAGER_GFTP_LINTF="eth0"
   
   MPIRUN=/apps/openmpi/1.8.2/gcc-4.8.3/bin/mpirun
@@ -39,6 +39,26 @@ elif [ -n "$KID" ]; then
   RI_MANAGER_GFTP_LINTF="eth0"
   
   MPIRUN=/net/hj1/ihpcl/bin/mpirun
+elif [ -n "$BOOTH" ]; then
+  NUM_DS_NODE=1
+  DS_NODE="-host santa-clara"
+  RI_MANAGER_NODE="-host santa-clara"
+  NUM_DSPACESWA_CLIENT=1
+  
+  RI_MANAGER_LCONTROL_LINTF="eth0"
+  
+  RI_MANAGER_CONTROL_LINTF="ib0"
+  RI_MANAGER_CONTROL_LPORT=8801
+  RI_MANAGER_JOIN_CONTROL_LIP="192.168.210.100"
+  RI_MANAGER_JOIN_CONTROL_LPORT=8800
+  
+  RI_MANAGER_IB_LINTF="ib0"
+  RI_MANAGER_TCP_LINTF="ib0"
+  RI_MANAGER_GFTP_LINTF="eth0"
+  RI_MANAGER_TMPFS_DIR=$TMPFS_DIR"/put"
+  
+  PSEUDO_2=1
+  MPIRUN=/apps/openmpi/1.8.2/gcc-4.8.3/bin/mpirun
 else
   echo "Unexpected system!"
 fi

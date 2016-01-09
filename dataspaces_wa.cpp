@@ -3,7 +3,7 @@
 const int SLEEP_FOR_RI = 2000000;
 
 /***************************************  WADSDriver  ****************************************/
-// Note: Reason why base_client_id is added in BCClient's arg rather than eliminating it by taking 
+// Note: Reason why base_client_id is added in BCClient's arg rather than eliminating it by taking
 // app_id arg as base_client_id + app_id is because DS throws segmentation fault in a weird way while
 // initializing it with arbitrary app_id's.
 // Overall, app_id is used for DSDriver, _app_id is used as the application id

@@ -16,8 +16,8 @@
 #include <map>
 #include <sys/time.h>
 
+#include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
-#include <glog/logging.h>
 // 
 #include "ib_trans.h"
 
@@ -71,22 +71,18 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
       case 2:
         opt_map["s_lip"] = optarg;
         break;
-      case '?':
-        break; //getopt_long already printed an error message.
       default:
         break;
     }
   }
   if (optind < argc) {
-    printf ("non-option ARGV-elements: ");
+    printf("non-option ARGV-elements: ");
     while (optind < argc)
-      printf ("%s ", argv[optind++]);
-    putchar ('\n');
+      printf("%s ", argv[optind++] );
+    putchar('\n');
   }
   // 
-  std::cout << "opt_map= \n";
-  for (std::map<std::string, std::string>::iterator it=opt_map.begin(); it!=opt_map.end(); ++it)
-    std::cout << it->first << " : " << it->second << '\n';
+  std::cout << "opt_map= \n" << patch_ib::map_to_str<>(opt_map);
   
   return opt_map;
 }
@@ -94,19 +90,19 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
 #define data_type int
 const std::string data_type_str = "int";
 
-size_t total_recved_size = 0;
-void data_recv_handler(std::string recv_id, size_t data_size, void* data_)
+void msg_recv_handler(int size, char* msg_)
+{
+  log_(INFO, "recved; size= " << size << ", msg_= " << msg_)
+}
+
+int total_recved_size = 0;
+void data_recv_handler(char* recv_id, int data_size, void* data_)
 {
   total_recved_size += data_size;
-  LOG(INFO) << "data_recv_handler:: for recv_id= " << recv_id
-            << ", recved data_size= " << data_size
-            << ", total_recved_size= " << (float)total_recved_size/(1024*1024) << "MB";
-  
-  // size_t length = data_size/sizeof(data_type);
-  // for (int i = 0; i < length; i++){
-  //   std::cout << static_cast<data_type*>(data_)[i] << ",";
-  // }
-  // std::cout << "\n";
+  log_(INFO, "data_recv_handler:: for recv_id= " << recv_id
+             << ", recved data_size= " << data_size
+             << ", total_recved_size= " << (float)total_recved_size/(1024*1024) << "MB \n"
+             << "data_= " << patch_ib::arr_to_str<>(data_size, (data_type*)data_) )
 }
 
 int main(int argc , char **argv)
@@ -123,48 +119,49 @@ int main(int argc , char **argv)
   std::list<std::string> ib_lport_list(ib_lports, ib_lports + sizeof(ib_lports) / sizeof(std::string) );
   // 
   IBTrans ib_trans(opt_map["s_lip"], ib_lport_list);
-  if (str_equals(opt_map["type"], "server") ) {
-    ib_trans.init_server(data_type_str, ib_trans.get_s_lport().c_str(),
-                         "dummy", boost::bind(&data_recv_handler, _1, _2, _3) );
+  if (str_str_equals(opt_map["type"], "server") ) {
+    ib_trans.init_server(ib_trans.get_s_lport().c_str(),
+                         boost::bind(&msg_recv_handler, _1, _2),
+                         boost::bind(&data_recv_handler, _1, _2, _3) );
   }
-  else if (str_equals(opt_map["type"], "client") ) {
-    size_t data_length = 1024*1024*256; //1024*1024*256;
+  else if (str_str_equals(opt_map["type"], "client") ) {
+    int data_length = 1024; // 1024*1024*256; // 1024*1024*256;
     void* data_ = (void*)malloc(sizeof(data_type)*data_length);
     
     for (int i = 0; i < data_length; i++)
       static_cast<data_type*>(data_)[i] = (data_type)i*1.2;
     // 
     if (gettimeofday(&start_time, NULL) ) {
-      LOG(ERROR) << "main:: gettimeofday returned non-zero.";
+      log_(ERROR, "gettimeofday returned non-zero.")
       return 1;
     }
     
     ib_trans.init_client(opt_map["s_lip"].c_str(), opt_map["s_lport"].c_str(),
-                         data_type_str, data_length, data_);
+                         "dummy", data_length*sizeof(data_type), data_);
     
     if (gettimeofday(&end_time, NULL) ) {
-      LOG(ERROR) << "main:: gettimeofday returned non-zero.";
+      log_(ERROR, "gettimeofday returned non-zero.")
       return 1;
     }
     long exec_time_sec = end_time.tv_sec - start_time.tv_sec;
     long exec_time_usec = end_time.tv_usec - start_time.tv_usec;
-    LOG(INFO) << "main:: exec_time= " << exec_time_sec << "." << exec_time_usec / 1000 << " sec.";
+    log_(INFO, "exec_time= " << exec_time_sec << "." << exec_time_usec / 1000 << " sec.")
     // 
     free(data_);
     // std::cout << "Enter\n";
     // getline(std::cin, temp);
   }
-  else if (str_equals(opt_map["type"], "bqueue") ) {
+  else if (str_str_equals(opt_map["type"], "bqueue") ) {
     // BQueue<int> bq;
     // bq.create_timed_push_thread(12);
     
     // std::string ib_lport = ib_trans.get_next_avail_ib_lport();
-    // LOG(INFO) << "main:: ib_lport= " << ib_lport;
+    // log_(INFO, "ib_lport= " << ib_lport)
     // ib_lport = ib_trans.get_next_avail_ib_lport();
-    // LOG(INFO) << "main:: ib_lport= " << ib_lport;
+    // log_(INFO, "ib_lport= " << ib_lport)
   }
   else
-     LOG(ERROR) << "main:: unknown type= " << opt_map["type"];
+     log_(ERROR, "unknown type= " << opt_map["type"] )
 
   return 0;
 }
