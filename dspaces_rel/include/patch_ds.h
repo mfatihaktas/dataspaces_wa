@@ -1,42 +1,34 @@
 #ifndef _PATCH_DS_H_
 #define _PATCH_DS_H_
 
-#include "mpi.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <map>
-#include <unistd.h>
+// #include "mpi.h"
+// #include <stdio.h>
+// #include <stdlib.h>
+// #include <map>
+// #include <unistd.h>
 
-#include <string>
-#include <csignal> // For wait signal
+// #include <string>
+// #include <csignal> // For wait signal
 
-#include <glog/logging.h>
-#include <boost/shared_ptr.hpp>
-#include <boost/thread.hpp>
-#include <boost/function.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/make_shared.hpp>
+// #include <glog/logging.h>
+// #include <boost/shared_ptr.hpp>
+// #include <boost/thread.hpp>
+// #include <boost/function.hpp>
+// #include <boost/lexical_cast.hpp>
+// #include <boost/make_shared.hpp>
 
-#include <boost/asio/io_service.hpp>
-#include <boost/asio/signal_set.hpp>
-// For boost serialization
-#include <fstream>
-#include <sstream>
-#include <boost/serialization/serialization.hpp>
-#include <boost/serialization/map.hpp>
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/tokenizer.hpp>
+// #include <boost/asio/io_service.hpp>
+// #include <boost/asio/signal_set.hpp>
+// // For boost serialization
+// #include <fstream>
+// #include <sstream>
+// #include <boost/serialization/serialization.hpp>
+// #include <boost/serialization/map.hpp>
+// #include <boost/archive/text_iarchive.hpp>
+// #include <boost/archive/text_oarchive.hpp>
+// #include <boost/tokenizer.hpp>
 
-// #define DEBUG_IB
-#ifdef DEBUG_IB
-#define log_(type, msg) \
-  LOG(type) << __func__ << ":: " << msg;
-  // std::cerr << #type " "<< __FILE__ << ":" << __LINE__ << "] " << __func__ << ":: " << msg << std::endl;
-  // std::clog << #type " "<< __FILE__ << ":" << __LINE__ << "] " << __func__ << ":: " << msg << std::endl;
-#else
-  #define log_(type, msg) ;
-#endif // DEBUG_IB
+#include "debug.h"
 
 namespace patch_ds {
   // template <typename T>

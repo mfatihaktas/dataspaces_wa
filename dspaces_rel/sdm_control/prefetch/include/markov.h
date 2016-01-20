@@ -9,7 +9,7 @@
 #include <boost/lexical_cast.hpp>
 #include <glog/logging.h>
 
-#include <utility>                   // std::pair
+#include <utility> // std::pair
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/adjacency_list.hpp>
 // #include <boost/graph/dijkstra_shortest_paths.hpp>
@@ -33,8 +33,7 @@ namespace boost {
 
 /*******************************************  Graph  **********************************************/
 template <typename VERTEX_PROPERTIES, typename EDGE_PROPERTIES>
-class Graph // The graph base class template
-{
+class Graph { // The graph base class template
   typedef boost::adjacency_list<
     boost::setS, // disallow parallel edges
     boost::listS, // vertex container
@@ -66,12 +65,12 @@ class Graph // The graph base class template
     : num_vertices(0)
     {
       // 
-      LOG(INFO) << "Graph:: constructed.\n";
+      log_(INFO, "constructed.")
     }
     
-    ~Graph() { LOG(INFO) << "Graph:: destructed.\n"; }
+    ~Graph() { log_(INFO, "destructed.") }
     
-    void clear()
+    void clear() 
     {
       std::vector<Vertex> vertex_to_rm_v;
       
@@ -308,7 +307,7 @@ class ParseTree {
       pt_graph.add_vertex(root_prop);
       // pt_graph.print();
       // 
-      LOG(INFO) << "ParseTree:: constructed.";
+      log_(INFO, "constructed.")
     }
     
     // Note: context_size matters only for PPM Algo
@@ -327,9 +326,9 @@ class ParseTree {
       pt_graph.add_vertex(root_prop);
       // pt_graph.print();
       // 
-      LOG(INFO) << "ParseTree:: constructed.";
+      log_(INFO, "constructed.")
     }
-    ~ParseTree() { LOG(INFO) << "ParseTree:: destructed."; }
+    ~ParseTree() { log_(INFO, "destructed.") }
     
     void reset()
     {
@@ -494,7 +493,7 @@ class ParseTree {
         else { // Update key__blended_prob_map with the lower-order state models -- call the function with upper level vertex
           if (v_prop.status != 'R') {
             prob_index *= (float)adj_prop.num_visit/total_num_visit;
-            // LOG(INFO) << "get_key__blended_prob_map:: #1 calling for vertex_to_str= \n" << pt_graph.vertex_to_str(pt_graph.get_up_ver(v) );
+            // log_(INFO, "#1 calling for vertex_to_str= \n" << pt_graph.vertex_to_str(pt_graph.get_up_ver(v) ) )
             // return;
             get_key__blended_prob_map(pt_graph.get_up_ver(v), ++call_index, prob_index, key__blended_prob_map);
           }
@@ -504,7 +503,7 @@ class ParseTree {
       
       if (num_adj == 0) { // Can happen when the cur_v is on the vertices connected to the root
         if (v_prop.status != 'R') {
-          // LOG(INFO) << "get_key__blended_prob_map:: #2 calling for vertex_to_str= \n" << pt_graph.vertex_to_str(pt_graph.get_up_ver(v) );
+          // log_(INFO, "#2 calling for vertex_to_str= \n" << pt_graph.vertex_to_str(pt_graph.get_up_ver(v) ) )
           get_key__blended_prob_map(pt_graph.get_up_ver(v), ++call_index, prob_index, key__blended_prob_map);
         }
       }
@@ -517,8 +516,8 @@ class ParseTree {
       
       Vertex leaf_to_go;
       if (does_vertex_have_key_in_adjs(cur_v, key, leaf_to_go) ) { //Go down
-        // LOG(INFO) << "add_access:: cur_prop.name= " << cur_prop.name << " has key= " << key
-        //           << " in adj leaf_to_go_prop.name= " << pt_graph.properties(leaf_to_go).name << "\n";
+        // log_(INFO, "cur_prop.name= " << cur_prop.name << " has key= " << key
+        //           << " in adj leaf_to_go_prop.name= " << pt_graph.properties(leaf_to_go).name)
         move_cur(true, leaf_to_go);
       }
       else {
@@ -605,7 +604,7 @@ class ParseTree {
       Vertex_Properties& v_prop = pt_graph.properties(v);
       if (v_prop.status == 'L') {
         v_prop.status = 'N';
-        // LOG(INFO) << "create__connect_leaf:: status changed from L to N for v.name= " << v_prop.name << "\n";
+        // log_(INFO, "status changed from L to N for v.name= " << v_prop.name)
       }
       
       Vertex_Properties leaf_prop;
@@ -637,14 +636,14 @@ class ParseTree {
     int get_key_prob_map_for_prefetch_w_ppm(std::map<KEY_T, float>& key_prob_map)
     {
       move_cur_on_context(false); // even if whole walk could not be finished, predict with smaller context
-      // LOG(INFO) << "get_key_prob_map_for_prefetch_w_ppm:: cur= \n" << pt_graph.vertex_to_str(pt_graph.get_cur() );
+      // log_(INFO, "cur= \n" << pt_graph.vertex_to_str(pt_graph.get_cur() ) )
       get_key_prob_map_for_prefetch_w_lz(key_prob_map);
       move_cur(false, pt_graph.get_root() );
     }
     
     int add_access_w_ppm(KEY_T key)
     {
-      // LOG(INFO) << "add_access_w_ppm:: context= " << context_to_str();
+      // log_(INFO, "context= " << context_to_str() )
       if (context.size() == context_size) {
         // Check if current context is present in the tree, if not create, move down and encode access
         create__move_cur_on_context(move_cur_on_context(true) );
@@ -714,11 +713,11 @@ class ParseTree {
           walked_upto_index_on_context++;
         }
         else {
-          // LOG(INFO) << "move_cur_on_context:: could not walk on context= " << context_to_str();
+          // log_(INFO, "could not walk on context= " << context_to_str() )
           return walked_upto_index_on_context;
         }
       }
-      // LOG(INFO) << "move_cur_on_context:: could walk on context= " << context_to_str();
+      // log_(INFO, "could walk on context= " << context_to_str() )
       return walked_upto_index_on_context;
     }
     // --------------------------------------  with_poisson  ------------------------------------ //
@@ -837,7 +836,7 @@ class BMMAlgo : public MMAlgo { // Best
   private:
     int window_size;
   
-    std::vector<boost::shared_ptr<patch_all::Queue<int> > > malgo_id__score_queue_v;
+    std::vector<boost::shared_ptr<patch::Queue<int> > > malgo_id__score_queue_v;
     std::vector<boost::shared_ptr<std::vector<ACC_T> > > malgo_id__last_predicted_acc_v_v;
   public:
     BMMAlgo(std::vector<malgo_t__context_size_pair> malgo_t__context_size_v, int window_size);

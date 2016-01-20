@@ -79,24 +79,24 @@ std::string Trans::get_tmpfs_dir()
 }
 
 // Note: should block until get is finished
-int Trans::init_get(std::string data_type, std::string s_lport, std::string data_id, data_recv_cb_func recv_cb)
+int Trans::init_get(std::string s_lport, std::string data_id, data_recv_cb_func data_recv_cb)
 {
   if (str_str_equals(trans_protocol, INFINIBAND) ) {
-    ib_trans_->init_server(data_type, s_lport.c_str(), data_id, recv_cb);
+    ib_trans_->init_server(s_lport.c_str(), data_recv_cb);
     ib_trans_->return_s_lport(s_lport);
   }
   else if (str_str_equals(trans_protocol, TCP) ) {
-    tcp_trans_->init_server(data_id, recv_cb);
+    tcp_trans_->init_server(data_id, data_recv_cb);
   }
 #ifdef _GRIDFTP_
   else if (str_str_equals(trans_protocol, GRIDFTP) ) {
     int datasize_inB;
     void* data_;
     if (gftp_trans_->read_del_datafile(data_id, datasize_inB, data_) ) {
-      log_(ERROR, "init_get:: gftp_trans_->read_del_datafile failed!")
+      log_(ERROR, "gftp_trans_->read_del_datafile failed; data_id= " << data_id)
       return 1;
     }
-    recv_cb(data_id, datasize_inB, data_);
+    data_recv_cb(data_id, datasize_inB, data_);
   }
 #endif // _GRIDFTP_
   
@@ -104,7 +104,7 @@ int Trans::init_get(std::string data_type, std::string s_lport, std::string data
 }
 
 int Trans::init_put(std::string s_lip, std::string s_lport, std::string tmpfs_dir,
-                    std::string data_type, std::string data_id, int data_length, void* data_)
+                    std::string data_type, std::string data_id, uint64_t data_length, void* data_)
 {
   if (str_str_equals(trans_protocol, INFINIBAND) )
     ib_trans_->init_client(s_lip.c_str(), s_lport.c_str(), data_type, data_length, data_);
@@ -120,7 +120,7 @@ int Trans::init_put(std::string s_lip, std::string s_lport, std::string tmpfs_di
     else if (data_type == "double")
       data_size *= sizeof(double);
     else {
-      log_(ERROR, "init_put:: unknown data_type= " << data_type)
+      log_(ERROR, "unknown data_type= " << data_type)
       return 1;
     }
     tcp_trans_->send(s_lip, boost::lexical_cast<int>(s_lport), data_id, data_size, data_);
@@ -128,7 +128,7 @@ int Trans::init_put(std::string s_lip, std::string s_lport, std::string tmpfs_di
 #ifdef _GRIDFTP_
   else if (str_str_equals(trans_protocol, GRIDFTP) ) {
     if (gftp_trans_->put(s_lip, boost::lexical_cast<int>(s_lport), tmpfs_dir, data_id, data_length, data_) ) {
-      log_(ERROR, "init_put:: gftp_trans_->put for data_id= " << data_id <<" failed!")
+      log_(ERROR, "gftp_trans_->put failed; data_id= " << data_id)
       return 1;
     }
   }

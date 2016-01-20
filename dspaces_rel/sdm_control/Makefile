@@ -5,21 +5,21 @@
 # DSPACESWA_DIR ?= /cac/u01/mfa51/Desktop/dataspaces_wa
 # ##################################################################################################
 # BOOSTASIO_LIB = -L$(BOOSTASIO_DIR)
-# -lboost_iostreams -lboost_filesystem
 BOOST_INC = -I$(BOOST_DIR)/include
-BOOST_LIB = -L$(BOOST_DIR)/lib -lboost_system -lpthread -lboost_thread -lboost_serialization
-# BOOST_LIB = -lboost_system -lpthread -lboost_thread-mt -lboost_serialization
+BOOST_LIB = -L$(BOOST_DIR)/lib -lboost_system -lpthread -lboost_thread -lboost_serialization -lboost_iostreams -lboost_filesystem
 
 GLOG_INC = -I$(GLOG_DIR)/include
 # GLOG_LIB = -L$(GLOG_DIR)/lib -l:libglog.a
 GLOG_LIB = -L$(GLOG_DIR)/lib -lglog
+
+PATCH_INC = -I$(DSPACESWA_DIR)/patch/include
 
 PREFETCH_DIR ?= $(SDM_CONTROL_DIR)/prefetch
 PREFETCH_ODIR = $(PREFETCH_DIR)/obj
 PREFETCH_OBJS = $(PREFETCH_ODIR)/prefetch.o $(PREFETCH_ODIR)/markov.o $(PREFETCH_ODIR)/sfc.o $(PREFETCH_ODIR)/hilbert.o
 
 SDM_CONTROL_DIR ?= $(DSPACESWA_DIR)/dspaces_rel/sdm_control
-SDM_CONTROL_INC = -I$(SDM_CONTROL_DIR)/include -I$(PREFETCH_DIR)/include
+SDM_CONTROL_INC = $(PATCH_INC) -I$(PREFETCH_DIR)/include -I$(SDM_CONTROL_DIR)/include
 # 
 INC = $(GLOG_INC) $(BOOST_INC) $(SDM_CONTROL_INC)
 LIB = $(GLOG_LIB) $(BOOST_LIB)

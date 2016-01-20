@@ -12,6 +12,8 @@
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
 
+#include "patch.h"
+
 typedef char PACKET_T;
 enum type_t {
   PACKET_JOIN_REQUEST = 'J',

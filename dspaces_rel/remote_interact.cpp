@@ -32,7 +32,7 @@ std::string RFPManager::get_lip() { return trans_->get_s_lip(); }
 std::string RFPManager::get_lport() { return trans_->get_s_lport(); }
 std::string RFPManager::get_tmpfs_dir() { return trans_->get_tmpfs_dir(); }
 
-int RFPManager::get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_)
+uint64_t RFPManager::get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_)
 {
   uint64_t dim_length[ndim];
   
@@ -50,19 +50,19 @@ int RFPManager::get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64
     dim_length[i] = ub - lb + 1;
   }
   
-  int volume = 1;
+  uint64_t volume = 1;
   for (int i = 0; i < ndim; i++)
-    volume *= (size_t)dim_length[i];
+    volume *= dim_length[i];
   
   return volume;
 }
 
 int RFPManager::wa_put(std::string lip, std::string lport, std::string tmpfs_dir,
                        std::string key, unsigned int ver, std::string data_type,
-                       int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
+                       int size, int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_)
 {
-  log_(INFO, "started lip= " << lip << ", lport= " << lport << "; \n"
-            << "\t" << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
+  log_(INFO, "started; lip= " << lip << ", lport= " << lport << "; \n"
+             << "\t" << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
   int data_length = get_data_length(ndim, gdim_, lb_, ub_);
   if (data_length == 0) {
     log_(ERROR, "data_length = 0!")
@@ -70,15 +70,8 @@ int RFPManager::wa_put(std::string lip, std::string lport, std::string tmpfs_dir
   }
   void* data_ = malloc(size*data_length);
   // patch_ds::debug_print(key, ver, size, ndim, gdim_, lb_, ub_, NULL, 0);
-  int get_return = ds_driver_->get(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_);
-  if (get_return == -EINVAL)
-    log_(ERROR, "-EINVAL !!!")
-  else if (get_return == -ENOMEM)
-    log_(ERROR, "-ENOMEM !!!")
-  else if (get_return == -EAGAIN)
-    log_(ERROR, "-EAGAIN !!!")
-  if (get_return) {
-    log_(ERROR, "ds_driver_->get failed; get_return= " << get_return << ", " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
+  if (ds_driver_->get(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_) ) {
+    log_(ERROR, "ds_driver_->get failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
     return 1;
   }
   
@@ -89,28 +82,28 @@ int RFPManager::wa_put(std::string lip, std::string lport, std::string tmpfs_dir
   }
   free(data_);
   // 
-  log_(INFO, "done for " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
+  log_(INFO, "done; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
   return 0;
 }
 
 int RFPManager::wa_get(std::string lip, std::string lport, std::string tmpfs_dir,
-                       std::string key, unsigned int ver, std::string data_type,
-                       int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_)
+                       std::string key, unsigned int ver,
+                       int size, int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_)
 {
-  log_(INFO, "started lip= " << lip << ", lport= " << lport << "; \n"
+  log_(INFO, "started; lip= " << lip << ", lport= " << lport << "\n"
             << "\t" << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
   
   std::string data_id = patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_);
   data_id__recved_size_map[data_id] = 0;
   data_id__data_map[data_id] = malloc(size*get_data_length(ndim, gdim_, lb_, ub_) );
   
-  if (trans_->init_get(data_type, lport, data_id, boost::bind(&RFPManager::handle_recv, this, _1, _2, _3) ) ) {
-    log_(ERROR, "trans_->init_get failed for " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
+  if (trans_->init_get(lport, data_id, boost::bind(&RFPManager::handle_recv, this, _1, _2, _3) ) ) {
+    log_(ERROR, "trans_->init_get failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
     return 1;
   }
   
   if (ds_driver_->sync_put(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_id__data_map[data_id] ) ) {
-    log_(ERROR, "ds_driver_->sync_put failed for " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
+    log_(ERROR, "ds_driver_->sync_put failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
     return 1;
   }
   
@@ -120,42 +113,41 @@ int RFPManager::wa_get(std::string lip, std::string lport, std::string tmpfs_dir
   data_id__recved_size_map.del(data_id);
   // rfp_syncer.notify(patch_sdm::hash_str(patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_) ) );
   // 
-  log_(INFO, "done for " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
-  
+  log_(INFO, "done; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
   return 0;
 }
 
-bool RFPManager::is_being_get(std::string key, unsigned int ver, uint64_t *lb_, uint64_t *ub_)
+bool RFPManager::is_being_get(std::string key, unsigned int ver, uint64_t* lb_, uint64_t* ub_)
 {
   return data_id__recved_size_map.contains(patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_) );
 }
 
-int RFPManager::wait_for_get(std::string key, unsigned int ver, uint64_t *lb_, uint64_t *ub_)
+int RFPManager::wait_for_get(std::string key, unsigned int ver, uint64_t* lb_, uint64_t* ub_)
 {
   std::string data_id = patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_);
   if (data_id__recved_size_map.contains(data_id) ) {
-    log_(INFO, "waiting on " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
+    log_(INFO, "started; waiting on " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
     unsigned int sync_point = patch_sdm::hash_str(data_id);
     rfp_syncer.add_sync_point(sync_point, 1);
     rfp_syncer.wait(sync_point);
     rfp_syncer.del_sync_point(sync_point);
-    log_(INFO, "done waiting on " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
+    log_(INFO, "done; waiting on " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
   }
 }
 
-int RFPManager::notify_remote_get_done(std::string key, unsigned int ver, uint64_t *lb_, uint64_t *ub_)
+int RFPManager::notify_remote_get_done(std::string key, unsigned int ver, uint64_t* lb_, uint64_t* ub_)
 {
   return rfp_syncer.notify(patch_sdm::hash_str(patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_) ) );
 }
 
-void RFPManager::handle_recv(std::string data_id, int data_size, void* data_)
+void RFPManager::handle_recv(std::string data_id, uint64_t data_size, void* data_)
 {
   if (!data_id__recved_size_map.contains(data_id) ) {
-    log_(ERROR, "data is received for a non-existing data_id= " << data_id)
+    log_(ERROR, "data is recved for a non-existing data_id= " << data_id)
     return;
   }
   
-  int recved_size = data_id__recved_size_map[data_id];
+  uint64_t recved_size = data_id__recved_size_map[data_id];
   log_(INFO, "for data_id= " << data_id
             << ", recved data_size= " << data_size
             << ", total_recved_size= " << (float)(recved_size + data_size)/1024/1024 << "(MB)")
@@ -241,7 +233,7 @@ void RIManager::handle_get(bool blocking, int cl_id, std::map<std::string, std::
   std::string key;
   unsigned int ver;
   int size, ndim;
-  uint64_t *gdim_, *lb_, *ub_;
+  uint64_t* gdim_, *lb_, *ub_;
   std::string data_type;
   if (msg_coder.decode_msg_map(get_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_) ) {
     log_(ERROR, "msg_coder.decode_msg_map failed! get_map= \n" << patch_all::map_to_str<>(get_map) )
@@ -278,7 +270,7 @@ void RIManager::handle_put(int p_id, std::map<std::string, std::string> put_map)
   std::string key, data_type;
   unsigned int ver;
   int size, ndim;
-  uint64_t *gdim_, *lb_, *ub_;
+  uint64_t* gdim_, *lb_, *ub_;
   if (msg_coder.decode_msg_map(put_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_) ) {
     log_(ERROR, "msg_coder.decode_msg_map failed! get_map= \n" << patch_all::map_to_str<>(put_map) )
     put_map["ds_id"] = "-1";
@@ -357,7 +349,7 @@ void RIManager::remote_get(std::map<std::string, std::string> msg_map)
   std::string key, data_type;
   unsigned ver;
   int size, ndim;
-  uint64_t *gdim_, *lb_, *ub_;
+  uint64_t* gdim_, *lb_, *ub_;
   if (msg_coder.decode_msg_map(msg_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_) ) {
     log_(ERROR, "msg_coder.decode_msg_map failed; msg_map= \n" << patch_all::map_to_str<>(msg_map) )
     return;
@@ -370,7 +362,7 @@ void RIManager::remote_get(std::map<std::string, std::string> msg_map)
   // }
   
   if (rfp_manager_->wa_get(msg_map["lip"], msg_map["lport"], msg_map["tmpfs_dir"],
-                           key, ver, data_type, size, ndim, gdim_, lb_, ub_) ) {
+                           key, ver, size, ndim, gdim_, lb_, ub_) ) {
     log_(ERROR, "rfp_manager_->wa_get failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
     patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
     return;
@@ -399,7 +391,7 @@ void RIManager::remote_put(std::map<std::string, std::string> msg_map)
   int ndim;
   std::string key;
   unsigned ver;
-  uint64_t *lb_, *ub_;
+  uint64_t* lb_, *ub_;
   if (msg_coder.decode_msg_map(msg_map, ndim, key, ver, lb_, ub_) ) {
     log_(ERROR, "msg_coder.decode_msg_map failed; msg_map= \n" << patch_all::map_to_str<>(msg_map) )
     return;
@@ -410,7 +402,7 @@ void RIManager::remote_put(std::map<std::string, std::string> msg_map)
   boost::shared_ptr<trans_info> trans_info_ = ds_id__trans_info_map[boost::lexical_cast<int>(msg_map["to_id"] ) ];
   
   if (rfp_manager_->wa_put(trans_info_->lip, trans_info_->lport, trans_info_->tmpfs_dir,
-                          key, ver, data_info_->data_type, data_info_->size, ndim, data_info_->gdim_, lb_, ub_) ) {
+                           key, ver, data_info_->data_type, data_info_->size, ndim, data_info_->gdim_, lb_, ub_) ) {
     log_(ERROR, "rfp_manager_->wa_put failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
     return;
   }

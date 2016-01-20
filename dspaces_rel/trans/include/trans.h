@@ -10,15 +10,19 @@
   #include "gftp_trans.h"
 #endif // _GRIDFTP_
 
-#define str_str_equals(x, y) (strcmp(x.c_str(), y.c_str() ) == 0)
+#ifndef _STR_MACROS_
+#define _STR_MACROS_
+#define str_str_equals(x,y) (strcmp(x.c_str(), (const char*)y) == 0)
 #define str_cstr_equals(x, y) (strcmp(x.c_str(), y) == 0)
+#define cstr_cstr_equals(x, y) (strcmp(x, y) == 0)
+#endif // _STR_MACROS_
 
 const std::string INFINIBAND = "i";
 const std::string TCP = "t";
 const std::string GRIDFTP = "g";
 
 class Trans { // Transport
-  typedef boost::function<void(std::string, int, void*)> data_recv_cb_func;
+  typedef boost::function<void(std::string, uint64_t, void*)> data_recv_cb_func;
   
   private:
     std::string trans_protocol;
@@ -41,9 +45,9 @@ class Trans { // Transport
     std::string get_s_lport();
     std::string get_tmpfs_dir();
     
-    int init_get(std::string data_type, std::string s_lport, std::string data_id, data_recv_cb_func recv_cb);
+    int init_get(std::string s_lport, std::string data_id, data_recv_cb_func recv_cb);
     int init_put(std::string s_lip, std::string s_lport, std::string tmpfs_dir,
-                 std::string data_type, std::string data_id, int data_length, void* data_);
+                 std::string data_type, std::string data_id, uint64_t data_length, void* data_);
 };
 
 #endif // _TRANS_H_

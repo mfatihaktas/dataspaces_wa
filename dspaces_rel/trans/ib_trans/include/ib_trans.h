@@ -20,9 +20,9 @@ class IBTrans {
     std::string get_s_lport();
     void return_s_lport(std::string s_lport);
     
-    void init_server(const char* lport_, msg_recv_cb_func msg_recv_cb, data_recv_cb_func data_recv_cb);
+    void init_server(const char* lport_, ib_data_recv_cb_func data_recv_cb, ib_msg_recv_cb_func msg_recv_cb = 0);
     void init_client(const char* s_lip_, const char* s_lport_,
-                     std::string data_id, int data_size, void* data_);
+                     std::string data_id, uint64_t data_size, void* data_);
 };
 
 #endif // _IB_TRANS_H_

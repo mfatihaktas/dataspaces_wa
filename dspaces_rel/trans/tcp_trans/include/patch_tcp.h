@@ -6,7 +6,44 @@
 #include <boost/make_shared.hpp>
 #include <boost/lexical_cast.hpp>
 
-#define str_cstr_equals(x, y) (strcmp(x.c_str(), y) == 0)
+#include <glog/logging.h>
+
+#ifndef _STR_MACROS_
+#define _STR_MACROS_
+#define str_str_equals(x,y) (strcmp(x.c_str(), y.c_str() ) == 0)
+#define str_cstr_equals(x, y) (strcmp(x.c_str(), (const char*)y) == 0)
+#define cstr_cstr_equals(x, y) (strcmp((const char*)x, (const char*)y) == 0)
+#endif // _STR_MACROS_
+
+#define _DEBUG_
+#ifdef _DEBUG_
+#define log_(type, msg) \
+  LOG(type) << __func__ << ":: " << msg;
+  // std::cerr << #type " "<< __FILE__ << ":" << __LINE__ << "] " << __func__ << ":: " << msg << std::endl;
+  // std::clog << #type " "<< __FILE__ << ":" << __LINE__ << "] " << __func__ << ":: " << msg << std::endl;
+#else
+  #define log_(type, msg) ;
+#endif // _DEBUG_
+
+#ifndef _TEST_MACROS_
+#define _TEST_MACROS_
+#define TEST_NZ(x) if (x) {log_(ERROR, #x << "failed!") exit(EXIT_FAILURE); }
+#define TEST_Z(x)  if (!(x)) {log_(ERROR, #x << "failed!") exit(EXIT_FAILURE); }
+
+#define return_if_err(x, err) \
+  err = x; \
+  if (err) { \
+    log_(ERROR, __func__ << ":: " #x " failed!") \
+    return err; \
+  }
+
+#define return_err_if_ret_cond_flag(x, ret, cond, flag, err) \
+  ret = x; \
+  if (ret cond flag) { \
+    log_(ERROR, __func__ << ":: " #x " failed!") \
+    return err; \
+  }
+#endif // _TEST_MACROS_
 
 namespace patch_tcp {
   template<typename Tk, typename Tv>
@@ -35,52 +72,67 @@ namespace patch_tcp {
   template <typename Tk, typename Tv, class Compare = std::less<Tk> >
   struct thread_safe_map {
     private:
-      boost::mutex mutex;
+      pthread_mutex_t mutex;
       typename std::map<Tk, Tv, Compare> map;
     public:
-      thread_safe_map() {}
-      ~thread_safe_map() {}
+      thread_safe_map() {
+        TEST_NZ(pthread_mutex_init(&mutex, NULL) );
+      }
+      
+      ~thread_safe_map() {
+        TEST_NZ(pthread_mutex_destroy(&mutex) );
+      }
       
       Tv& operator[](Tk k) {
-        boost::lock_guard<boost::mutex> guard(this->mutex);
-        return map[k];
+        TEST_NZ(pthread_mutex_lock(&mutex) );
+        Tv& r = map[k];
+        TEST_NZ(pthread_mutex_unlock(&mutex) );
+        
+        return r;
       }
       
-      int del(Tk k)
-      {
-        boost::lock_guard<boost::mutex> guard(this->mutex);
+      int del(Tk k) {
+        TEST_NZ(pthread_mutex_lock(&mutex) );
         map.erase(map.find(k) );
+        TEST_NZ(pthread_mutex_unlock(&mutex) );
       }
       
-      bool contains(Tk k)
-      {
-        boost::lock_guard<boost::mutex> guard(this->mutex);
-        return !(map.count(k) == 0);
+      bool contains(Tk k) {
+        TEST_NZ(pthread_mutex_lock(&mutex) );
+        bool r = !(map.count(k) == 0);
+        TEST_NZ(pthread_mutex_unlock(&mutex) );
+        
+        return r;
       }
       
-      typename std::map<Tk, Tv>::iterator begin() 
-      {
-        boost::lock_guard<boost::mutex> guard(this->mutex);
-        return map.begin();
+      typename std::map<Tk, Tv>::iterator begin() {
+        TEST_NZ(pthread_mutex_lock(&mutex) );
+        typename std::map<Tk, Tv>::iterator it = map.begin();
+        TEST_NZ(pthread_mutex_unlock(&mutex) );
+        
+        return it;
       }
       
-      typename std::map<Tk, Tv>::iterator end()
-      {
-        boost::lock_guard<boost::mutex> guard(this->mutex);
-        return map.end();
+      typename std::map<Tk, Tv>::iterator end() {
+        TEST_NZ(pthread_mutex_lock(&mutex) );
+        typename std::map<Tk, Tv>::iterator it = map.end();
+        TEST_NZ(pthread_mutex_unlock(&mutex) );
+        
+        return it;
       }
       
-      size_t size()
-      {
-        boost::lock_guard<boost::mutex> guard(this->mutex);
-        return map.size();
+      int size() {
+        TEST_NZ(pthread_mutex_lock(&mutex) );
+        int r = map.size();
+        TEST_NZ(pthread_mutex_unlock(&mutex) );
+        
+        return r;
       }
       
-      std::string to_str()
-      {
+      std::string to_str() {
         std::stringstream ss;
         for (typename std::map<Tk, Tv>::iterator it = map.begin(); it != map.end(); it++)
-          ss << "\t" << boost::lexical_cast<std::string>(it->first) << " : " << boost::lexical_cast<std::string>(it->second) << "\n";
+          ss << "\t" << it->first << " : " << it->second << "\n";
         
         return ss.str();
       }
@@ -89,41 +141,43 @@ namespace patch_tcp {
   template <typename T, class Compare = std::less<T> >
   struct syncer {
     protected:
-      thread_safe_map<T, boost::shared_ptr<boost::condition_variable>, Compare> point_cv_map;
-      thread_safe_map<T, boost::shared_ptr<boost::mutex>, Compare> point_m_map;
+      thread_safe_map<T, pthread_cond_t*, Compare> point_cv_map;
+      thread_safe_map<T, pthread_mutex_t*, Compare> point_m_map;
       thread_safe_map<T, int, Compare> point__num_peers_map;
     public:
       syncer() {}
       ~syncer() {}
       
-      int close()
-      {
-        for (typename std::map<T, boost::shared_ptr<boost::condition_variable> >::iterator it = point_cv_map.begin(); it != point_cv_map.end(); it++)
-          (it->second).reset();
-        for (typename std::map<T, boost::shared_ptr<boost::mutex> >::iterator it = point_m_map.begin(); it != point_m_map.end(); it++)
-          (it->second).reset();
+      int close() {
+        for (typename std::map<T, pthread_cond_t*>::iterator it = point_cv_map.begin(); it != point_cv_map.end(); it++)
+          TEST_NZ(pthread_cond_destroy(it->second) );
+        for (typename std::map<T, pthread_mutex_t*>::iterator it = point_m_map.begin(); it != point_m_map.end(); it++)
+          TEST_NZ(pthread_mutex_destroy(it->second) );
         // 
-        LOG(INFO) << "closed:: closed.";
+        log_(INFO, "closed.")
       }
       
-      int add_sync_point(T point, int num_peers)
-      {
+      int add_sync_point(T point, int num_peers) {
         if (point_cv_map.contains(point) ) {
-          LOG(ERROR) << "add_sync_point:: already added point; point= " << point;
+          log_(ERROR, "already added point; point= " << point)
           return 1;
         }
+        pthread_cond_t* cv_ = new pthread_cond_t();
+        TEST_NZ(pthread_cond_init(cv_, NULL) );
+        point_cv_map[point] = cv_;
         
-        point_cv_map[point] = boost::make_shared<boost::condition_variable>();
-        point_m_map[point] = boost::make_shared<boost::mutex>();
+        pthread_mutex_t* m_ = new pthread_mutex_t();
+        TEST_NZ(pthread_mutex_init(m_, NULL) );
+        point_m_map[point] = m_;
+        
         point__num_peers_map[point] = num_peers;
         
         return 0;
       }
       
-      int del_sync_point(T point)
-      {
+      int del_sync_point(T point) {
         if (!point_cv_map.contains(point) ) {
-          LOG(ERROR) << "del_sync_point:: non-existing point= " << boost::lexical_cast<std::string>(point);
+          log_(ERROR, "non-existing point= " << point)
           return 1;
         }
         point_cv_map.del(point);
@@ -133,18 +187,17 @@ namespace patch_tcp {
         return 0;
       }
       
-      int wait(T point)
-      {
-        boost::mutex::scoped_lock lock(*point_m_map[point] );
-        point_cv_map[point]->wait(lock);
+      int wait(T point) {
+        TEST_NZ(pthread_mutex_lock(point_m_map[point] ) );
+        TEST_NZ(pthread_cond_wait(point_cv_map[point], point_m_map[point] ) );
+        TEST_NZ(pthread_mutex_unlock(point_m_map[point] ) );
         
         return 0;
       }
       
-      int notify(T point)
-      {
+      int notify(T point) {
         if (!point_cv_map.contains(point) ) {
-          // LOG(ERROR) << "notify:: non-existing point.";
+          // log_(ERROR, "notify:: non-existing point.")
           return 1;
         }
         
@@ -152,7 +205,10 @@ namespace patch_tcp {
         --num_peers_to_wait;
         
         if (num_peers_to_wait == 0) {
-          point_cv_map[point]->notify_one();
+          TEST_NZ(pthread_mutex_lock(point_m_map[point] ) );
+          TEST_NZ(pthread_cond_signal(point_cv_map[point] ) );
+          TEST_NZ(pthread_mutex_unlock(point_m_map[point] ) );
+          
           return 0;
         }
         point__num_peers_map[point] = num_peers_to_wait;
@@ -160,6 +216,11 @@ namespace patch_tcp {
         return 0;
       }
   };
+  
+  #define HASH_PRIME 54059
+  #define HASH_PRIME_2 76963
+  #define HASH_PRIME_3 86969
+  unsigned int hash_str(std::string str);
 }
 
 #endif //_PATCH_TCP_H_

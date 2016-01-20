@@ -1,7 +1,7 @@
 #include "ib_server.h"
 
-IBServer::IBServer(const char* lport_, msg_recv_cb_func msg_recv_cb, data_recv_cb_func data_recv_cb)
-: lport_(lport_), msg_recv_cb(msg_recv_cb), data_recv_cb(data_recv_cb),
+IBServer::IBServer(const char* lport_, ib_data_recv_cb_func data_recv_cb, ib_msg_recv_cb_func msg_recv_cb)
+: lport_(lport_), data_recv_cb(data_recv_cb), msg_recv_cb(msg_recv_cb),
   server_name(patch_ib::to_str<const char*>(lport_) ),
   connector_(new Connector(this) ),
   recv_state(HEADER_RECV)
@@ -116,7 +116,7 @@ int IBServer::on_completion(struct ibv_wc* wc_)
   struct conn_context* ctx_ = (struct conn_context*)id_->context;
   
   if (wc_->opcode == IBV_WC_RECV_RDMA_WITH_IMM) {
-    uint32_t size = ntohl(wc_->imm_data);
+    uint64_t size = ntohl(wc_->imm_data);
     // print_conn_context(ctx);
     
     if (size == 0) {
@@ -135,7 +135,8 @@ int IBServer::on_completion(struct ibv_wc* wc_)
         // TODO: thread
         char* msg_ = (char*)malloc(size*sizeof(char) );
         memcpy(msg_, (char*)ctx_->buffer_, size);
-        msg_recv_cb(size, msg_);
+        if (msg_recv_cb)
+          msg_recv_cb(size, msg_);
         
         recv_state = HEADER_RECV;
       }
@@ -150,7 +151,8 @@ int IBServer::on_completion(struct ibv_wc* wc_)
         if (data_size_recved == data_size_to_recv) {
           log_(INFO, "finished recving; data_id= " << data_id_ << ", data_size= " << data_size_recved)
           // TODO: thread
-          data_recv_cb(data_id_, data_size_recved, data_to_recv_);
+          if (data_recv_cb)
+            data_recv_cb(boost::lexical_cast<std::string>(data_id_), data_size_recved, data_to_recv_);
           
           recv_state = HEADER_RECV;
           data_id_ = NULL;
@@ -184,17 +186,17 @@ int IBServer::proc_header(char* header_)
   log_(INFO, "header_= " << header_)
   // Decode data_t
   data_t = (RDMA_DATA_T)header_[0];
-  header_ += MAX_DATA_T_LENGTH;
+  header_ += IB_MAX_DATA_T_LENGTH;
   // Decode data_t
   if (data_t == RDMA_DATA) {
-    data_id_ = (char*)malloc(MAX_DATA_ID_LENGTH*sizeof(char) );
-    memcpy(data_id_, header_, MAX_DATA_ID_LENGTH);
+    data_id_ = (char*)malloc(IB_MAX_DATA_ID_LENGTH*sizeof(char) );
+    memcpy(data_id_, header_, IB_MAX_DATA_ID_LENGTH);
     *(strchr(data_id_, HEADER_DELIMITER) ) = '\0';
-    header_ += MAX_DATA_ID_LENGTH;
+    header_ += IB_MAX_DATA_ID_LENGTH;
   }
   if (data_t == RDMA_MSG || data_t == RDMA_DATA) {
-    char* data_size_ = (char*)malloc(MAX_DATA_SIZE_LENGTH*sizeof(char) );
-    memcpy(data_size_, header_, MAX_DATA_SIZE_LENGTH);
+    char* data_size_ = (char*)malloc(IB_MAX_DATA_SIZE_LENGTH*sizeof(char) );
+    memcpy(data_size_, header_, IB_MAX_DATA_SIZE_LENGTH);
     *(strchr(data_size_, HEADER_DELIMITER) ) = '\0';
     
     data_size_recved = 0;

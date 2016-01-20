@@ -68,26 +68,26 @@ void IBClient::init()
 
 int IBClient::send_init()
 {
-  int header_length;
+  int header_size;
   char* header_;
-  if (make_header(RDMA_INIT, "", 0, header_length, header_) ) {
+  if (make_header(RDMA_INIT, "", 0, header_size, header_) ) {
     log_(ERROR, "make_header failed.")
     return 1;
   }
-  size_data_bq.push(std::make_pair(header_length, (void*)header_) );
+  size_data_bq.push(std::make_pair(header_size, (void*)header_) );
   
   return 0;
 }
 
 int IBClient::send_msg(std::string msg)
 {
-  int header_length;
+  int header_size;
   char* header_;
-  if (make_header(RDMA_MSG, "", msg.size(), header_length, header_) ) {
+  if (make_header(RDMA_MSG, "", msg.size(), header_size, header_) ) {
     log_(ERROR, "make_header failed; msg= " << msg)
     return 1;
   }
-  size_data_bq.push(std::make_pair(header_length, (void*)header_) );
+  size_data_bq.push(std::make_pair(header_size, (void*)header_) );
   
   int msg_length = msg.size() + 1;
   
@@ -99,27 +99,25 @@ int IBClient::send_msg(std::string msg)
   return 0;
 }
 
-int IBClient::send_data(std::string data_id, int data_size, void* data_)
+int IBClient::send_data(std::string data_id, uint64_t data_size, void* data_)
 {
   log_(INFO, "started; data_size= " << data_size)
-  int header_length;
+  int header_size;
   char* header_;
-  if (make_header(RDMA_DATA, data_id, data_size, header_length, header_) ) {
+  if (make_header(RDMA_DATA, data_id, data_size, header_size, header_) ) {
     log_(ERROR, "make_header failed; data_id= " << data_id << ", data_size= " << data_size)
     return 1;
   }
-  size_data_bq.push(std::make_pair(header_length, (void*)header_) );
+  size_data_bq.push(std::make_pair(header_size, (void*)header_) );
   
   void* data_t_ = data_;
-  int data_size_t = data_size;
+  uint64_t data_size_t = data_size;
   
-  int chunk_size;
+  uint64_t chunk_size;
   // void* chunk_ = malloc(BUFFER_SIZE);
   while (data_size_t) {
     chunk_size = (data_size_t > BUFFER_SIZE) ? BUFFER_SIZE : data_size_t;
-    // TODO: eliminate memcpy
     // memcpy(chunk_, data_t_, chunk_size);
-    // chunk_ = data_t_;
     size_data_bq.push(std::make_pair(chunk_size, data_t_) );
     
     data_size_t -= chunk_size;
@@ -139,40 +137,40 @@ int IBClient::send_data(std::string data_id, int data_size, void* data_)
   return 0;
 }
 
-int IBClient::make_header(RDMA_DATA_T data_t, std::string data_id, int data_size,
-                          int& header_length, char*& arg_header_)
+int IBClient::make_header(RDMA_DATA_T data_t, std::string data_id, uint64_t data_size,
+                          int& header_size, char*& arg_header_)
 {
   if (data_t == RDMA_INIT)
-    header_length = MAX_DATA_T_LENGTH + 1;
+    header_size = IB_MAX_DATA_T_LENGTH + 1;
   else if (data_t == RDMA_MSG)
-    header_length = MAX_DATA_T_LENGTH + MAX_DATA_SIZE_LENGTH + 1;
+    header_size = IB_MAX_DATA_T_LENGTH + IB_MAX_DATA_SIZE_LENGTH + 1;
   else if (data_t == RDMA_DATA)
-    header_length = MAX_DATA_T_LENGTH + MAX_DATA_ID_LENGTH + MAX_DATA_SIZE_LENGTH + 1;
+    header_size = IB_MAX_DATA_T_LENGTH + IB_MAX_DATA_ID_LENGTH + IB_MAX_DATA_SIZE_LENGTH + 1;
   else {
     log_(ERROR, "unknown data_t= " << (char)data_t)
     return 1;
   }
   // Add data_t
-  char* header_ = (char*)malloc(header_length*sizeof(char) );
+  char* header_ = (char*)malloc(header_size*sizeof(char) );
   arg_header_ = header_;
   *header_ = (char)data_t;
-  header_ += MAX_DATA_T_LENGTH;
+  header_ += IB_MAX_DATA_T_LENGTH;
   // Add data_id
   if (data_id.size() > 0) { // Can be <= 0 for RDMA_INIT/MSG
-    if (data_id.size() > MAX_DATA_ID_LENGTH) {
-      log_(ERROR, "data_id.size= " << data_id.size() << " > MAX_DATA_ID_LENGTH= " << MAX_DATA_ID_LENGTH)
+    if (data_id.size() > IB_MAX_DATA_ID_LENGTH) {
+      log_(ERROR, "data_id.size= " << data_id.size() << " > IB_MAX_DATA_ID_LENGTH= " << IB_MAX_DATA_ID_LENGTH)
       return 1;
     }
-    char* data_id_ = (char*)malloc(MAX_DATA_ID_LENGTH*sizeof(char) );
+    char* data_id_ = (char*)malloc(IB_MAX_DATA_ID_LENGTH*sizeof(char) );
     memcpy(data_id_, data_id.c_str(), data_id.size() );
-    for (int i = data_id.size(); i < MAX_DATA_ID_LENGTH; i++)
+    for (int i = data_id.size(); i < IB_MAX_DATA_ID_LENGTH; i++)
       data_id_[i] = HEADER_DELIMITER;
-    memcpy(header_, data_id_, MAX_DATA_ID_LENGTH);
-    header_ += MAX_DATA_ID_LENGTH;
+    memcpy(header_, data_id_, IB_MAX_DATA_ID_LENGTH);
+    header_ += IB_MAX_DATA_ID_LENGTH;
   }
   // Add data_size
   if (data_size > 0) { // Can be <= 0 for RDMA_INIT
-    char* data_size_ = (char*)malloc(MAX_DATA_SIZE_LENGTH*sizeof(char) );
+    char* data_size_ = (char*)malloc(IB_MAX_DATA_SIZE_LENGTH*sizeof(char) );
     sprintf(data_size_, "%d", data_size);
     if (data_size != atoi(data_size_) ) { // Double-check
       log_(ERROR, "sprintf failed; data_size= " << data_size << ", data_size_= " << data_size_)
@@ -180,10 +178,10 @@ int IBClient::make_header(RDMA_DATA_T data_t, std::string data_id, int data_size
     }
     char* null_char_;
     null_char_ = strchr(data_size_, '\0');
-    for (int i = null_char_ - data_size_; i < MAX_DATA_SIZE_LENGTH; i++)
+    for (int i = null_char_ - data_size_; i < IB_MAX_DATA_SIZE_LENGTH; i++)
       data_size_[i] = HEADER_DELIMITER;
-    memcpy(header_, data_size_, MAX_DATA_SIZE_LENGTH);
-    header_ += MAX_DATA_SIZE_LENGTH;
+    memcpy(header_, data_size_, IB_MAX_DATA_SIZE_LENGTH);
+    header_ += IB_MAX_DATA_SIZE_LENGTH;
   }
   // Add null-char
   *header_ = '\0';
@@ -212,7 +210,7 @@ int IBClient::send_next()
   return 0;
 }
 
-int IBClient::send_chunk(int chunk_size, void* chunk_)
+int IBClient::send_chunk(uint64_t chunk_size, void* chunk_)
 {
   int err;
   // sleep(2);
@@ -226,7 +224,7 @@ int IBClient::send_chunk(int chunk_size, void* chunk_)
   return 0;
 }
 
-int IBClient::write_remote(struct rdma_cm_id* id_, uint32_t size)
+int IBClient::write_remote(struct rdma_cm_id* id_, uint64_t size)
 {
   struct conn_context* ctx_ = (struct conn_context*)id_->context;
 

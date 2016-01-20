@@ -17,29 +17,26 @@ class Cache {
     std::deque<T> cache;
     // std::deque<T> fixed_cache;
     // std::deque<T> what_deled_cache;
-    // patch_all::thread_safe_map<ACC_T, std::vector<T> > acc__e_v_map;
+    // patch::thread_safe_map<ACC_T, std::vector<T> > acc__e_v_map;
     
-    patch_all::thread_safe_map<T, ACC_T> e_acc_map;
-    patch_all::thread_safe_map<ACC_T, int> acc_num_map;
-    // patch_all::thread_safe_map<ACC_T, int> fixed_acc_num_map;
-    // patch_all::thread_safe_map<ACC_T, int> fixed_acc_del_num_map;
+    patch::thread_safe_map<T, ACC_T> e_acc_map;
+    patch::thread_safe_map<ACC_T, int> acc_num_map;
+    // patch::thread_safe_map<ACC_T, int> fixed_acc_num_map;
+    // patch::thread_safe_map<ACC_T, int> fixed_acc_del_num_map;
     
-    // patch_all::not_thread_safe_map<T, ACC_T> e_acc_map;
-    // patch_all::not_thread_safe_map<ACC_T, int> acc_num_map;
-    // patch_all::not_thread_safe_map<ACC_T, int> fixed_acc_num_map;
-    // patch_all::not_thread_safe_map<ACC_T, int> fixed_acc_del_num_map;
+    // patch::not_thread_safe_map<T, ACC_T> e_acc_map;
+    // patch::not_thread_safe_map<ACC_T, int> acc_num_map;
+    // patch::not_thread_safe_map<ACC_T, int> fixed_acc_num_map;
+    // patch::not_thread_safe_map<ACC_T, int> fixed_acc_del_num_map;
     
   public:
     Cache(int cache_size, func_handle_cache_data_del_cb handle_data_del_cb = 0)
     : cache_size(cache_size), handle_data_del_cb(handle_data_del_cb)
     {
-      // LOG(INFO) << "Cache:: constructed.";
+      // log_(INFO, "constructed.")
     }
     
-    ~Cache()
-    {
-      // LOG(INFO) << "Cache:: destructed."; 
-    }
+    ~Cache() { /* log_(INFO, "destructed.") */ }
     
     std::string to_str()
     {
@@ -48,13 +45,13 @@ class Cache {
          << "acc_num_map= \n" << acc_num_map.to_str() << "\n"
         // << "fixed_acc_num_map= \n" << fixed_acc_num_map.to_str() << "\n"
         // << "fixed_acc_del_num_map= \n" << fixed_acc_del_num_map.to_str() << "\n"
-         << "cache_content= " << patch_all::pdeque_to_str<>(cache) << "\n";
-        // << "fixed_cache_content= " << patch_all::pdeque_to_str<>(fixed_cache) << "\n"
-        // << "what_deled_cache_content= " << patch_all::pdeque_to_str<>(what_deled_cache) << "\n";
+         << "cache_content= " << patch::pdeque_to_str<>(cache) << "\n";
+        // << "fixed_cache_content= " << patch::pdeque_to_str<>(fixed_cache) << "\n"
+        // << "what_deled_cache_content= " << patch::pdeque_to_str<>(what_deled_cache) << "\n";
       // std::vector<std::string> fixed_cache_key_v;
       // for (typename std::deque<T>::iterator it = fixed_cache.begin(); it != fixed_cache.end(); it++)
       //   fixed_cache_key_v.push_back(it->first);
-      // LOG(INFO) << "to_str:: will sort fixed_cache_key_v...";
+      // log_(INFO, "to_str:: will sort fixed_cache_key_v...")
       // std::sort(fixed_cache_key_v.begin(), fixed_cache_key_v.end() );
       // ss << "fixed_cache_key_v= \n";
       // for (typename std::vector<std::string>::iterator it = fixed_cache_key_v.begin(); it != fixed_cache_key_v.end(); it++)
@@ -63,7 +60,7 @@ class Cache {
       // std::vector<std::string> what_deled_cache_key_v;
       // for (typename std::deque<T>::iterator it = what_deled_cache.begin(); it != what_deled_cache.end(); it++)
       //   what_deled_cache_key_v.push_back(it->first);
-      // LOG(INFO) << "to_str:: will sort what_deled_cache_key_v...";
+      // log_(INFO, "to_str:: will sort what_deled_cache_key_v...")
       // std::sort(what_deled_cache_key_v.begin(), what_deled_cache_key_v.end() );
       // ss << "what_deled_cache_key_v= \n";
       // for (typename std::vector<std::string>::iterator it = what_deled_cache_key_v.begin(); it != what_deled_cache_key_v.end(); it++)
@@ -71,20 +68,18 @@ class Cache {
       
       // ss << "acc__e_v_map= \n";
       // for (typename std::map<ACC_T, std::vector<T> >::iterator map_it = acc__e_v_map.begin(); map_it != acc__e_v_map.end(); map_it++)
-      //   ss << map_it->first << " : " << patch_all::pvec_to_str<>(map_it->second) << "\n";
+      //   ss << map_it->first << " : " << patch::pvec_to_str<>(map_it->second) << "\n";
       
       return ss.str();
     }
     
-    int push(ACC_T acc, T e)
-    {
+    int push(ACC_T acc, T e) {
       if (contains(e) )
         return 1;
       
       // boost::lock_guard<boost::mutex> guard(mutex);
-      
       if (cache.size() == cache_size) {
-        // LOG(INFO) << "push:: cache.size() == cache_size; cache_content= " << patch_all::pdeque_to_str<>(cache) << "\n";
+        // log_(INFO, "cache.size() == cache_size; cache_content= " << patch::pdeque_to_str<>(cache) )
         pop();
       }
       
@@ -104,35 +99,35 @@ class Cache {
       return 0;
     }
     
-    int pop()
-    {
+    int pop() {
       // boost::lock_guard<boost::mutex> guard(mutex);
-      
       T e;
       // {
       e = cache.front();
       // }
-      // return del(e_acc_map[e], e);
-      ACC_T acc = e_acc_map[e];
-      if (!contains(e) )
-        return 1;
+      int err;
+      return_if_err(del(e_acc_map[e], e), err)
+      // int err;
+      // return_err_if_ret_cond_flag(contains(e), err, ==, 0, 1)
       
-      if (handle_data_del_cb != 0)
-        handle_data_del_cb(e);
+      // if (handle_data_del_cb != 0)
+      //   handle_data_del_cb(e);
       
-      acc_num_map[acc] -= 1;
-      // fixed_acc_del_num_map[acc] += 1;
+      // ACC_T acc = e_acc_map[e];
+      // acc_num_map[acc] -= 1;
       
-      e_acc_map.del(e);
-      cache.erase(std::find(cache.begin(), cache.end(), e) );
-      // what_deled_cache.push_back(e);
+      // // fixed_acc_del_num_map[acc] += 1;
       
+      // e_acc_map.del(e);
+      // cache.erase(std::find(cache.begin(), cache.end(), e) );
+      // // what_deled_cache.push_back(e);
       return 0;
     }
     
-    int del(ACC_T acc, T e)
-    {
-      if (!contains(e) )
+    int del(ACC_T acc, T e) {
+      int err;
+      // return_err_if_ret_cond_flag(contains(e), err, ==, 0, 1)
+      if (!contains(e))
         return 1;
       
       if (handle_data_del_cb != 0)
@@ -152,28 +147,23 @@ class Cache {
       return 0;
     }
     
-    bool contains(T e)
-    {
+    bool contains(T e) {
       // boost::lock_guard<boost::mutex> guard(mutex);
       return (std::find(cache.begin(), cache.end(), e) != cache.end() );
     }
     
-    int get_available_size()
-    {
+    int get_available_size() {
       boost::lock_guard<boost::mutex> guard(mutex);
       return (cache_size - cache.size() );
     }
     
-    int size() 
-    { 
+    int size() { 
       boost::lock_guard<boost::mutex> guard(mutex);
       return cache.size();
     }
     
-    std::vector<T> get_content_v()
-    {
+    std::vector<T> get_content_v() {
       // boost::lock_guard<boost::mutex> guard(mutex);
-      
       std::vector<T> v;
       for (typename std::deque<T>::iterator it = cache.begin(); it != cache.end(); it++)
         v.push_back(*it);
@@ -181,10 +171,8 @@ class Cache {
       return v;
     }
     
-    std::vector<ACC_T> get_cached_acc_v()
-    {
+    std::vector<ACC_T> get_cached_acc_v() {
       // boost::lock_guard<boost::mutex> guard(mutex);
-      
       std::vector<ACC_T> acc_v;
       for (typename std::map<ACC_T, int>::iterator it = acc_num_map.begin(); it != acc_num_map.end(); it++) {
         if (it->second > 0)
@@ -203,25 +191,24 @@ const PREFETCH_DATA_ACT_T PREFETCH_DATA_ACT_DEL = 'd';
 const PREFETCH_DATA_ACT_T PREFETCH_DATA_ACT_PREFETCH = 'p';
 typedef boost::function<void(PREFETCH_DATA_ACT_T, int, key_ver_pair) > func_handle_mpbuffer_data_act_cb;
 
-// Note: Mapping between app_id and <key, ver> will be given to MPBuffer
 class MPBuffer { // Markov Prefetching
   private:
     int ds_id;
-    int max_num_key_ver; // # of <key, ver>
+    int max_num_key_ver;
     int app_context_size;
     bool w_prefetch;
     func_handle_mpbuffer_data_act_cb handle_mpbuffer_data_act_cb;
     
-    patch_all::thread_safe_map<int, std::deque<key_ver_pair> >  p_id__reged_kv_deq_map;
-    patch_all::thread_safe_map<int, int> p_id__front_step_in_deq_map;
-    patch_all::thread_safe_map<key_ver_pair, int> kv__p_id_map;
+    patch::thread_safe_map<int, std::deque<key_ver_pair> >  p_id__reged_kv_deq_map;
+    patch::thread_safe_map<int, int> p_id__front_step_in_deq_map;
+    patch::thread_safe_map<key_ver_pair, int> kv__p_id_map;
     
-    patch_all::thread_safe_map<int, int> p_id__last_acced_step_map;
-    patch_all::thread_safe_map<int, int> p_id__last_cached_step_map;
+    patch::thread_safe_map<int, int> p_id__last_acced_step_map;
+    patch::thread_safe_map<int, int> p_id__last_cached_step_map;
     // Mostly for checking and logging
-    patch_all::thread_safe_vector<key_ver_pair> reged_kv_v;
-    patch_all::thread_safe_vector<key_ver_pair> acced_kv_v;
-    patch_all::thread_safe_map<int, std::vector<key_ver_pair> > app_id__acced_kv_v_map;
+    patch::thread_safe_vector<key_ver_pair> reged_kv_v;
+    patch::thread_safe_vector<key_ver_pair> acced_kv_v;
+    patch::thread_safe_map<int, std::vector<key_ver_pair> > app_id__acced_kv_v_map;
     
     Cache<ACC_T, key_ver_pair> cache;
     boost::shared_ptr<MAlgo> malgo_to_pick_app_;
@@ -232,6 +219,7 @@ class MPBuffer { // Markov Prefetching
     ~MPBuffer();
     std::string to_str();
     
+    // Note: Mapping between p_id and <key, ver> will be given to MPBuffer
     int reg_key_ver(int p_id, key_ver_pair kv);
     
     int del(key_ver_pair kv);
@@ -253,7 +241,7 @@ class WASpace {
     std::vector<int> ds_id_v;
     func_handle_data_act_cb handle_data_act_cb;
     
-    patch_all::thread_safe_map<int, int> app_id__ds_id_map;
+    patch::thread_safe_map<int, int> app_id__ds_id_map;
   public:
     WASpace(std::vector<int> ds_id_v, func_handle_data_act_cb handle_data_act_cb = 0);
     ~WASpace() {}
@@ -275,14 +263,14 @@ class MWASpace : public WASpace {
     MALGO_T malgo_t;
     bool w_prefetch;
     
-    patch_all::thread_safe_vector<key_ver_pair> kv_v;
-    patch_all::thread_safe_map<int, boost::shared_ptr<patch_all::thread_safe_vector<key_ver_pair> > > ds_id__kv_map;
+    patch::thread_safe_vector<key_ver_pair> kv_v;
+    patch::thread_safe_map<int, boost::shared_ptr<patch::thread_safe_vector<key_ver_pair> > > ds_id__kv_map;
     std::map<int, boost::shared_ptr<MPBuffer> >  ds_id__mpbuffer_map;
     
-    patch_all::thread_safe_map<key_ver_pair, int> kv__p_id_map;
-    patch_all::thread_safe_map<key_ver_pair, lcoor_ucoor_pair> kv__lucoor_map;
+    patch::thread_safe_map<key_ver_pair, int> kv__p_id_map;
+    patch::thread_safe_map<key_ver_pair, lcoor_ucoor_pair> kv__lucoor_map;
     
-    // patch_all::thread_safe_map<int, std::vector<std::string> > p_id__key_map;
+    // patch::thread_safe_map<int, std::vector<std::string> > p_id__key_map;
   public:
     MWASpace(std::vector<int> ds_id_v,
              MALGO_T malgo_t, int max_num_key_ver_in_mpbuffer, bool w_prefetch, func_handle_data_act_cb handle_data_act_cb = 0);
@@ -294,10 +282,10 @@ class MWASpace : public WASpace {
     
     int put(int p_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, int ds_id = -1);
     int del(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, int ds_id);
-    int query(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, std::vector<int>& ds_id_v);
     int add_access(int c_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_);
-    
+    int query(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, std::vector<int>& ds_id_v);
     bool contains(int ds_id, key_ver_pair kv);
+    
     void handle_mpbuffer_data_act(PREFETCH_DATA_ACT_T mpbuffer_PREFETCH_data_act_t, int ds_id, key_ver_pair kv);
 };
 

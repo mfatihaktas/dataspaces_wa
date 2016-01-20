@@ -18,7 +18,7 @@ INC = $(GLOG_INC) $(BOOST_INC) -I$(TCP_TRANS_DIR)/include
 LIB = $(GLOG_LIB) $(BOOST_LIB)
 
 ODIR = obj
-OBJS = $(ODIR)/tcp_trans.o $(ODIR)/tcp_server.o $(ODIR)/tcp_client.o
+OBJS = $(ODIR)/tcp_trans.o $(ODIR)/tcp_server.o $(ODIR)/tcp_client.o $(ODIR)/patch_tcp.o
 
 .PHONY: all clean
 

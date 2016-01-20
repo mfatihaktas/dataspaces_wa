@@ -11,11 +11,11 @@ S_LIP=192.168.210.161 # 192.168.2.151 # 10.0.0.151
 S_LPORT=1234
 
 if [ $1  = 'g' ]; then
-  GLOG_logtostderr=1 ./exp --type="g" --trans_protocol=$TRANS_PROTOCOL --ib_lintf=$IB_LINTF \
+  GLOG_logtostderr=1 ./exp --type="get" --trans_protocol=$TRANS_PROTOCOL --ib_lintf=$IB_LINTF \
                            --tcp_lintf=$TCP_LINTF --s_lport=$S_LPORT \
                            --gftp_lintf=$GFTP_LINTF --tmpfs_dir=$TMPFS_DIR
 elif [ $1  = 'p' ]; then
-  GLOG_logtostderr=1 ./exp --type="p" --trans_protocol=$TRANS_PROTOCOL --ib_lintf=$IB_LINTF \
+  GLOG_logtostderr=1 ./exp --type="put" --trans_protocol=$TRANS_PROTOCOL --ib_lintf=$IB_LINTF \
                            --tcp_lintf=$TCP_LINTF \
                            --gftp_lintf=$GFTP_LINTF --tmpfs_dir=$TMPFS_DIR \
                            --s_lip=$S_LIP --s_lport=$S_LPORT

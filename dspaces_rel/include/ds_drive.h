@@ -10,7 +10,6 @@
 #include <string>
 #include <sys/time.h>
 
-#include <glog/logging.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 #include <boost/function.hpp>

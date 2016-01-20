@@ -17,15 +17,15 @@ enum RDMA_DATA_T {
 // For client-server comm protocol
 const char HEADER_DELIMITER = '_';
 
-const int MAX_DATA_T_LENGTH = 1;
-const int MAX_DATA_ID_LENGTH = 20;
-const int MAX_DATA_SIZE_LENGTH = 15;
+const int IB_MAX_DATA_T_LENGTH = 1;
+const int IB_MAX_DATA_ID_LENGTH = 20;
+const int IB_MAX_DATA_SIZE_LENGTH = 15;
 
-const int MAX_MSG_LENGTH = 100;
+const int IB_MAX_MSG_LENGTH = 100;
 // 
 const int TIMEOUT_IN_MS = 500; 
-const size_t BUFFER_SIZE = 10*1024*1024;
-const size_t MAX_QP__CQ_LENGTH = 100;
+const uint64_t BUFFER_SIZE = 10*1024*1024;
+const uint64_t MAX_QP__CQ_LENGTH = 100;
 
 struct context {
   struct ibv_context* ctx_;

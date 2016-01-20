@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-#include <glog/logging.h>
+#include "debug.h"
 
 class SDMClient {
   private:

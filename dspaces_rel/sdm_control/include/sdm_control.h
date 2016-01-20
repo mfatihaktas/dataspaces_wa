@@ -38,7 +38,7 @@ class SDMCEntity { // SDM Control
     
     void handle_cmsg(boost::shared_ptr<Packet> p_)
     {
-      // LOG(INFO) << "handle_cmsg:: p= " << p_->to_str();
+      // log_(INFO, "p= " << p_->to_str() )
       switch (p_->get_type() ) {
         case PACKET_JOIN_ACK:
           handle_conn_up(p_->get_msg_map() );
@@ -47,7 +47,7 @@ class SDMCEntity { // SDM Control
           handle_msg_in(p_->get_msg_map() );
           break;
         default:
-          LOG(WARNING) << "handle_cmsg:: unexpected p.get_type= " << p_->get_type();
+          log_(WARNING, "unexpected p.get_type= " << p_->get_type() )
           break;
       }
     }
@@ -83,8 +83,8 @@ class SDMSlave : public SDMCEntity {
     boost::shared_ptr<QTable<int> > qtable_;
     
     std::vector<int> app_id_v;
-    patch_all::syncer<unsigned int> sdm_s_syncer;
-    patch_all::thread_safe_vector<std::string> data_id_to_bget_v;
+    patch::syncer<unsigned int> sdm_s_syncer;
+    patch::thread_safe_vector<std::string> data_id_to_bget_v;
   public:
     SDMSlave(DATA_ID_T data_id_t, std::string type,
              int ds_id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
@@ -131,8 +131,8 @@ class SDMMaster : public SDMSlave {
     boost::shared_ptr<WASpace> wa_space_;
     
     int num_slaves;
-    patch_all::syncer<unsigned int> sdm_m_syncer;
-    patch_all::thread_safe_map<int, std::vector<std::string> > ds_id__moving_data_id_v_map;
+    patch::syncer<unsigned int> sdm_m_syncer;
+    patch::thread_safe_map<int, std::vector<std::string> > ds_id__moving_data_id_v_map;
     
     // boost::mutex handle_sdm_squery__handle_wa_space_data_act
     // boost::lock_guard<boost::mutex> guard(this->mutex);

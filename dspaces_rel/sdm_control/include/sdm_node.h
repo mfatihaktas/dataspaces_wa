@@ -1,7 +1,6 @@
 #ifndef _SDM_NODE_H_
 #define _SDM_NODE_H_
 
-#include "patch_pre.h"
 #include "sdm_server.h"
 #include "sdm_client.h"
 #include "packet.h"
@@ -27,8 +26,8 @@ class Commer {
     func_recv_cb _recv_cb;
     
     SDMServer server;
-    patch_all::thread_safe_map<int, boost::shared_ptr<SDMClient> > peer_id__client_map;
-    patch_all::thread_safe_map<int, boost::shared_ptr<peer_info> > peer_id__peer_info_map;
+    patch::thread_safe_map<int, boost::shared_ptr<SDMClient> > peer_id__client_map;
+    patch::thread_safe_map<int, boost::shared_ptr<peer_info> > peer_id__peer_info_map;
   public:
     Commer(int id, std::string lip, int lport,
            func_recv_cb _recv_cb);
@@ -36,7 +35,7 @@ class Commer {
     int close();
     std::string to_str();
     
-    patch_all::thread_safe_map<int, boost::shared_ptr<peer_info> >& get_peer_id__peer_info_map();
+    patch::thread_safe_map<int, boost::shared_ptr<peer_info> >& get_peer_id__peer_info_map();
     int get_num_peers();
     bool is_peer(int peer_id);
     
@@ -65,7 +64,7 @@ class SDMNode {
     Commer commer;
     int sdm_master_id;
     
-    patch_all::syncer<int> syncer;
+    patch::syncer<int> syncer;
   public:
     SDMNode(std::string type, bool master_slave,
             int id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,

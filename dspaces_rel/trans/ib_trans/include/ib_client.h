@@ -46,12 +46,12 @@ class IBClient : public IBEnd {
     
     int send_init();
     int send_msg(std::string msg);
-    int send_data(std::string data_id, int data_size, void* data_);
-    int make_header(RDMA_DATA_T data_t, std::string data_id, int data_size,
-                    int& header_length, char*& arg_header_);
+    int send_data(std::string data_id, uint64_t data_size, void* data_);
+    int make_header(RDMA_DATA_T data_t, std::string data_id, uint64_t data_size,
+                    int& header_size, char*& arg_header_);
     int send_next();
-    int send_chunk(int chunk_size, void* chunk_); // chunk_size in bytes
-    int write_remote(struct rdma_cm_id* id_, uint32_t size);
+    int send_chunk(uint64_t chunk_size, void* chunk_); // chunk_size in bytes
+    int write_remote(struct rdma_cm_id* id_, uint64_t size);
     int post_receive(struct rdma_cm_id* id_);
     // State handlers
     int on_pre_conn(struct rdma_cm_id* id_);

@@ -53,20 +53,19 @@ typedef boost::geometry::model::box<point_t> box_t;
   BOOST_PP_REPEAT(NDIM, POINT_SET_REP, (up ## i, ucoor_) ) \
   box_t box ## i(lp ## i, up ## i);
 
-#define KV_TO_STR(key, ver) \
-  "<key= " << key << ", ver= " << ver << ">"
+#define KV_TO_STR(key, ver) "<key= " << key << ", ver= " << ver << ">"
 
 #define LUCOOR_TO_STR(lcoor_, ucoor_) \
-  "lcoor_= " << patch_all::arr_to_str<>(NDIM, lcoor_) \
-  << ", ucoor_= " << patch_all::arr_to_str<>(NDIM, ucoor_)
+  "lcoor_= " << patch::arr_to_str<>(NDIM, lcoor_) \
+  << ", ucoor_= " << patch::arr_to_str<>(NDIM, ucoor_)
 
 #define KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_) \
   KV_TO_STR(key, ver) << ", " << LUCOOR_TO_STR(lcoor_, ucoor_)
 
-#define IS_VALID_BOX(func_name, lcoor_, ucoor_, action) \
+#define IS_VALID_BOX(lcoor_, ucoor_, action) \
   for (int i = 0; i < NDIM; i++) { \
     if (ucoor_[i] <= lcoor_[i] ) { \
-      LOG(ERROR) << #func_name":: not valid box; \n" << LUCOOR_TO_STR(lcoor_, ucoor_) << "\n"; \
+      log_(ERROR, "not valid box; \n" << LUCOOR_TO_STR(lcoor_, ucoor_) ) \
       action; \
     } \
   }
@@ -122,7 +121,7 @@ struct less_for_box : public std::binary_function<box_t, box_t, bool> {
   }
 };
 
-struct spatial_syncer : public patch_all::syncer<box_t, less_for_box> {
+struct spatial_syncer : public patch::syncer<box_t, less_for_box> {
   public:
     std::string to_str()
     {
@@ -195,7 +194,7 @@ class RTable : public QTable<VAL_T> {
     
     int add(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, VAL_T val)
     {
-      IS_VALID_BOX("add", lcoor_, ucoor_, return 1)
+      IS_VALID_BOX(lcoor_, ucoor_, return 1)
       CREATE_BOX(0, b, lcoor_, ucoor_)
       
       rtree.insert(std::make_pair(b0, val) );
@@ -205,12 +204,12 @@ class RTable : public QTable<VAL_T> {
     
     int del(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_)
     {
-      IS_VALID_BOX("del", lcoor_, ucoor_, return 1)
+      IS_VALID_BOX(lcoor_, ucoor_, return 1)
       CREATE_BOX(0, b, lcoor_, ucoor_)
       
       std::vector<VAL_T> val_v;
       if (query(key, ver, lcoor_, ucoor_, val_v) ) {
-        LOG(ERROR) << "del:: query failed; " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_);
+        log_(ERROR, "query failed; " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_) )
         return 1;
       }
       
@@ -222,7 +221,7 @@ class RTable : public QTable<VAL_T> {
     
     int query(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, std::vector<VAL_T>& val_v)
     {
-      IS_VALID_BOX("query", lcoor_, ucoor_, return 1)
+      IS_VALID_BOX(lcoor_, ucoor_, return 1)
       CREATE_BOX(0, qb, lcoor_, ucoor_)
       
       std::vector<value> value_v;
@@ -251,7 +250,7 @@ typedef std::pair<std::string, unsigned int> key_ver_pair;
 template <typename VAL_T>
 class KVTable : public QTable<VAL_T> { // Key Ver
   private:
-    patch_all::thread_safe_map<key_ver_pair, std::vector<VAL_T> > kv__val_v_map;
+    patch::thread_safe_map<key_ver_pair, std::vector<VAL_T> > kv__val_v_map;
   public:
     KVTable() {}
     ~KVTable() {}
@@ -261,14 +260,14 @@ class KVTable : public QTable<VAL_T> { // Key Ver
       std::stringstream ss;
       ss << "kv__val_v_map= \n";
       for (typename std::map<key_ver_pair, std::vector<VAL_T> >::iterator it = kv__val_v_map.begin(); it != kv__val_v_map.end(); it++)
-        ss << KV_TO_STR((it->first).first, (it->first).second) << " : " << patch_all::vec_to_str<>(it->second) << "\n";
+        ss << KV_TO_STR((it->first).first, (it->first).second) << " : " << patch::vec_to_str<>(it->second) << "\n";
       
       return ss.str();
     }
     
     int add(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, VAL_T val)
     {
-      IS_VALID_BOX("add", lcoor_, ucoor_, return 1)
+      IS_VALID_BOX(lcoor_, ucoor_, return 1)
       
       key_ver_pair kv = std::make_pair(key, ver);
       if (!kv__val_v_map.contains(kv) ) {
@@ -282,7 +281,7 @@ class KVTable : public QTable<VAL_T> { // Key Ver
     
     int del(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_)
     {
-      IS_VALID_BOX("del", lcoor_, ucoor_, return 1)
+      IS_VALID_BOX(lcoor_, ucoor_, return 1)
       
       key_ver_pair kv = std::make_pair(key, ver);
       if (!kv__val_v_map.contains(kv) )
@@ -295,7 +294,7 @@ class KVTable : public QTable<VAL_T> { // Key Ver
     
     int query(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, std::vector<VAL_T>& val_v)
     {
-      IS_VALID_BOX("query", lcoor_, ucoor_, return 1)
+      IS_VALID_BOX(lcoor_, ucoor_, return 1)
       
       key_ver_pair kv = std::make_pair(key, ver);
       if (!kv__val_v_map.contains(kv) )

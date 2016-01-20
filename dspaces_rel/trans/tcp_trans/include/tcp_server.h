@@ -17,25 +17,20 @@
 
 #include "patch_tcp.h"
 
-#define HASH_PRIME 54059
-#define HASH_PRIME_2 76963
-#define HASH_PRIME_3 86969
-unsigned int hash_str(std::string str);
+#ifndef _TRANS_PARS_
+#define _TRANS_PARS_
+const int TCP_MAX_DATA_ID_LENGTH = 50;
+const int TCP_MAX_DATA_SIZE_LENGTH = 50;
+const uint64_t TCP_CHUNK_SIZE = 10*1024*1024;
+#endif // _TRANS_PARS_
 
-#ifndef TRANS_PARS
-#define TRANS_PARS
-const int MAX_DATA_ID_LENGTH = 50;
-const int MAX_DATA_SIZE_LENGTH = 50;
-const int CHUNK_LENGTH = 10*1024*1024;
-#endif // TRANS_PARS
-
-typedef boost::function<void(std::string, int, void*)> data_recv_cb_func;
+typedef boost::function<void(std::string, uint64_t, void*)> tcp_data_recv_cb_func;
 
 class TCPServer {
   private:
     std::string lip;
     int lport;
-    data_recv_cb_func recv_cb;
+    tcp_data_recv_cb_func data_recv_cb;
     
     patch_tcp::syncer<unsigned int> syncer;
     std::string server_name;
@@ -55,7 +50,7 @@ class TCPServer {
     std::string get_lip();
     int get_lport();
     
-    int init(std::string data_id, data_recv_cb_func recv_cb);
+    int init(std::string data_id, tcp_data_recv_cb_func data_recv_cb);
     void init_listen();
     void init_recv(boost::shared_ptr<boost::asio::ip::tcp::socket>& socket_);
     void handle_recv(std::string data_id, int data_size, void* data_);

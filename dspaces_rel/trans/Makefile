@@ -22,11 +22,11 @@ endif # GRIDFTP
 
 IB_TRANS_DIR ?= $(TRANS_DIR)/ib_trans
 IB_TRANS_ODIR = $(IB_TRANS_DIR)/obj
-IB_TRANS_OBJS = $(IB_TRANS_ODIR)/ib_trans.o $(IB_TRANS_ODIR)/common.o
+IB_TRANS_OBJS = $(IB_TRANS_ODIR)/ib_trans.o $(IB_TRANS_ODIR)/ib_server.o $(IB_TRANS_ODIR)/ib_client.o $(IB_TRANS_ODIR)/ib_conn.o
 
 TCP_TRANS_DIR ?= $(TRANS_DIR)/tcp_trans
 TCP_TRANS_ODIR = $(TCP_TRANS_DIR)/obj
-TCP_TRANS_OBJS = $(TCP_TRANS_ODIR)/tcp_trans.o $(TCP_TRANS_ODIR)/tcp_server.o $(TCP_TRANS_ODIR)/tcp_client.o
+TCP_TRANS_OBJS = $(TCP_TRANS_ODIR)/tcp_trans.o $(TCP_TRANS_ODIR)/tcp_server.o $(TCP_TRANS_ODIR)/tcp_client.o $(TCP_TRANS_ODIR)/patch_tcp.o
 
 ifdef GRIDFTP
 GFTP_TRANS_DIR ?= $(TRANS_DIR)/gftp_trans

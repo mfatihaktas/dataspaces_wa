@@ -6,7 +6,7 @@ namespace patch_sdm {
     if (data_id_t == KV_DATA_ID)
       return key + "_" + boost::lexical_cast<std::string>(ver);
     else if (data_id_t == LUCOOR_DATA_ID)
-      return patch_all::arr_to_str<>(NDIM, lb_) + "_" + patch_all::arr_to_str<>(NDIM, ub_);
+      return patch::arr_to_str<>(NDIM, lb_) + "_" + patch::arr_to_str<>(NDIM, ub_);
     else
       LOG(ERROR) << "get_data_id:: unknown data_id_t= " << data_id_t;
   }
@@ -144,8 +144,8 @@ namespace patch_sdm {
       msg_map["ndim"] = boost::lexical_cast<std::string>(ndim);
       msg_map["key"] = key;
       msg_map["ver"] = boost::lexical_cast<std::string>(ver);
-      msg_map["lb_"] = patch_all::arr_to_str<>(ndim, lb_);
-      msg_map["ub_"] = patch_all::arr_to_str<>(ndim, ub_);
+      msg_map["lb_"] = patch::arr_to_str<>(ndim, lb_);
+      msg_map["ub_"] = patch::arr_to_str<>(ndim, ub_);
     }
     catch(std::exception& ex) {
       LOG(ERROR) << "encode_msg_map:: Exception=" << ex.what();
@@ -164,9 +164,9 @@ namespace patch_sdm {
       msg_map["data_type"] = data_type;
       msg_map["size"] = boost::lexical_cast<std::string>(size);
       msg_map["ndim"] = boost::lexical_cast<std::string>(ndim);
-      msg_map["gdim_"] = patch_all::arr_to_str<>(ndim, gdim_);
-      msg_map["lb_"] = patch_all::arr_to_str<>(ndim, lb_);
-      msg_map["ub_"] = patch_all::arr_to_str<>(ndim, ub_);
+      msg_map["gdim_"] = patch::arr_to_str<>(ndim, gdim_);
+      msg_map["lb_"] = patch::arr_to_str<>(ndim, lb_);
+      msg_map["ub_"] = patch::arr_to_str<>(ndim, ub_);
     }
     catch (std::exception& ex) {
       LOG(ERROR) << "encode_msg_map:: Exception=" << ex.what();

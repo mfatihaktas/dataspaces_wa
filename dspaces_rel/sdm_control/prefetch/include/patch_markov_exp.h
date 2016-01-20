@@ -65,11 +65,11 @@ void make_plot(std::vector<std::vector<T> > x_v_v, std::vector<std::vector<T> > 
 {
   std::cout << "x_v_v= \n";
   for (typename std::vector<std::vector<T> >::iterator it = x_v_v.begin(); it != x_v_v.end(); it++)
-    std::cout << patch_all::vec_to_str<>(*it) << "\n";
+    std::cout << patch::vec_to_str<>(*it) << "\n";
   
   std::cout << "y_v_v= \n";
   for (typename std::vector<std::vector<T> >::iterator it = y_v_v.begin(); it != y_v_v.end(); it++)
-    std::cout << patch_all::vec_to_str<>(*it) << "\n";
+    std::cout << patch::vec_to_str<>(*it) << "\n";
   // 
   std::string color_code_[] = {"#0060ad", "#DAA520", "#7F7F7F", "#D2691E", "#556B2F", "#DC143C", "#DA70D6", "#8B008B", "#1E90FF"};
   Gnuplot gp;
@@ -148,7 +148,7 @@ void random_partial_shuffle(float shuffle_prob, int shuffle_width, std::vector<i
 //   for (int i = 0; i < 10; i++)
 //     v.push_back(rand() % 10);
   
-//   std::cout << "v= " << patch_all::vec_to_str<>(v) << "\n";
+//   std::cout << "v= " << patch::vec_to_str<>(v) << "\n";
   
 //   std::vector<std::map<int, float> > i__int_freq_map_v(v.size() );
 //   int num_run = 10000;
@@ -167,7 +167,7 @@ void random_partial_shuffle(float shuffle_prob, int shuffle_width, std::vector<i
 //   }
   
 //   for (int i = 0; i < v.size(); i++)
-//     std::cout << "i= " << i << ", int_num_map= \n" << patch_all::map_to_str<>(i__int_freq_map_v[i] ) << "\n";
+//     std::cout << "i= " << i << ", int_num_map= \n" << patch::map_to_str<>(i__int_freq_map_v[i] ) << "\n";
 // }
 
 // ----------------------------------------  test_malgo  -----------------------------------------//
@@ -374,7 +374,7 @@ void test_rand_shuffle_train()
   for (ACC_T a = 0; a < alphabet_size; a++)
     acc__arr_rate_map[a] = 1 + static_cast<float>(rand() ) / static_cast<float>(RAND_MAX); // (float) 1 / alphabet_size;
   gen_poisson_acc_seq(alphabet_size, num_acc, acc__arr_rate_map, acc_v);
-  std::cout << "acc_v= " << patch_all::vec_to_str<>(acc_v) << "\n";
+  std::cout << "acc_v= " << patch::vec_to_str<>(acc_v) << "\n";
   // acc_v_to_acc_step_v(acc_v, acc_step_v);
   
   int shuffle_width = 2;
@@ -398,8 +398,8 @@ void test_rand_shuffle_train()
     
     std::map<ACC_T, float> acc__emp_prob_map;
     get_emprical_dist(alphabet_size, acc_v, acc__emp_prob_map);
-    std::cout << "run_i= " << i << ", acc__emp_prob_map= \n" << patch_all::map_to_str<ACC_T, float>(acc__emp_prob_map) << "\n";
-    // std::cout << "for training; acc_v= " << patch_all::vec_to_str<>(acc_v) << "\n";
+    std::cout << "run_i= " << i << ", acc__emp_prob_map= \n" << patch::map_to_str<ACC_T, float>(acc__emp_prob_map) << "\n";
+    // std::cout << "for training; acc_v= " << patch::vec_to_str<>(acc_v) << "\n";
     
     for (std::vector<boost::shared_ptr<MAlgo> >::iterator it = malgo_v.begin(); it != malgo_v.end(); it++)
       (*it)->train(acc_v);
@@ -419,7 +419,7 @@ void test_rand_shuffle_train()
     random_partial_shuffle<ACC_T>(shuffle_prob, shuffle_width, shuffle_indices, acc_v);
     acc_step_v.clear();
     acc_v_to_acc_step_v(acc_v, acc_step_v);
-    std::cout << "for prediction; acc_v= " << patch_all::vec_to_str<>(acc_v) << "\n";
+    std::cout << "for prediction; acc_v= " << patch::vec_to_str<>(acc_v) << "\n";
     
     int algo_id = 0;
     for (std::vector<boost::shared_ptr<MAlgo> >::iterator it = malgo_v.begin(); it != malgo_v.end(); it++, algo_id++) {
@@ -454,7 +454,7 @@ void test_rand_shuffle_train()
                    "Number of repetitions of the noisy pattern observed", "Hit rate",
                    plot_title_ss.str(), out_url);
   
-  std::cout << "acc_step_v= " << patch_all::pvec_to_str<>(acc_step_v) << "\n";
+  std::cout << "acc_step_v= " << patch::pvec_to_str<>(acc_step_v) << "\n";
 }
 
 void test_fixed_train()
@@ -530,9 +530,9 @@ void test_fixed_train()
     // gen_intermittent_poisson_acc_seq(alphabet_size, num_acc, acc__arr_rate_map, acc_v);
     std::map<ACC_T, float> acc__emp_prob_map;
     get_emprical_dist(alphabet_size, acc_v, acc__emp_prob_map);
-    std::cout << "run_i= " << i << ", acc__emp_prob_map= \n" << patch_all::map_to_str<ACC_T, float>(acc__emp_prob_map) << "\n";
+    std::cout << "run_i= " << i << ", acc__emp_prob_map= \n" << patch::map_to_str<ACC_T, float>(acc__emp_prob_map) << "\n";
     
-    // std::cout << "acc_v= \n" << patch_all::vec_to_str(acc_v) << "\n";
+    // std::cout << "acc_v= \n" << patch::vec_to_str(acc_v) << "\n";
     // acc_v_to_acc_step_v(acc_v, acc_step_v);
     
     int algo_id = 0;
@@ -569,8 +569,8 @@ void test_fixed_train()
   make_plot<float>(run_i_v_v, hit_rate_v_v, title_v,
                    "Number of repetitions of the fixed pattern observed", "Hit rate",
                    plot_title_ss.str(), out_url);
-
-  std::cout << "acc_step_v= " << patch_all::pvec_to_str<>(acc_step_v) << "\n";
+  
+  std::cout << "acc_step_v= " << patch::pvec_to_str<>(acc_step_v) << "\n";
   std::cout << "mixed-best wnd 4= \n" << mmalgo_v[mmalgo_v.size() - 1]->to_str() << "\n";
 }
 
@@ -609,8 +609,8 @@ void test_malgo()
   
   std::map<ACC_T, float> acc__emp_prob_map;
   get_emprical_dist(alphabet_size, acc_v, acc__emp_prob_map);
-  std::cout << "acc__emp_prob_map= \n" << patch_all::map_to_str<ACC_T, float>(acc__emp_prob_map) << "\n";
-  std::cout << "acc_v= \n" << patch_all::vec_to_str(acc_v) << "\n";
+  std::cout << "acc__emp_prob_map= \n" << patch::map_to_str<ACC_T, float>(acc__emp_prob_map) << "\n";
+  std::cout << "acc_v= \n" << patch::vec_to_str(acc_v) << "\n";
   
   std::vector<acc_step_pair> acc_step_v;
   acc_v_to_acc_step_v(acc_v, acc_step_v);
@@ -624,7 +624,7 @@ void test_malgo()
   std::cout << "LZ_ALGO: \n"
             << "hit_rate= " << lz_hit_rate << "\n";
   // // std::cout << "parse_tree_to_pstr= \n" << lz_algo_->parse_tree_to_pstr() << "\n";
-  // std::cout << "accuracy_v= \n" << patch_all::vec_to_str<char>(accuracy_v) << "\n";
+  // std::cout << "accuracy_v= \n" << patch::vec_to_str<char>(accuracy_v) << "\n";
   
   boost::shared_ptr<MAlgo> alz_algo_ = boost::make_shared<ALZAlgo>();
   float alz_hit_rate;
@@ -633,7 +633,7 @@ void test_malgo()
   std::cout << "ALZ_ALGO: \n"
             << "hit_rate= " << alz_hit_rate << "\n";
   // // std::cout << "parse_tree_to_pstr= \n" << alz_algo_->parse_tree_to_pstr() << "\n";
-  // std::cout << "accuracy_seq= \n" << patch_all::vec_to_str<char>(accuracy_v) << "\n";
+  // std::cout << "accuracy_seq= \n" << patch::vec_to_str<char>(accuracy_v) << "\n";
   
   boost::shared_ptr<MAlgo> ppm_1_algo_ = boost::make_shared<PPMAlgo>(1);
   float ppm_1_hit_rate;
@@ -642,7 +642,7 @@ void test_malgo()
   std::cout << "PPM_1_ALGO: \n"
             << "hit_rate= " << ppm_1_hit_rate << "\n";
   // // std::cout << "parse_tree_to_pstr= \n" << ppm_1_algo_->parse_tree_to_pstr() << "\n";
-  // std::cout << "accuracy_seq= \n" << patch_all::vec_to_str<char>(accuracy_v) << "\n";
+  // std::cout << "accuracy_seq= \n" << patch::vec_to_str<char>(accuracy_v) << "\n";
   
   boost::shared_ptr<MAlgo> ppm_2_algo_ = boost::make_shared<PPMAlgo>(2);
   float ppm_2_hit_rate;
@@ -651,7 +651,7 @@ void test_malgo()
   std::cout << "PPM order 2_ALGO: \n"
             << "hit_rate= " << ppm_2_hit_rate << "\n";
   // // std::cout << "parse_tree_to_pstr= \n" << ppm_2_algo_->parse_tree_to_pstr() << "\n";
-  // std::cout << "accuracy_seq= \n" << patch_all::vec_to_str<char>(accuracy_v) << "\n";
+  // std::cout << "accuracy_seq= \n" << patch::vec_to_str<char>(accuracy_v) << "\n";
   
   boost::shared_ptr<MAlgo> ppm_3_algo_ = boost::make_shared<PPMAlgo>(3);
   float ppm_3_hit_rate;
@@ -660,7 +660,7 @@ void test_malgo()
   std::cout << "PPM_3_ALGO: \n"
             << "hit_rate= " << ppm_3_hit_rate << "\n";
   // // std::cout << "parse_tree_to_pstr= \n" << ppm_3_algo_->parse_tree_to_pstr() << "\n";
-  // std::cout << "accuracy_seq= \n" << patch_all::vec_to_str<char>(accuracy_v) << "\n";
+  // std::cout << "accuracy_seq= \n" << patch::vec_to_str<char>(accuracy_v) << "\n";
   
   boost::shared_ptr<MAlgo> po_algo_ = boost::make_shared<POAlgo>();
   float po_hit_rate;
@@ -669,7 +669,7 @@ void test_malgo()
   std::cout << "PO_ALGO: \n"
             << "hit_rate= " << po_hit_rate << "\n";
   // // std::cout << "parse_tree_to_pstr= \n" << po_algo_->parse_tree_to_pstr() << "\n";
-  // std::cout << "accuracy_seq= \n" << patch_all::vec_to_str<char>(accuracy_v) << "\n";
+  // std::cout << "accuracy_seq= \n" << patch::vec_to_str<char>(accuracy_v) << "\n";
   
   std::vector<malgo_t__context_size_pair> malgo_t__context_size_v;
   malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_LZ, 0) );
@@ -685,7 +685,7 @@ void test_malgo()
   sim_prefetch_accuracy<MMAlgo>(*wmmalgo_, cache_size, acc_step_v, wmmalgo_hit_rate, accuracy_v);
   std::cout << "WMMALGO: \n"
             << "hit_rate= " << wmmalgo_hit_rate << "\n";
-  // std::cout << "accuracy_seq= \n" << patch_all::vec_to_str<char>(accuracy_v) << "\n";
+  // std::cout << "accuracy_seq= \n" << patch::vec_to_str<char>(accuracy_v) << "\n";
   
   boost::shared_ptr<MMAlgo> mmmalgo_ = boost::make_shared<MMMAlgo>(malgo_t__context_size_v);
   float mmmalgo_hit_rate;
@@ -693,7 +693,7 @@ void test_malgo()
   sim_prefetch_accuracy<MMAlgo>(*mmmalgo_, cache_size, acc_step_v, mmmalgo_hit_rate, accuracy_v);
   std::cout << "MMMALGO: \n"
             << "hit_rate= " << mmmalgo_hit_rate << "\n";
-  // std::cout << "accuracy_seq= \n" << patch_all::vec_to_str<char>(accuracy_v) << "\n";
+  // std::cout << "accuracy_seq= \n" << patch::vec_to_str<char>(accuracy_v) << "\n";
   
   boost::shared_ptr<MMAlgo> bmmalgo_ = boost::make_shared<BMMAlgo>(malgo_t__context_size_v, 4);
   float bmmalgo_hit_rate;
@@ -702,7 +702,7 @@ void test_malgo()
   std::cout << "BMMALGO_WND_4: \n"
             << "bmmalgo= \n" << bmmalgo_->to_str() << "\n"
             << "hit_rate= " << bmmalgo_hit_rate << "\n";
-  // std::cout << "accuracy_seq= \n" << patch_all::vec_to_str<char>(accuracy_v) << "\n";
+  // std::cout << "accuracy_seq= \n" << patch::vec_to_str<char>(accuracy_v) << "\n";
   
   std::cout << "lz_hit_rate= " << lz_hit_rate << "\n"
             << "alz_hit_rate= " << alz_hit_rate << "\n"
@@ -730,8 +730,8 @@ void test_bmmalgo()
   
   std::map<ACC_T, float> acc__emp_prob_map;
   get_emprical_dist(alphabet_size, acc_v, acc__emp_prob_map);
-  std::cout << "acc__emp_prob_map= \n" << patch_all::map_to_str<ACC_T, float>(acc__emp_prob_map) << "\n";
-  std::cout << "acc_v= \n" << patch_all::vec_to_str(acc_v) << "\n";
+  std::cout << "acc__emp_prob_map= \n" << patch::map_to_str<ACC_T, float>(acc__emp_prob_map) << "\n";
+  std::cout << "acc_v= \n" << patch::vec_to_str(acc_v) << "\n";
   
   std::vector<acc_step_pair> acc_step_v;
   acc_v_to_acc_step_v(acc_v, acc_step_v);
@@ -757,7 +757,7 @@ void test_bmmalgo()
 
 void handle_mpbuffer_data_act(PREFETCH_DATA_ACT_T data_act_t, int ds_id, key_ver_pair kv)
 {
-  LOG(INFO) << "handle_mpbuffer_data_act:: data_act_t= " << data_act_t << ", ds_id= " << ds_id << KV_TO_STR(kv.first, kv.second);
+  log_(INFO, "data_act_t= " << data_act_t << ", ds_id= " << ds_id << KV_TO_STR(kv.first, kv.second) )
 }
 
 void add_access(MPBuffer* mpbuffer, key_ver_pair kv) { mpbuffer->add_access(kv); }
@@ -795,14 +795,14 @@ void m_prefetch_test()
   //   // boost::thread t(add_access, &pbuffer, p_id, p_id__last_step_map[p_id] );
   //   add_access(&pbuffer, *kv_it);
   // }
-  // std::cout << "m_prefetch_test:: p_id_v= " << patch_all::vec_to_str<int>(p_id_v) << "\n";
-  // std::cout << "m_prefetch_test:: key_ver_v= \n" << patch_all::pvec_to_str<key_ver_pair>(key_ver_v) << "\n";
+  // std::cout << "m_prefetch_test:: p_id_v= " << patch::vec_to_str<int>(p_id_v) << "\n";
+  // std::cout << "m_prefetch_test:: key_ver_v= \n" << patch::pvec_to_str<key_ver_pair>(key_ver_v) << "\n";
   
   float hit_rate;
   std::vector<char> accuracy_v;
   pbuffer.sim_prefetch_accuracy(p_id_v, key_ver_v, hit_rate, accuracy_v);
-  std::cout << "accuracy_v= " << patch_all::vec_to_str<char>(accuracy_v) << "\n";
-  std::cout << "hit_rate= " << hit_rate << "\n";
+  std::cout << "accuracy_v= " << patch::vec_to_str<char>(accuracy_v) << "\n"
+            << "hit_rate= " << hit_rate << "\n";
   
   // 
   std::string temp;

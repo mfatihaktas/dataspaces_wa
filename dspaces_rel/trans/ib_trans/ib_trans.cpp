@@ -24,13 +24,13 @@ std::string IBTrans::get_s_lip() { return s_lip; }
 std::string IBTrans::get_s_lport() { return s_lport_queue.pop(); }
 void IBTrans::return_s_lport(std::string s_lport) { s_lport_queue.push(s_lport); }
 
-void IBTrans::init_server(const char* lport_, msg_recv_cb_func msg_recv_cb, data_recv_cb_func data_recv_cb)
+void IBTrans::init_server(const char* lport_, ib_data_recv_cb_func data_recv_cb, ib_msg_recv_cb_func msg_recv_cb)
 {
-  IBServer ib_server(lport_, msg_recv_cb, data_recv_cb);
+  IBServer ib_server(lport_, data_recv_cb, msg_recv_cb);
 }
 
 void IBTrans::init_client(const char* s_lip_, const char* s_lport_,
-                          std::string data_id, int data_size, void* data_)
+                          std::string data_id, uint64_t data_size, void* data_)
 {
   IBClient ib_client(s_lip_, s_lport_);
   ib_client.send_data(data_id, data_size, data_);

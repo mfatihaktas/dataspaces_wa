@@ -43,8 +43,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
     {0, 0, 0, 0}
   };
   
-  while (1)
-  {
+  while (1) {
     int option_index = 0;
     c = getopt_long (argc, argv, "s", long_options, &option_index);
 
@@ -81,7 +80,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
     }
   }
   if (optind < argc) {
-    std::cout << "parse_opts:: Non-option ARGV-elements= \n";
+    log_(INFO, "Non-option ARGV-elements=")
     while (optind < argc)
       std::cout << argv[optind++] << "\n";
   }
@@ -99,7 +98,7 @@ int main(int argc, char **argv)
   // 
   std::map<std::string, std::string> opt_map = parse_opts(argc, argv);
   // Packet p(PACKET_RIMSG, opt_map);
-  // LOG(INFO) << "main:: p.int_to_char_(8, 12)= " << patch_all::arr_to_str<>(8, p.int_to_char_(8, 12) );
+  // log_(INFO, "p.int_to_char_(8, 12)= " << patch::arr_to_str<>(8, p.int_to_char_(8, 12) ) )
   
   if (opt_map.count("joinhost_lip") == 0) {
     opt_map["joinhost_lip"] = "";
@@ -145,9 +144,8 @@ int main(int argc, char **argv)
     else if (opt_map["node_type"].compare("s") == 0)
       slave_test(opt_map);
   }
-  else {
-    LOG(ERROR) << "main:: unknown type= " << opt_map["type"];
-  }
+  else
+    log_(ERROR, "unknown type= " << opt_map["type"] )
   
   return 0;
 }

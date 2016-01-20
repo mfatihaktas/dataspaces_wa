@@ -1,22 +1,17 @@
 #include "packet.h"
 
-#include <glog/logging.h>
-
 Packet::Packet(char type, std::map<std::string, std::string> msg_map)
 {
   this->type = type;
   this->msg_map = msg_map;
   // 
   std::string msg_str;
-  if (encode(msg_map, msg_str) ) {
-    LOG(ERROR) << "Packet:: encode failed; msg_map= \n";
-    for (std::map<std::string, std::string>::iterator it = msg_map.begin(); it != msg_map.end(); it++)
-      std::cout << "\t" << it->first << " : " << it->second << "\n";
-  }
+  if (encode(msg_map, msg_str) )
+    log_(ERROR, "encode failed; msg_map= \n" << patch::map_to_str<>(msg_map) )
   else {
     this->msg_size = msg_str.length();
     if (msg_size > MAX_MSG_SIZE) {
-      LOG(WARNING) << "Packet:: msg_size=" << msg_size << " > MAX_MSG_SIZE=" << MAX_MSG_SIZE;
+      LOG(WARNING) << "msg_size=" << msg_size << " > MAX_MSG_SIZE=" << MAX_MSG_SIZE;
       msg_size = MAX_MSG_SIZE;
     }
     this->packet_size = SIZE_SIZE + TYPE_SIZE + msg_size + TAIL_SIZE;
@@ -50,7 +45,7 @@ Packet::Packet(int type__srlzed_msg_map_size, char* type__srlzed_msg_map)
   this->msg_ = data_ + SIZE_SIZE + TYPE_SIZE;
   // 
   if (decode(msg_, msg_map) )
-    LOG(ERROR) << "Packet:: decode failed; msg_= " << msg_;
+    log_(ERROR, "decode failed; msg_= " << msg_)
 }
 
 Packet::Packet(char type, char* msg_)
@@ -106,7 +101,7 @@ char* Packet::int_to_char_(int char_size, int number) const
   std::string str = boost::lexical_cast<std::string>(number);
   int padding_size = char_size - str.length();
   if (padding_size < 0) {
-    LOG(ERROR) << "int_to_char_:: padding_size= < 0";
+    log_(ERROR, "int_to_char_:: padding_size= < 0")
     return NULL;
   }
   std::string final_str = std::string(padding_size, '0').append(str);
@@ -126,7 +121,7 @@ int Packet::decode(char* msg, std::map<std::string, std::string>& msg_map)
     ia >> msg_map;
   }
   catch(boost::archive::archive_exception& e) {
-    LOG(ERROR) << "decode:: exceptioon e= " << e.what();
+    log_(ERROR, "decode:: exceptioon e= " << e.what() )
     return 1;
   }
   
@@ -143,7 +138,7 @@ int Packet::encode(std::map<std::string, std::string> msg_map, std::string& str)
     str = ss.str();
   }
   catch(boost::archive::archive_exception& e) {
-    LOG(ERROR) << "encode:: exceptioon e= " << e.what();
+    log_(ERROR, "encode:: exceptioon e= " << e.what() )
     return 1;
   }
   

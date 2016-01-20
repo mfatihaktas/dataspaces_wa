@@ -110,12 +110,12 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
 }
 
 int total_recved_size = 0;
-void data_recv_handler(std::string data_id, int data_size, void* data_)
+void data_recv_handler(std::string data_id, uint64_t data_size, void* data_)
 {
   total_recved_size += data_size;
-  LOG(INFO) << "data_recv_handler:: for data_id= " << data_id
-            << ", recved data_size= " << data_size
-            << ", total_recved_size= " << (float)total_recved_size/(1024*1024) << "MB";
+  log_(INFO, "for data_id= " << data_id
+             << ", recved data_size= " << data_size
+             << ", total_recved_size= " << (float)total_recved_size/(1024*1024) << "MB")
 }
 
 #define DATA_T int
@@ -123,6 +123,7 @@ const std::string DATA_T_STR = "int";
 
 int main(int argc , char **argv)
 {
+  int err;
   std::string temp;
   google::InitGoogleLogging("exp");
   // 
@@ -139,13 +140,13 @@ int main(int argc , char **argv)
               intf_to_ip(opt_map["ib_lintf"] ), ib_lport_list,
               intf_to_ip(opt_map["tcp_lintf"] ), boost::lexical_cast<int>(opt_map["s_lport"] ),
               opt_map["gftp_lintf"], intf_to_ip(opt_map["gftp_lintf"] ), gftp_lport, opt_map["tmpfs_dir"] );
-  if (str_cstr_equals(opt_map["type"], "g") ) {
-    trans.init_get(DATA_T_STR, trans.get_s_lport(), "dummy", boost::bind(&data_recv_handler, _1, _2, _3) );
+  if (str_cstr_equals(opt_map["type"], "get") ) {
+    trans.init_get(trans.get_s_lport(), "dummy", boost::bind(&data_recv_handler, _1, _2, _3) );
     
     std::cout << "Enter \n";
     getline(std::cin, temp);
   }
-  else if (str_cstr_equals(opt_map["type"], "p") ) {
+  else if (str_cstr_equals(opt_map["type"], "put") ) {
     // int data_length = 4* 1024*1024*256;
     int data_length = 1024; //1024*1024*256;
     void* data_ = (void*)malloc(sizeof(DATA_T)*data_length);
@@ -153,31 +154,24 @@ int main(int argc , char **argv)
     for (int i = 0; i < data_length; i++)
       static_cast<DATA_T*>(data_)[i] = (DATA_T)i*1.2;
     // 
-    if (gettimeofday(&start_time, NULL) ) {
-      LOG(ERROR) << "main:: gettimeofday returned non-zero.";
-      return 1;
-    }
-    
+    return_if_err(gettimeofday(&start_time, NULL), err)
     //TODO: for now
     if (str_cstr_equals(opt_map["trans_protocol"], "t") )
       data_length *= sizeof(DATA_T);
       trans.init_put(opt_map["s_lip"], opt_map["s_lport"], opt_map["tmpfs_dir"],
                      DATA_T_STR, "dummy", data_length, data_);
+    return_if_err(gettimeofday(&end_time, NULL), err)
     
-    if (gettimeofday(&end_time, NULL) ) {
-      LOG(ERROR) << "main:: gettimeofday returned non-zero.";
-      return 1;
-    }
     long exec_time_sec = end_time.tv_sec - start_time.tv_sec;
     long exec_time_usec = end_time.tv_usec - start_time.tv_usec;
-    LOG(INFO) << "main:: exec_time= " << exec_time_sec << "." << exec_time_usec / 1000 << " sec.";
+    log_(INFO, "exec_time= " << exec_time_sec << "." << exec_time_usec / 1000 << " sec.")
     // 
     free(data_);
     // std::cout << "Enter \n";
     // getline(std::cin, temp);
   }
   else
-     LOG(ERROR) << "main:: unknown type= " << opt_map["type"];
+     log_(ERROR, "unknown type= " << opt_map["type"] )
 
   return 0;
 }

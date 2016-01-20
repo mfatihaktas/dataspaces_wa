@@ -22,7 +22,7 @@ void sim_prefetch_accuracy(MALGO& malgo,
   std::map<ACC_T, int> acc__last_acced_step_map;
   
   for (std::vector<acc_step_pair>::iterator it = acc_step_v.begin(); it != acc_step_v.end(); it++) {
-    // std::cout << "sim_prefetch_accuracy:: is <" << it->first << ", " << it->second << ">"
+    // std::cout << "is <" << it->first << ", " << it->second << ">"
     //           << " in the cache= \n" << cache.to_str() << "\n";
     acc__last_acced_step_map[it->first] = it->second;
     
@@ -73,7 +73,7 @@ void sim_prefetch_accuracy(SALGO& salgo,
     for (std::vector<lcoor_ucoor_pair>::iterator sub_it = lucoor_to_fetch_v.begin(); sub_it != lucoor_to_fetch_v.end(); sub_it++)
       qtable_->add("dummy", 0, sub_it->first, sub_it->second, 0);
   }
-  // LOG(INFO) << "sim_prefetch_accuracy:: qtable= \n" << qtable_->to_str();
+  // log_(INFO, "qtable= \n" << qtable_->to_str() )
   
   hit_rate = 1.0 - (float)num_miss/lucoor_to_acc_v.size();
 }
@@ -116,7 +116,7 @@ class PCSim { // P-C Simulator
 /************************************************  MPCSim  ****************************************/
 class MPCSim : public PCSim { // Markov
   private:
-    patch_all::syncer<key_ver_pair> bget_syncer;
+    patch::syncer<key_ver_pair> bget_syncer;
     
   public:
     MPCSim(std::vector<int> ds_id_v, bool w_prefetch,

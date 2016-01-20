@@ -217,7 +217,7 @@ void test_locality_prefetching()
   
   LOG(INFO) << "test_locality_prefetching:: HSALGO: \n"
             << "hit_rate= " << hit_rate << "\n"
-            << "accuracy_v= " << patch_all::vec_to_str<>(accuracy_v) << "\n";
+            << "accuracy_v= " << patch::vec_to_str<>(accuracy_v) << "\n";
 }
 
 void spcsim_test()
@@ -263,7 +263,7 @@ void spcsim_test()
   spc_sim.sim_all();
   
   LOG(INFO) << "sim:: spc_sim.get_c_id__get_lperc_map= \n"
-            << patch_all::map_to_str<>(spc_sim.get_c_id__get_lperc_map() ) << "\n";
+            << patch::map_to_str<>(spc_sim.get_c_id__get_lperc_map() ) << "\n";
   
   LOG(INFO) << "sim:: spc_sim= \n" << spc_sim.to_str();
 }

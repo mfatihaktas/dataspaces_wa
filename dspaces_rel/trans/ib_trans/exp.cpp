@@ -90,19 +90,19 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
 #define data_type int
 const std::string data_type_str = "int";
 
-void msg_recv_handler(int size, char* msg_)
+void msg_recv_handler(uint64_t size, char* msg_)
 {
   log_(INFO, "recved; size= " << size << ", msg_= " << msg_)
 }
 
 int total_recved_size = 0;
-void data_recv_handler(char* recv_id, int data_size, void* data_)
+void data_recv_handler(std::string data_id, uint64_t data_size, void* data_)
 {
   total_recved_size += data_size;
-  log_(INFO, "data_recv_handler:: for recv_id= " << recv_id
+  log_(INFO, "data_recv_handler:: for data_id= " << data_id
              << ", recved data_size= " << data_size
-             << ", total_recved_size= " << (float)total_recved_size/(1024*1024) << "MB \n"
-             << "data_= " << patch_ib::arr_to_str<>(data_size, (data_type*)data_) )
+             << ", total_recved_size= " << (float)total_recved_size/(1024*1024) << "MB \n")
+            // << "data_= " << patch_ib::arr_to_str<>(data_size, (data_type*)data_) )
 }
 
 int main(int argc , char **argv)
@@ -119,13 +119,13 @@ int main(int argc , char **argv)
   std::list<std::string> ib_lport_list(ib_lports, ib_lports + sizeof(ib_lports) / sizeof(std::string) );
   // 
   IBTrans ib_trans(opt_map["s_lip"], ib_lport_list);
-  if (str_str_equals(opt_map["type"], "server") ) {
+  if (str_cstr_equals(opt_map["type"], "server") ) {
     ib_trans.init_server(ib_trans.get_s_lport().c_str(),
-                         boost::bind(&msg_recv_handler, _1, _2),
-                         boost::bind(&data_recv_handler, _1, _2, _3) );
+                         boost::bind(&data_recv_handler, _1, _2, _3),
+                         boost::bind(&msg_recv_handler, _1, _2) );
   }
-  else if (str_str_equals(opt_map["type"], "client") ) {
-    int data_length = 1024; // 1024*1024*256; // 1024*1024*256;
+  else if (str_cstr_equals(opt_map["type"], "client") ) {
+    uint64_t data_length = 1024; // 1024*1024*256; // 1024*1024*256;
     void* data_ = (void*)malloc(sizeof(data_type)*data_length);
     
     for (int i = 0; i < data_length; i++)
@@ -151,7 +151,7 @@ int main(int argc , char **argv)
     // std::cout << "Enter\n";
     // getline(std::cin, temp);
   }
-  else if (str_str_equals(opt_map["type"], "bqueue") ) {
+  else if (str_cstr_equals(opt_map["type"], "bqueue") ) {
     // BQueue<int> bq;
     // bq.create_timed_push_thread(12);
     

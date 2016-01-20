@@ -5,7 +5,7 @@ TCPTrans::TCPTrans(std::string s_lip, int s_lport)
   closed(false)
 {
   // 
-  LOG(INFO) << "TCPTrans:: constructed; \n" << to_str();
+  log_(INFO, "constructed; \n" << to_str() )
 }
 
 TCPTrans::~TCPTrans()
@@ -14,7 +14,7 @@ TCPTrans::~TCPTrans()
     close();
   // 
   closed = true;
-  LOG(INFO) << "TCPTrans:: destructed.";
+  log_(INFO, "destructed.")
 }
 
 std::string TCPTrans::to_str()
@@ -28,7 +28,7 @@ std::string TCPTrans::to_str()
 int TCPTrans::close()
 {
   if (closed) {
-    LOG(ERROR) << "close:: already closed!";
+    log_(ERROR, "already closed!")
     return 1;
   }
   
@@ -38,14 +38,14 @@ int TCPTrans::close()
   for (std::vector<boost::shared_ptr<TCPClient> >::iterator it = active_tcp_client_v.begin(); it != active_tcp_client_v.begin(); it++)
     (*it)->close();
   
-  LOG(INFO) << "close:: done.";
+  log_(INFO, "done.")
   return 0;
 }
 
 std::string TCPTrans::get_s_lip() { return tcp_server_->get_lip(); }
 int TCPTrans::get_s_lport() { return tcp_server_->get_lport(); }
 
-int TCPTrans::init_server(std::string data_id, data_recv_cb_func data_recv_cb) { return tcp_server_->init(data_id, data_recv_cb); }
+int TCPTrans::init_server(std::string data_id, tcp_data_recv_cb_func data_recv_cb) { return tcp_server_->init(data_id, data_recv_cb); }
 
 int TCPTrans::send(std::string s_lip, int s_lport, std::string data_id, int data_size, void* data_)
 {
@@ -58,5 +58,9 @@ int TCPTrans::send(std::string s_lip, int s_lport, std::string data_id, int data
   
   boost::shared_ptr<TCPClient> tcp_client_ = boost::make_shared<TCPClient>(s_lip, s_lport);
   active_tcp_client_v.push_back(tcp_client_);
-  return tcp_client_->send(data_id, data_size, data_);
+  
+  int err;
+  return_if_err(tcp_client_->send(data_id, data_size, data_), err)
+  active_tcp_client_v.erase(std::find(active_tcp_client_v.begin(), active_tcp_client_v.end(), tcp_client_) );
+  return 0;
 }

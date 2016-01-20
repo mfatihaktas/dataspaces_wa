@@ -1,13 +1,13 @@
 #ifndef _REMOTE_INTERACT_H_
 #define _REMOTE_INTERACT_H_
 
+#include <boost/asio/io_service.hpp>
+#include <boost/asio/signal_set.hpp>
+
 #include "ds_client.h"
 #include "sdm_control.h"
 #include "profiler.h"
 #include "trans.h"
-
-#include <boost/asio/io_service.hpp>
-#include <boost/asio/signal_set.hpp>
 
 /******************************************  RFPManager  ******************************************/
 typedef boost::function<void(RECV_ID_T, int, void*)> data_recv_cb_func;
@@ -19,7 +19,7 @@ class RFPManager { // Remote Fetch & Place
     boost::shared_ptr<Trans> trans_;
     boost::shared_ptr<DSDriver> ds_driver_;
     
-    patch_all::thread_safe_map<std::string, int> data_id__recved_size_map;
+    patch_all::thread_safe_map<std::string, uint64_t> data_id__recved_size_map;
     patch_all::thread_safe_map<std::string, void*> data_id__data_map;
     patch_all::syncer<unsigned int> rfp_syncer;
   public:
@@ -34,19 +34,19 @@ class RFPManager { // Remote Fetch & Place
     std::string get_lip();
     std::string get_lport();
     std::string get_tmpfs_dir();
-    int get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_);
+    uint64_t get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_);
     
     int wa_put(std::string lip, std::string lport, std::string tmpfs_dir,
                std::string key, unsigned int ver, std::string data_type,
-               int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
+               int size, int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_);
     int wa_get(std::string lip, std::string lport, std::string tmpfs_dir,
-               std::string key, unsigned int ver, std::string data_type,
-               int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_);
-    bool is_being_get(std::string key, unsigned int ver, uint64_t *lb_, uint64_t *ub_);
-    int wait_for_get(std::string key, unsigned int ver, uint64_t *lb_, uint64_t *ub_);
-    int notify_remote_get_done(std::string key, unsigned int ver, uint64_t *lb_, uint64_t *ub_);
+               std::string key, unsigned int ver,
+               int size, int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_);
+    bool is_being_get(std::string key, unsigned int ver, uint64_t* lb_, uint64_t* ub_);
+    int wait_for_get(std::string key, unsigned int ver, uint64_t* lb_, uint64_t* ub_);
+    int notify_remote_get_done(std::string key, unsigned int ver, uint64_t* lb_, uint64_t* ub_);
     
-    void handle_recv(std::string data_id, int data_size, void* data_);
+    void handle_recv(std::string data_id, uint64_t data_size, void* data_);
 };
 
 /*******************************************  RIManager  ******************************************/

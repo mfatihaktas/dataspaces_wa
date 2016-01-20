@@ -79,7 +79,7 @@ void handle_char_recv(char* msg_)
 
 void handle_rimsg_recv(std::map<std::string, std::string> msg_map)
 {
-  LOG(INFO) << "handle_rimsg_recv:: msg_map= \n" << patch_all::map_to_str<std::string, std::string>(msg_map);
+  LOG(INFO) << "handle_rimsg_recv:: msg_map= \n" << patch::map_to_str<std::string, std::string>(msg_map);
 }
 
 void handle_cp_recv(boost::shared_ptr<Packet> p_)
@@ -89,7 +89,7 @@ void handle_cp_recv(boost::shared_ptr<Packet> p_)
 
 void handle_dm_act(std::map<std::string, std::string> msg_map)
 {
-  LOG(INFO) << "handle_dm_act:: msg_map= \n" << patch_all::map_to_str<std::string, std::string>(msg_map);
+  LOG(INFO) << "handle_dm_act:: msg_map= \n" << patch::map_to_str<std::string, std::string>(msg_map);
 }
 
 void master_test(std::map<std::string, std::string> opt_map)

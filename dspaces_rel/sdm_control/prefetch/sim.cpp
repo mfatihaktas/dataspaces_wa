@@ -14,7 +14,7 @@ PCSim::PCSim(std::vector<int> ds_id_v, bool w_prefetch,
   p_id__inter_arr_time_v_v(p_id__inter_arr_time_v_v), c_id__inter_arr_time_v_v(c_id__inter_arr_time_v_v)
 {
   // 
-  LOG(INFO) << "PCSim:: constructed= \n" << to_str();
+  // log_(INFO, "constructed= \n" << to_str() )
 }
 
 PCSim::~PCSim()
@@ -22,7 +22,7 @@ PCSim::~PCSim()
   for (std::vector<boost::shared_ptr<boost::thread> >::iterator it = thread_v.begin(); it != thread_v.end(); it++)
     (*it)->join();
   // 
-  LOG(INFO) << "PCSim:: destructed= \n" << to_str_end();
+  // log_(INFO, "destructed= \n" << to_str_end() )
 };
 
 std::string PCSim::to_str()
@@ -30,20 +30,20 @@ std::string PCSim::to_str()
   std::stringstream ss;
   ss << "w_prefetch= " << w_prefetch << "\n"
      << "num_p= " << num_p << "\n"
-     << "p_id__ds_id_v= " << patch_all::vec_to_str<int>(p_id__ds_id_v) << "\n"
-     << "p_id__num_put_v= " << patch_all::vec_to_str<int>(p_id__num_put_v) << "\n"
-     << "p_id__put_rate_v= " << patch_all::vec_to_str<float>(p_id__put_rate_v) << "\n"
+     << "p_id__ds_id_v= " << patch::vec_to_str<int>(p_id__ds_id_v) << "\n"
+     << "p_id__num_put_v= " << patch::vec_to_str<int>(p_id__num_put_v) << "\n"
+     << "p_id__put_rate_v= " << patch::vec_to_str<float>(p_id__put_rate_v) << "\n"
      << "p_id__inter_arr_time_v_v= \n";
   for (std::vector<std::vector<float> >::iterator it = p_id__inter_arr_time_v_v.begin(); it != p_id__inter_arr_time_v_v.end(); it++)
-    ss << "\t" << patch_all::vec_to_str<>(*it) << "\n";
+    ss << "\t" << patch::vec_to_str<>(*it) << "\n";
      
   ss << "num_c= " << num_c << "\n"
-     << "c_id__ds_id_v= " << patch_all::vec_to_str<int>(c_id__ds_id_v) << "\n"
-     << "c_id__num_get_v= " << patch_all::vec_to_str<int>(c_id__num_get_v) << "\n"
-     << "c_id__get_rate_v= " << patch_all::vec_to_str<float>(c_id__get_rate_v) << "\n"
+     << "c_id__ds_id_v= " << patch::vec_to_str<int>(c_id__ds_id_v) << "\n"
+     << "c_id__num_get_v= " << patch::vec_to_str<int>(c_id__num_get_v) << "\n"
+     << "c_id__get_rate_v= " << patch::vec_to_str<float>(c_id__get_rate_v) << "\n"
      << "c_id__inter_arr_time_v_v= \n";
   for (std::vector<std::vector<float> >::iterator it = c_id__inter_arr_time_v_v.begin(); it != c_id__inter_arr_time_v_v.end(); it++)
-    ss << "\t" << patch_all::vec_to_str<>(*it) << "\n";
+    ss << "\t" << patch::vec_to_str<>(*it) << "\n";
   
   return ss.str();
 }
@@ -53,9 +53,9 @@ std::string PCSim::to_str_end()
   std::stringstream ss;
   ss << "c_id__get_type_v_map= \n";
   for (std::map<int, std::vector<char> >::iterator it = c_id__get_type_v_map.begin(); it != c_id__get_type_v_map.end(); it++)
-    ss << "\t" << it->first << " : " << patch_all::vec_to_str<>(it->second) << "\n";
+    ss << "\t" << it->first << " : " << patch::vec_to_str<>(it->second) << "\n";
   
-  ss << "c_id__get_lperc_map= \n" << patch_all::map_to_str<>(get_c_id__get_lperc_map() ) << "\n"
+  ss << "c_id__get_lperc_map= \n" << patch::map_to_str<>(get_c_id__get_lperc_map() ) << "\n"
      << "wa_space= \n" << wa_space_->to_str() << "\n";
   
   return ss.str();
@@ -93,9 +93,9 @@ void PCSim::handle_data_act(PREFETCH_DATA_ACT_T data_act_t, int ds_id, key_ver_p
   // if (data_act_t == PREFETCH_DATA_ACT_DEL)
   //   wa_space_->del(kv.first, kv.second, lucoor.first, lucoor.second, ds_id);
   // else if (data_act_t == PREFETCH_DATA_ACT_PREFETCH) {
-  //   LOG(INFO) << "handle_data_act:: before wa_space_->put; wa_space= \n" << wa_space_->to_str();
+  //   log_(INFO, "before wa_space_->put; wa_space= \n" << wa_space_->to_str() )
   //   if (wa_space_->put(NULL_P_ID, kv.first, kv.second, lucoor.first, lucoor.second, ds_id) )
-  //     LOG(ERROR) << "handle_data_act:: wa_space_->put failed; " << KV_LUCOOR_TO_STR(kv.first, kv.second, lucoor.first, lucoor.second);
+  //     log_(ERROR, "wa_space_->put failed; " << KV_LUCOOR_TO_STR(kv.first, kv.second, lucoor.first, lucoor.second) )
   // }
 }
 
@@ -136,21 +136,21 @@ MPCSim::MPCSim(std::vector<int> ds_id_v, bool w_prefetch,
     ucoor_[i] = t_ucoor_[i];
   }
   // 
-  LOG(INFO) << "MPCSim:: constructed= \n" << to_str();
+  log_(INFO, "constructed= \n" << to_str() )
 }
 
 MPCSim::~MPCSim()
 {
-  patch_all::free_all<COOR_T>(2, lcoor_, ucoor_);
+  patch::free_all<COOR_T>(2, lcoor_, ucoor_);
   // 
-  LOG(INFO) << "MPCSim:: destructed.";
+  log_(INFO, "destructed.")
 }
 
 std::string MPCSim::to_str()
 {
   std::stringstream ss;
-  // ss << "PCSim::to_str= \n" << PCSim::to_str() << "\n"
-  // ss << "wa_space= \n" << wa_space_->to_str() << "\n";
+  ss << "PCSim::to_str= \n" << PCSim::to_str() << "\n"
+     << "wa_space= \n" << wa_space_->to_str() << "\n";
 
   return ss.str();
 }
@@ -160,18 +160,18 @@ void MPCSim::sim_p(int p_id)
   int c = 0;
   std::vector<float> inter_arr_time_vec = p_id__inter_arr_time_v_v[p_id];
   for (std::vector<float>::iterator it = inter_arr_time_vec.begin(); it != inter_arr_time_vec.end() ; it++, c++) {
-    // LOG(INFO) << "sim_p:: p_id= " << p_id << ", inter_arr_time= " << *it << "\n";
+    // log_(INFO, "p_id= " << p_id << ", inter_arr_time= " << *it)
     sleep(*it);
     
     std::string key = "d_" + boost::lexical_cast<std::string>(p_id) + "_" + boost::lexical_cast<std::string>(c);
     unsigned int ver = 0;
     if (wa_space_->put(p_id, key, ver, lcoor_, ucoor_) )
-      LOG(ERROR) << "sim_p:: wa_space_->put failed; " << KV_TO_STR(key, ver);
+      log_(ERROR, "wa_space_->put failed; " << KV_TO_STR(key, ver) )
     
     key_ver_pair kv = std::make_pair(key, ver);
     bget_syncer.notify(kv);
     
-    LOG(INFO) << "sim_p:: p_id= " << p_id << "; put " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_);
+    log_(INFO, "p_id= " << p_id << "; put " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_) )
   }
 }
 
@@ -180,47 +180,47 @@ void MPCSim::sim_c(int c_id, bool blocking_get)
   int c = 0;
   std::vector<float> inter_arr_time_vec = c_id__inter_arr_time_v_v[c_id];
   for (std::vector<float>::iterator it = inter_arr_time_vec.begin(); it != inter_arr_time_vec.end(); it++, c++) {
-    // LOG(INFO) << "sim_c:: c_id= " << c_id << ", inter_arr_time= " << *it << "\n";
+    // log_(INFO, "c_id= " << c_id << ", inter_arr_time= " << *it)
     sleep(*it);
     
     std::string key = "d_" + boost::lexical_cast<std::string>(c_id) + "_" + boost::lexical_cast<std::string>(c);
     unsigned int ver = 0;
     std::vector<int> ds_id_v;
-    // LOG(INFO) << "sim_c:: before query wa_space= \n" << wa_space_->to_str() << "\n";
+    // log_(INFO, "before query wa_space= \n" << wa_space_->to_str() )
     if (wa_space_->query(key, ver, lcoor_, ucoor_, ds_id_v) ) {
       if (blocking_get) {
         key_ver_pair kv = std::make_pair(key, ver);
-        LOG(INFO) << "sim_c:: c_id= " << c_id << ", blocking_get= " << blocking_get << ", waits on " << KV_TO_STR(key, ver);
+        log_(INFO, "c_id= " << c_id << ", blocking_get= " << blocking_get << ", waits on " << KV_TO_STR(key, ver) )
         bget_syncer.add_sync_point(kv, 1);
         bget_syncer.wait(kv);
         bget_syncer.del_sync_point(kv);
       }
       else {
-        LOG(WARNING) << "sim_c:: wa_space does not contain " << KV_TO_STR(key, ver);
+        LOG(WARNING) << "wa_space does not contain " << KV_TO_STR(key, ver);
         continue;
       }
     }
     
     int ds_id = c_id__ds_id_v[c_id];
     if (std::find(ds_id_v.begin(), ds_id_v.end(), ds_id) != ds_id_v.end() ) {
-      LOG(INFO) << "sim_c:: c_id= " << c_id << ", found in local ds_id= " << ds_id << "; " << KV_TO_STR(key, ver);
+      log_(INFO, "c_id= " << c_id << ", found in local ds_id= " << ds_id << "; " << KV_TO_STR(key, ver) )
       c_id__get_type_v_map[c_id].push_back('l');
     }
     else { // Remote fetch
-      // LOG(INFO) << "sim_c:: wa_space= \n" << wa_space_->to_str();
-      LOG(INFO) << "sim_c:: c_id= " << c_id << ", found in remote ds_id_v= " << patch_all::vec_to_str<>(ds_id_v) << "; " << KV_TO_STR(key, ver);
+      // log_(INFO, "wa_space= \n" << wa_space_->to_str() )
+      log_(INFO, "c_id= " << c_id << ", found in remote ds_id_v= " << patch::vec_to_str<>(ds_id_v) << "; " << KV_TO_STR(key, ver) )
       if (wa_space_->put(NULL_P_ID, key, ver, lcoor_, ucoor_, ds_id) )
-        LOG(ERROR) << "sim_c:: wa_space_->put failed; ds_id= " << ds_id << ", " << KV_TO_STR(key, ver);
-      // LOG(INFO) << "sim_c:: c_id= " << c_id << ", done with wa_space_->put; " << KV_TO_STR(key, ver);
+        log_(ERROR, "wa_space_->put failed; ds_id= " << ds_id << ", " << KV_TO_STR(key, ver) )
+      // log_(INFO, "c_id= " << c_id << ", done with wa_space_->put; " << KV_TO_STR(key, ver) )
       
       c_id__get_type_v_map[c_id].push_back('r');
     }
     
-    // LOG(INFO) << "sim_c:: c_id= " << c_id << ", will call wa_space_->add_access; " << KV_TO_STR(key, ver);
+    // log_(INFO, "c_id= " << c_id << ", will call wa_space_->add_access; " << KV_TO_STR(key, ver) )
     wa_space_->add_access(num_p + c_id, key, ver, lcoor_, ucoor_);
-    // LOG(INFO) << "sim_c:: c_id= " << c_id << ", done with wa_space_->add_access; " << KV_TO_STR(key, ver);
+    // log_(INFO, "c_id= " << c_id << ", done with wa_space_->add_access; " << KV_TO_STR(key, ver) )
     
-    LOG(INFO) << "sim_c:: c_id= " << c_id << "; GOT " << KV_TO_STR(key, ver);
+    log_(INFO, "c_id= " << c_id << "; GOT " << KV_TO_STR(key, ver) )
   }
 }
 
@@ -253,7 +253,7 @@ SPCSim::SPCSim(std::vector<int> ds_id_v, int num_p, int num_c,
   this->lcoor_ = lcoor_;
   this->ucoor_ = ucoor_;
   // 
-  LOG(INFO) << "SPCSim:: constructed= \n" << to_str();
+  log_(INFO, "constructed= \n" << to_str() )
 }
 
 std::string SPCSim::to_str()
@@ -270,19 +270,19 @@ void SPCSim::sim_p(int p_id)
   std::string key = "d_" + boost::lexical_cast<std::string>(p_id);
   
   if (wa_space_->put(p_id, key, 0, lcoor_, ucoor_) )
-    LOG(ERROR) << "sim_p:: wa_space_->put failed; " << LUCOOR_TO_STR(lcoor_, ucoor_);
+    log_(ERROR, "wa_space_->put failed; " << LUCOOR_TO_STR(lcoor_, ucoor_) )
   else
-    LOG(INFO) << "sim_p:: p_id= " << p_id << "; put " << LUCOOR_TO_STR(lcoor_, ucoor_);
+    log_(INFO, "p_id= " << p_id << "; put " << LUCOOR_TO_STR(lcoor_, ucoor_) )
   
   // std::vector<float> inter_arr_time_vec = p_id__inter_arr_time_v_v[p_id];
   // for (std::vector<float>::iterator it = inter_arr_time_vec.begin(); it != inter_arr_time_vec.end() ; it++, c++) {
-  //   // LOG(INFO) << "sim_p:: p_id= " << p_id << ", inter_arr_time= " << *it << "\n";
+  //   // log_(INFO, "p_id= " << p_id << ", inter_arr_time= " << *it)
   //   sleep(*it);
     
   //   if (wa_space_->put(p_id, key, ver, lcoor_, ucoor_) )
-  //     LOG(ERROR) << "sim_p:: wa_space_->put failed; " << LUCOOR_TO_STR(lcoor_, ucoor_);
+  //     log_(ERROR, "wa_space_->put failed; " << LUCOOR_TO_STR(lcoor_, ucoor_) )
   //   else
-  //     LOG(INFO) << "sim_p:: p_id= " << p_id << "; put " << LUCOOR_TO_STR(lcoor_, ucoor_);
+  //     log_(INFO, "p_id= " << p_id << "; put " << LUCOOR_TO_STR(lcoor_, ucoor_) )
   // }
 }
 
@@ -295,7 +295,7 @@ void SPCSim::sim_c(int c_id, bool blocking_get)
   int c = 0;
   std::vector<float> inter_arr_time_vec = c_id__inter_arr_time_v_v[c_id];
   for (std::vector<lcoor_ucoor_pair>::iterator it = lucoor_v.begin(); it != lucoor_v.end(); it++, c++) {
-    // LOG(INFO) << "sim_c:: c_id= " << c_id << ", inter_arr_time= " << inter_arr_time_vec[c];
+    // log_(INFO, "c_id= " << c_id << ", inter_arr_time= " << inter_arr_time_vec[c] )
     sleep(inter_arr_time_vec[c] );
     
     std::vector<int> ds_id_v;
@@ -307,7 +307,7 @@ void SPCSim::sim_c(int c_id, bool blocking_get)
         s_syncer.del_sync_point(b0);
       }
       else {
-        LOG(WARNING) << "sim_c:: wa_space does not contain " << LUCOOR_TO_STR(it->first, it->second);
+        LOG(WARNING) << "wa_space does not contain " << LUCOOR_TO_STR(it->first, it->second);
         continue;
       }
     }
@@ -323,7 +323,7 @@ void SPCSim::sim_c(int c_id, bool blocking_get)
     }
     
     wa_space_->add_access(c_id, key, 0, lcoor_, ucoor_);
-    LOG(INFO) << "sim_c:: c_id= " << c_id << "; GOT " << LUCOOR_TO_STR(it->first, it->second);
+    log_(INFO, "c_id= " << c_id << "; GOT " << LUCOOR_TO_STR(it->first, it->second) )
   }
 }
 

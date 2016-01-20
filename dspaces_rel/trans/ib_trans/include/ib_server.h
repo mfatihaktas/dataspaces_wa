@@ -1,6 +1,7 @@
 #ifndef _IB_SERVER_H_
 #define _IB_SERVER_H_
 
+#include <boost/lexical_cast.hpp>
 #include <boost/function.hpp>
 
 #include "ib_msg.h"
@@ -15,11 +16,10 @@ enum RECV_STATE {
 // msg_header: DATA_T + DATA_SIZE
 // msg_header: DATA_T + DATA_ID + DATA_SIZE
 
-// typedef void (*msg_recv_cb_func_)(int, char*);
-// typedef void (*data_recv_cb_func_)(char*, int, void*);
-
-typedef boost::function<void(int, char*)> msg_recv_cb_func;
-typedef boost::function<void(char*, int, void*)> data_recv_cb_func;
+// typedef void (*ib_msg_recv_cb_func_)(int, char*);
+// typedef void (*ib_data_recv_cb_func_)(char*, int, void*);
+typedef boost::function<void(uint64_t, char*)> ib_msg_recv_cb_func;
+typedef boost::function<void(std::string, uint64_t, void*)> ib_data_recv_cb_func;
 
 class IBServer : public IBEnd {
   struct conn_context {
@@ -31,19 +31,19 @@ class IBServer : public IBEnd {
   };
   private:
     const char* lport_;
-    msg_recv_cb_func msg_recv_cb;
-    data_recv_cb_func data_recv_cb;
+    ib_data_recv_cb_func data_recv_cb;
+    ib_msg_recv_cb_func msg_recv_cb;
     
     std::string server_name;
     Connector* connector_;
     
     RECV_STATE recv_state;
     RDMA_DATA_T data_t;
-    int data_size_to_recv, data_size_recved;
+    uint64_t data_size_to_recv, data_size_recved;
     char* data_id_;
     void* data_to_recv_;
   public:
-    IBServer(const char* lport_, msg_recv_cb_func msg_recv_cb, data_recv_cb_func data_recv_cb);
+    IBServer(const char* lport_, ib_data_recv_cb_func data_recv_cb, ib_msg_recv_cb_func msg_recv_cb = 0);
     ~IBServer();
     std::string to_str();
     

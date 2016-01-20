@@ -4,7 +4,7 @@
 SAlgo::SAlgo(COOR_T* lcoor_, COOR_T* ucoor_)
 : lcoor_(lcoor_), ucoor_(ucoor_)
 {
-  IS_VALID_BOX("SAlgo", lcoor_, ucoor_, exit(1) )
+  IS_VALID_BOX(lcoor_, ucoor_, exit(1) )
   
   std::vector<int> dim_length_v;
   for (int i = 0; i < NDIM; i++)
@@ -13,19 +13,19 @@ SAlgo::SAlgo(COOR_T* lcoor_, COOR_T* ucoor_)
   hilbert_num_bits = (int) ceil(log2(*std::max_element(dim_length_v.begin(), dim_length_v.end() ) ) );
   max_index = pow(2, NDIM*hilbert_num_bits) - 1;
   // 
-  LOG(INFO) << "SAlgo:: constructed.";
+  log_(INFO, "constructed.")
 }
 
 std::string SAlgo::to_str()
 {
   std::stringstream ss;
-  ss << "lcoor_= " << patch_all::arr_to_str<>(NDIM, lcoor_) << "\n"
-     << "ucoor_= " << patch_all::arr_to_str<>(NDIM, ucoor_) << "\n"
+  ss << "lcoor_= " << patch::arr_to_str<>(NDIM, lcoor_) << "\n"
+     << "ucoor_= " << patch::arr_to_str<>(NDIM, ucoor_) << "\n"
      << "hilbert_num_bits= " << hilbert_num_bits << "\n"
      << "max_index= " << max_index << "\n";
   // ss << "\t index_interval__ds_id_set_map= \n";
   // for (index_interval__ds_id_set_map_t::iterator it = index_interval__ds_id_set_map.begin(); it != index_interval__ds_id_set_map.end(); it++)
-  //   ss << "\t" << it->first << " : " << patch_all::set_to_str<>(it->second) << "\n";
+  //   ss << "\t" << it->first << " : " << patch::set_to_str<>(it->second) << "\n";
   
   return ss.str();
 }
@@ -48,9 +48,9 @@ void SAlgo::index_interval_set_to_coor_v(const index_interval_set_t& interval_se
   for (index_interval_set_t::iterator it = interval_set.begin(); it != interval_set.end(); it++) {
     for (bitmask_t index = it->lower(); index <= it->upper(); index++) {
       bitmask_t coor_[NDIM];
-      // std::cout << "index_interval_set_to_coor_v:: index= " << index << "\n";
+      // log_(INFO, "index= " << index)
       mfa_hilbert_i2c(NDIM, hilbert_num_bits, index, coor_);
-      // std::cout << "index_interval_set_to_coor_v:: coor_= " << patch_all::arr_to_str<>(NDIM, coor_) << "\n";
+      // log_(INFO, "coor_= " << patch::arr_to_str<>(NDIM, coor_) )
 
       COOR_T* good_t_coor_ = (COOR_T*)malloc(NDIM*sizeof(COOR_T) );
       for (int i = 0; i < NDIM; i++)
@@ -92,7 +92,7 @@ HSAlgo::HSAlgo(COOR_T* lcoor_, COOR_T* ucoor_,
   sexpand_length(sexpand_length)
 {
   // 
-  LOG(INFO) << "HSAlgo:: constructed; \n" << to_str();
+  log_(INFO, "constructed; \n" << to_str() )
 }
 
 std::string HSAlgo::to_str()
@@ -118,15 +118,15 @@ std::string HSAlgo::to_str()
 
 int HSAlgo::get_to_fetch(COOR_T* lcoor_, COOR_T* ucoor_, std::vector<lcoor_ucoor_pair>& lucoor_to_fetch_v)
 {
-  IS_VALID_BOX("get_to_fetch", lcoor_, ucoor_, return 1)
+  IS_VALID_BOX(lcoor_, ucoor_, return 1)
   
   // Using the last acced index_interval_set predict from locality
   // index_interval_set_t& ii_set = *(acced_index_interval_set_v.back() );
   
   boost::shared_ptr<index_interval_set_t> ii_set_ = coor_to_index_interval_set_(lcoor_, ucoor_);
-  // LOG(INFO) << "get_to_fetch:: " << LUCOOR_TO_STR(lcoor_, ucoor_) << ", ii_set= " << *ii_set_ << "\n";
+  // log_(INFO, LUCOOR_TO_STR(lcoor_, ucoor_) << ", ii_set= " << *ii_set_)
   expand_interval_set(sexpand_length, *ii_set_);
-  // LOG(INFO) << "get_to_fetch:: after expand_interval_set= " << *ii_set_ << "\n";
+  // log_(INFO, "after expand_interval_set= " << *ii_set_)
   
   RTable<int> rtable;
   

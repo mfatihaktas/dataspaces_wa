@@ -1,8 +1,7 @@
 #include "prefetch.h"
 #include "sim.h"
-// #include "patch_markov_exp.h"
-// #include "patch_sfc_exp.h"
-
+#include "patch_markov_exp.h"
+#include "patch_sfc_exp.h"
 
 #include <getopt.h>
 
@@ -17,8 +16,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
     {0, 0, 0, 0}
   };
   
-  while (1)
-  {
+  while (1) {
     int option_index = 0;
     c = getopt_long (argc, argv, "s", long_options, &option_index);
   
@@ -42,7 +40,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
       std::cout << argv[optind++] << "\n";
   }
   // 
-  std::cout << "parse_opts:: opt_map= \n" << patch_all::map_to_str<>(opt_map);
+  std::cout << "parse_opts:: opt_map= \n" << patch::map_to_str<>(opt_map);
   
   return opt_map;
 }
@@ -86,7 +84,7 @@ int main(int argc, char **argv)
   //           << "b0 < b1= " << boost::geometry::within(b0, b1) << "\n";
   
   // // std::map<box_t, int, less_for_box> box_int_map;
-  // patch_all::thread_safe_map<box_t, int, less_for_box> box_int_map;
+  // patch::thread_safe_map<box_t, int, less_for_box> box_int_map;
   // box_int_map[b0] = 1;
   // box_int_map[b1] = 2; 
   
@@ -104,7 +102,7 @@ int main(int argc, char **argv)
   // s_syncer.del_sync_point(b0);
   
   if (str_cstr_equals(opt_map["type"], "markov") ) {
-    // test_fixed_train();
+    test_fixed_train();
     // test_rand_shuffle_train(); 
     // test_malgo();
     // test_bmmalgo();
@@ -122,12 +120,12 @@ int main(int argc, char **argv)
     // mwa_space.put(0, "d_0", 0, lc_, uc_);
     // std::vector<int> query_ds_id_v;
     // if (mwa_space.query("d_0", 0, lc_, uc_, query_ds_id_v) )
-    //   LOG(INFO) << "mwa_space.query failed; " << KV_TO_STR("d_0", 0);
+    //   log_(INFO, "mwa_space.query failed; " << KV_TO_STR("d_0", 0) )
     
     // key_ver_pair kv = std::make_pair("d_0", 0);
-    // LOG(INFO) << "query_ds_id_v= " << patch_all::vec_to_str<>(query_ds_id_v) << "\n"
+    // log_(INFO, "query_ds_id_v= " << patch::vec_to_str<>(query_ds_id_v) << "\n"
     //           << "mwa_space.contains('a', kv)= " << mwa_space.contains('a', kv) << "\n"
-    //           << "mwa_space= \n" << mwa_space.to_str();
+    //           << "mwa_space= \n" << mwa_space.to_str() )
     
     // validate_random_shuffle();
     
@@ -136,7 +134,7 @@ int main(int argc, char **argv)
     //   v.push_back(i);
   
     // std::random_shuffle(v.begin(), v.end() );
-    // std::cout << "shuffled v= " << patch_all::vec_to_str<int>(v) << "\n";
+    // std::cout << "shuffled v= " << patch::vec_to_str<int>(v) << "\n";
     
     // float lambda = 0.1;
     // int num_exp = 1000;
@@ -191,7 +189,7 @@ int main(int argc, char **argv)
     // COOR_T* to_fetch_ucoor_ = (COOR_T*)malloc(NDIM*sizeof(COOR_T) );
     // rtable.get_bound_lucoor(to_fetch_lcoor_, to_fetch_ucoor_);
     // std::cout << "to_fetch_lucoor_= " << LUCOOR_TO_STR(to_fetch_lcoor_, to_fetch_ucoor_) << "\n";
-    // patch_all::free_all<COOR_T>(2, to_fetch_lcoor_, to_fetch_ucoor_);
+    // patch::free_all<COOR_T>(2, to_fetch_lcoor_, to_fetch_ucoor_);
     
     // test_locality_prefetching();
     // std::vector<std::vector<float> > ndim_v_v;
@@ -218,7 +216,7 @@ int main(int argc, char **argv)
     // std::cout << "main:: get_v= " << patch_sfc::vec_to_str<char>(get_v) << "\n";
   }
   else
-    LOG(ERROR) << "main:: unknown type= " << opt_map["type"];
+    log_(ERROR, "unknown type= " << opt_map["type"] )
   
   return 0;
 }

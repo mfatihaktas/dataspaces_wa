@@ -22,7 +22,7 @@ class TCPTrans {
     std::string get_s_lip();
     int get_s_lport();
     
-    int init_server(std::string data_id, data_recv_cb_func data_recv_cb);
+    int init_server(std::string data_id, tcp_data_recv_cb_func data_recv_cb);
     int send(std::string s_lip, int s_lport, std::string data_id, int data_size, void* data_);
 };
 

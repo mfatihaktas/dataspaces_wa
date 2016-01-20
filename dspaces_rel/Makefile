@@ -8,14 +8,12 @@
 # GFTPLIB_DIR ?= 
 # DSPACESWA_DIR ?= /cac/u01/mfa51/Desktop/dataspaces_wa
 # ##################################################################################################
-# BOOSTASIO_LIB = -L$(BOOSTASIO_DIR)
-
 DSPACES_INC = -I$(DSPACES_DIR)/include
 DSPACES_LIB = -L$(DSPACES_DIR)/lib -ldspaces -ldscommon -ldart -lrdmacm
 
+# BOOSTASIO_LIB = -L$(BOOSTASIO_DIR)
 BOOST_INC = -I$(BOOST_DIR)/include
 BOOST_LIB = -L$(BOOST_DIR)/lib -lboost_system -lpthread -lboost_thread -lboost_serialization
-# BOOST_LIB = -lboost_system -lpthread -lboost_thread-mt -lboost_serialization
 
 GLOG_INC = -I$(GLOG_DIR)/include
 GLOG_LIB = -L$(GLOG_DIR)/lib -lglog
@@ -34,6 +32,9 @@ else
 	MPI_LIB = -L$(MPI_DIR)/lib
 endif
 # MPI_LIB = -L$(MPI_DIR)/lib -lmpich -lmpichcxx
+
+PATCH_INC = -I$(DSPACESWA_DIR)/patch/include
+PROFILER_INC = -I$(DSPACES_WA_DIR)/dspaces_rel/profiler/include
 # 
 PREFETCH_DIR = $(SDMCONTROL_DIR)/prefetch
 PREFETCH_ODIR = $(PREFETCH_DIR)/obj
@@ -63,24 +64,20 @@ TRANS_INC = -I$(TRANS_DIR)/include -I$(IB_TRANS_DIR)/include -I$(TCP_TRANS_DIR)/
 TRANS_ODIR = $(TRANS_DIR)/obj
 TRANS_OBJS = $(TRANS_ODIR)/trans.o $(IB_TRANS_OBJS) $(TCP_TRANS_OBJS) $(GFTP_TRANS_OBJS)
 
-PROFILER_DIR = $(DSPACESREL_DIR)/profiler
-PROFILER_ODIR = $(PROFILER_DIR)/obj
-PROFILER_OBJS = $(PROFILER_ODIR)/profiler.o
-
 DSPACESREL_DIR = $(DSPACESWA_DIR)/dspaces_rel
-DSPACESREL_INC = -I$(DSPACESREL_DIR)/include $(SDMCONTROL_INC) $(TRANS_INC) -I$(PROFILER_DIR)/include
+DSPACESREL_INC = $(PATCH_INC) $(PROFILER_INC) $(SDMCONTROL_INC) $(TRANS_INC) -I$(DSPACESREL_DIR)/include
 # 
 INC = $(DSPACES_INC) $(GLOG_INC) $(BOOST_INC) $(GFTP_INC) $(DSPACESREL_INC)
 LIB = $(DSPACES_LIB) $(GLOG_LIB) $(BOOST_LIB) $(IBVERBS_LIB) $(MPI_LIB) $(GFTP_LIB)
 
 ODIR = obj
-OBJS = $(ODIR)/remote_interact.o $(ODIR)/ds_client.o $(ODIR)/ds_drive.o $(SDMCONTROL_OBJS) $(TRANS_OBJS) $(PROFILER_OBJS)
+OBJS = $(ODIR)/remote_interact.o $(ODIR)/ds_client.o $(ODIR)/ds_drive.o $(SDMCONTROL_OBJS) $(TRANS_OBJS)
 
-.PHONY: all lclean clean submake_sdmcontrol_dir submake_trans_dir submake_prefetch_dir submake_profiler_dir
+.PHONY: all lclean clean submake_sdmcontrol_dir submake_trans_dir submake_prefetch_dir
 
 APPS := exp
 
-all: submake_sdmcontrol_dir submake_trans_dir submake_profiler_dir ${APPS}
+all: submake_sdmcontrol_dir submake_trans_dir ${APPS}
 
 submake_sdmcontrol_dir:
 	make -C $(SDMCONTROL_DIR)
@@ -88,9 +85,6 @@ submake_sdmcontrol_dir:
 submake_trans_dir:
 	make -C $(TRANS_DIR) 
 
-submake_profiler_dir:
-	make -C $(PROFILER_DIR)
-	
 exp: $(ODIR)/exp.o $(OBJS)
 	$(MPICPP) -g -o $@ $^ $(INC) $(LIB)
 

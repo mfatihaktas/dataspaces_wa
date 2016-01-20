@@ -19,7 +19,7 @@ def point_to_hilbert(x, y, order=16):
 def main():
   # print "point_to_hilbert(5,2,3)= ", point_to_hilbert(5,2,3)
   points = [(x, y) for x in range(8) for y in range(8)]
-  sorted_points = sorted(points, key=lambda k: point_to_hilbert(k[0], k[1], 3))
+  sorted_points = sorted(points, key=lambda k: point_to_hilbert(k[0], k[1], 3) )
   print '\n'.join('%s,%s' % x for x in sorted_points)
 
 if __name__ == "__main__":

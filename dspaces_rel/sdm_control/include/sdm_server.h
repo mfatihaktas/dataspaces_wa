@@ -14,6 +14,8 @@
 #include <string>
 #include <vector>
 
+#include "debug.h"
+
 typedef boost::function<void(char*)> function_recv_callback;
 
 class SDMServer {

@@ -11,14 +11,14 @@
 #include <string>
 #include <vector>
 
-#include <glog/logging.h>
+#include "patch_tcp.h"
 
-#ifndef TRANS_PARS
-#define TRANS_PARS
-const int MAX_DATA_ID_LENGTH = 50;
-const int MAX_DATA_SIZE_LENGTH = 50;
-const int CHUNK_SIZE = 10*1024*1024;
-#endif // TRANS_PARS
+#ifndef _TRANS_PARS_
+#define _TRANS_PARS_
+const int TCP_MAX_DATA_ID_LENGTH = 50;
+const int TCP_MAX_DATA_SIZE_LENGTH = 50;
+const int TCP_CHUNK_SIZE = 10*1024*1024;
+#endif // _TRANS_PARS_
 
 class TCPClient {
   private:
