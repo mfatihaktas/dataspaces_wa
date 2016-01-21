@@ -11,10 +11,13 @@ BOOST_LIB = -L$(BOOST_DIR)/lib -lboost_system -lpthread -lboost_thread -lboost_s
 
 GLOG_INC = -I$(GLOG_DIR)/include
 GLOG_LIB = -L$(GLOG_DIR)/lib -lglog
+# 
+PATCH_INC = -I$(DSPACESWA_DIR)/patch/include
 
 TCP_TRANS_DIR ?= $(DSPACESWA_DIR)/dspaces_rel/trans/tcp_trans
+TCP_TRANS_INC = $(PATCH_INC) -I$(TCP_TRANS_DIR)/include
 # 
-INC = $(GLOG_INC) $(BOOST_INC) -I$(TCP_TRANS_DIR)/include
+INC = $(GLOG_INC) $(BOOST_INC) $(TCP_TRANS_INC)
 LIB = $(GLOG_LIB) $(BOOST_LIB)
 
 ODIR = obj

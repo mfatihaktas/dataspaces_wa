@@ -71,10 +71,10 @@ if [ $1  = 's' ]; then
   # export MPIRUN_OPTIONS="-e MPI_RDMA_MSGSIZE=32768,1048576,1048576"
   $DSPACES_DIR/bin/./dataspaces_server --server 1 --cnodes $NUM_DSCNODE
 elif [ -z "$2" ]; then
-  echo "Which site?"
+  echo "Which site [0, *]?"
 elif [ $1  = 'p' ]; then
   if [ -z "$3" ]; then
-    echo "Which app?"
+    echo "Which app [1, *] ?"
   else
     GLOG_logtostderr=1 ./exp --type="put" --cl_id=$3 --base_client_id=$(($2*$NUM_CLIENT)) --num_peer=$NUM_PEER \
       --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=$((${RI_MANAGER_LCONTROL_LPORT_LIST[$2] } + $3)) \
@@ -82,7 +82,7 @@ elif [ $1  = 'p' ]; then
   fi
 elif [ $1  = 'g' ]; then
   if [ -z "$3" ]; then
-    echo "Which app?"
+    echo "Which app [1, *] ?"
   else
     GLOG_logtostderr=1 ./exp --type="get" --cl_id=$3 --base_client_id=$(($2*$NUM_CLIENT)) --num_peer=$NUM_PEER \
       --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=$((${RI_MANAGER_LCONTROL_LPORT_LIST[$2] } + $3)) \
@@ -90,7 +90,7 @@ elif [ $1  = 'g' ]; then
   fi
 elif [ $1  = 'dp' ]; then
   if [ -z "$3" ]; then
-    echo "Which app?"
+    echo "Which app [1, *] ?"
   else
     export GLOG_logtostderr=1
     export MALLOC_CHECK_=2
@@ -100,7 +100,7 @@ elif [ $1  = 'dp' ]; then
   fi
 elif [ $1  = 'dg' ]; then
   if [ -z "$3" ]; then
-    echo "Which app?"
+    echo "Which app [1, *] ?"
   else
     export GLOG_logtostderr=1
     export MALLOC_CHECK_=2
@@ -110,7 +110,7 @@ elif [ $1  = 'dg' ]; then
   fi
 elif [ $1  = 'mp' ]; then
   if [ -z "$3" ]; then
-    echo "Which app?"
+    echo "Which app [1, *] ?"
   else
     GLOG_logtostderr=1 ./mput_mget_test --type="mput" --cl_id=$3 --base_client_id=$(($2*$NUM_CLIENT)) --num_peer=$NUM_PEER \
       --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=$((${RI_MANAGER_LCONTROL_LPORT_LIST[$2] } + $3)) \
@@ -119,7 +119,7 @@ elif [ $1  = 'mp' ]; then
   fi
 elif [ $1  = 'mg' ]; then
   if [ -z "$3" ]; then
-    echo "Which app?"
+    echo "Which app [1, *] ?"
   else
     GLOG_logtostderr=1 ./mput_mget_test --type="mget" --cl_id=$3 --base_client_id=$(($2*$NUM_CLIENT)) --num_peer=$NUM_PEER \
       --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=$((${RI_MANAGER_LCONTROL_LPORT_LIST[$2] } + $3)) \

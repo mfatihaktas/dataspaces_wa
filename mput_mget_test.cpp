@@ -8,7 +8,6 @@
 #include <math.h>
 
 #include <boost/lexical_cast.hpp>
-#include <glog/logging.h>
 
 #include "profiler.h"
 #include "dataspaces_wa.h"
@@ -20,12 +19,12 @@ int get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_)
   for(int i=0; i<ndim; i++) {
     uint64_t lb = lb_[i];
     if (lb < 0 || lb > gdim_[i]) {
-      LOG(ERROR) << "get_data_length:: lb= " << lb << " is not feasible!";
+      log_(ERROR, "lb= " << lb << " is not feasible!")
       return 0;
     }
     uint64_t ub = ub_[i];
     if (ub < 0 || ub > gdim_[i] || ub < lb) {
-      LOG(ERROR) << "get_data_length:: ub= " << ub << " is not feasible!";
+      log_(ERROR, "ub= " << ub << " is not feasible!")
       return 0;
     }
     dim_length[i] = ub - lb;
@@ -76,8 +75,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
     {0, 0, 0, 0}
   };
   
-  while (1)
-  {
+  while (1) {
     int option_index = 0;
     c = getopt_long (argc, argv, "s",
                      long_options, &option_index);
@@ -85,8 +83,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
     if (c == -1) // Detect the end of the options.
       break;
     
-    switch (c)
-    {
+    switch (c) {
       case 0:
         opt_map["type"] = optarg;
         break;
@@ -130,7 +127,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
       std::cout << "\t" << argv[optind++] << "\n";
   }
   // 
-  std::cout << "parse_opts:: opt_map= \n" << patch_all::map_to_str<>(opt_map);
+  log_(INFO, "opt_map= \n" << patch::map_to_str<>(opt_map) )
   
   return opt_map;
 }
@@ -160,7 +157,7 @@ void mget_test(int sleep_time_sec, int num_get, float inter_get_time_sec,
   
   std::ofstream mget_log_file("mget_log", std::ios::out | std::ios::app);
   if (!mget_log_file.is_open() ) {
-    LOG(ERROR) << "main:: mget_log_file is not open.";
+    log_(ERROR, "mget_log_file is not open.")
     return;
   }
   // TProfiler<int> get_tprofiler;
@@ -168,22 +165,22 @@ void mget_test(int sleep_time_sec, int num_get, float inter_get_time_sec,
     std::string var_name = base_var_name + "_" + boost::lexical_cast<std::string>(i);
     get_tprofiler.add_event(i, std::string("get_") + var_name);
     if (wads_driver.get(true, var_name, TEST_VER, "int", sizeof(int), NDIM, gdim_, lb_, ub_, data_) ) {
-      LOG(ERROR) << "mget_test:: wads_driver.get failed for var_name= " << var_name;
-      log_file << "mget_test:: wads_driver.get failed for var_name= " << var_name;
+      log_(ERROR, "wads_driver.get failed for var_name= " << var_name)
+      log_file << "wads_driver.get failed for var_name= " << var_name;
       return;
     }
     get_tprofiler.end_event(i);
     
     sleep(inter_get_time_sec);
   }
-  // LOG(INFO) << "mget_test:: get_tprofiler= \n" << get_tprofiler.to_str();
+  // log_(INFO, "get_tprofiler= \n" << get_tprofiler.to_str() )
   mget_log_file << "base_var_name= " << base_var_name << ", " << get_tprofiler.to_brief_str();
   mget_log_file.close();
   
   // int data_length = patch::get_data_length(NDIM, gdim, lb, ub);
   // patch_ds::debug_print(var_name, TEST_VER, sizeof(int), NDIM, gdim_, lb_, ub_, data_, data_length);
   
-  patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
+  patch::free_all<uint64_t>(3, gdim_, lb_, ub_);
   free(data_);
 }
 
@@ -210,15 +207,15 @@ void mput_test(int sleep_time_sec, int num_put, float inter_put_time_sec,
   
   std::ofstream mput_log_file("mput_log", std::ios::out | std::ios::app);
   if (!mput_log_file.is_open() ) {
-    LOG(ERROR) << "main:: mput_log_file is not open.";
+    log_(ERROR, "mput_log_file is not open.")
     return;
   }
   for (int i = 0; i < num_put; i++) {
     std::string var_name = base_var_name + "_" + boost::lexical_cast<std::string>(i);
     put_tprofiler.add_event(i, std::string("put_") + var_name);
     if (wads_driver.put(var_name, TEST_VER, "int", sizeof(int), NDIM, gdim_, lb_, ub_, data_) ) {
-      LOG(ERROR) << "mput_test:: wads_driver.put failed for var_name= " << var_name;
-      log_file << "mput_test:: wads_driver.put failed for var_name= " << var_name;
+      log_(ERROR, "wads_driver.put failed for var_name= " << var_name)
+      log_file << "wads_driver.put failed for var_name= " << var_name;
       return;
     }
     put_tprofiler.end_event(i);
@@ -230,7 +227,7 @@ void mput_test(int sleep_time_sec, int num_put, float inter_put_time_sec,
   
   // patch_ds::debug_print(var_name, TEST_VER, sizeof(int), NDIM, gdim_, lb_, ub_, data_, patch::get_data_length(NDIM, gdim_, lb_, ub_) );
   
-  patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
+  patch::free_all<uint64_t>(3, gdim_, lb_, ub_);
   free(data_);
 }
 
@@ -243,7 +240,7 @@ int main(int argc , char **argv)
   
   std::ofstream log_file("log", std::ios::out | std::ios::app);
   if (!log_file.is_open() ) {
-    LOG(ERROR) << "main:: log_file is not open.";
+    log_(ERROR, "log_file is not open.")
     return 1;
   }
   
@@ -275,9 +272,9 @@ int main(int argc , char **argv)
     getline(std::cin, temp);
   }
   else
-    LOG(ERROR) << "main:: unknown type= " << opt_map["type"];
+    log_(ERROR, "unknown type= " << opt_map["type"] )
   // 
-  std::cout << "main:: putget_tprofiler= \n" << putget_tprofiler.to_str();
+  std::cout << "putget_tprofiler= \n" << putget_tprofiler.to_str();
   log_file << putget_tprofiler.to_str() << "\n";
   log_file.close();
   // 

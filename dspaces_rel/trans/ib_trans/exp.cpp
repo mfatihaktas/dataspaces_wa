@@ -7,7 +7,7 @@
 #include <net/if.h>
 #include <unistd.h>
 #include <arpa/inet.h>
-// 
+
 #include <iostream>
 #include <string>
 #include <stdio.h>
@@ -18,10 +18,10 @@
 
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
-// 
+
 #include "ib_trans.h"
 
-char* intf_to_ip(const char* intf)
+char* intf_to_ip(std::string intf)
 {
   int fd;
   struct ifreq ifr;
@@ -30,11 +30,11 @@ char* intf_to_ip(const char* intf)
   // Type of address to retrieve - IPv4 IP address
   ifr.ifr_addr.sa_family = AF_INET;
   // Copy the interface name in the ifreq structure
-  std::memcpy(ifr.ifr_name , intf , IFNAMSIZ-1);
+  std::memcpy(ifr.ifr_name, intf.c_str(), IFNAMSIZ-1);
   ioctl(fd, SIOCGIFADDR, &ifr);
   close(fd);
   // 
-  return inet_ntoa(((struct sockaddr_in*)&ifr.ifr_addr)->sin_addr);
+  return inet_ntoa( ( (struct sockaddr_in*)& ifr.ifr_addr )->sin_addr);
 }
 
 std::map<std::string, std::string> parse_opts(int argc, char** argv)
@@ -82,7 +82,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
     putchar('\n');
   }
   // 
-  std::cout << "opt_map= \n" << patch_ib::map_to_str<>(opt_map);
+  log_(INFO, "opt_map= \n" << patch::map_to_str<>(opt_map) )
   
   return opt_map;
 }
@@ -102,7 +102,7 @@ void data_recv_handler(std::string data_id, uint64_t data_size, void* data_)
   log_(INFO, "data_recv_handler:: for data_id= " << data_id
              << ", recved data_size= " << data_size
              << ", total_recved_size= " << (float)total_recved_size/(1024*1024) << "MB \n")
-            // << "data_= " << patch_ib::arr_to_str<>(data_size, (data_type*)data_) )
+            // << "data_= " << patch::arr_to_str<>(data_size, (data_type*)data_) )
 }
 
 int main(int argc , char **argv)

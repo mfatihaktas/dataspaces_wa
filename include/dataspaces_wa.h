@@ -14,8 +14,8 @@ class WADSDriver { // Wide Area Dataspaces
     boost::shared_ptr<DSDriver> ds_driver_;
     boost::shared_ptr<SDMNode> lsdm_node_;
     patch_sdm::MsgCoder msg_coder;
-    patch_all::syncer<unsigned int> syncer;
-    patch_all::thread_safe_map<std::string, int> data_id__ds_id_map;
+    patch::syncer<unsigned int> syncer;
+    patch::thread_safe_map<std::string, int> data_id__ds_id_map;
   public:
     WADSDriver(int app_id, int base_client_id, int num_local_peers,
                DATA_ID_T data_id_t,
@@ -41,7 +41,7 @@ class MWADSDriver : public WADSDriver { // Markov
     : WADSDriver(app_id, base_client_id, num_local_peers, KV_DATA_ID,
                  lcontrol_lip, lcontrol_lport, joinhost_lcontrol_lip, joinhost_lcontrol_lport)
     {
-      LOG(INFO) << "MWADSDriver:: constructed.";
+      log_(INFO, "constructed.")
     }
     
     MWADSDriver(int app_id, int base_client_id, int num_local_peers, MPI_Comm mpi_comm,
@@ -49,10 +49,10 @@ class MWADSDriver : public WADSDriver { // Markov
     : WADSDriver(app_id, base_client_id, num_local_peers, KV_DATA_ID, mpi_comm,
                  lcontrol_lip, lcontrol_lport, joinhost_lcontrol_lip, joinhost_lcontrol_lport)
     {
-      LOG(INFO) << "MWADSDriver:: constructed.";
+      log_(INFO, "constructed.")
     }
     
-    ~MWADSDriver() { LOG(INFO) << "MWADSDriver:: destructed."; }
+    ~MWADSDriver() { log_(INFO, "destructed.") }
 };
 
 /***********************************  SWADSDriver : WADSDriver  ***********************************/
@@ -63,7 +63,7 @@ class SWADSDriver : public WADSDriver { // Spatial
     : WADSDriver(app_id, base_client_id, num_local_peers, LUCOOR_DATA_ID,
                  lcontrol_lip, lcontrol_lport, joinhost_lcontrol_lip, joinhost_lcontrol_lport)
     {
-      LOG(INFO) << "SWADSDriver:: constructed.";
+      log_(INFO, "constructed.")
     }
     
     SWADSDriver(int app_id, int base_client_id, int num_local_peers, MPI_Comm mpi_comm,
@@ -71,10 +71,10 @@ class SWADSDriver : public WADSDriver { // Spatial
     : WADSDriver(app_id, base_client_id, num_local_peers, LUCOOR_DATA_ID, mpi_comm,
                  lcontrol_lip, lcontrol_lport, joinhost_lcontrol_lip, joinhost_lcontrol_lport)
     {
-      LOG(INFO) << "SWADSDriver:: constructed.";
+      log_(INFO, "constructed.")
     }
     
-    ~SWADSDriver() { LOG(INFO) << "SWADSDriver:: destructed."; }
+    ~SWADSDriver() { log_(INFO, "destructed.") }
 };
 
 #endif //end of _DATASPACES_WA_H_

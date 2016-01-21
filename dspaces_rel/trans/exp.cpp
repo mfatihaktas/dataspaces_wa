@@ -17,7 +17,6 @@
 #include <sys/time.h>
 
 #include <boost/lexical_cast.hpp>
-#include <glog/logging.h>
 // 
 #include "trans.h"
 
@@ -56,8 +55,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
     {0, 0, 0, 0}
   };
   
-  while (1)
-  {
+  while (1) {
     int option_index = 0;
     c = getopt_long (argc, argv, "s",
                      long_options, &option_index);
@@ -104,7 +102,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
     putchar ('\n');
   }
   // 
-  std::cout << "opt_map= \n" << patch_tcp::map_to_str<>(opt_map) << "\n";
+  log_(INFO, "opt_map= \n" << patch::map_to_str<>(opt_map) )
   
   return opt_map;
 }

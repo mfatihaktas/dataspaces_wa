@@ -10,8 +10,6 @@
 #include "trans.h"
 
 /******************************************  RFPManager  ******************************************/
-typedef boost::function<void(RECV_ID_T, int, void*)> data_recv_cb_func;
-
 class RFPManager { // Remote Fetch & Place
   private:
     DATA_ID_T data_id_t;
@@ -19,9 +17,9 @@ class RFPManager { // Remote Fetch & Place
     boost::shared_ptr<Trans> trans_;
     boost::shared_ptr<DSDriver> ds_driver_;
     
-    patch_all::thread_safe_map<std::string, uint64_t> data_id__recved_size_map;
-    patch_all::thread_safe_map<std::string, void*> data_id__data_map;
-    patch_all::syncer<unsigned int> rfp_syncer;
+    patch::thread_safe_map<std::string, uint64_t> data_id__recved_size_map;
+    patch::thread_safe_map<std::string, void*> data_id__data_map;
+    patch::syncer<unsigned int> rfp_syncer;
   public:
     RFPManager(DATA_ID_T data_id_t, std::string trans_protocol,
                std::string ib_lip, std::list<std::string> ib_lport_list,
@@ -97,10 +95,10 @@ class RIManager {
     boost::shared_ptr<DSDriver> ds_driver_;
     boost::shared_ptr<SDMNode> lsdm_node_; // Replacing bc_server--client
     boost::shared_ptr<RFPManager> rfp_manager_;
-    patch_all::thread_safe_map<int, boost::shared_ptr<trans_info> > ds_id__trans_info_map;
-    patch_all::thread_safe_map<unsigned int, boost::shared_ptr<data_info> > data_id_hash__data_info_map;
+    patch::thread_safe_map<int, boost::shared_ptr<trans_info> > ds_id__trans_info_map;
+    patch::thread_safe_map<unsigned int, boost::shared_ptr<data_info> > data_id_hash__data_info_map;
     
-    patch_all::syncer<unsigned int> ri_syncer;
+    patch::syncer<unsigned int> ri_syncer;
     
     boost::asio::io_service io_service;
     boost::asio::signal_set signals;

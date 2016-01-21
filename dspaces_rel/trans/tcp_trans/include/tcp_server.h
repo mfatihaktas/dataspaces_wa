@@ -13,8 +13,6 @@
 #include <string>
 #include <vector>
 
-#include <glog/logging.h>
-
 #include "patch_tcp.h"
 
 #ifndef _TRANS_PARS_
@@ -32,7 +30,7 @@ class TCPServer {
     int lport;
     tcp_data_recv_cb_func data_recv_cb;
     
-    patch_tcp::syncer<unsigned int> syncer;
+    patch::syncer<unsigned int> syncer;
     std::string server_name;
     bool closed, inited;
     

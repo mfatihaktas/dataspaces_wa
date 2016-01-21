@@ -30,11 +30,11 @@ class IBClient : public IBEnd {
     const char *s_lip_, *s_lport_;
     
     std::string client_name;
-    patch_ib::syncer<char> syncer;
+    patch::syncer<char> syncer;
     Connector* connector_;
     
     struct rdma_cm_id* id_;
-    patch_ib::BQueue<size_data_pair> size_data_bq;
+    patch::BQueue<size_data_pair> size_data_bq;
     
     // std::vector<pthread_t*> pthread_v;
   public:

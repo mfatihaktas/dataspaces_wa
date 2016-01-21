@@ -1,6 +1,6 @@
 #include "ds_drive.h"
 
-//************************************  DspacesDriver  *******************************//
+/*****************************************  DspacesDriver  ****************************************/
 #define INTER_LOCK_TIME 1000*1000 //usec
 #define INTER_RI_GET_TIME 2*1000*1000 //usec
 

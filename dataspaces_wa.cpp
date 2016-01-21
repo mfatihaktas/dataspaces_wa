@@ -25,7 +25,7 @@ WADSDriver::WADSDriver(int app_id, int base_client_id, int num_local_peers,
     _app_id, lcontrol_lip, lcontrol_lport, joinhost_lcontrol_lip, joinhost_lcontrol_lport,
     boost::bind(&WADSDriver::handle_ri_msg, this, _1) );
   // 
-  LOG(INFO) << "WADSDriver:: constructed; \n" << to_str();
+  log_(INFO, "constructed; \n" << to_str() )
 }
 
 WADSDriver::WADSDriver(int app_id, int base_client_id, int num_local_peers,
@@ -46,10 +46,10 @@ WADSDriver::WADSDriver(int app_id, int base_client_id, int num_local_peers,
     _app_id, lcontrol_lip, lcontrol_lport, joinhost_lcontrol_lip, joinhost_lcontrol_lport,
     boost::bind(&WADSDriver::handle_ri_msg, this, _1) );
   // 
-  LOG(INFO) << "WADSDriver:: constructed; \n" << to_str();
+  log_(INFO, "constructed; \n" << to_str() )
 }
 
-WADSDriver::~WADSDriver() { LOG(INFO) << "WADSDriver:: destructed."; }
+WADSDriver::~WADSDriver() { log_(INFO, "destructed.") }
 
 std::string WADSDriver::to_str()
 {
@@ -66,7 +66,7 @@ int WADSDriver::put(std::string key, unsigned int ver, std::string data_type,
                     int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
 {
   if (ds_driver_->sync_put(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_) ) {
-    LOG(ERROR) << "put:: ds_driver_->sync_put failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
+    log_(ERROR, "ds_driver_->sync_put failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
     return 1;
   }
   
@@ -75,12 +75,12 @@ int WADSDriver::put(std::string key, unsigned int ver, std::string data_type,
   msg_map["cl_id"] = boost::lexical_cast<std::string>(_app_id);
   msg_coder.encode_msg_map(msg_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_);
   if (lsdm_node_->send_msg_to_master(PACKET_RIMSG, msg_map) ) {
-    LOG(ERROR) << "put:: lsdm_node_->send_msg_to_master failed; msg_map= " << patch_all::map_to_str<>(msg_map);
+    log_(ERROR, "lsdm_node_->send_msg_to_master failed; msg_map= " << patch::map_to_str<>(msg_map) )
     return 1;
   }
   // To check if put was a success
   std::string data_id = patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_);
-  unsigned int sync_point = patch_sdm::hash_str(PUT_REPLY + "_" + data_id);
+  unsigned int sync_point = patch::hash_str(PUT_REPLY + "_" + data_id);
   syncer.add_sync_point(sync_point, 1);
   syncer.wait(sync_point);
   syncer.del_sync_point(sync_point);
@@ -97,7 +97,7 @@ int WADSDriver::put(std::string key, unsigned int ver, std::string data_type,
 int WADSDriver::get(bool blocking, std::string key, unsigned int ver, std::string data_type,
                     int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
 {
-  LOG(INFO) << "get:: started for " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
+  log_(INFO, "started for " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
   // 
   std::map<std::string, std::string> msg_map;
   if (blocking)
@@ -107,7 +107,7 @@ int WADSDriver::get(bool blocking, std::string key, unsigned int ver, std::strin
   msg_map["cl_id"] = boost::lexical_cast<std::string>(_app_id);
   msg_coder.encode_msg_map(msg_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_);
   if (lsdm_node_->send_msg_to_master(PACKET_RIMSG, msg_map) ) {
-    LOG(ERROR) << "get:: lsdm_node_->send_msg_to_master failed; msg_map= " << patch_all::map_to_str<>(msg_map);
+    log_(ERROR, "lsdm_node_->send_msg_to_master failed; msg_map= " << patch::map_to_str<>(msg_map) )
     return 1;
   }
   // 
@@ -115,9 +115,9 @@ int WADSDriver::get(bool blocking, std::string key, unsigned int ver, std::strin
   std::string data_id = patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_);
   unsigned int sync_point;
   if (blocking)
-    sync_point = patch_sdm::hash_str(BLOCKING_GET_REPLY + "_" + data_id);
+    sync_point = patch::hash_str(BLOCKING_GET_REPLY + "_" + data_id);
   else
-    sync_point = patch_sdm::hash_str(GET_REPLY + "_" + data_id);
+    sync_point = patch::hash_str(GET_REPLY + "_" + data_id);
   syncer.add_sync_point(sync_point, 1);
   syncer.wait(sync_point);
   syncer.del_sync_point(sync_point);
@@ -128,7 +128,7 @@ int WADSDriver::get(bool blocking, std::string key, unsigned int ver, std::strin
   }
   
   if (ds_driver_->get(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_) ) {
-    LOG(ERROR) << "get:: ds_driver_->get failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_);
+    log_(ERROR, "ds_driver_->get failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
     return 1;
   }
   data_id__ds_id_map.del(data_id);
@@ -138,23 +138,23 @@ int WADSDriver::get(bool blocking, std::string key, unsigned int ver, std::strin
 
 void WADSDriver::handle_ri_msg(std::map<std::string, std::string> msg_map)
 {
-  LOG(INFO) << "handle_ri_msg:: msg_map= \n" << patch_all::map_to_str<>(msg_map);
+  log_(INFO, "msg_map= \n" << patch::map_to_str<>(msg_map) )
   
-    int ndim;
-    std::string key;
-    unsigned int ver;
-    COOR_T *lb_, *ub_;
-    if (msg_coder.decode_msg_map(msg_map, ndim, key, ver, lb_, ub_) ) {
-      LOG(ERROR) << "handle_ri_reply:: msg_coder.decode_msg_map failed for msg_map= \n" << patch_all::map_to_str<>(msg_map);
-      patch_all::free_all<COOR_T>(2, lb_, ub_);
-      return;
-    }
-    
-    std::string data_id = patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_);
-    data_id__ds_id_map[data_id] = boost::lexical_cast<int>(msg_map["ds_id"] );
-    
-    unsigned int sync_point = patch_sdm::hash_str(msg_map["type"] + "_" + data_id);
-    syncer.notify(sync_point);
-    
-    patch_all::free_all<COOR_T>(2, lb_, ub_);
+  int ndim;
+  std::string key;
+  unsigned int ver;
+  COOR_T *lb_, *ub_;
+  if (msg_coder.decode_msg_map(msg_map, ndim, key, ver, lb_, ub_) ) {
+    log_(ERROR, "msg_coder.decode_msg_map failed for msg_map= \n" << patch::map_to_str<>(msg_map) )
+    patch::free_all<COOR_T>(2, lb_, ub_);
+    return;
+  }
+  
+  std::string data_id = patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_);
+  data_id__ds_id_map[data_id] = boost::lexical_cast<int>(msg_map["ds_id"] );
+  
+  unsigned int sync_point = patch::hash_str(msg_map["type"] + "_" + data_id);
+  syncer.notify(sync_point);
+  
+  patch::free_all<COOR_T>(2, lb_, ub_);
 }

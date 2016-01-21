@@ -14,6 +14,39 @@
 #include "debug.h"
 
 namespace patch {
+  template <typename T>
+  void free_all(int num, ...) {
+    va_list arguments;                     // A place to store the list of arguments
+
+    va_start(arguments, num);           // Initializing arguments to store all values after num
+    for (int x = 0; x < num; x++)        // Loop all
+      free(va_arg(arguments, T*) );
+    va_end(arguments);                  // Cleans up the list
+  };
+  
+  #define HASH_PRIME 54059
+  #define HASH_PRIME_2 76963
+  #define HASH_PRIME_3 86969
+  static unsigned int hash_str(std::string str)
+  {
+    unsigned int h = 31; // Also prime
+    const char* s_ = str.c_str();
+    while (*s_) {
+      h = (h * HASH_PRIME) ^ (s_[0] * HASH_PRIME_2);
+      s_++;
+    }
+    return h; // return h % HASH_PRIME_3;
+  }
+  
+  template <typename T>
+  std::string to_str(T in)
+  {
+    std::stringstream ss;
+    ss << in;
+    
+    return ss.str();
+  }
+  
   template<typename T>
   std::string vec_to_str(std::vector<T> v) {
     std::stringstream ss;
@@ -305,16 +338,6 @@ namespace patch {
         
         return 0;
       }
-  };
-  
-  template <typename T>
-  void free_all(int num, ...) {
-    va_list arguments;                     // A place to store the list of arguments
-
-    va_start(arguments, num);           // Initializing arguments to store all values after num
-    for (int x = 0; x < num; x++)        // Loop all
-      free(va_arg(arguments, T*) );
-    va_end(arguments);                  // Cleans up the list
   };
   
   template <typename T>

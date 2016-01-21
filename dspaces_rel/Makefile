@@ -34,24 +34,23 @@ endif
 # MPI_LIB = -L$(MPI_DIR)/lib -lmpich -lmpichcxx
 
 PATCH_INC = -I$(DSPACESWA_DIR)/patch/include
-PROFILER_INC = -I$(DSPACES_WA_DIR)/dspaces_rel/profiler/include
 # 
 PREFETCH_DIR = $(SDMCONTROL_DIR)/prefetch
 PREFETCH_ODIR = $(PREFETCH_DIR)/obj
 PREFETCH_OBJS = $(PREFETCH_ODIR)/prefetch.o $(PREFETCH_ODIR)/markov.o $(PREFETCH_ODIR)/sfc.o $(PREFETCH_ODIR)/hilbert.o
 
 SDMCONTROL_DIR = $(DSPACESREL_DIR)/sdm_control
-SDMCONTROL_INC = -I$(SDMCONTROL_DIR)/include -I$(PREFETCH_DIR)/include
+SDMCONTROL_INC = -I$(PREFETCH_DIR)/include -I$(SDMCONTROL_DIR)/include
 SDMCONTROL_ODIR = $(SDMCONTROL_DIR)/obj
 SDMCONTROL_OBJS = $(SDMCONTROL_ODIR)/sdm_control.o $(SDMCONTROL_ODIR)/patch_sdm.o $(SDMCONTROL_ODIR)/sdm_node.o $(SDMCONTROL_ODIR)/sdm_server.o $(SDMCONTROL_ODIR)/sdm_client.o $(SDMCONTROL_ODIR)/packet.o $(PREFETCH_OBJS)
 
 IB_TRANS_DIR ?= $(TRANS_DIR)/ib_trans
 IB_TRANS_ODIR = $(IB_TRANS_DIR)/obj
-IB_TRANS_OBJS = $(IB_TRANS_ODIR)/ib_trans.o $(IB_TRANS_ODIR)/common.o
+IB_TRANS_OBJS = $(IB_TRANS_ODIR)/ib_trans.o $(IB_TRANS_ODIR)/ib_server.o $(IB_TRANS_ODIR)/ib_client.o $(IB_TRANS_ODIR)/ib_conn.o
 
 TCP_TRANS_DIR ?= $(TRANS_DIR)/tcp_trans
 TCP_TRANS_ODIR = $(TCP_TRANS_DIR)/obj
-TCP_TRANS_OBJS = $(TCP_TRANS_ODIR)/tcp_trans.o $(TCP_TRANS_ODIR)/tcp_server.o $(TCP_TRANS_ODIR)/tcp_client.o
+TCP_TRANS_OBJS = $(TCP_TRANS_ODIR)/tcp_trans.o $(TCP_TRANS_ODIR)/tcp_server.o $(TCP_TRANS_ODIR)/tcp_client.o $(TCP_TRANS_ODIR)/patch_tcp.o
 
 ifdef GRIDFTP
 GFTP_TRANS_DIR ?= $(TRANS_DIR)/gftp_trans
@@ -60,12 +59,12 @@ GFTP_TRANS_OBJS = $(GFTP_TRANS_ODIR)/gftp_trans.o $(GFTP_TRANS_ODIR)/gftp_drive.
 endif # GRIDFTP
 
 TRANS_DIR = $(DSPACESREL_DIR)/trans
-TRANS_INC = -I$(TRANS_DIR)/include -I$(IB_TRANS_DIR)/include -I$(TCP_TRANS_DIR)/include -I$(GFTP_TRANS_DIR)/include
+TRANS_INC = -I$(IB_TRANS_DIR)/include -I$(TCP_TRANS_DIR)/include -I$(GFTP_TRANS_DIR)/include -I$(TRANS_DIR)/include
 TRANS_ODIR = $(TRANS_DIR)/obj
 TRANS_OBJS = $(TRANS_ODIR)/trans.o $(IB_TRANS_OBJS) $(TCP_TRANS_OBJS) $(GFTP_TRANS_OBJS)
 
 DSPACESREL_DIR = $(DSPACESWA_DIR)/dspaces_rel
-DSPACESREL_INC = $(PATCH_INC) $(PROFILER_INC) $(SDMCONTROL_INC) $(TRANS_INC) -I$(DSPACESREL_DIR)/include
+DSPACESREL_INC = $(PATCH_INC) $(SDMCONTROL_INC) $(TRANS_INC) -I$(DSPACESREL_DIR)/include
 # 
 INC = $(DSPACES_INC) $(GLOG_INC) $(BOOST_INC) $(GFTP_INC) $(DSPACESREL_INC)
 LIB = $(DSPACES_LIB) $(GLOG_LIB) $(BOOST_LIB) $(IBVERBS_LIB) $(MPI_LIB) $(GFTP_LIB)
@@ -97,5 +96,4 @@ lclean:
 clean:
 	make -C $(SDMCONTROL_DIR) clean
 	make -C $(TRANS_DIR) clean
-	make -C $(PROFILER_DIR) clean
 	rm -f $(ODIR)/*.o ${APPS}

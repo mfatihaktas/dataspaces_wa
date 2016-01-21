@@ -7,7 +7,7 @@ GLOG_LIB = -L$(GLOG_DIR)/lib -lglog
 PATCH_DIR ?= $(DSPACESWA_DIR)/patch
 PATCH_INC = -I$(PATCH_DIR)/include
 # 
-INC = $(GLOG_INC) $(BOOST_INC) -I$(DSPACES_WA_DIR)/plot/include -I$(DSPACES_WA_DIR)/dspaces_rel/profiler/include $(PREFETCH_INC)
+INC = $(GLOG_INC) $(BOOST_INC) $(PATCH_INC)
 LIB = $(GLOG_LIB) $(BOOST_LIB)
 
 ODIR = obj

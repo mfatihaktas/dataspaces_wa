@@ -15,8 +15,6 @@
 #include <getopt.h>
 #include <map>
 
-#include <glog/logging.h>
-
 #include "remote_interact.h"
 
 std::string intf_to_ip(std::string intf)
@@ -66,8 +64,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
     {0, 0, 0, 0}
   };
   
-  while (1)
-  {
+  while (1) {
     int option_index = 0;
     c = getopt_long (argc, argv, "", long_options, &option_index);
 
@@ -148,7 +145,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
       std::cout << argv[optind++] << "\n";
   }
   // 
-  std::cout << "parse_opts:: opt_map= \n" << patch_all::map_to_str<>(opt_map);
+  std::cout << "parse_opts:: opt_map= \n" << patch::map_to_str<>(opt_map);
   
   return opt_map;
 }

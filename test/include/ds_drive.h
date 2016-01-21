@@ -10,6 +10,8 @@
 #include <sys/time.h>
 #include <vector>
 
+#include "patch_test.h"
+
 extern "C" {
   #include "dataspaces.h"
 }
@@ -18,9 +20,9 @@ class DSDriver
 {
   public:
     DSDriver(int num_dscnodes, int app_id);
-    DSDriver(int num_dscnodes, int app_id, MPI_Comm mpi_comm);
+    DSDriver(MPI_Comm mpi_comm, int num_dscnodes, int app_id);
     ~DSDriver();
-    int close();
+    int finalize();
     int init(int num_dscnodes, int app_id);
     int sync_put(const char* var_name, unsigned int ver, int size,
                  int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
@@ -32,7 +34,7 @@ class DSDriver
     void unlock_on_read(const char* var_name);
     
   private:
-    bool closed;
+    bool finalized;
     int num_dscnodes, app_id;
     int nprocs, rank;
     MPI_Comm mpi_comm;

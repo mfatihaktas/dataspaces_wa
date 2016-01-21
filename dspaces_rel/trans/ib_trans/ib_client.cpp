@@ -20,7 +20,7 @@ extern "C" void* call_send_next_w_wrap(void* wrap_)
 
 IBClient::IBClient(const char* s_lip_, const char* s_lport_)
 : s_lip_(s_lip_), s_lport_(s_lport_),
-  client_name(patch_ib::to_str<const char*>(s_lip_) + ":" + patch_ib::to_str<const char*>(s_lport_) ),
+  client_name(patch::to_str<const char*>(s_lip_) + ":" + patch::to_str<const char*>(s_lport_) ),
   connector_(new Connector(this) )
 {
   log_(INFO, "constructed client= \n" << to_str() )

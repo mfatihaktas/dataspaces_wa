@@ -78,7 +78,7 @@ int TCPServer::init(std::string data_id, tcp_data_recv_cb_func data_recv_cb)
     boost::thread t(&TCPServer::init_listen, this);
     inited = true;
   }
-  unsigned int sync_point = patch_tcp::hash_str(data_id);
+  unsigned int sync_point = patch::hash_str(data_id);
   syncer.add_sync_point(sync_point, 1);
   syncer.wait(sync_point);
   syncer.del_sync_point(sync_point);
@@ -165,7 +165,7 @@ void TCPServer::init_recv(boost::shared_ptr<boost::asio::ip::tcp::socket>& socke
         if (ec)
           log_(ERROR, "socket_->shutdown/close failed with ec= " << ec)
         
-        syncer.notify(patch_tcp::hash_str(data_id) );
+        syncer.notify(patch::hash_str(data_id) );
         // break;
         return;
       }

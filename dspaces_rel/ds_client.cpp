@@ -94,7 +94,7 @@ int BCClient::send(std::map<std::string, std::string> msg_map)
 {
   std::string msg_str;
   if (msg_coder.encode(msg_map, msg_str) ) {
-    log_(ERROR, "msg_coder.encode failed; msg_map= \n" << patch_all::map_to_str<>(msg_map) )
+    log_(ERROR, "msg_coder.encode failed; msg_map= \n" << patch::map_to_str<>(msg_map) )
     return 1;
   }
   
@@ -125,7 +125,7 @@ int BCClient::send(std::map<std::string, std::string> msg_map)
   int result = ds_driver_->sync_put(comm_var_name.c_str(), 0, max_msg_size*sizeof(char), 3, gdim_, lb_, ub_, data_);
   // int result = ds_driver_->sync_put_without_lock(comm_var_name.c_str(), 1, sizeof(char), 1, &gdim, &lb, &ub, data_);
   free(data_);
-  patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
+  patch::free_all<uint64_t>(3, gdim_, lb_, ub_);
   
   return result;
 }

@@ -10,7 +10,7 @@ class IBTrans {
   private:
     std::string s_lip;
   
-    patch_ib::BQueue<std::string> s_lport_queue;
+    patch::BQueue<std::string> s_lport_queue;
   public:
     IBTrans(std::string s_lip, std::list<std::string> ib_lport_list);
     ~IBTrans();

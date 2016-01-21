@@ -25,12 +25,12 @@ int get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_)
   for(int i = 0; i < ndim; i++) {
     uint64_t lb = lb_[i];
     if (lb < 0 || lb > gdim_[i] ) {
-      LOG(ERROR) << "get_data_length:: lb= " << lb << " is not feasible!";
+      log_(ERROR, "lb= " << lb << " is not feasible!")
       return 0;
     }
     uint64_t ub = ub_[i];
     if (ub < 0 || ub > gdim_[i] || ub < lb) {
-      LOG(ERROR) << "get_data_length:: ub= " << ub << " is not feasible!";
+      log_(ERROR, "ub= " << ub << " is not feasible!")
       return 0;
     }
     dim_length[i] = ub - lb;
@@ -125,16 +125,14 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
     {0, 0, 0, 0}
   };
   
-  while (1)
-  {
+  while (1) {
     int option_index = 0;
     c = getopt_long (argc, argv, "", long_options, &option_index);
 
     if (c == -1) // Detect the end of the options.
       break;
     
-    switch (c)
-    {
+    switch (c) {
       case 0:
         opt_map["type"] = optarg;
         break;
@@ -210,13 +208,13 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
       std::cout << "\t" << argv[optind++] << "\n";
   }
   // 
-  std::cout << "parse_opts:: opt_map= \n" << patch_all::map_to_str<>(opt_map);
+  log_(INFO, "opt_map= \n" << patch::map_to_str<>(opt_map) )
   
   return opt_map;
 }
 
 #define TEST_SIZE 256
-#define TEST_NDIM 3
+#define TEST_NDIM 1
 #define TEST_DATASIZE pow(TEST_SIZE, TEST_NDIM)
 #define TEST_VER 0
 #define TEST_SGDIM TEST_DATASIZE
@@ -227,44 +225,43 @@ void get_test(std::string var_name, WADSDriver& wads_driver)
   for (int i = 0; i < TEST_NDIM; i++)
     gdim_[i] = TEST_SGDIM;
   
-  int *data_ = (int*)malloc(TEST_DATASIZE*sizeof(int) );
-  uint64_t *lb_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
-  uint64_t *ub_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
+  int* data_ = (int*)malloc(TEST_DATASIZE*sizeof(int) );
+  uint64_t* lb_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
+  uint64_t* ub_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
   for (int i = 0; i < TEST_NDIM; i++) {
     lb_[i] = 0;
     ub_[i] = TEST_SIZE - 1;
   }
   
   if (wads_driver.get(true, var_name, TEST_VER, "int", sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_) )
-    LOG(ERROR) << "get_test:: wads_driver.get failed!";
+    log_(ERROR, "wads_driver.get failed!")
   
-  patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
+  patch::free_all<uint64_t>(3, gdim_, lb_, ub_);
   free(data_);
 }
 
 void put_test(std::string var_name, WADSDriver& wads_driver)
 {
   uint64_t* gdim_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
-  for (int i = 0; i < TEST_NDIM; i++) {
+  for (int i = 0; i < TEST_NDIM; i++)
     gdim_[i] = TEST_SGDIM;
-  }
-  //specifics
-  int *data_ = (int*)malloc(TEST_DATASIZE*sizeof(int) );
-  uint64_t *lb_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
-  uint64_t *ub_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
+  
+  int* data_ = (int*)malloc(TEST_DATASIZE*sizeof(int) );
+  uint64_t* lb_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
+  uint64_t* ub_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
   for (int i = 0; i < TEST_NDIM; i++) {
     lb_[i] = 0;
     ub_[i] = TEST_SIZE - 1;
   }
   
-  for (int i = 0; i < TEST_DATASIZE; i++)
-    data_[i] = i + 1;
+  // for (int i = 0; i < TEST_DATASIZE; i++)
+  //   data_[i] = i + 1;
   
-  LOG(INFO) << "put_test:: will put datasize= " << (float)TEST_DATASIZE*sizeof(int)/1024/1024 << " MB.";
+  log_(INFO, "will put datasize= " << (float)TEST_DATASIZE*sizeof(int)/1024/1024 << " MB.")
   if (wads_driver.put(var_name, TEST_VER, "int", sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_) )
-    LOG(ERROR) << "put_test:: wads_driver.local_put failed!";
+    log_(ERROR, "wads_driver.local_put failed!")
   
-  patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
+  patch::free_all<uint64_t>(3, gdim_, lb_, ub_);
   free(data_);
 }
 
@@ -328,11 +325,11 @@ int main(int argc , char **argv)
     // std::string ib_lip = intf_to_ip(opt_map["ib_lintf"] );
     // std::string tcp_lip = intf_to_ip(opt_map["tcp_lintf"] );
     // std::string gftp_lip = intf_to_ip(opt_map["gftp_lintf"] );
-    // LOG(INFO) << "main:: lcontrol_lip= " << lcontrol_lip << "\n"
+    // log_(INFO, "lcontrol_lip= " << lcontrol_lip << "\n"
     //           << "control_lip= " << control_lip << "\n"
     //           << "ib_lip= " << ib_lip << "\n"
     //           << "tcp_lip= " << tcp_lip << "\n"
-    //           << "gftp_lip= " << gftp_lip << "\n";
+    //           << "gftp_lip= " << gftp_lip << "\n")
     
     if (str_cstr_equals(opt_map["join_control_lip"], "") ) {
       MMRIManager ri_manager(
@@ -376,15 +373,15 @@ int main(int argc , char **argv)
       std::cout << "Enter \n";
       getline(std::cin, temp);
     }
-    // patch_all::syncer<char> dummy_syncer;
+    // patch::syncer<char> dummy_syncer;
     // dummy_syncer.add_sync_point('d', 1);
     // dummy_syncer.wait('d');
     
   }
   else
-    LOG(ERROR) << "main:: unknown type= " << opt_map["type"];
+    log_(ERROR, "unknown type= " << opt_map["type"] )
   
-  std::cout << "main:: tprofiler= \n" << tprofiler.to_str();
+  std::cout << "tprofiler= \n" << tprofiler.to_str();
   // 
   return 0;
 }

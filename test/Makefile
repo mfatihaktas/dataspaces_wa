@@ -1,9 +1,9 @@
-DSPACES_DIR = /cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.5.0/install
+# DSPACES_DIR = /cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.6.0/install
+# DSPACES_DIR = /cac/u01/mfa51/Desktop/dataspaces/dataspaces/install
 # CC = /opt/gcc-4.8.2/bin/gcc
 # CPP = /opt/gcc-4.8.2/bin/g++
-MPICPP = /cac/u01/mfa51/Desktop/mpich-3.1.2/install/bin/mpicxx
-MPICPP_OPTS = # -pthread
-# GLOG_DIR ?= /cac/u01/mfa51/Desktop/glog-0.3.3/install
+MPICPP = mpicxx
+# GLOG_DIR ?= $(DSPACES_DIR)/../glog-0.3.3/install
 # BOOST_DIR ?= /cac/u01/mfa51/Desktop/boost_1_56_0/install
 # GFTPINC_DIR ?= 
 # GFTPLIB_DIR ?= 
@@ -13,18 +13,21 @@ MPICPP_OPTS = # -pthread
 DSPACES_INC = -I$(DSPACES_DIR)/include
 DSPACES_LIB = -L$(DSPACES_DIR)/lib -ldspaces -ldscommon -ldart -lrdmacm
 
-IDIR = include
+# GLOG_INC = -I$(GLOG_DIR)/include
+# GLOG_LIB = -L$(GLOG_DIR)/lib -lglog
+# 
 ODIR = obj
 
-INC = -I$(IDIR) $(DSPACES_INC)
-LIB = $(DSPACES_LIB)
+INC = -I./include $(DSPACES_INC) $(GLOG_INC)
+LIB = $(DSPACES_LIB) $(GLOG_LIB)
 
 .PHONY: all clean
 
 APPS := exp
 
 all: ${APPS}
-exp: $(ODIR)/exp.o $(ODIR)/ds_test.o $(ODIR)/ds_drive.o
+
+exp: $(ODIR)/exp.o $(ODIR)/ds_test.o $(ODIR)/ds_drive.o $(ODIR)/patch_test.o
 	$(MPICPP) $(MPICPP_OPTS) -g -o $@ $^ $(INC) $(LIB)
 
 $(ODIR)/%.o: %.cpp

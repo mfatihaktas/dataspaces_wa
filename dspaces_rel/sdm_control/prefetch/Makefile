@@ -10,11 +10,9 @@ GLOG_INC = -I$(GLOG_DIR)/include
 GLOG_LIB = -L$(GLOG_DIR)/lib -lglog
 
 PATCH_INC = -I$(DSPACESWA_DIR)/patch/include
-PLOT_INC = -I$(DSPACES_WA_DIR)/plot/include
-PROFILER_INC = -I$(DSPACES_WA_DIR)/dspaces_rel/profiler/include
 
 PREFETCH_DIR ?= $(DSPACESWA_DIR)/dspaces_rel/sdm_control/prefetch
-PREFETCH_INC = $(PATCH_INC) $(PLOT_INC) $(PROFILER_INC) -I$(PREFETCH_DIR)/include
+PREFETCH_INC = $(PATCH_INC) -I$(PREFETCH_DIR)/include
 # 
 INC = $(GLOG_INC) $(BOOST_INC) $(PREFETCH_INC)
 LIB = $(GLOG_LIB) $(BOOST_LIB)

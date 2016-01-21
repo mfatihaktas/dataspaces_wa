@@ -13,7 +13,6 @@
 #include <stdlib.h>
 #include <getopt.h>
 #include <map>
-#include <glog/logging.h>
 
 #include "tcp_trans.h"
 
@@ -81,7 +80,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
     std::cout << "\n";
   }
   // 
-  std::cout << "opt_map= \n" << patch_tcp::map_to_str<>(opt_map);
+  log_(INFO, "opt_map= \n" << patch::map_to_str<>(opt_map) )
   
   return opt_map;
 
@@ -96,7 +95,7 @@ void handle_recv(std::string data_id, int chunk_size, void* chunk_)
   recved_size += chunk_size;
   
   std::cout << "handle_recv:: data_id= " << data_id << ", chunk_size= " << chunk_size << "B, recved_size= " << recved_size << "\n";
-            // << ", chunk_= " << patch_tcp::arr_to_str<>(chunk_size/sizeof(DATA_T), static_cast<DATA_T*>(chunk_) ) << "\n";
+            // << ", chunk_= " << patch::arr_to_str<>(chunk_size/sizeof(DATA_T), static_cast<DATA_T*>(chunk_) ) << "\n";
   free(chunk_);
 }
 

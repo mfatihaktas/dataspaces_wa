@@ -6,33 +6,31 @@
 #include <map>
 
 #include <boost/lexical_cast.hpp>
-#include <glog/logging.h>
 
 #include "profiler.h"
 #include "dataspaces_wa.h"
 
-int get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_)
+uint64_t get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_)
 {
   uint64_t dim_length[ndim];
   
-  for(int i=0; i<ndim; i++) {
+  for (int i = 0; i < ndim; i++) {
     uint64_t lb = lb_[i];
     if (lb < 0 || lb > gdim_[i]) {
-      LOG(ERROR) << "get_data_length:: lb= " << lb << " is not feasible!";
+      log_(ERROR, "lb= " << lb << " is not feasible!")
       return 0;
     }
     uint64_t ub = ub_[i];
     if (ub < 0 || ub > gdim_[i] || ub < lb) {
-      LOG(ERROR) << "get_data_length:: ub= " << ub << " is not feasible!";
+      log_(ERROR, "ub= " << ub << " is not feasible!")
       return 0;
     }
     dim_length[i] = ub - lb;
   }
   
   int volume = 1;
-  for(int i=0; i<ndim; i++) {
+  for (int i = 0; i < ndim; i++)
     volume *= (int)dim_length[i];
-  }
   
   return volume;
 }
@@ -73,8 +71,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
     {0, 0, 0, 0}
   };
   
-  while (1)
-  {
+  while (1) {
     int option_index = 0;
     c = getopt_long (argc, argv, "s",
                      long_options, &option_index);
@@ -82,8 +79,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
     if (c == -1) // Detect the end of the options.
       break;
     
-    switch (c)
-    {
+    switch (c) {
       case 0:
         opt_map["type"] = optarg;
         break;
@@ -124,7 +120,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
       std::cout << "\t" << argv[optind++] << "\n";
   }
   // 
-  std::cout << "parse_opts:: opt_map= \n" << patch_all::map_to_str<>(opt_map);
+  std::cout << "parse_opts:: opt_map= \n" << patch::map_to_str<>(opt_map);
   
   return opt_map;
 }
@@ -138,7 +134,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
 /*******************************************  get  ************************************************/
 void mget_test(MPI_Comm& mpi_comm, int cl_id, int num_get, std::string base_var_name, std::map<std::string, std::string> opt_map)
 {
-  LOG(INFO) << "mget_test:: started; cl_id= " << cl_id;
+  log_(INFO, "started; cl_id= " << cl_id)
   
   boost::shared_ptr<MWADSDriver> wads_driver_ = boost::make_shared<MWADSDriver>(
     cl_id, boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_peer"] ), mpi_comm,
@@ -162,33 +158,33 @@ void mget_test(MPI_Comm& mpi_comm, int cl_id, int num_get, std::string base_var_
     std::string var_name = base_var_name + "_" + boost::lexical_cast<std::string>(i);
     get_time_profiler.add_event(i, var_name);
     if (wads_driver_->get(true, var_name, TEST_VER, "int", sizeof(int), NDIM, gdim_, lb_, ub_, data_) ) {
-      LOG(ERROR) << "mget_test:: wads_driver_->get failed for var_name= " << var_name;
+      log_(ERROR, "wads_driver_->get failed; var_name= " << var_name)
       return;
     }
     get_time_profiler.end_event(i);
     
     // sleep(inter_get_time_sec);
   }
-  LOG(INFO) << "mget_test:: get_time_profiler= \n" << get_time_profiler.to_str();
+  log_(INFO, "get_time_profiler= \n" << get_time_profiler.to_str() )
   
-  patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
+  patch::free_all<uint64_t>(3, gdim_, lb_, ub_);
   free(data_);
   
-  LOG(INFO) << "Enter to end mget_test; cl_id= " << cl_id;
+  log_(INFO, "Enter to end; cl_id= " << cl_id)
   std::string temp;
   getline(std::cin, temp);
 }
 
 void mapp_mget_test(MPI_Comm& mpi_comm, int num_app, int num_get, std::string base_var_name, std::map<std::string, std::string> opt_map)
 {
-  LOG(INFO) << "mapp_mget_test:: started; num_app= " << num_app << ", num_get= " << num_get << ", base_var_name= " << base_var_name;
+  log_(INFO, "started; num_app= " << num_app << ", num_get= " << num_get << ", base_var_name= " << base_var_name)
 
   for (int i = 1; i <= num_app; i++) {
     std::string app_base_var_name = base_var_name + "_" + boost::lexical_cast<std::string>(i);
     boost::thread t(mget_test, mpi_comm, i, num_get, app_base_var_name, opt_map);
   }
   
-  LOG(INFO) << "Enter to end mapp_mget_test.";
+  log_(INFO, "Enter to end...")
   std::string temp;
   getline(std::cin, temp);
 }
@@ -196,8 +192,8 @@ void mapp_mget_test(MPI_Comm& mpi_comm, int num_app, int num_get, std::string ba
 /*******************************************  put  ************************************************/
 void mput_test(MPI_Comm& mpi_comm, int cl_id, int num_put, std::string base_var_name, std::map<std::string, std::string> opt_map)
 {
-  LOG(INFO) << "mput_test:: started; cl_id= " << cl_id;
-  std::cout << "mput_test:: sleeping for " << cl_id << "sec \n";
+  log_(INFO, "started; cl_id= " << cl_id)
+  std::cout << "sleeping for " << cl_id << "sec \n";
   sleep(cl_id);
   
   boost::shared_ptr<MWADSDriver> wads_driver_ = boost::make_shared<MWADSDriver>(
@@ -222,32 +218,32 @@ void mput_test(MPI_Comm& mpi_comm, int cl_id, int num_put, std::string base_var_
   
   for (int i = 0; i < num_put; i++) {
     std::string var_name = base_var_name + "_" + boost::lexical_cast<std::string>(i);
-    // if (wads_driver_->put(var_name, TEST_VER, "int", sizeof(int), NDIM, gdim_, lb_, ub_, data_) ) {
-    //   LOG(ERROR) << "mput_test:: wads_driver_->put failed for var_name= " << var_name;
-    //   return;
-    // }
+    if (wads_driver_->put(var_name, TEST_VER, "int", sizeof(int), NDIM, gdim_, lb_, ub_, data_) ) {
+      log_(ERROR, "wads_driver_->put failed; var_name= " << var_name)
+      return;
+    }
     // float inter_put_time = -1 * log(1.0 - std::abs(static_cast<float>(rand() ) / static_cast<float>(RAND_MAX) - 0.001) ) / put_rate
     // sleep(inter_put_time_sec);
   }
   
-  patch_all::free_all<uint64_t>(3, gdim_, lb_, ub_);
+  patch::free_all<uint64_t>(3, gdim_, lb_, ub_);
   free(data_);
   
-  LOG(INFO) << "Enter to end mput_test; cl_id= " << cl_id;
+  log_(INFO, "Enter to end...; cl_id= " << cl_id)
   std::string temp;
   getline(std::cin, temp);
 }
 
 void mapp_mput_test(MPI_Comm& mpi_comm, int num_app, int num_put, std::string base_var_name, std::map<std::string, std::string> opt_map)
 {
-  LOG(INFO) << "mapp_mput_test:: started; num_app= " << num_app << ", num_put= " << num_put << ", base_var_name= " << base_var_name;
+  log_(INFO, "started; num_app= " << num_app << ", num_put= " << num_put << ", base_var_name= " << base_var_name)
   
   for (int i = 1; i <= num_app; i++) {
     std::string app_base_var_name = base_var_name + "_" + boost::lexical_cast<std::string>(i);
     boost::thread t(mput_test, mpi_comm, i, num_put, app_base_var_name, opt_map);
   }
   
-  LOG(INFO) << "Enter to end mapp_mput_test.";
+  log_(INFO, "Enter to end...")
   std::string temp;
   getline(std::cin, temp);
 }
@@ -284,9 +280,9 @@ int main(int argc , char **argv)
     // tprofiler.end_event("mapp_mget_test");
   }
   else
-    LOG(ERROR) << "main:: unknown type= " << opt_map["type"];
+    log_(ERROR, "unknown type= " << opt_map["type"] )
   
-  std::cout << "main:: tprofiler= \n" << tprofiler.to_str();
+  std::cout << "tprofiler= \n" << tprofiler.to_str();
   // 
   return 0;
 }

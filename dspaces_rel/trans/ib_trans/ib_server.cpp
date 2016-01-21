@@ -2,7 +2,7 @@
 
 IBServer::IBServer(const char* lport_, ib_data_recv_cb_func data_recv_cb, ib_msg_recv_cb_func msg_recv_cb)
 : lport_(lport_), data_recv_cb(data_recv_cb), msg_recv_cb(msg_recv_cb),
-  server_name(patch_ib::to_str<const char*>(lport_) ),
+  server_name(patch::to_str<const char*>(lport_) ),
   connector_(new Connector(this) ),
   recv_state(HEADER_RECV)
 {
