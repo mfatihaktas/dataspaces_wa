@@ -32,38 +32,13 @@ std::string RFPManager::get_lip() { return trans_->get_s_lip(); }
 std::string RFPManager::get_lport() { return trans_->get_s_lport(); }
 std::string RFPManager::get_tmpfs_dir() { return trans_->get_tmpfs_dir(); }
 
-uint64_t RFPManager::get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_)
-{
-  uint64_t dim_length[ndim];
-  
-  for (int i = 0; i < ndim; i++) {
-    uint64_t lb = lb_[i];
-    if (lb < 0 || lb > gdim_[i] ) {
-      log_(ERROR, "lb= " << lb << " is not feasible!")
-      return 0;
-    }
-    uint64_t ub = ub_[i];
-    if (ub < 0 || ub > gdim_[i] || ub < lb) {
-      log_(ERROR, "ub= " << ub << " is not feasible!")
-      return 0;
-    }
-    dim_length[i] = ub - lb + 1;
-  }
-  
-  uint64_t volume = 1;
-  for (int i = 0; i < ndim; i++)
-    volume *= dim_length[i];
-  
-  return volume;
-}
-
 int RFPManager::wa_put(std::string lip, std::string lport, std::string tmpfs_dir,
                        std::string key, unsigned int ver, std::string data_type,
                        int size, int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_)
 {
   log_(INFO, "started; lip= " << lip << ", lport= " << lport << "; \n"
              << "\t" << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
-  int data_length = get_data_length(ndim, gdim_, lb_, ub_);
+  int data_length = DSDriver::get_data_length(ndim, gdim_, lb_, ub_);
   if (data_length == 0) {
     log_(ERROR, "data_length = 0!")
     return 1;
@@ -95,7 +70,7 @@ int RFPManager::wa_get(std::string lip, std::string lport, std::string tmpfs_dir
   
   std::string data_id = patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_);
   data_id__recved_size_map[data_id] = 0;
-  data_id__data_map[data_id] = malloc(size*get_data_length(ndim, gdim_, lb_, ub_) );
+  data_id__data_map[data_id] = malloc(size*DSDriver::get_data_length(ndim, gdim_, lb_, ub_) );
   
   if (trans_->init_get(lport, data_id, boost::bind(&RFPManager::handle_recv, this, _1, _2, _3) ) ) {
     log_(ERROR, "trans_->init_get failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )

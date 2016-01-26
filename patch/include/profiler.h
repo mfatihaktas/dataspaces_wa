@@ -12,79 +12,73 @@
 #include <boost/tuple/tuple.hpp>
 #include <glog/logging.h>
 
+#include "debug.h"
+
 namespace patch_profiler
 {
   template <typename Tk, typename Tv>
-  struct thread_safe_map
-  {
+  struct thread_safe_map {
     private:
       boost::mutex mutex;
       typename std::map<Tk, Tv> map;
       typename std::map<Tk, Tv>::iterator map_it;
     public:
-      thread_safe_map() {};
-      ~thread_safe_map() {};
+      thread_safe_map() {}
+      ~thread_safe_map() {}
       
       Tv& operator[](Tk k) {
         boost::lock_guard<boost::mutex> guard(this->mutex);
         return map[k];
-      };
+      }
       
-      int del(Tk k)
-      {
+      int del(Tk k) {
         boost::lock_guard<boost::mutex> guard(this->mutex);
         map_it = map.find(k);
         map.erase(map_it);
-      };
+      }
       
-      bool contains(Tk k)
-      {
+      bool contains(Tk k) {
         boost::lock_guard<boost::mutex> guard(this->mutex);
         return !(map.count(k) == 0);
-      };
+      }
       
-      typename std::map<Tk, Tv>::iterator begin() 
-      {
+      typename std::map<Tk, Tv>::iterator begin() {
         boost::lock_guard<boost::mutex> guard(this->mutex);
         return map.begin();
-      };
+      }
       
-      typename std::map<Tk, Tv>::iterator end()
-      {
+      typename std::map<Tk, Tv>::iterator end() {
         boost::lock_guard<boost::mutex> guard(this->mutex);
         return map.end();
-      };
+      }
       
-      size_t size()
-      {
+      size_t size() {
         boost::lock_guard<boost::mutex> guard(this->mutex);
         return map.size();
-      };
+      }
   };
 }
 
-struct Event
-{
+struct Event {
   private:
     std::string name;
     timeval ref_time, start_time, end_time;
     float start_time_sec, end_time_sec, dur_sec;
     
   public:
-    Event() { /* LOG(INFO) << "Event:: constructed; name= " << name; */ }
+    Event() { /* log_(INFO, "constructed; name= " << name) */ }
     
     Event(std::string name, timeval ref_time)
-    : name(name),
-      ref_time(ref_time),
+    : name(name), ref_time(ref_time),
       dur_sec(-1)
     {
       gettimeofday(&start_time, NULL);
       start_time_sec = ( (start_time.tv_sec - ref_time.tv_sec)*1000 + (start_time.tv_usec - ref_time.tv_usec)/1000.0 )/1000.0;
       
-      LOG(INFO) << "Event:: constructed; name= " << name;
+      log_(INFO, "constructed; name= " << name)
     }
     
-    ~Event() { /* LOG(INFO) << "Event:: destructed; name= " << name; */ }
+    ~Event() { /* log_(INFO, "destructed; name= " << name) */ }
     
     void end() 
     { 
@@ -98,9 +92,9 @@ struct Event
     std::string to_str()
     {
       std::stringstream ss;
-      ss << "name= " << name << ", dur_sec= " << boost::lexical_cast<std::string>(dur_sec);
-        // << ", start_time_sec= " << boost::lexical_cast<std::string>(start_time_sec)
-        // << ", end_time_sec= " << boost::lexical_cast<std::string>(end_time_sec);
+      ss << "name= " << name << ", dur_sec= " << dur_sec;
+        // << ", start_time_sec= " << start_time_sec
+        // << ", end_time_sec= " << end_time_sec;
       
       return ss.str();
     }
@@ -115,8 +109,7 @@ class TProfiler { // Time Profiler
     TProfiler() { gettimeofday(&created_time, NULL); };
     ~TProfiler() {};
     
-    std::string to_str()
-    {
+    std::string to_str() {
       std::stringstream ss;
       
       float total_dur_sec = 0;
@@ -129,8 +122,7 @@ class TProfiler { // Time Profiler
       return ss.str();
     }
     
-    std::string to_brief_str()
-    {
+    std::string to_brief_str() {
       std::stringstream ss;
       
       float total_dur_sec = 0;
@@ -141,19 +133,16 @@ class TProfiler { // Time Profiler
       return ss.str();
     }
     
-    void add_event(T event_key, std::string event_name)
-    {
+    void add_event(T event_key, std::string event_name) {
       Event e(event_name, created_time);
       event_map[event_key] = e;
     }
     
-    void end_event(T event_key)
-    {
+    void end_event(T event_key) {
       event_map[event_key].end();
     }
     
-    void get_event_dur_vector(float& total_dur, std::vector<T>& event_dur_v)
-    {
+    void get_event_dur_vector(float& total_dur, std::vector<T>& event_dur_v) {
       for (typename std::map<T, Event>::iterator it = event_map.begin(); it != event_map.end(); it++) {
         float event_dur = (it->second).get_dur_sec();
         total_dur += event_dur;

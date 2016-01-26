@@ -205,7 +205,7 @@ elif [ $1  = 'init' ]; then
     export BOOST_DIR=/cac/u01/mfa51/Desktop/boost_1_56_0/install
     export GFTPINC_DIR=/usr/include/globus
     export GFTPLIB_DIR=/usr/lib64
-    # export DSPACES_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.5.0/install
+    # export DSPACES_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.6.0/install
     export DSPACES_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces/install
     export DSPACESWA_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa
     

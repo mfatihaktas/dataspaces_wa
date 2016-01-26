@@ -145,7 +145,7 @@ void mget_test(int sleep_time_sec, int num_get, float inter_get_time_sec,
   for (int i = 0; i < NDIM; i++)
     gdim_[i] = TEST_SGDIM;
   //specifics
-  int *data_ = (int*)malloc(TEST_DATASIZE*sizeof(int) );
+  int* data_ = (int*)malloc(TEST_DATASIZE*sizeof(int) );
   uint64_t *lb_ = (uint64_t*)malloc(NDIM*sizeof(uint64_t) );
   uint64_t *ub_ = (uint64_t*)malloc(NDIM*sizeof(uint64_t) );
   for (int i = 0; i < NDIM; i++) {
@@ -192,7 +192,7 @@ void mput_test(int sleep_time_sec, int num_put, float inter_put_time_sec,
   for (int i = 0; i < NDIM; i++)
     gdim_[i] = TEST_SGDIM;
   //specifics
-  int *data_ = (int*)malloc(TEST_DATASIZE*sizeof(int) );
+  int* data_ = (int*)malloc(TEST_DATASIZE*sizeof(int) );
   uint64_t *lb_ = (uint64_t*)malloc(NDIM*sizeof(uint64_t) );
   uint64_t *ub_ = (uint64_t*)malloc(NDIM*sizeof(uint64_t) );
   for (int i = 0; i < NDIM; i++) {
@@ -250,25 +250,25 @@ int main(int argc , char **argv)
   
   TProfiler<int> putget_tprofiler;
   if (str_cstr_equals(opt_map["type"], "mput") ) {
-    std::cout << "Enter for mput_test...\n";
+    std::cout << "Enter for mput_test... \n";
     getline(std::cin, temp);
     
     mput_test(boost::lexical_cast<float>(opt_map["sleep_time_sec"] ),
               boost::lexical_cast<float>(opt_map["num_putget"] ), boost::lexical_cast<float>(opt_map["inter_time_sec"] ),
-              std::string("dummy") + "_" + opt_map["cl_id"], wads_driver, putget_tprofiler, log_file);
+              std::string("dummy_") + opt_map["cl_id"], wads_driver, putget_tprofiler, log_file);
     
-    std::cout << "Enter\n";
+    std::cout << "Enter. \n";
     getline(std::cin, temp);
   }
   else if (str_cstr_equals(opt_map["type"], "mget") ) {
-    std::cout << "Enter for mget_test...\n";
+    std::cout << "Enter for mget_test... \n";
     getline(std::cin, temp);
     
     mget_test(boost::lexical_cast<float>(opt_map["sleep_time_sec"] ),
               boost::lexical_cast<float>(opt_map["num_putget"] ), boost::lexical_cast<float>(opt_map["inter_time_sec"] ),
-              std::string("dummy") + "_" + opt_map["cl_id"], wads_driver, putget_tprofiler, log_file);
+              std::string("dummy_") + opt_map["cl_id"], wads_driver, putget_tprofiler, log_file);
     
-    std::cout << "Enter\n";
+    std::cout << "Enter. \n";
     getline(std::cin, temp);
   }
   else

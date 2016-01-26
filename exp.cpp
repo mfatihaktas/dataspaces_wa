@@ -48,29 +48,28 @@ std::string intf_to_ip(std::string intf)
   struct ifaddrs *ifaddr, *ifa;
   int family, s;
   char host[NI_MAXHOST];
-
+  
   if (getifaddrs(&ifaddr) == -1) {
     perror("getifaddrs");
     exit(EXIT_FAILURE);
   }
-
+  
   for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
-      if (ifa->ifa_addr == NULL)
-        continue;  
-
-      s=getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
-
-      if((strcmp(ifa->ifa_name, intf.c_str() ) == 0) && (ifa->ifa_addr->sa_family == AF_INET) ) {
-        if (s != 0) {
-          printf("getnameinfo() failed: %s\n", gai_strerror(s) );
-          exit(EXIT_FAILURE);
-        }
-        printf("\t Interface : <%s>\n",ifa->ifa_name);
-        printf("\t   Address : <%s>\n", host);
-        break;
+    if (ifa->ifa_addr == NULL)
+      continue;  
+    
+    s = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+    if ((strcmp(ifa->ifa_name, intf.c_str() ) == 0) && (ifa->ifa_addr->sa_family == AF_INET) ) {
+      if (s) {
+        printf("getnameinfo() failed: %s\n", gai_strerror(s) );
+        exit(EXIT_FAILURE);
       }
+      // printf("\t Interface : <%s>\n",ifa->ifa_name);
+      // printf("\t   Address : <%s>\n", host);
+      break;
+    }
   }
-
+  
   freeifaddrs(ifaddr);
   
   return boost::lexical_cast<std::string>(host);
@@ -213,7 +212,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
   return opt_map;
 }
 
-#define TEST_SIZE 256
+#define TEST_SIZE 256*1024*1024
 #define TEST_NDIM 1
 #define TEST_DATASIZE pow(TEST_SIZE, TEST_NDIM)
 #define TEST_VER 0
@@ -230,11 +229,16 @@ void get_test(std::string var_name, WADSDriver& wads_driver)
   uint64_t* ub_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
   for (int i = 0; i < TEST_NDIM; i++) {
     lb_[i] = 0;
-    ub_[i] = TEST_SIZE - 1;
+    ub_[i] = TEST_SIZE;
   }
   
-  if (wads_driver.get(true, var_name, TEST_VER, "int", sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_) )
+  if (wads_driver.get(true, var_name, TEST_VER, "int", sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_) ) {
     log_(ERROR, "wads_driver.get failed!")
+  }
+  else {
+    log_(INFO, "got; kv= " << KV_TO_STR(var_name, TEST_VER) << "\n"
+               << "\t data_size= " << get_data_length(TEST_NDIM, gdim_, lb_, ub_) )
+  }
   
   patch::free_all<uint64_t>(3, gdim_, lb_, ub_);
   free(data_);
@@ -251,15 +255,20 @@ void put_test(std::string var_name, WADSDriver& wads_driver)
   uint64_t* ub_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
   for (int i = 0; i < TEST_NDIM; i++) {
     lb_[i] = 0;
-    ub_[i] = TEST_SIZE - 1;
+    ub_[i] = TEST_SIZE;
   }
   
   // for (int i = 0; i < TEST_DATASIZE; i++)
   //   data_[i] = i + 1;
   
   log_(INFO, "will put datasize= " << (float)TEST_DATASIZE*sizeof(int)/1024/1024 << " MB.")
-  if (wads_driver.put(var_name, TEST_VER, "int", sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_) )
+  if (wads_driver.put(var_name, TEST_VER, "int", sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_) ) {
     log_(ERROR, "wads_driver.local_put failed!")
+  }
+  else {
+    log_(INFO, "putt; kv= " << KV_TO_STR(var_name, TEST_VER) << "\n"
+               << "\t data_size= " << get_data_length(TEST_NDIM, gdim_, lb_, ub_) )
+  }
   
   patch::free_all<uint64_t>(3, gdim_, lb_, ub_);
   free(data_);
@@ -378,8 +387,9 @@ int main(int argc , char **argv)
     // dummy_syncer.wait('d');
     
   }
-  else
+  else {
     log_(ERROR, "unknown type= " << opt_map["type"] )
+  }
   
   std::cout << "tprofiler= \n" << tprofiler.to_str();
   // 

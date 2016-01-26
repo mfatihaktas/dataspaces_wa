@@ -18,11 +18,18 @@ extern "C" {
 
 class DSDriver
 {
+  private:
+    bool closed;
+    int num_dscnodes, app_id;
+    int nprocs, rank;
+    MPI_Comm mpi_comm;
   public:
+    static uint64_t get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_);
+    
     DSDriver(int num_dscnodes, int app_id);
     DSDriver(MPI_Comm mpi_comm, int num_dscnodes, int app_id);
     ~DSDriver();
-    int finalize();
+    int close();
     int init(int num_dscnodes, int app_id);
     int sync_put(const char* var_name, unsigned int ver, int size,
                  int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
@@ -32,12 +39,6 @@ class DSDriver
     void unlock_on_write(const char* var_name);
     void lock_on_read(const char* var_name);
     void unlock_on_read(const char* var_name);
-    
-  private:
-    bool finalized;
-    int num_dscnodes, app_id;
-    int nprocs, rank;
-    MPI_Comm mpi_comm;
 };
 
 #endif //end of _DS_DRIVE_H_

@@ -1,3 +1,5 @@
+* Important Note: Test folder is to be implemented/compiled/run independent from dataspaces_wa.
+
 This folder contains tests for various purposes.
 - Currently contains only test demonstrating segmentation fault thrown from the communication layer
 of dataspaces for multi-threaded put-get scenario with lock type 2.

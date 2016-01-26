@@ -19,16 +19,14 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv__)
     {0, 0, 0, 0}
   };
   
-  while (1)
-  {
+  while (1) {
     int option_index = 0;
     c = getopt_long (argc, argv__, "s", long_options, &option_index);
 
-    if (c == -1) //Detect the end of the options.
+    if (c == -1) // Detect the end of the options.
       break;
     
-    switch (c)
-    {
+    switch (c) {
       case 0:
         opt_map["type"] = optarg;
         break;
@@ -48,16 +46,14 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv__)
         break;
     }
   }
-  if (optind < argc){
+  if (optind < argc) {
     printf ("non-option ARGV__-elements: ");
     while (optind < argc)
-      printf ("%s ", argv__[optind++]);
+      printf ("%s ", argv__[optind++] );
     putchar ('\n');
   }
   // 
-  std::cout << "opt_map= \n";
-  for (std::map<std::string, std::string>::iterator it = opt_map.begin(); it != opt_map.end(); ++it)
-    std::cout << it->first << " => " << it->second << '\n';
+  log(INFO, "opt_map= \n" << patch_test::map_to_str<>(opt_map) )
   return opt_map;
 }
 
@@ -68,10 +64,7 @@ int main(int argc , char** argv__)
   int num_dscnodes = atoi(opt_map["num_dscnodes"].c_str() );
   int app_id = atoi(opt_map["app_id"].c_str() );
   int num_putget_threads = atoi(opt_map["num_putget_threads"].c_str() );
-  double data_size = atof(opt_map["data_size"].c_str() );
-  // double data_size = INT_MAX;
-  // log(INFO, "INT_MAX= " << INT_MAX)
-  // data_size = (data_size > INT_MAX) ? INT_MAX : data_size;
+  uint64_t data_size = atof(opt_map["data_size"].c_str() );
   log(INFO, "data_size= " << data_size)
   // 
   DSTest ds_test(num_dscnodes, app_id, num_putget_threads);
@@ -79,22 +72,26 @@ int main(int argc , char** argv__)
   
   if (str_cstr_equals(opt_map["type"], "put_test") ) {
     ds_test.run_multithreaded_put_test("thread", data_size);
+    // ds_test.exp_put(data_size);
     
-    std::cout << "Enter\n";
+    std::cout << "Enter \n";
     getline(std::cin, temp);
   }
   else if (str_cstr_equals(opt_map["type"], "get_test") ) {
     // sleep(3); // wait for getter to lock on things first
     std::cout << "Enter for run_multithreaded_get_test \n";
     getline(std::cin, temp);
-    
     ds_test.run_multithreaded_get_test("thread", data_size);
+    
+    // std::cout << "Enter for exp_get... \n";
+    // getline(std::cin, temp);
+    // ds_test.exp_get(data_size);
     
     std::cout << "Enter \n";
     getline(std::cin, temp);
   }
   else {
-    std::cerr << "main:: unknown type= " << opt_map["type"] << "\n";
+    log(ERROR, "unknown type= " << opt_map["type"] )
   }
   
   return 0;

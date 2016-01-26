@@ -22,8 +22,8 @@
 #define TEST_Z(x)  if (!(x)) {log(ERROR, #x << "failed!") exit(EXIT_FAILURE); }
 #endif // _TEST_MACROS_
 
-#define DEBUG_IB
-#ifdef DEBUG_IB
+#define DEBUG_TEST
+#ifdef DEBUG_TEST
 // static pthread_mutex_t log_m; // = PTHREAD_MUTEX_INITIALIZER;
 
 #define log(type, msg) \
@@ -33,7 +33,7 @@
   // TEST_NZ(pthread_mutex_unlock(&log_m) )
 #else
   #define log(type, msg)
-#endif // DEBUG_IB
+#endif // DEBUG_TEST
 
 #define return_if_err(x, err) \
   err = x; \
@@ -49,12 +49,12 @@
     return err; \
   }
 
-namespace patch {
+namespace patch_test {
     template <typename T> 
     std::string to_str(const T& n) {
-        std::ostringstream stm;
-        stm << n;
-        return stm.str();
+      std::ostringstream stm;
+      stm << n;
+      return stm.str();
     }
     
     template <typename T>
@@ -65,6 +65,15 @@ namespace patch {
         if (i < size - 1)
           ss << ",";
       }
+      
+      return ss.str();
+    }
+    
+    template<typename Tk, typename Tv>
+    std::string map_to_str(std::map<Tk, Tv> m) {
+      std::stringstream ss;
+      for (typename std::map<Tk, Tv>::iterator it = m.begin(); it != m.end(); it++)
+        ss << "\t" << it->first << " : " << it->second << "\n";
       
       return ss.str();
     }

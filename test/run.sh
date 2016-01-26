@@ -5,18 +5,18 @@ echo $1 $2 $3
 DSPACES_BINDIR=$DSPACES_DIR/bin
 NUM_PUTGET_THREADS=1
 # DATA_SIZE=$((1024*1024))
-DATA_SIZE=$((100*1024*1024))
-# DATA_SIZE=$((12*1000))
-# DATA_SIZE=$((1000*1000)) # 0
+DATA_SIZE=$((36*1024*1024))
+# DATA_SIZE=$((256))
+# DATA_SIZE=$((1024*1024*1024))
 
 NUM_SNODES=1
 NUM_DSCNODES=2
 
 if [ $1  = 's' ]; then
-  #if [ -a conf ]; then
-  #  rm srv.lck
-  #  rm conf                                                                                         #dataspaces_server cannot overwrite this so before every new run this should be removed
-  #fi
+  if [ -a conf ]; then
+    rm srv.lck
+    rm conf                                                                                         #dataspaces_server cannot overwrite this so before every new run this should be removed
+  fi
   $DSPACES_BINDIR/./dataspaces_server --server $NUM_SNODES --cnodes $NUM_DSCNODES
 elif [ $1  = 'ds' ]; then
   if [ -a conf ]; then

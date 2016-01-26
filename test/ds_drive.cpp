@@ -1,7 +1,32 @@
 #include "ds_drive.h"
 
+uint64_t DSDriver::get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_)
+{
+  uint64_t dim_length[ndim];
+  
+  for (int i = 0; i < ndim; i++) {
+    uint64_t lb = lb_[i];
+    if (lb < 0 || lb > gdim_[i] ) {
+      log(ERROR, "lb= " << lb << " is not feasible!")
+      return 0;
+    }
+    uint64_t ub = ub_[i];
+    if (ub < 0 || ub > gdim_[i] || ub < lb) {
+      log(ERROR, "ub= " << ub << " is not feasible!")
+      return 0;
+    }
+    dim_length[i] = ub - lb + 1;
+  }
+  
+  uint64_t volume = 1;
+  for (int i = 0; i < ndim; i++)
+    volume *= dim_length[i];
+  
+  return volume;
+}
+
 DSDriver::DSDriver(int num_dscnodes, int app_id)
-: finalized(false),
+: closed(false),
   num_dscnodes(num_dscnodes),
   app_id(app_id)
 {
@@ -18,7 +43,7 @@ DSDriver::DSDriver(int num_dscnodes, int app_id)
 }
 
 DSDriver::DSDriver(MPI_Comm mpi_comm, int num_dscnodes, int app_id)
-: finalized(false),
+: closed(false),
   num_dscnodes(num_dscnodes),
   app_id(app_id),
   mpi_comm(mpi_comm)
@@ -31,30 +56,28 @@ DSDriver::DSDriver(MPI_Comm mpi_comm, int num_dscnodes, int app_id)
 
 DSDriver::~DSDriver()
 {
-  if (!finalized)
-    finalize();
+  if (!closed)
+    close();
   // 
   log(INFO, "destructed.")
 }
 
-int DSDriver::finalize()
+int DSDriver::close()
 {
-  if (finalized) {
+  if (closed)
     return 2;
-  }
   try {
     dspaces_finalize();
     MPI_Barrier(mpi_comm);
     MPI_Finalize();
   }
-  
   catch (std::exception& ex) {
-    std::cerr << "Exception=" << ex.what();
+    log(ERROR, "Exception=" << ex.what() )
     return 1;
   }
   // 
-  finalized = true;
-  log(INFO, "finalized.")
+  closed = true;
+  log(INFO, "closed.")
   return 0;
 }
 
@@ -68,7 +91,7 @@ int DSDriver::sync_put(const char* var_name, unsigned int ver, int size,
 {
   lock_on_write(var_name);
   int result = dspaces_put(var_name, ver, size, ndim, lb_, ub_, data_);
-  dspaces_put_sync();
+  // dspaces_put_sync();
   unlock_on_write(var_name);
   
   return result;
@@ -78,6 +101,7 @@ int DSDriver::get(const char* var_name, unsigned int ver, int size,
                       int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_, void *data_)
 {
   lock_on_read(var_name);
+  // dspaces_define_gdim(var_name, ndim, gdim_);
   int result = dspaces_get(var_name, ver, size, ndim, lb_, ub_, data_);
   unlock_on_read(var_name);
   

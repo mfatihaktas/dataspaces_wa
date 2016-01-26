@@ -2,7 +2,7 @@
 # DSPACES_DIR = /cac/u01/mfa51/Desktop/dataspaces/dataspaces/install
 # CC = /opt/gcc-4.8.2/bin/gcc
 # CPP = /opt/gcc-4.8.2/bin/g++
-MPICPP = mpicxx
+# MPICPP = mpicxx
 # GLOG_DIR ?= $(DSPACES_DIR)/../glog-0.3.3/install
 # BOOST_DIR ?= /cac/u01/mfa51/Desktop/boost_1_56_0/install
 # GFTPINC_DIR ?= 

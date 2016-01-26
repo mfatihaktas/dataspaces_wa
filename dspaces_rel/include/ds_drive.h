@@ -49,6 +49,8 @@ class DSDriver
     std::map<std::string, function_cb_on_get> varname_cbonget_map;
     std::vector<boost::shared_ptr<boost::thread> > riget_thread_v;
   public:
+    static uint64_t get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_);
+    
     DSDriver(int app_id, int num_peers);
     DSDriver(int app_id, int num_peers, MPI_Comm mpi_comm);
     ~DSDriver();

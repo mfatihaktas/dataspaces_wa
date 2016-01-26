@@ -4,6 +4,31 @@
 #define INTER_LOCK_TIME 1000*1000 //usec
 #define INTER_RI_GET_TIME 2*1000*1000 //usec
 
+uint64_t DSDriver::get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_)
+{
+  uint64_t dim_length[ndim];
+  
+  for (int i = 0; i < ndim; i++) {
+    uint64_t lb = lb_[i];
+    if (lb < 0 || lb > gdim_[i] ) {
+      log_(ERROR, "lb= " << lb << " is not feasible!")
+      return 0;
+    }
+    uint64_t ub = ub_[i];
+    if (ub < 0 || ub > gdim_[i] || ub < lb) {
+      log_(ERROR, "ub= " << ub << " is not feasible!")
+      return 0;
+    }
+    dim_length[i] = ub - lb + 1;
+  }
+  
+  uint64_t volume = 1;
+  for (int i = 0; i < ndim; i++)
+    volume *= dim_length[i];
+  
+  return volume;
+}
+
 DSDriver::DSDriver(int app_id, int num_peers)
 : app_id(app_id), num_peers(num_peers),
   closed(false), get_flag(false), get__flag(false), sync_put_flag(false)
