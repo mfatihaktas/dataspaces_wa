@@ -120,7 +120,7 @@ class RIManager {
     int trans_info_query(int to_id, std::map<std::string, std::string> msg_map);
     void handle_rimsg(std::map<std::string, std::string> rimsg_map);
     void handle_tinfo_query(std::map<std::string, std::string> msg_map);
-    void remote_get(std::map<std::string, std::string> msg_map);
+    int remote_get(std::map<std::string, std::string> msg_map);
     void remote_put(std::map<std::string, std::string> msg_map);
     void handle_tinfo_query_reply(std::map<std::string, std::string> msg_map);
     void handle_gridftp_put(std::map<std::string, std::string> msg_map);

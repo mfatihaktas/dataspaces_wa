@@ -5,19 +5,27 @@
 #include "patch_sdm.h"
 #include "sdm_node.h"
 
+#include <fstream>
+
 /******************************************  SDMCEntity  ******************************************/
 class SDMCEntity { // SDM Control
   protected:
     SDMNode sdm_node;
     patch_sdm::MsgCoder msg_coder;
+    std::ofstream sdm_log_f;
   public:
     SDMCEntity(std::string type,
                int id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
                func_rimsg_recv_cb rimsg_recv_cb)
     : sdm_node(type, false,
                id, lip, lport, joinhost_lip, joinhost_lport,
-               rimsg_recv_cb, boost::bind(&SDMCEntity::handle_cmsg, this, _1) )
-    {}
+               rimsg_recv_cb, boost::bind(&SDMCEntity::handle_cmsg, this, _1) ),
+      sdm_log_f(("sdm_log_id_" + boost::lexical_cast<std::string>(id) ).c_str(), std::ios::out | std::ios::app)
+    {
+      if (!sdm_log_f.is_open() ) {
+        log_(ERROR, "sdm_log_f is not open.")
+      }
+    }
     
     virtual int close() { return sdm_node.close(); }
     
@@ -57,6 +65,7 @@ class SDMCEntity { // SDM Control
 };
 
 /***********************************  SDMSlave : SDMCEntity  **************************************/
+const std::string SDM_QUERY = "sdm_q";
 const std::string SDM_MQUERY = "sdm_mq";
 const std::string SDM_MQUERY_REPLY = "sdm_mqr";
 const std::string SDM_SQUERY = "sdm_sq";
@@ -99,6 +108,7 @@ class SDMSlave : public SDMCEntity {
     virtual int add_access(int c_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_);
     virtual int put(bool notify, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, int p_id);
     virtual int get(int app_id, bool blocking, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_);
+    virtual int notify_remote_get_done(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_);
     
     virtual void handle_conn_up(std::map<std::string, std::string> msg_map);
     virtual void handle_msg_in(std::map<std::string, std::string> msg_map);
@@ -145,12 +155,13 @@ class SDMMaster : public SDMSlave {
     int close();
     virtual std::string to_str();
     
-    int sdm_mquery(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_);
+    int sdm_mquery(bool blocking, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_);
     
     int reg_app(int app_id);
     int add_access(int c_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_);
     int put(bool notify, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, int p_id);
     int get(int c_id, bool blocking, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_);
+    int notify_remote_get_done(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_);
     
     void handle_conn_up(std::map<std::string, std::string> msg_map);
     void handle_msg_in(std::map<std::string, std::string> msg_map);

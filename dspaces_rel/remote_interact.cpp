@@ -112,7 +112,8 @@ int RFPManager::wait_for_get(std::string key, unsigned int ver, uint64_t* lb_, u
 
 int RFPManager::notify_remote_get_done(std::string key, unsigned int ver, uint64_t* lb_, uint64_t* ub_)
 {
-  return rfp_syncer.notify(patch_sdm::hash_str(patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_) ) );
+  rfp_syncer.notify(patch_sdm::hash_str(patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_) ) );
+  return 0;
 }
 
 void RFPManager::handle_recv(std::string data_id, uint64_t data_size, void* data_)
@@ -190,8 +191,9 @@ void RIManager::handle_app_msg(std::map<std::string, std::string> msg_map)
     handle_get(true, cl_id, msg_map);
   else if (str_str_equals(type, PUT) )
     handle_put(cl_id, msg_map);
-  else
+  else {
     log_(ERROR, "unknown type= " << type)
+  }
 }
 
 void RIManager::handle_get(bool blocking, int cl_id, std::map<std::string, std::string> get_map)
@@ -224,12 +226,14 @@ void RIManager::handle_get(bool blocking, int cl_id, std::map<std::string, std::
       get_map["ds_id"] = boost::lexical_cast<std::string>(sdm_slave_->get_id() );
       // Note: If an app local-peer to SDMMaster initiated this get and data is put by another local-peer, 
       // add_access should not be called.
-      if (sdm_slave_->add_access(cl_id, key, ver, lb_, ub_) )
+      if (sdm_slave_->add_access(cl_id, key, ver, lb_, ub_) ) {
         log_(ERROR, "sdm_slave_->add_access failed; c_id= " << cl_id << ", " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
+      }
     }
   }
-  if (lsdm_node_->send_msg(cl_id, PACKET_RIMSG, get_map) )
+  if (lsdm_node_->send_msg(cl_id, PACKET_RIMSG, get_map) ) {
     log_(ERROR, "lsdm_node_->send_msg_to_master failed; get_map= \n" << patch::map_to_str<>(get_map) )
+  }
   
   patch::free_all<uint64_t>(3, gdim_, lb_, ub_);
 }
@@ -317,8 +321,9 @@ void RIManager::handle_tinfo_query(std::map<std::string, std::string> msg_map)
   }
 }
 
-void RIManager::remote_get(std::map<std::string, std::string> msg_map)
+int RIManager::remote_get(std::map<std::string, std::string> msg_map)
 {
+  int err;
   log_(INFO, "msg_map= \n" << patch::map_to_str<>(msg_map) )
   
   std::string key, data_type;
@@ -327,7 +332,7 @@ void RIManager::remote_get(std::map<std::string, std::string> msg_map)
   uint64_t* gdim_, *lb_, *ub_;
   if (msg_coder.decode_msg_map(msg_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_) ) {
     log_(ERROR, "msg_coder.decode_msg_map failed; msg_map= \n" << patch::map_to_str<>(msg_map) )
-    return;
+    return 1;
   }
   
   // Note: Some get requests may get through wait_for_get in handle_get so will check here once again
@@ -340,23 +345,19 @@ void RIManager::remote_get(std::map<std::string, std::string> msg_map)
                            key, ver, size, ndim, gdim_, lb_, ub_) ) {
     log_(ERROR, "rfp_manager_->wa_get failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
     patch::free_all<uint64_t>(3, gdim_, lb_, ub_);
-    return;
+    return 1;
   }
   
-  if (sdm_slave_->put(false, key, ver, lb_, ub_, REMOTE_P_ID) )
+  if (sdm_slave_->put(false, key, ver, lb_, ub_, REMOTE_P_ID) ) {
     log_(ERROR, "sdm_slave_->put failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
+  }
   else
     data_id_hash__data_info_map[patch_sdm::hash_str(patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_) ) ] =
       boost::make_shared<data_info>(data_type, size, gdim_);
   // Note: To avoid sdm_slave_->get to fail when wa_get is done but sdm_slave_->put is not done yet.
-  rfp_manager_->notify_remote_get_done(key, ver, lb_, ub_);
-  
-  msg_map["type"] = SDM_MOVE_REPLY;
-  if (sdm_slave_->send_cmsg_to_master(msg_map) ) {
-    log_(ERROR, "send_cmsg_to_master failed; msg_map= \n" << patch::map_to_str<>(msg_map) )
-    return;
-  }
-  patch::free_all<uint64_t>(2, lb_, ub_);
+  return_if_err(rfp_manager_->notify_remote_get_done(key, ver, lb_, ub_), err)
+  return_if_err(sdm_slave_->notify_remote_get_done(key, ver, lb_, ub_), err)
+  patch::free_all<uint64_t>(3, gdim_, lb_, ub_);
 }
 
 void RIManager::remote_put(std::map<std::string, std::string> msg_map)
@@ -435,8 +436,9 @@ void RIManager::handle_dm_act(std::map<std::string, std::string> dm_act_map)
     handle_dm_move(dm_act_map);
   else if (str_str_equals(type, SDM_DEL) )
     handle_dm_del(dm_act_map);
-  else
+  else {
     log_(ERROR, "unknown type= " << type)
+  }
 }
 
 void RIManager::handle_dm_move(std::map<std::string, std::string> msg_map)

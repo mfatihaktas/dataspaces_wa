@@ -1,156 +1,348 @@
-	name= put_dummy_1_0, dur_sec= 0.0977335
-	name= put_dummy_1_1, dur_sec= 0.094799
-	name= put_dummy_1_2, dur_sec= 0.0961981
-	name= put_dummy_1_3, dur_sec= 0.0957327
-	name= put_dummy_1_4, dur_sec= 0.0953264
-	name= put_dummy_1_5, dur_sec= 0.0965137
-	name= put_dummy_1_6, dur_sec= 0.0956755
-	name= put_dummy_1_7, dur_sec= 0.0968552
-	name= put_dummy_1_8, dur_sec= 0.0980492
-	name= put_dummy_1_9, dur_sec= 0.0948544
-	total_dur_sec= 0.961738
+	name= put_dummy_10_0, dur_sec= 0.208474
+	name= put_dummy_10_1, dur_sec= 0.202458
+	name= put_dummy_10_2, dur_sec= 0.217253
+	name= put_dummy_10_3, dur_sec= 0.20202
+	name= put_dummy_10_4, dur_sec= 0.264763
+	name= put_dummy_10_5, dur_sec= 0.221128
+	name= put_dummy_10_6, dur_sec= 0.230593
+	name= put_dummy_10_7, dur_sec= 0.239052
+	name= put_dummy_10_8, dur_sec= 0.202257
+	name= put_dummy_10_9, dur_sec= 0.224673
+	total_dur_sec= 2.21267
 
-	name= put_dummy_1_0, dur_sec= 0.097312
-	name= put_dummy_1_1, dur_sec= 0.096261
-	name= put_dummy_1_2, dur_sec= 0.098193
-	name= put_dummy_1_3, dur_sec= 0.094272
-	name= put_dummy_1_4, dur_sec= 0.096344
-	name= put_dummy_1_5, dur_sec= 0.0962449
-	name= put_dummy_1_6, dur_sec= 0.0966951
-	name= put_dummy_1_7, dur_sec= 0.09592
-	name= put_dummy_1_8, dur_sec= 0.0950279
-	name= put_dummy_1_9, dur_sec= 0.095964
-	total_dur_sec= 0.962234
+	name= put_dummy_5_0, dur_sec= 0.20541
+	name= put_dummy_5_1, dur_sec= 0.219906
+	name= put_dummy_5_2, dur_sec= 0.232514
+	name= put_dummy_5_3, dur_sec= 0.225709
+	name= put_dummy_5_4, dur_sec= 0.237298
+	name= put_dummy_5_5, dur_sec= 0.219054
+	name= put_dummy_5_6, dur_sec= 0.228134
+	name= put_dummy_5_7, dur_sec= 0.234619
+	name= put_dummy_5_8, dur_sec= 0.226628
+	name= put_dummy_5_9, dur_sec= 0.217578
+	total_dur_sec= 2.24685
 
-	name= put_dummy_1_0, dur_sec= 0.096882
-	name= put_dummy_1_1, dur_sec= 0.098179
-	name= put_dummy_1_2, dur_sec= 0.0982499
-	name= put_dummy_1_3, dur_sec= 0.098195
-	name= put_dummy_1_4, dur_sec= 0.097114
-	name= put_dummy_1_5, dur_sec= 0.0970391
-	name= put_dummy_1_6, dur_sec= 0.0980141
-	name= put_dummy_1_7, dur_sec= 0.0987492
-	name= put_dummy_1_8, dur_sec= 0.096643
-	name= put_dummy_1_9, dur_sec= 0.09495
-	total_dur_sec= 0.974015
+	name= put_dummy_6_0, dur_sec= 0.236487
+	name= put_dummy_6_1, dur_sec= 0.20148
+	name= put_dummy_6_2, dur_sec= 0.225512
+	name= put_dummy_6_3, dur_sec= 0.221693
+	name= put_dummy_6_4, dur_sec= 0.260258
+	name= put_dummy_6_5, dur_sec= 0.212278
+	name= put_dummy_6_6, dur_sec= 0.24107
+	name= put_dummy_6_7, dur_sec= 0.21722
+	name= put_dummy_6_8, dur_sec= 0.2349
+	name= put_dummy_6_9, dur_sec= 0.21903
+	total_dur_sec= 2.26993
 
-	name= put_dummy_1_0, dur_sec= 0.0455431
-	name= put_dummy_1_1, dur_sec= 0.081616
-	name= put_dummy_1_2, dur_sec= 0.0816661
-	name= put_dummy_1_3, dur_sec= 0.087883
-	name= put_dummy_1_4, dur_sec= 0.0507361
-	name= put_dummy_1_5, dur_sec= 0.051983
-	name= put_dummy_1_6, dur_sec= 0.052634
-	name= put_dummy_1_7, dur_sec= 0.0519041
-	name= put_dummy_1_8, dur_sec= 0.0515671
-	name= put_dummy_1_9, dur_sec= 0.0522751
-	total_dur_sec= 0.607808
+	name= put_dummy_9_0, dur_sec= 0.193285
+	name= put_dummy_9_1, dur_sec= 0.215564
+	name= put_dummy_9_2, dur_sec= 0.236271
+	name= put_dummy_9_3, dur_sec= 0.244534
+	name= put_dummy_9_4, dur_sec= 0.287012
+	name= put_dummy_9_5, dur_sec= 0.223068
+	name= put_dummy_9_6, dur_sec= 0.213341
+	name= put_dummy_9_7, dur_sec= 0.230311
+	name= put_dummy_9_8, dur_sec= 0.266995
+	name= put_dummy_9_9, dur_sec= 0.199265
+	total_dur_sec= 2.30965
 
-	name= get_dummy_1_0, dur_sec= 1.01373
-	name= get_dummy_1_1, dur_sec= 0.753257
-	name= get_dummy_1_2, dur_sec= 0.772164
-	name= get_dummy_1_3, dur_sec= 0.764832
-	name= get_dummy_1_4, dur_sec= 0.785538
-	name= get_dummy_1_5, dur_sec= 0.762567
-	name= get_dummy_1_6, dur_sec= 0.712
-	name= get_dummy_1_7, dur_sec= 0.763989
-	name= get_dummy_1_8, dur_sec= 0.762495
-	name= get_dummy_1_9, dur_sec= 0.765043
-	total_dur_sec= 7.85561
+	name= put_dummy_3_0, dur_sec= 0.268923
+	name= put_dummy_3_1, dur_sec= 0.239281
+	name= put_dummy_3_2, dur_sec= 0.198525
+	name= put_dummy_3_3, dur_sec= 0.236725
+	name= put_dummy_3_4, dur_sec= 0.241723
+	name= put_dummy_3_5, dur_sec= 0.235989
+	name= put_dummy_3_6, dur_sec= 0.232717
+	name= put_dummy_3_7, dur_sec= 0.197467
+	name= put_dummy_3_8, dur_sec= 0.271852
+	name= put_dummy_3_9, dur_sec= 0.20584
+	total_dur_sec= 2.32904
 
-	name= put_dummy_1_0, dur_sec= 0.0989361
-	name= put_dummy_1_1, dur_sec= 0.0945531
-	name= put_dummy_1_2, dur_sec= 0.0944541
-	name= put_dummy_1_3, dur_sec= 0.094363
-	name= put_dummy_1_4, dur_sec= 0.095153
-	name= put_dummy_1_5, dur_sec= 0.094167
-	name= put_dummy_1_6, dur_sec= 0.094936
-	name= put_dummy_1_7, dur_sec= 0.094897
-	name= put_dummy_1_8, dur_sec= 0.0943379
-	name= put_dummy_1_9, dur_sec= 0.09571
-	total_dur_sec= 0.951507
+	name= put_dummy_1_0, dur_sec= 0.298814
+	name= put_dummy_1_1, dur_sec= 0.237041
+	name= put_dummy_1_2, dur_sec= 0.233447
+	name= put_dummy_1_3, dur_sec= 0.194387
+	name= put_dummy_1_4, dur_sec= 0.240497
+	name= put_dummy_1_5, dur_sec= 0.24892
+	name= put_dummy_1_6, dur_sec= 0.20762
+	name= put_dummy_1_7, dur_sec= 0.224716
+	name= put_dummy_1_8, dur_sec= 0.239254
+	name= put_dummy_1_9, dur_sec= 0.209922
+	total_dur_sec= 2.33462
 
-	name= put_dummy_1_0, dur_sec= 0.09855
-	name= put_dummy_1_1, dur_sec= 0.095642
-	name= put_dummy_1_2, dur_sec= 0.096741
-	name= put_dummy_1_3, dur_sec= 0.0949999
-	name= put_dummy_1_4, dur_sec= 0.0924621
-	name= put_dummy_1_5, dur_sec= 0.0944731
-	name= put_dummy_1_6, dur_sec= 0.096936
-	name= put_dummy_1_7, dur_sec= 0.0956879
-	name= put_dummy_1_8, dur_sec= 0.095907
-	name= put_dummy_1_9, dur_sec= 0.094485
-	total_dur_sec= 0.955884
+	name= put_dummy_4_0, dur_sec= 0.270314
+	name= put_dummy_4_1, dur_sec= 0.232421
+	name= put_dummy_4_2, dur_sec= 0.239591
+	name= put_dummy_4_3, dur_sec= 0.206642
+	name= put_dummy_4_4, dur_sec= 0.24833
+	name= put_dummy_4_5, dur_sec= 0.249773
+	name= put_dummy_4_6, dur_sec= 0.231915
+	name= put_dummy_4_7, dur_sec= 0.212414
+	name= put_dummy_4_8, dur_sec= 0.23319
+	name= put_dummy_4_9, dur_sec= 0.192975
+	total_dur_sec= 2.31757
 
-	name= put_dummy_1_0, dur_sec= 0.099932
-	name= put_dummy_1_1, dur_sec= 0.096434
-	name= put_dummy_1_2, dur_sec= 0.097896
-	name= put_dummy_1_3, dur_sec= 0.09506
-	name= put_dummy_1_4, dur_sec= 0.096854
-	name= put_dummy_1_5, dur_sec= 0.0981389
-	name= put_dummy_1_6, dur_sec= 0.095731
-	name= put_dummy_1_7, dur_sec= 0.0965681
-	name= put_dummy_1_8, dur_sec= 0.098497
-	name= put_dummy_1_9, dur_sec= 0.0965669
-	total_dur_sec= 0.971678
+	name= put_dummy_2_0, dur_sec= 0.313213
+	name= put_dummy_2_1, dur_sec= 0.216201
+	name= put_dummy_2_2, dur_sec= 0.220648
+	name= put_dummy_2_3, dur_sec= 0.219445
+	name= put_dummy_2_4, dur_sec= 0.24153
+	name= put_dummy_2_5, dur_sec= 0.254585
+	name= put_dummy_2_6, dur_sec= 0.226418
+	name= put_dummy_2_7, dur_sec= 0.204964
+	name= put_dummy_2_8, dur_sec= 0.236169
+	name= put_dummy_2_9, dur_sec= 0.206413
+	total_dur_sec= 2.33959
 
-	name= put_dummy_1_0, dur_sec= 0.096667
-	name= put_dummy_1_1, dur_sec= 0.094803
-	name= put_dummy_1_2, dur_sec= 0.094655
-	name= put_dummy_1_3, dur_sec= 0.094247
-	name= put_dummy_1_4, dur_sec= 0.093794
-	name= put_dummy_1_5, dur_sec= 0.0975751
-	name= put_dummy_1_6, dur_sec= 0.0950049
-	name= put_dummy_1_7, dur_sec= 0.098225
-	name= put_dummy_1_8, dur_sec= 0.094016
-	name= put_dummy_1_9, dur_sec= 0.094173
-	total_dur_sec= 0.95316
+	name= put_dummy_7_0, dur_sec= 0.297601
+	name= put_dummy_7_1, dur_sec= 0.261381
+	name= put_dummy_7_2, dur_sec= 0.231838
+	name= put_dummy_7_3, dur_sec= 0.214858
+	name= put_dummy_7_4, dur_sec= 0.222569
+	name= put_dummy_7_5, dur_sec= 0.250592
+	name= put_dummy_7_6, dur_sec= 0.237968
+	name= put_dummy_7_7, dur_sec= 0.194032
+	name= put_dummy_7_8, dur_sec= 0.234146
+	name= put_dummy_7_9, dur_sec= 0.196838
+	total_dur_sec= 2.34182
 
-	name= put_dummy_1_0, dur_sec= 0.096312
-	name= put_dummy_1_1, dur_sec= 0.094045
-	name= put_dummy_1_2, dur_sec= 0.095886
-	name= put_dummy_1_3, dur_sec= 0.0977679
-	name= put_dummy_1_4, dur_sec= 0.095614
-	name= put_dummy_1_5, dur_sec= 0.095459
-	name= put_dummy_1_6, dur_sec= 0.0950381
-	name= put_dummy_1_7, dur_sec= 0.097104
-	name= put_dummy_1_8, dur_sec= 0.093725
-	name= put_dummy_1_9, dur_sec= 0.094118
-	total_dur_sec= 0.955069
+	name= put_dummy_8_0, dur_sec= 0.29438
+	name= put_dummy_8_1, dur_sec= 0.261272
+	name= put_dummy_8_2, dur_sec= 0.233952
+	name= put_dummy_8_3, dur_sec= 0.248155
+	name= put_dummy_8_4, dur_sec= 0.226523
+	name= put_dummy_8_5, dur_sec= 0.240975
+	name= put_dummy_8_6, dur_sec= 0.232047
+	name= put_dummy_8_7, dur_sec= 0.235783
+	name= put_dummy_8_8, dur_sec= 0.241186
+	name= put_dummy_8_9, dur_sec= 0.137104
+	total_dur_sec= 2.35138
 
-	name= put_dummy_1_0, dur_sec= 0.097163
-	name= put_dummy_1_1, dur_sec= 0.097084
-	name= put_dummy_1_2, dur_sec= 0.096984
-	name= put_dummy_1_3, dur_sec= 0.094817
-	name= put_dummy_1_4, dur_sec= 0.098407
-	name= put_dummy_1_5, dur_sec= 0.0986069
-	name= put_dummy_1_6, dur_sec= 0.092782
-	name= put_dummy_1_7, dur_sec= 0.097967
-	name= put_dummy_1_8, dur_sec= 0.098232
-	name= put_dummy_1_9, dur_sec= 0.0967771
-	total_dur_sec= 0.96882
+	name= get_dummy_5_0, dur_sec= 2.68806
+	name= get_dummy_5_1, dur_sec= 4.73159
+	name= get_dummy_5_2, dur_sec= 6.07526
+	name= get_dummy_5_3, dur_sec= 6.58746
+	name= get_dummy_5_4, dur_sec= 3.90609
+	name= get_dummy_5_5, dur_sec= 3.27747
+	name= get_dummy_5_6, dur_sec= 3.80521
+	name= get_dummy_5_7, dur_sec= 2.91005
+	name= get_dummy_5_8, dur_sec= 3.52353
+	name= get_dummy_5_9, dur_sec= 3.4527
+	total_dur_sec= 40.9574
 
-	name= get_dummy_1_0, dur_sec= 1.15582
-	name= get_dummy_1_1, dur_sec= 0.831693
-	name= get_dummy_1_2, dur_sec= 0.841868
-	name= get_dummy_1_3, dur_sec= 0.847723
-	name= get_dummy_1_4, dur_sec= 0.850217
-	name= get_dummy_1_5, dur_sec= 0.843127
-	name= get_dummy_1_6, dur_sec= 0.846933
-	name= get_dummy_1_7, dur_sec= 0.841211
-	name= get_dummy_1_8, dur_sec= 0.850042
-	name= get_dummy_1_9, dur_sec= 0.849071
-	total_dur_sec= 8.75771
+	name= get_dummy_3_0, dur_sec= 5.90949
+	name= get_dummy_3_1, dur_sec= 3.11907
+	name= get_dummy_3_2, dur_sec= 3.20347
+	name= get_dummy_3_3, dur_sec= 3.34746
+	name= get_dummy_3_4, dur_sec= 3.21871
+	name= get_dummy_3_5, dur_sec= 3.185
+	name= get_dummy_3_6, dur_sec= 4.48546
+	name= get_dummy_3_7, dur_sec= 6.7993
+	name= get_dummy_3_8, dur_sec= 4.45237
+	name= get_dummy_3_9, dur_sec= 3.45652
+	total_dur_sec= 41.1768
 
-	name= put_dummy_1_0, dur_sec= 0.099566
-	name= put_dummy_1_1, dur_sec= 0.096144
-	name= put_dummy_1_2, dur_sec= 0.097951
-	name= put_dummy_1_3, dur_sec= 0.098631
-	name= put_dummy_1_4, dur_sec= 0.099115
-	name= put_dummy_1_5, dur_sec= 0.0960519
-	name= put_dummy_1_6, dur_sec= 0.095808
-	name= put_dummy_1_7, dur_sec= 0.097869
-	name= put_dummy_1_8, dur_sec= 0.096091
-	name= put_dummy_1_9, dur_sec= 0.097185
-	total_dur_sec= 0.974412
+	name= get_dummy_9_0, dur_sec= 1.31569
+	name= get_dummy_9_1, dur_sec= 7.05446
+	name= get_dummy_9_2, dur_sec= 3.23243
+	name= get_dummy_9_3, dur_sec= 4.74945
+	name= get_dummy_9_4, dur_sec= 6.26231
+	name= get_dummy_9_5, dur_sec= 3.69559
+	name= get_dummy_9_6, dur_sec= 2.95181
+	name= get_dummy_9_7, dur_sec= 3.36365
+	name= get_dummy_9_8, dur_sec= 6.71922
+	name= get_dummy_9_9, dur_sec= 2.81588
+	total_dur_sec= 42.1605
+
+	name= get_dummy_10_0, dur_sec= 1.87077
+	name= get_dummy_10_1, dur_sec= 7.85728
+	name= get_dummy_10_2, dur_sec= 3.56752
+	name= get_dummy_10_3, dur_sec= 4.51847
+	name= get_dummy_10_4, dur_sec= 3.23226
+	name= get_dummy_10_5, dur_sec= 5.66229
+	name= get_dummy_10_6, dur_sec= 3.38253
+	name= get_dummy_10_7, dur_sec= 3.03969
+	name= get_dummy_10_8, dur_sec= 4.1801
+	name= get_dummy_10_9, dur_sec= 5.34206
+	total_dur_sec= 42.653
+
+	name= get_dummy_8_0, dur_sec= 3.34326
+	name= get_dummy_8_1, dur_sec= 7.97734
+	name= get_dummy_8_2, dur_sec= 3.269
+	name= get_dummy_8_3, dur_sec= 6.08924
+	name= get_dummy_8_4, dur_sec= 5.14493
+	name= get_dummy_8_5, dur_sec= 2.87618
+	name= get_dummy_8_6, dur_sec= 3.53411
+	name= get_dummy_8_7, dur_sec= 3.18203
+	name= get_dummy_8_8, dur_sec= 4.37806
+	name= get_dummy_8_9, dur_sec= 3.3476
+	total_dur_sec= 43.1417
+
+	name= get_dummy_1_0, dur_sec= 7.21892
+	name= get_dummy_1_1, dur_sec= 4.5421
+	name= get_dummy_1_2, dur_sec= 5.28084
+	name= get_dummy_1_3, dur_sec= 2.83258
+	name= get_dummy_1_4, dur_sec= 3.18928
+	name= get_dummy_1_5, dur_sec= 3.80432
+	name= get_dummy_1_6, dur_sec= 4.72267
+	name= get_dummy_1_7, dur_sec= 2.98923
+	name= get_dummy_1_8, dur_sec= 3.62119
+	name= get_dummy_1_9, dur_sec= 5.19233
+	total_dur_sec= 43.3934
+
+	name= get_dummy_4_0, dur_sec= 6.18757
+	name= get_dummy_4_1, dur_sec= 3.33667
+	name= get_dummy_4_2, dur_sec= 4.75703
+	name= get_dummy_4_3, dur_sec= 3.17626
+	name= get_dummy_4_4, dur_sec= 4.9535
+	name= get_dummy_4_5, dur_sec= 4.65024
+	name= get_dummy_4_6, dur_sec= 4.9686
+	name= get_dummy_4_7, dur_sec= 3.01221
+	name= get_dummy_4_8, dur_sec= 5.01417
+	name= get_dummy_4_9, dur_sec= 4.07979
+	total_dur_sec= 44.136
+
+	name= get_dummy_7_0, dur_sec= 4.88862
+	name= get_dummy_7_1, dur_sec= 3.28031
+	name= get_dummy_7_2, dur_sec= 4.29063
+	name= get_dummy_7_3, dur_sec= 6.08939
+	name= get_dummy_7_4, dur_sec= 4.71634
+	name= get_dummy_7_5, dur_sec= 4.9569
+	name= get_dummy_7_6, dur_sec= 7.9795
+	name= get_dummy_7_7, dur_sec= 4.03762
+	name= get_dummy_7_8, dur_sec= 3.35692
+	name= get_dummy_7_9, dur_sec= 0.913193
+	total_dur_sec= 44.5094
+
+	name= get_dummy_6_0, dur_sec= 5.54186
+	name= get_dummy_6_1, dur_sec= 3.79781
+	name= get_dummy_6_2, dur_sec= 3.32088
+	name= get_dummy_6_3, dur_sec= 3.49246
+	name= get_dummy_6_4, dur_sec= 6.05865
+	name= get_dummy_6_5, dur_sec= 5.28972
+	name= get_dummy_6_6, dur_sec= 8.25026
+	name= get_dummy_6_7, dur_sec= 3.77896
+	name= get_dummy_6_8, dur_sec= 4.44342
+	name= get_dummy_6_9, dur_sec= 1.37482
+	total_dur_sec= 45.3488
+
+	name= get_dummy_2_0, dur_sec= 4.2729
+	name= get_dummy_2_1, dur_sec= 7.70252
+	name= get_dummy_2_2, dur_sec= 5.30662
+	name= get_dummy_2_3, dur_sec= 4.54278
+	name= get_dummy_2_4, dur_sec= 4.20407
+	name= get_dummy_2_5, dur_sec= 6.40814
+	name= get_dummy_2_6, dur_sec= 6.60152
+	name= get_dummy_2_7, dur_sec= 4.75545
+	name= get_dummy_2_8, dur_sec= 1.26712
+	name= get_dummy_2_9, dur_sec= 0.860573
+	total_dur_sec= 45.9217
+
+	name= put_dummy_1_0, dur_sec= 3.15924
+	name= put_dummy_1_1, dur_sec= 3.61795
+	name= put_dummy_1_2, dur_sec= 3.36656
+	name= put_dummy_1_3, dur_sec= 3.8384
+	name= put_dummy_1_4, dur_sec= 4.45358
+	name= put_dummy_1_5, dur_sec= 17.8219
+	name= put_dummy_1_6, dur_sec= 40.4123
+	name= put_dummy_1_7, dur_sec= 59.649
+	name= put_dummy_1_8, dur_sec= 45.3593
+	name= put_dummy_1_9, dur_sec= 51.1866
+	total_dur_sec= 232.865
+
+	name= put_dummy_1_0, dur_sec= 1.79748
+	name= put_dummy_1_1, dur_sec= 1.73236
+	name= put_dummy_1_2, dur_sec= 1.75179
+	name= put_dummy_1_3, dur_sec= 1.75316
+	name= put_dummy_1_4, dur_sec= 1.74696
+	name= put_dummy_1_5, dur_sec= 1.82003
+	name= put_dummy_1_6, dur_sec= 1.94677
+	name= put_dummy_1_7, dur_sec= 2.75469
+	name= put_dummy_1_8, dur_sec= 6.00299
+	name= put_dummy_1_9, dur_sec= 12.5029
+	total_dur_sec= 33.8092
+
+	name= put_dummy_1_0, dur_sec= 0.156322
+	name= put_dummy_1_1, dur_sec= 0.151478
+	name= put_dummy_1_2, dur_sec= 0.150651
+	name= put_dummy_1_3, dur_sec= 0.148302
+	name= put_dummy_1_4, dur_sec= 0.15143
+	name= put_dummy_1_5, dur_sec= 0.153526
+	name= put_dummy_1_6, dur_sec= 0.153986
+	name= put_dummy_1_7, dur_sec= 0.151996
+	name= put_dummy_1_8, dur_sec= 0.151225
+	name= put_dummy_1_9, dur_sec= 0.153091
+	total_dur_sec= 1.52201
+
+	name= put_dummy_1_0, dur_sec= 0.1574
+	name= put_dummy_1_1, dur_sec= 0.151432
+	name= put_dummy_1_2, dur_sec= 0.153627
+	name= put_dummy_1_3, dur_sec= 0.154942
+	name= put_dummy_1_4, dur_sec= 0.155105
+	name= put_dummy_1_5, dur_sec= 0.154723
+	name= put_dummy_1_6, dur_sec= 0.152256
+	name= put_dummy_1_7, dur_sec= 0.15326
+	name= put_dummy_1_8, dur_sec= 0.154324
+	name= put_dummy_1_9, dur_sec= 0.158483
+	total_dur_sec= 1.54555
+
+	name= get_dummy_1_0, dur_sec= 2.10256
+	name= get_dummy_1_1, dur_sec= 1.55622
+	name= get_dummy_1_2, dur_sec= 1.5829
+	name= get_dummy_1_3, dur_sec= 1.57981
+	name= get_dummy_1_4, dur_sec= 1.58776
+	name= get_dummy_1_5, dur_sec= 1.5772
+	name= get_dummy_1_6, dur_sec= 1.57319
+	name= get_dummy_1_7, dur_sec= 1.5913
+	name= get_dummy_1_8, dur_sec= 1.59108
+	name= get_dummy_1_9, dur_sec= 1.57728
+	total_dur_sec= 16.3193
+
+	name= put_dummy_1_0, dur_sec= 0.151637
+	name= put_dummy_1_1, dur_sec= 0.148533
+	name= put_dummy_1_2, dur_sec= 0.154376
+	name= put_dummy_1_3, dur_sec= 0.159103
+	name= put_dummy_1_4, dur_sec= 0.160009
+	name= put_dummy_1_5, dur_sec= 0.160034
+	name= put_dummy_1_6, dur_sec= 0.15692
+	name= put_dummy_1_7, dur_sec= 0.159623
+	name= put_dummy_1_8, dur_sec= 0.155579
+	name= put_dummy_1_9, dur_sec= 0.15889
+	total_dur_sec= 1.5647
+
+	name= put_dummy_1_0, dur_sec= 0.159781
+	name= put_dummy_1_1, dur_sec= 0.157433
+	name= put_dummy_1_2, dur_sec= 0.155764
+	name= put_dummy_1_3, dur_sec= 0.155901
+	name= put_dummy_1_4, dur_sec= 0.160881
+	name= put_dummy_1_5, dur_sec= 0.156559
+	name= put_dummy_1_6, dur_sec= 0.155403
+	name= put_dummy_1_7, dur_sec= 0.155556
+	name= put_dummy_1_8, dur_sec= 0.152943
+	name= put_dummy_1_9, dur_sec= 0.156654
+	total_dur_sec= 1.56687
+
+	name= put_dummy_1_0, dur_sec= 0.159912
+	name= put_dummy_1_1, dur_sec= 0.156921
+	name= put_dummy_1_2, dur_sec= 0.158081
+	name= put_dummy_1_3, dur_sec= 0.156723
+	name= put_dummy_1_4, dur_sec= 0.155869
+	name= put_dummy_1_5, dur_sec= 0.157257
+	name= put_dummy_1_6, dur_sec= 0.156219
+	name= put_dummy_1_7, dur_sec= 0.15419
+	name= put_dummy_1_8, dur_sec= 0.155426
+	name= put_dummy_1_9, dur_sec= 0.155243
+	total_dur_sec= 1.56584
+
+	name= put_dummy_1_0, dur_sec= 0.158204
+	name= put_dummy_1_1, dur_sec= 0.303457
+	name= put_dummy_1_2, dur_sec= 0.155797
+	name= put_dummy_1_3, dur_sec= 0.158999
+	name= put_dummy_1_4, dur_sec= 0.15565
+	name= put_dummy_1_5, dur_sec= 0.155912
+	name= put_dummy_1_6, dur_sec= 0.155237
+	name= put_dummy_1_7, dur_sec= 0.156134
+	name= put_dummy_1_8, dur_sec= 0.154694
+	name= put_dummy_1_9, dur_sec= 0.157799
+	total_dur_sec= 1.71188
 

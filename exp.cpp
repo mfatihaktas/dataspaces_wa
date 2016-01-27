@@ -212,7 +212,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
   return opt_map;
 }
 
-#define TEST_SIZE 256*1024*1024
+#define TEST_SIZE 25*1024*1024
 #define TEST_NDIM 1
 #define TEST_DATASIZE pow(TEST_SIZE, TEST_NDIM)
 #define TEST_VER 0

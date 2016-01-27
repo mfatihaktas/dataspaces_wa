@@ -12,32 +12,6 @@
 #include "profiler.h"
 #include "dataspaces_wa.h"
 
-int get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_)
-{
-  uint64_t dim_length[ndim];
-  
-  for(int i=0; i<ndim; i++) {
-    uint64_t lb = lb_[i];
-    if (lb < 0 || lb > gdim_[i]) {
-      log_(ERROR, "lb= " << lb << " is not feasible!")
-      return 0;
-    }
-    uint64_t ub = ub_[i];
-    if (ub < 0 || ub > gdim_[i] || ub < lb) {
-      log_(ERROR, "ub= " << ub << " is not feasible!")
-      return 0;
-    }
-    dim_length[i] = ub - lb;
-  }
-  
-  int volume = 1;
-  for(int i=0; i<ndim; i++) {
-    volume *= (int)dim_length[i];
-  }
-  
-  return volume;
-}
-
 std::string intf_to_ip(std::string intf)
 {
   int fd;
@@ -132,7 +106,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
   return opt_map;
 }
 // 10*1024*
-#define TEST_SIZE pow(12.5*1024*1024, (float)1/NDIM)
+#define TEST_SIZE pow(25*1024*1024, (float)1/NDIM)
 #define TEST_DATASIZE pow(TEST_SIZE, NDIM)
 #define TEST_VER 0
 #define TEST_SGDIM TEST_SIZE
@@ -224,8 +198,6 @@ void mput_test(int sleep_time_sec, int num_put, float inter_put_time_sec,
   }
   mput_log_file << "base_var_name= " << base_var_name << ", " << put_tprofiler.to_brief_str();
   mput_log_file.close();
-  
-  // patch_ds::debug_print(var_name, TEST_VER, sizeof(int), NDIM, gdim_, lb_, ub_, data_, patch::get_data_length(NDIM, gdim_, lb_, ub_) );
   
   patch::free_all<uint64_t>(3, gdim_, lb_, ub_);
   free(data_);

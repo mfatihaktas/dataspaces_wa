@@ -145,9 +145,10 @@ int MPBuffer::add_access(key_ver_pair kv)
     
     for (std::vector<key_ver_pair>::iterator it = kv_v.begin(); it != kv_v.end(); it++) {
       if (cache.size() < max_num_key_ver) {
-        if (cache.push(kv__p_id_map[*it], *it) )
+        if (cache.push(kv__p_id_map[*it], *it) ) {
           log_(ERROR, "cache.push failed for <" << it->first << ", " << it->second << "> \n"
                      << "\t cache= \n" << patch::pvec_to_str<key_ver_pair>(cache.get_content_v() ) )
+        }
       }
       else
         break;

@@ -50,8 +50,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
     if (c == -1) //Detect the end of the options.
       break;
     
-    switch (c)
-    {
+    switch (c) {
       case 0:
         opt_map["type"] = optarg;
         break;
@@ -85,9 +84,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
       std::cout << argv[optind++] << "\n";
   }
   // 
-  std::cout << "parse_opts:: opt_map= \n";
-  for (std::map<std::string, std::string>::iterator it = opt_map.begin(); it != opt_map.end(); ++it)
-    std::cout << it->first << " : " << it->second << "\n";
+  log_(INFO, "opt_map= \n" << patch::map_to_str<>(opt_map) )
   
   return opt_map;
 }

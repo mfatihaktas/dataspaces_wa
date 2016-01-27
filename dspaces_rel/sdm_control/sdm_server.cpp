@@ -63,7 +63,7 @@ int SDMServer::close() {
     log_(INFO, "closed server= \n" << to_str() )
     return 0;
   }
-  catch(std::exception& ex) {
+  catch (std::exception& ex) {
     log_(ERROR, "Exception=" << ex.what() )
     return 1;
   }
@@ -86,15 +86,16 @@ void SDMServer::init_listen()
       boost::shared_ptr<boost::asio::ip::tcp::socket> socket_ = boost::make_shared<boost::asio::ip::tcp::socket>(boost::ref(*io_service_) );
       boost::system::error_code ec;
       acceptor_->accept(*socket_, ec);
-      if (ec)
-        log_(ERROR, "ec= " << ec)
+      if (ec) {
+        log_(ERROR, "server= " << host_name << ", ec= " << ec)
+      }
       socket_v.push_back(socket_);
       log_(INFO, "server= " << host_name << " got connection...")
       // acceptor_->close();
       boost::thread t(&SDMServer::init_recv, this, socket_v.back() );
       // boost::thread t(&SDMServer::init_recv, this, socket);
     }
-    catch(std::exception& ex) {
+    catch (std::exception& ex) {
       log_(ERROR, "Exception=" << ex.what() )
     }
   }
@@ -109,9 +110,9 @@ void SDMServer::init_recv(boost::shared_ptr<boost::asio::ip::tcp::socket>& socke
       try {
         boost::asio::read(*socket_, boost::asio::buffer(msgsize_buffer, HEADER_MSGSIZE_LENGTH) );
       }
-      catch(boost::system::system_error& err) {
+      catch (boost::system::system_error& err) {
         // log_(ERROR, "err=" << err.what() )
-        log_(INFO, "server:" << host_name << "; client closed the conn.")
+        log_(WARNING, "server= " << host_name << "; client closed the conn.")
         // close();
         return;
       }
@@ -126,7 +127,7 @@ void SDMServer::init_recv(boost::shared_ptr<boost::asio::ip::tcp::socket>& socke
       // log_(INFO, "msg=" << msg)
       boost::thread t(&SDMServer::handle_recv, this, msg);
     }
-    catch(std::exception& ex) {
+    catch (std::exception& ex) {
       log_(ERROR, "Exception=" << ex.what() )
     }
   }

@@ -1,7 +1,7 @@
 #!/bin/bash
 echo $1 $2 $3
 
-LINTF="ib2" #"em2"
+LINTF="ib0" #"em2"
 JOINHOST_LIP="192.168.210.100" #"192.168.2.152"
 LPORT=6633
 

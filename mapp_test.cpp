@@ -10,31 +10,6 @@
 #include "profiler.h"
 #include "dataspaces_wa.h"
 
-uint64_t get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_)
-{
-  uint64_t dim_length[ndim];
-  
-  for (int i = 0; i < ndim; i++) {
-    uint64_t lb = lb_[i];
-    if (lb < 0 || lb > gdim_[i]) {
-      log_(ERROR, "lb= " << lb << " is not feasible!")
-      return 0;
-    }
-    uint64_t ub = ub_[i];
-    if (ub < 0 || ub > gdim_[i] || ub < lb) {
-      log_(ERROR, "ub= " << ub << " is not feasible!")
-      return 0;
-    }
-    dim_length[i] = ub - lb;
-  }
-  
-  int volume = 1;
-  for (int i = 0; i < ndim; i++)
-    volume *= (int)dim_length[i];
-  
-  return volume;
-}
-
 std::string intf_to_ip(std::string intf)
 {
   int fd;

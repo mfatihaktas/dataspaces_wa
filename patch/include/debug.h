@@ -12,12 +12,15 @@
 
 #define DEBUG_IB
 #ifdef DEBUG_IB
-#define log_(type, msg) \
-  LOG(type) << __func__ << ":: " << msg;
-  // std::cerr << #type " "<< __FILE__ << ":" << __LINE__ << "] " << __func__ << ":: " << msg << std::endl;
-  // std::clog << #type " "<< __FILE__ << ":" << __LINE__ << "] " << __func__ << ":: " << msg << std::endl;
+  #define log_(type, msg) \
+    LOG(type) << __func__ << ":: " << msg;
+    // std::cerr << #type " "<< __FILE__ << ":" << __LINE__ << "] " << __func__ << ":: " << msg << std::endl;
+    // std::clog << #type " "<< __FILE__ << ":" << __LINE__ << "] " << __func__ << ":: " << msg << std::endl;
+  #define log_s(stream, type, msg) \
+    stream << #type " "<< __FILE__ << ":" << __LINE__ << "] " << __func__ << ":: " << msg << "\n";
 #else
   #define log_(type, msg) ;
+  #define log_s(stream, type, msg) ;
 #endif // DEBUG_IB
 
 #ifndef _TEST_MACROS_
