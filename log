@@ -346,3 +346,39 @@
 	name= put_dummy_1_9, dur_sec= 0.157799
 	total_dur_sec= 1.71188
 
+	name= put_dummy_1_0, dur_sec= 0.157087
+	name= put_dummy_1_1, dur_sec= 0.300818
+	name= put_dummy_1_2, dur_sec= 0.152014
+	name= put_dummy_1_3, dur_sec= 0.157113
+	name= put_dummy_1_4, dur_sec= 0.155329
+	name= put_dummy_1_5, dur_sec= 0.154428
+	name= put_dummy_1_6, dur_sec= 0.153632
+	name= put_dummy_1_7, dur_sec= 0.154283
+	name= put_dummy_1_8, dur_sec= 0.151068
+	name= put_dummy_1_9, dur_sec= 0.153712
+	total_dur_sec= 1.68948
+
+	name= put_dummy_1_0, dur_sec= 0.161917
+	name= put_dummy_1_1, dur_sec= 0.309026
+	name= put_dummy_1_2, dur_sec= 0.156422
+	name= put_dummy_1_3, dur_sec= 0.154586
+	name= put_dummy_1_4, dur_sec= 0.155716
+	name= put_dummy_1_5, dur_sec= 0.154811
+	name= put_dummy_1_6, dur_sec= 0.156977
+	name= put_dummy_1_7, dur_sec= 0.157362
+	name= put_dummy_1_8, dur_sec= 0.155567
+	name= put_dummy_1_9, dur_sec= 0.154173
+	total_dur_sec= 1.71656
+
+	name= get_dummy_1_0, dur_sec= 4.82933
+	name= get_dummy_1_1, dur_sec= 1.55126
+	name= get_dummy_1_2, dur_sec= 3.36168
+	name= get_dummy_1_3, dur_sec= 0.53532
+	name= get_dummy_1_4, dur_sec= 0.513163
+	name= get_dummy_1_5, dur_sec= 0.780785
+	name= get_dummy_1_6, dur_sec= 1.91787
+	name= get_dummy_1_7, dur_sec= 1.2426
+	name= get_dummy_1_8, dur_sec= 0.50857
+	name= get_dummy_1_9, dur_sec= 0.504986
+	total_dur_sec= 15.7456
+

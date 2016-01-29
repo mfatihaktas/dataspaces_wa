@@ -102,6 +102,7 @@ int SDMSlave::put(bool notify, std::string key, unsigned int ver, COOR_T* lcoor_
 // Does not return data, returns 0 if data is available in local dspaces
 int SDMSlave::get(int app_id, bool blocking, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_)
 {
+  ++num_get_req;
   // log_(INFO, KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_) )
   std::vector<int> p_id_v;
   if (qtable_->query(key, ver, lcoor_, ucoor_, p_id_v) ) {
@@ -138,8 +139,11 @@ int SDMSlave::get(int app_id, bool blocking, std::string key, unsigned int ver, 
       return 1;
     }
   }
-  
-  log_s(sdm_log_f, INFO, "HIT; " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_) )
+  else {
+    ++num_hit;
+    log_s(sdm_log_f, INFO, "HIT; " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_) << "\n"
+                           << "\t hit_rate= " << (float)num_hit/num_get_req)
+  }
   return 0;
 }
 
@@ -454,6 +458,8 @@ int SDMMaster::put(bool notify, std::string key, unsigned int ver, COOR_T* lcoor
 // Does not return data, returns 0 if data is available in local dspaces
 int SDMMaster::get(int c_id, bool blocking, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_)
 {
+  int err;
+  ++num_get_req;
   log_(INFO, "c_id= " << c_id << ", " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_) )
   if (std::find(app_id_v.begin(), app_id_v.end(), c_id) == app_id_v.end() ) {
     log_(ERROR, "non-reged c_id= " << c_id)
@@ -482,10 +488,12 @@ int SDMMaster::get(int c_id, bool blocking, std::string key, unsigned int ver, C
     else
       return 1;
   }
-  log_s(sdm_log_f, INFO, "HIT; " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_) )
-  if (add_access(c_id, key, ver, lcoor_, ucoor_) ) {
-    log_(ERROR, "add_access failed; c_id= " << c_id << "," << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_) )
+  else {
+    ++num_hit;
+    log_s(sdm_log_f, INFO, "HIT; " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_) << "\n"
+                           << "\t hit_rate= " << (float)num_hit/num_get_req)
   }
+  return_if_err(add_access(c_id, key, ver, lcoor_, ucoor_), err)
   
   return 0;
 }
@@ -697,11 +705,12 @@ void SDMMaster::wait_for_move(int from_id, int to_id, std::map<std::string, std:
   
   std::vector<std::string>& moving_data_id_v = ds_id__moving_data_id_v_map[to_id];
   moving_data_id_v.erase(std::find(moving_data_id_v.begin(), moving_data_id_v.end(), data_id) );
-  
-  msg_map["type"] = SDM_SQUERY_REPLY;
-  if (send_cmsg(boost::lexical_cast<int>(to_id), msg_map) ) {
-    log_(ERROR, "send_cmsg failed for msg_map= \n" << patch::map_to_str<>(msg_map) )
-    return;
+  if (to_id != get_id() ) { // Slave
+    msg_map["type"] = SDM_SQUERY_REPLY;
+    if (send_cmsg(boost::lexical_cast<int>(to_id), msg_map) ) {
+      log_(ERROR, "send_cmsg failed for msg_map= \n" << patch::map_to_str<>(msg_map) )
+      return;
+    }
   }
 }
 
@@ -778,6 +787,7 @@ void SDMMaster::handle_wa_space_data_act(PREFETCH_DATA_ACT_T data_act_t, int to_
       return;
     }
     // TODO: choose from ds_id_v wisely -- considering proximity, load etc.
+    log_(INFO, "ds_id_v= " << patch::vec_to_str<>(ds_id_v) )
     int from_id = ds_id_v[0];
     boost::thread(&SDMMaster::wait_for_move, this, from_id, to_id, msg_map);
     

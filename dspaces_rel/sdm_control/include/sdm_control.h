@@ -13,6 +13,8 @@ class SDMCEntity { // SDM Control
     SDMNode sdm_node;
     patch_sdm::MsgCoder msg_coder;
     std::ofstream sdm_log_f;
+    
+    int num_get_req, num_hit;
   public:
     SDMCEntity(std::string type,
                int id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
@@ -20,7 +22,8 @@ class SDMCEntity { // SDM Control
     : sdm_node(type, false,
                id, lip, lport, joinhost_lip, joinhost_lport,
                rimsg_recv_cb, boost::bind(&SDMCEntity::handle_cmsg, this, _1) ),
-      sdm_log_f(("sdm_log_id_" + boost::lexical_cast<std::string>(id) ).c_str(), std::ios::out | std::ios::app)
+      sdm_log_f(("sdm_log_id_" + boost::lexical_cast<std::string>(id) ).c_str(), std::ios::out | std::ios::app),
+      num_get_req(0), num_hit(0)
     {
       if (!sdm_log_f.is_open() ) {
         log_(ERROR, "sdm_log_f is not open.")
@@ -143,9 +146,6 @@ class SDMMaster : public SDMSlave {
     int num_slaves;
     patch::syncer<unsigned int> sdm_m_syncer;
     patch::thread_safe_map<int, std::vector<std::string> > ds_id__moving_data_id_v_map;
-    
-    // boost::mutex handle_sdm_squery__handle_wa_space_data_act
-    // boost::lock_guard<boost::mutex> guard(this->mutex);
   public:
     SDMMaster(DATA_ID_T data_id_t,
               int ds_id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,

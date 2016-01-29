@@ -183,7 +183,7 @@ void get_emprical_dist(size_t alphabet_size, std::vector<ACC_T>& acc_v, std::map
   for (std::vector<ACC_T>::iterator it = acc_v.begin(); it != acc_v.end(); it++) {
     if (acc__emp_prob_map.count(*it) == 0)
       acc__emp_prob_map[*it] = 0;
-    acc__emp_prob_map[*it] += (float) 1 / num_acc;
+    acc__emp_prob_map[*it] += (float)1/num_acc;
   }
 }
 
@@ -426,7 +426,7 @@ void test_rand_shuffle_train()
       accuracy_v.clear();
       sim_prefetch_accuracy<MAlgo>(**it, 1, acc_step_v, hit_rate, accuracy_v);
       hit_rate_v_v[algo_id].push_back(hit_rate);
-      run_i_v_v[algo_id].push_back(2*i);
+      run_i_v_v[algo_id].push_back(i);
       // (*it)->reset();
     }
   
@@ -434,7 +434,7 @@ void test_rand_shuffle_train()
       accuracy_v.clear();
       sim_prefetch_accuracy<MMAlgo>(**it, 1, acc_step_v, hit_rate, accuracy_v);
       hit_rate_v_v[algo_id].push_back(hit_rate);
-      run_i_v_v[algo_id].push_back(2*i);
+      run_i_v_v[algo_id].push_back(i);
       // (*it)->reset();
     }
   }
@@ -542,7 +542,7 @@ void test_fixed_train()
       sim_prefetch_accuracy<MAlgo>(**it, 1, acc_step_v, hit_rate, accuracy_v);
       // std::cout << "title= " << title_v[algo_id] << ", hit_rate= " << hit_rate << "\n";
       hit_rate_v_v[algo_id].push_back(hit_rate);
-      run_i_v_v[algo_id].push_back(2*i);
+      run_i_v_v[algo_id].push_back(i);
     }
 
     for (std::vector<boost::shared_ptr<MMAlgo> >::iterator it = mmalgo_v.begin(); it != mmalgo_v.end(); it++, algo_id++) {
@@ -551,7 +551,7 @@ void test_fixed_train()
       sim_prefetch_accuracy<MMAlgo>(**it, 1, acc_step_v, hit_rate, accuracy_v);
       // std::cout << "title= " << title_v[algo_id] << ", hit_rate= " << hit_rate << "\n";
       hit_rate_v_v[algo_id].push_back(hit_rate);
-      run_i_v_v[algo_id].push_back(2*i);
+      run_i_v_v[algo_id].push_back(i);
     }
   }
   

@@ -143,16 +143,16 @@ int MPBuffer::add_access(key_ver_pair kv)
               << "\t cache= \n" << patch::pvec_to_str<key_ver_pair>(cache.get_content_v() ) << "\n"
               << ">> Will prefetch kv_v= \n" << patch::pvec_to_str<key_ver_pair>(kv_v) << "\n";
     
-    for (std::vector<key_ver_pair>::iterator it = kv_v.begin(); it != kv_v.end(); it++) {
-      if (cache.size() < max_num_key_ver) {
-        if (cache.push(kv__p_id_map[*it], *it) ) {
-          log_(ERROR, "cache.push failed for <" << it->first << ", " << it->second << "> \n"
-                     << "\t cache= \n" << patch::pvec_to_str<key_ver_pair>(cache.get_content_v() ) )
-        }
-      }
-      else
-        break;
-    }
+    // for (std::vector<key_ver_pair>::iterator it = kv_v.begin(); it != kv_v.end(); it++) {
+    //   if (cache.size() < max_num_key_ver) {
+    //     if (cache.push(kv__p_id_map[*it], *it) ) {
+    //       log_(ERROR, "cache.push failed for <" << it->first << ", " << it->second << "> \n"
+    //                 << "\t cache= \n" << patch::pvec_to_str<key_ver_pair>(cache.get_content_v() ) )
+    //     }
+    //   }
+    //   else
+    //     break;
+    // }
   }
   
   // Call for prefetching per access
@@ -162,8 +162,18 @@ int MPBuffer::add_access(key_ver_pair kv)
   // Idea: A failure handler here fired by the action handler can be used to correct the cache content
   if (w_prefetch) {
     for (std::vector<key_ver_pair>::iterator it = kv_v.begin(); it != kv_v.end(); it++) {
-      if (handle_mpbuffer_data_act_cb != 0)
+      if (handle_mpbuffer_data_act_cb != 0) {
         handle_mpbuffer_data_act_cb(PREFETCH_DATA_ACT_PREFETCH, ds_id, *it);
+        
+        if (cache.size() < max_num_key_ver) {
+          if (cache.push(kv__p_id_map[*it], *it) ) {
+            log_(ERROR, "cache.push failed for <" << it->first << ", " << it->second << "> \n"
+                       << "\t cache= \n" << patch::pvec_to_str<key_ver_pair>(cache.get_content_v() ) )
+          }
+        }
+        else
+          break;
+      }
     }
   }
     
@@ -435,10 +445,10 @@ int MWASpace::put(int p_id, std::string key, unsigned int ver, COOR_T* lcoor_, C
     log_(ERROR, "already in ds_id= " << ds_id << "; " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_) )
     return 1;
   }
-  else if (ds_id == -1 && contains('*', kv) ) {
-    log_(ERROR, "already in space; " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_) )
-    return 1;
-  }
+  // else if (ds_id == -1 && contains('*', kv) ) {
+  //   log_(ERROR, "already in space; " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_) )
+  //   return 1;
+  // }
   
   if (ds_id == -1) { // New data put
     if (!app_id__ds_id_map.contains(p_id) )
@@ -458,6 +468,13 @@ int MWASpace::put(int p_id, std::string key, unsigned int ver, COOR_T* lcoor_, C
     kv_v.push_back(kv);
   }
   ds_id__kv_map[ds_id]->push_back(kv);
+  // log_(INFO, "ds_id__kv_map= \n")
+  // for (std::map<int, boost::shared_ptr<patch::thread_safe_vector<key_ver_pair> > >::iterator map_it = ds_id__kv_map.begin(); map_it != ds_id__kv_map.end(); map_it++) {
+  //   std::cout << "ds_id= " << map_it->first << ", kv= ";
+  //   for (std::vector<key_ver_pair>::iterator it = (map_it->second)->begin(); it != (map_it->second)->end(); it++) 
+  //     std::cout << "<" << it->first << ", " << it->second << ">, ";
+  //   std::cout << "\n";
+  // }
   
   return 0;
 }
