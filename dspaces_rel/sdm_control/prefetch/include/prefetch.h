@@ -222,10 +222,10 @@ class MPBuffer { // Markov Prefetching
     // Note: Mapping between p_id and <key, ver> will be given to MPBuffer
     int reg_key_ver(int p_id, key_ver_pair kv);
     
-    int del(key_ver_pair kv);
-    int handle_data_del(key_ver_pair kv);
     int add_access(key_ver_pair kv);
     int get_to_prefetch(int& num_keys, std::vector<key_ver_pair>& kv_v);
+    int del(key_ver_pair kv);
+    int handle_data_del(key_ver_pair kv);
     bool contains(key_ver_pair kv);
     std::vector<key_ver_pair> get_kv_v();
     

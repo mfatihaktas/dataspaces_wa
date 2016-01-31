@@ -127,13 +127,12 @@ elif [ $1  = 'mg' ]; then
       --num_putget=$NUM_PUTGET --inter_time_sec=0 --sleep_time_sec=0
   fi
 elif [ $1  = 'map' ]; then
-  if [ -a log ]; then
-    rm log mput_log
+  if [ -a mput.log ]; then
+    rm log mput.log
   fi
   
-  for i in `seq 1 $NUM_CLIENT`;
-  do
-    export GLOG_logtostderr=1
+  export GLOG_logtostderr=1
+  for i in `seq 1 $NUM_CLIENT`; do
     ./mput_mget_test --type="mput" --cl_id=$i --base_client_id=$(($2*$NUM_CLIENT)) --num_peer=$NUM_PEER \
       --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=$((${RI_MANAGER_LCONTROL_LPORT_LIST[$2] } + $i)) \
       --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2] } --join_lcontrol_lport=${RI_MANAGER_LCONTROL_LPORT_LIST[$2] } \
@@ -144,13 +143,12 @@ elif [ $1  = 'map' ]; then
   echo "killing..."
   pkill -f mput_mget_test
 elif [ $1  = 'mag' ]; then
-  if [ -a mget_log ]; then
-    rm mget_log
+  if [ -a mget.log ]; then
+    rm mget.log
   fi
   
-  for i in `seq 1 $NUM_CLIENT`;
-  do
-    export GLOG_logtostderr=1
+  export GLOG_logtostderr=1
+  for i in `seq 1 $NUM_CLIENT`; do
     ./mput_mget_test --type="mget" --cl_id=$i --base_client_id=$(($2*$NUM_CLIENT)) --num_peer=$NUM_PEER \
       --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=$((${RI_MANAGER_LCONTROL_LPORT_LIST[$2] } + $i)) \
       --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2] } --join_lcontrol_lport=${RI_MANAGER_LCONTROL_LPORT_LIST[$2] } \

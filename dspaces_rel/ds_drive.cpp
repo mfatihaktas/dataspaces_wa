@@ -125,11 +125,11 @@ int DSDriver::sync_put(const char* var_name, unsigned int ver, int size,
   }
   // refresh_last_lock_time();
   
-  int result;
+  int r;
   {
     // boost::lock_guard<boost::mutex> guard(dspaces_write_mtx);
-    result = dspaces_put(var_name, ver, size,
-                         ndim, lb_, ub_, data_);
+    r = dspaces_put(var_name, ver, size,
+                    ndim, lb_, ub_, data_);
   }
   dspaces_put_sync();
   
@@ -145,7 +145,7 @@ int DSDriver::sync_put(const char* var_name, unsigned int ver, int size,
     this->sync_put_flag = false;
   }
   
-  return result;
+  return r;
 }
 
 int DSDriver::get_(const char* var_name, unsigned int ver, int size,
@@ -175,14 +175,14 @@ int DSDriver::get_(const char* var_name, unsigned int ver, int size,
     lock_on_read(var_name);
   }
   
-  int result;
+  int r;
   {
     // log_(INFO, "locking for var_name= " << var_name)
     // boost::lock_guard<boost::mutex> guard(dspaces_write_mtx);
     // boost::lock_guard<boost::mutex> guard2(dspaces_read_mtx);
     // log_(INFO, "will get var_name= " << var_name)
-    result = dspaces_get(var_name, ver, size,
-                         ndim, lb_, ub_, data_);
+    r = dspaces_get(var_name, ver, size,
+                    ndim, lb_, ub_, data_);
     // log_(INFO, "got var_name= " << var_name)
     // log_(INFO, "dspaces_get done for var_name= " << var_name)
   }
@@ -198,7 +198,7 @@ int DSDriver::get_(const char* var_name, unsigned int ver, int size,
     this->get__flag = false;
   }
   
-  return result;
+  return r;
 }
 
 int DSDriver::get(const char* var_name, unsigned int ver, int size,
@@ -247,13 +247,13 @@ int DSDriver::get(const char* var_name, unsigned int ver, int size,
     lock_on_read(var_name);
   }
   
-  int result;
+  int r;
   {
     
     // log_(INFO, "will get var_name= " << var_name)
     // boost::lock_guard<boost::mutex> guard(dspaces_read_mtx);
-    result = dspaces_get(var_name, ver, size,
-                         ndim, lb_, ub_, data_);
+    r = dspaces_get(var_name, ver, size,
+                    ndim, lb_, ub_, data_);
     // log_(INFO, "got var_name= " << var_name)
     // log_(INFO, "dspaces_get done for var_name= " << var_name)
     
@@ -270,7 +270,7 @@ int DSDriver::get(const char* var_name, unsigned int ver, int size,
     this->get_flag = false;
   }
   
-  return result;
+  return r;
 }
 
 int DSDriver::sync_put_without_lock(const char* var_name, unsigned int ver, int size,
@@ -278,13 +278,22 @@ int DSDriver::sync_put_without_lock(const char* var_name, unsigned int ver, int 
 {
   // dspaces_define_gdim(var_name, ndim, gdim_);
   
-  int result = dspaces_put(var_name, ver, size,
-                           ndim, lb_, ub_, data_);
-  dspaces_put_sync();
+  int r = dspaces_put(var_name, ver, size,
+                      ndim, lb_, ub_, data_);
+  r = dspaces_put_sync();
   
   unlock_on_write(var_name);
   
-  return result;
+  return r;
+}
+
+int DSDriver::del(const char* var_name, unsigned int ver)
+{
+  lock_on_write(var_name);
+  int r = dspaces_remove(var_name, ver);
+  unlock_on_write(var_name);
+  
+  return r;
 }
 
 void DSDriver::lock_on_write(const char* var_name)
@@ -392,19 +401,19 @@ void DSDriver::do_timing(const char* called_from)
   }
 }
 
-time_t DSDriver::get_inter_lock_time(struct timeval *result)
+time_t DSDriver::get_inter_lock_time(struct timeval *r)
 {
   struct timeval time_val;
   if (gettimeofday(&time_val, NULL) ) {
     log_(ERROR, "gettimeofday returned non-zero.")
     return 1;
   }
-  timeval_subtract(result, &time_val, &last_lock_time);
+  timeval_subtract(r, &time_val, &last_lock_time);
   
   return 0;
 }
 
-void DSDriver::timeval_subtract(struct timeval *result, struct timeval *x, struct timeval *y)
+void DSDriver::timeval_subtract(struct timeval *r, struct timeval *x, struct timeval *y)
 {
   // Perform the carry for the later subtraction by updating y.
   if (x->tv_usec < y->tv_usec) {
@@ -419,8 +428,8 @@ void DSDriver::timeval_subtract(struct timeval *result, struct timeval *x, struc
   }
 
   //Compute the time remaining to wait. tv_usec is certainly positive.
-  result->tv_sec = x->tv_sec - y->tv_sec;
-  result->tv_usec = x->tv_usec - y->tv_usec;
+  r->tv_sec = x->tv_sec - y->tv_sec;
+  r->tv_usec = x->tv_usec - y->tv_usec;
 }
 
 int DSDriver::refresh_last_lock_time()

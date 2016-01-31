@@ -82,7 +82,7 @@ LIBDIR = lib
 .PHONY: all lib lclean clean submake_dspaces_rel
 
 # deneme exp mput_mget_test mapp_test
-APPS := exp mput_mget_test mapp_test
+APPS := exp mput_mget_test
 all: submake_dspaces_rel ${APPS}
 
 submake_dspaces_rel:

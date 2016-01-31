@@ -277,7 +277,7 @@ void put_test(std::string var_name, WADSDriver& wads_driver)
 int main(int argc , char **argv)
 {
   std::string temp;
-  google::InitGoogleLogging("exp");
+  google::InitGoogleLogging(argv[0] );
   // 
   std::map<std::string, std::string> opt_map = parse_opts(argc, argv);
   

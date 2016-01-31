@@ -686,7 +686,7 @@ void SDMMaster::handle_sdm_squery(std::map<std::string, std::string> msg_map)
       }
     }
   }
-
+  
   patch::free_all<COOR_T>(2, lcoor_, ucoor_);
 }
 

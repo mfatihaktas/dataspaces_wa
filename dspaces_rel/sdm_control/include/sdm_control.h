@@ -22,7 +22,7 @@ class SDMCEntity { // SDM Control
     : sdm_node(type, false,
                id, lip, lport, joinhost_lip, joinhost_lport,
                rimsg_recv_cb, boost::bind(&SDMCEntity::handle_cmsg, this, _1) ),
-      sdm_log_f(("sdm_log_id_" + boost::lexical_cast<std::string>(id) ).c_str(), std::ios::out | std::ios::app),
+      sdm_log_f(("sdm_id_" + boost::lexical_cast<std::string>(id) + ".log").c_str(), std::ios::out | std::ios::app),
       num_get_req(0), num_hit(0)
     {
       if (!sdm_log_f.is_open() ) {

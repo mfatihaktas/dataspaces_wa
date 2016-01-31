@@ -53,6 +53,7 @@ const std::string GET = "g";
 const std::string GET_REPLY = "gr";
 const std::string BLOCKING_GET = "bg";
 const std::string BLOCKING_GET_REPLY = "bgr";
+const std::string GET_DONE = "gd";
 const std::string PUT = "p";
 const std::string PUT_REPLY = "pr";
 const std::string DEL = "d";
@@ -97,6 +98,7 @@ class RIManager {
     boost::shared_ptr<RFPManager> rfp_manager_;
     patch::thread_safe_map<int, boost::shared_ptr<trans_info> > ds_id__trans_info_map;
     patch::thread_safe_map<unsigned int, boost::shared_ptr<data_info> > data_id_hash__data_info_map;
+    patch::thread_safe_vector<std::string> busy_data_id_v;
     
     patch::syncer<unsigned int> ri_syncer;
     
@@ -114,6 +116,7 @@ class RIManager {
     
     void handle_app_msg(std::map<std::string, std::string> msg_map);
     void handle_get(bool blocking, int cl_id, std::map<std::string, std::string> get_map);
+    int handle_get_done(int cl_id, std::map<std::string, std::string> msg_map);
     void handle_put(int p_id, std::map<std::string, std::string> put_map);
     // void handle_del(key_ver_pair kv);
     
@@ -127,7 +130,7 @@ class RIManager {
     
     void handle_dm_act(std::map<std::string, std::string> dm_act_map);
     void handle_dm_move(std::map<std::string, std::string> msg_map);
-    void handle_dm_del(std::map<std::string, std::string> msg_map);
+    int handle_dm_del(std::map<std::string, std::string> msg_map);
 };
 
 /***********************************  MSRIManager : RIManager  ************************************/

@@ -84,26 +84,6 @@ int MPBuffer::reg_key_ver(int p_id, key_ver_pair kv)
 }
 
 // ----------------------------------------  operational  --------------------------------------- //
-int MPBuffer::del(key_ver_pair kv)
-{
-  if (!kv__p_id_map.contains(kv) ) {
-    log_(ERROR, "kv__p_id_map does not contain; non-registered " << KV_TO_STR(kv.first, kv.second) )
-    return 1;
-  }
-  
-  int p_id = kv__p_id_map[kv];
-  if (cache.del(p_id, kv) ) {
-    log_(WARNING, "cache.del failed for p_id= " << p_id << ", " << KV_TO_STR(kv.first, kv.second) )
-    return 1;
-  }
-  
-  // Note: Causes duplicate call on handle_mpbuffer_data_act_cb for deling the same data since cache.del does it already
-  // if (handle_mpbuffer_data_act_cb != 0)
-  //   handle_mpbuffer_data_act_cb(PREFETCH_DATA_ACT_DEL, ds_id, kv);
-  
-  return 0;
-}
-
 int MPBuffer::add_access(key_ver_pair kv)
 {
   log_(INFO, "started; " << KV_TO_STR(kv.first, kv.second) )
@@ -112,9 +92,9 @@ int MPBuffer::add_access(key_ver_pair kv)
     return 1;
   }
   
-  if (del(kv) )
+  if (del(kv) ) {
     log_(WARNING, "del failed; " << KV_TO_STR(kv.first, kv.second) )
-  
+  }
   // acced_kv_v.push_back(kv);
   // app_id__acced_kv_v_map[p_id].push_back(kv);
   
@@ -234,9 +214,25 @@ int MPBuffer::get_to_prefetch(int& num_app, std::vector<key_ver_pair>& kv_v)
   }
 }
 
-bool MPBuffer::contains(key_ver_pair kv) { return cache.contains(kv); }
-
-std::vector<key_ver_pair> MPBuffer::get_kv_v() { return cache.get_content_v(); }
+int MPBuffer::del(key_ver_pair kv)
+{
+  if (!kv__p_id_map.contains(kv) ) {
+    log_(ERROR, "kv__p_id_map does not contain; non-registered " << KV_TO_STR(kv.first, kv.second) )
+    return 1;
+  }
+  
+  int p_id = kv__p_id_map[kv];
+  if (cache.del(p_id, kv) ) {
+    log_(WARNING, "cache.del failed for p_id= " << p_id << ", " << KV_TO_STR(kv.first, kv.second) )
+    return 1;
+  }
+  
+  // Note: Causes duplicate call on handle_mpbuffer_data_act_cb for deling the same data since cache.del does it already
+  // if (handle_mpbuffer_data_act_cb != 0)
+  //   handle_mpbuffer_data_act_cb(PREFETCH_DATA_ACT_DEL, ds_id, kv);
+  
+  return 0;
+}
 
 int MPBuffer::handle_data_del(key_ver_pair kv)
 { 
@@ -248,6 +244,10 @@ int MPBuffer::handle_data_del(key_ver_pair kv)
   if (handle_mpbuffer_data_act_cb != 0)
     handle_mpbuffer_data_act_cb(PREFETCH_DATA_ACT_DEL, ds_id, kv);
 }
+
+bool MPBuffer::contains(key_ver_pair kv) { return cache.contains(kv); }
+
+std::vector<key_ver_pair> MPBuffer::get_kv_v() { return cache.get_content_v(); }
 
 void MPBuffer::sim_prefetch_accuracy(std::vector<int> p_id_v, std::vector<key_ver_pair> kv_v, 
                                      float& hit_rate, std::vector<char>& accuracy_v)

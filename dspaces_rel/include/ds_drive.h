@@ -64,6 +64,7 @@ class DSDriver
             int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
     int sync_put_without_lock(const char* var_name, unsigned int ver, int size,
                               int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
+    int del(const char* var_name, unsigned int ver);
     void lock_on_write(const char* var_name);
     void unlock_on_write(const char* var_name);
     void lock_on_read(const char* var_name);

@@ -97,6 +97,7 @@ int WADSDriver::put(std::string key, unsigned int ver, std::string data_type,
 int WADSDriver::get(bool blocking, std::string key, unsigned int ver, std::string data_type,
                     int size, int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
 {
+  int err;
   log_(INFO, "started for " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
   // 
   std::map<std::string, std::string> msg_map;
@@ -106,10 +107,7 @@ int WADSDriver::get(bool blocking, std::string key, unsigned int ver, std::strin
     msg_map["type"] = GET;
   msg_map["cl_id"] = boost::lexical_cast<std::string>(_app_id);
   msg_coder.encode_msg_map(msg_map, key, ver, data_type, size, ndim, gdim_, lb_, ub_);
-  if (lsdm_node_->send_msg_to_master(PACKET_RIMSG, msg_map) ) {
-    log_(ERROR, "lsdm_node_->send_msg_to_master failed; msg_map= " << patch::map_to_str<>(msg_map) )
-    return 1;
-  }
+  return_if_err(lsdm_node_->send_msg_to_master(PACKET_RIMSG, msg_map), err)
   // 
   // usleep(1000);
   std::string data_id = patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_);
@@ -132,6 +130,9 @@ int WADSDriver::get(bool blocking, std::string key, unsigned int ver, std::strin
     return 1;
   }
   data_id__ds_id_map.del(data_id);
+  // 
+  msg_map["type"] = GET_DONE;
+  return_if_err(lsdm_node_->send_msg_to_master(PACKET_RIMSG, msg_map), err)
   
   return 0;
 }

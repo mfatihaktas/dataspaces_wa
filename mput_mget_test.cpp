@@ -51,8 +51,8 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
   
   while (1) {
     int option_index = 0;
-    c = getopt_long (argc, argv, "s",
-                     long_options, &option_index);
+    c = getopt_long(argc, argv, "s",
+                    long_options, &option_index);
 
     if (c == -1) // Detect the end of the options.
       break;
@@ -129,7 +129,7 @@ void mget_test(int sleep_time_sec, int num_get, float inter_get_time_sec,
   
   sleep(sleep_time_sec);
   
-  std::ofstream mget_log_file("mget_log", std::ios::out | std::ios::app);
+  std::ofstream mget_log_file("mget.log", std::ios::out | std::ios::app);
   if (!mget_log_file.is_open() ) {
     log_(ERROR, "mget_log_file is not open.")
     return;
@@ -143,6 +143,7 @@ void mget_test(int sleep_time_sec, int num_get, float inter_get_time_sec,
       log_file << "wads_driver.get failed for var_name= " << var_name;
       return;
     }
+    log_(INFO, "got; " << KV_TO_STR(var_name, TEST_VER) )
     get_tprofiler.end_event(i);
     
     sleep(inter_get_time_sec);
@@ -179,7 +180,7 @@ void mput_test(int sleep_time_sec, int num_put, float inter_put_time_sec,
   
   sleep(sleep_time_sec);
   
-  std::ofstream mput_log_file("mput_log", std::ios::out | std::ios::app);
+  std::ofstream mput_log_file("mput.log", std::ios::out | std::ios::app);
   if (!mput_log_file.is_open() ) {
     log_(ERROR, "mput_log_file is not open.")
     return;
@@ -192,6 +193,7 @@ void mput_test(int sleep_time_sec, int num_put, float inter_put_time_sec,
       log_file << "wads_driver.put failed for var_name= " << var_name;
       return;
     }
+    log_(INFO, "put; " << KV_TO_STR(var_name, TEST_VER) )
     put_tprofiler.end_event(i);
     
     sleep(inter_put_time_sec);
@@ -206,11 +208,15 @@ void mput_test(int sleep_time_sec, int num_put, float inter_put_time_sec,
 int main(int argc , char **argv)
 {
   std::string temp;
-  google::InitGoogleLogging("exp");
+  // FLAGS_logtostderr = true;
+  // FLAGS_minloglevel = google::INFO;
+  // FLAGS_log_dir = "/cac/u01/mfa51/Desktop/dataspaces_wa";
+  // google::SetLogDestination(google::GLOG_INFO, "/cac/u01/mfa51/Desktop/dataspaces_wa");
+  google::InitGoogleLogging(argv[0] );
   // 
   std::map<std::string, std::string> opt_map = parse_opts(argc, argv);
   
-  std::ofstream log_file("log", std::ios::out | std::ios::app);
+  std::ofstream log_file("main.log", std::ios::out | std::ios::app);
   if (!log_file.is_open() ) {
     log_(ERROR, "log_file is not open.")
     return 1;
@@ -246,7 +252,7 @@ int main(int argc , char **argv)
   else
     log_(ERROR, "unknown type= " << opt_map["type"] )
   // 
-  std::cout << "putget_tprofiler= \n" << putget_tprofiler.to_str();
+  log_(INFO, "putget_tprofiler= \n" << putget_tprofiler.to_str() )
   log_file << putget_tprofiler.to_str() << "\n";
   log_file.close();
   // 
