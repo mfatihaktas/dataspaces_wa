@@ -156,6 +156,11 @@ namespace patch {
         return v.end();
       }
       
+      void clear() {
+        boost::lock_guard<boost::mutex> guard(this->mutex);
+        v.clear();
+      }
+      
       std::string to_str() {
         std::stringstream ss;
         for (typename std::vector<T>::iterator it = v.begin(); it != v.end(); it++) {
@@ -205,6 +210,11 @@ namespace patch {
       size_t size() {
         boost::lock_guard<boost::mutex> guard(this->mutex);
         return map.size();
+      }
+      
+      void clear() {
+        boost::lock_guard<boost::mutex> guard(this->mutex);
+        map.clear();
       }
       
       std::string to_str() {

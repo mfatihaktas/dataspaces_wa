@@ -82,21 +82,20 @@ TMPFS_DIR_LIST=( $TMPFS_DIR"/put" $TMPFS_DIR"/get" )
 PKILL=/usr/bin/pkill
 if [ -z "$2" ]; then
   echo "which site? 0 | 1"
-elif [ $1  = 'mp' ]; then
+elif [[ $1  == 'mp' || $1  == 'mg' ]]; then
+  TYPE="mput"
+  [ $1  = 'mp' ] && rm *.log || echo
+  [ $1  = 'mg' ] && TYPE="mget" || echo
   export GLOG_logtostderr=1
   
   CNODES=(${DSPACESWA_CNODE_LIST[$2]//,/ } )
-  # for i in "${CNODES[@]}"; do
-  #   echo $i
-  # done
-  # rm *.log
   for i in `seq 1 $NUM_CLIENT`; do
     NODE=${CNODES[$(($(($i - 1)) % ${#CNODES[@]} )) ] }
     LOG_F="mput_s_"$2"_cid_"$i"_"$NODE".log"
-    echo "will run dspaces_wa client $i on $NODE"
+    echo "will run dspaces_wa client $i on $NODE; TYPE= $TYPE"
     
     $MPIRUN -x LD_LIBRARY_PATH -x GLOG_logtostderr -npernode 1 -host $NODE \
-      $DSPACESWA_DIR/mput_mget_test --type="mput" --cl_id=$i --base_client_id=$(($2*$NUM_CLIENT)) --num_peer=$NUM_PEER \
+      $DSPACESWA_DIR/mput_mget_test --type=$TYPE --cl_id=$i --base_client_id=$(($2*$NUM_CLIENT)) --num_peer=$NUM_PEER \
         --lcontrol_lintf=${LCONTROL_LINTF_LIST[$2]} --lcontrol_lport=$((${RI_MANAGER_LCONTROL_LPORT_LIST[$2]} + $i)) \
         --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2]} --join_lcontrol_lport=${RI_MANAGER_LCONTROL_LPORT_LIST[$2]} \
         --num_putget=$NUM_PUTGET --inter_time_sec=0 --sleep_time_sec=0 > $LOG_F 2>&1 < /dev/null &
@@ -106,7 +105,7 @@ elif [ $1  = 'r' ]; then
     rm srv.lck
     rm conf # dataspaces_server cannot overwrite this so before every new run this should be removed
   fi
-  # rm *.log
+  
   # $MPIRUN -npernode 1 ${DS_NODE_LIST[$2]} \
   #   $DSPACES_DIR/bin/dataspaces_server --server ${NUM_DS_NODE_LIST[$2]} \
   #                                     --cnodes $((${NUM_DSPACESWA_CLIENT_LIST[$2]} + 1)) &

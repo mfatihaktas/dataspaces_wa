@@ -155,9 +155,11 @@ elif [ $1  = 'tr' ]; then #scp only source code
     rsync -avz --exclude-from=$TBOOTH_DIR/.gitignore $TBOOTH_DIR jchoi@$BOOTH_IP:$BOOTH_DIR
   fi
 elif [ $1  = 'fr' ]; then #scp only source code
-  if [ $2 = 'k' ]; then
+  if [ $2 = 'd' ]; then
+    scp mfa51@spring.rutgers.edu:~/Desktop/dataspaces_wa/dspaces_rel/sdm_control/prefetch/*.png ~/Desktop
+  elif [ $2 = 'k' ]; then
     rsync -avz --exclude-from=$TKID_DIR/.gitignore maktas7@kid42.cc.gatech.edu:$FKID_DIR $TKID_DIR 
-  fi  
+  fi
 else
   echo "Argument did not match !"
 fi

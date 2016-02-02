@@ -9,7 +9,7 @@ template <typename ACC_T, typename T>
 class Cache {
   typedef boost::function<void(T) > func_handle_cache_data_del_cb;
   private:
-    int cache_size;
+    int max_size;
     func_handle_cache_data_del_cb handle_data_del_cb;
     
     boost::mutex mutex;
@@ -30,8 +30,8 @@ class Cache {
     // patch::not_thread_safe_map<ACC_T, int> fixed_acc_del_num_map;
     
   public:
-    Cache(int cache_size, func_handle_cache_data_del_cb handle_data_del_cb = 0)
-    : cache_size(cache_size), handle_data_del_cb(handle_data_del_cb)
+    Cache(int max_size, func_handle_cache_data_del_cb handle_data_del_cb = 0)
+    : max_size(max_size), handle_data_del_cb(handle_data_del_cb)
     {
       // log_(INFO, "constructed.")
     }
@@ -41,7 +41,7 @@ class Cache {
     std::string to_str()
     {
       std::stringstream ss;
-      ss << "cache_size= " << cache_size << "\n"
+      ss << "max_size= " << max_size << "\n"
          << "acc_num_map= \n" << acc_num_map.to_str() << "\n"
         // << "fixed_acc_num_map= \n" << fixed_acc_num_map.to_str() << "\n"
         // << "fixed_acc_del_num_map= \n" << fixed_acc_del_num_map.to_str() << "\n"
@@ -73,13 +73,21 @@ class Cache {
       return ss.str();
     }
     
+    int reset() {
+      cache.clear();
+      e_acc_map.clear();
+      acc_num_map.clear();
+      
+      return 0;
+    }
+    
     int push(ACC_T acc, T e) {
       if (contains(e) )
         return 1;
       
       // boost::lock_guard<boost::mutex> guard(mutex);
-      if (cache.size() == cache_size) {
-        // log_(INFO, "cache.size() == cache_size; cache_content= " << patch::pdeque_to_str<>(cache) )
+      if (cache.size() == max_size) {
+        // log_(INFO, "cache.size() == max_size; cache_content= " << patch::pdeque_to_str<>(cache) )
         pop();
       }
       
@@ -127,7 +135,7 @@ class Cache {
     int del(ACC_T acc, T e) {
       int err;
       // return_err_if_ret_cond_flag(contains(e), err, ==, 0, 1)
-      if (!contains(e))
+      if (!contains(e) )
         return 1;
       
       if (handle_data_del_cb != 0)
@@ -154,7 +162,12 @@ class Cache {
     
     int get_available_size() {
       boost::lock_guard<boost::mutex> guard(mutex);
-      return (cache_size - cache.size() );
+      return (max_size - cache.size() );
+    }
+    
+    int get_max_size() { 
+      boost::lock_guard<boost::mutex> guard(mutex);
+      return max_size;
     }
     
     int size() { 

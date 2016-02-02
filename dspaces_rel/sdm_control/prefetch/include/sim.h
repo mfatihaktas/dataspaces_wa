@@ -38,13 +38,58 @@ void sim_prefetch_accuracy(MALGO& malgo,
     
     malgo.add_access(it->first); // Reg only the acc
     
-    int num_acc = 1; //cache_size;
+    int num_acc = cache_size;
     std::vector<ACC_T> acc_v, eacc_v;
-    malgo.get_to_prefetch(num_acc, acc_v, std::vector<ACC_T>(), eacc_v);
+    malgo.get_to_prefetch(num_acc, acc_v, cache.get_cached_acc_v(), eacc_v);
     
     // Update cache
     for (std::vector<ACC_T>::iterator iit = acc_v.begin(); iit != acc_v.end(); iit++)
       cache.push(*iit, std::make_pair(*iit, acc__last_acced_step_map[*iit] + 1) );
+  }
+  
+  hit_rate = 1.0 - (float)num_miss/acc_step_v.size();
+}
+
+template <typename MALGO>
+void sim_prefetch_accuracy(MALGO& malgo,
+                           Cache<ACC_T, acc_step_pair>& cache, std::map<ACC_T, int>& acc__last_acced_step_map,
+                           std::vector<acc_step_pair> acc_step_v,
+                           float& hit_rate, std::vector<char>& accuracy_v)
+{
+  int num_miss = 0;
+  
+  // std::map<ACC_T, int> acc__last_acced_step_map;
+  for (std::vector<acc_step_pair>::iterator it = acc_step_v.begin(); it != acc_step_v.end(); it++) {
+    // std::cout << "is <" << it->first << ", " << it->second << ">"
+    //           << " in the cache= \n" << cache.to_str() << "\n";
+    acc__last_acced_step_map[it->first] = it->second;
+    
+    if (!cache.contains(*it) ) {
+      accuracy_v.push_back('f');
+      num_miss++;
+    }
+    else
+      accuracy_v.push_back('-');
+    
+    // In wa-dataspaces scenario data is used only once
+    cache.del(it->first, *it);
+    
+    malgo.add_access(it->first); // Reg only the acc
+    
+    int num_acc = cache.get_max_size();
+    std::vector<ACC_T> cached_acc_v = cache.get_cached_acc_v();
+    std::vector<ACC_T> acc_v, eacc_v;
+    malgo.get_to_prefetch(num_acc, acc_v, cached_acc_v, eacc_v);
+    // acc_v.insert(acc_v.end(), eacc_v.begin(), eacc_v.end() );
+    // log_(INFO, "acc_step= <" << it->first << ", " << it->second << "> \n"
+    //           << "cache= \n" << patch::pvec_to_str<>(cache.get_content_v() ) )
+    // Update cache
+    for (std::vector<ACC_T>::iterator iit = acc_v.begin(); iit != acc_v.end(); iit++) {
+      // cache.push(*iit, std::make_pair(*iit, acc__last_acced_step_map[*iit] + 1) );
+      if (std::find(cached_acc_v.begin(), cached_acc_v.end(), *iit) == cached_acc_v.end() )
+        cache.push(*iit, std::make_pair(*iit, acc__last_acced_step_map[*iit] + 1) );
+    }
+    // std::cout << "after update; cache= \n" << patch::pvec_to_str<>(cache.get_content_v() ) << "\n";
   }
   
   hit_rate = 1.0 - (float)num_miss/acc_step_v.size();

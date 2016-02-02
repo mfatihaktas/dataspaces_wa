@@ -14,7 +14,12 @@
 // #include "debug.h"
 #include "patch.h"
 
-namespace patch_all {
+namespace patch_pre {
+  // template<typename T>
+  // bool contains(std::vector<T> v, T e) {
+  //   return (std::find(v.begin(), v.end(), e) != v.end() );
+  // }
+  
   // template<typename T>
   // std::string vec_to_str(std::vector<T> v) {
   //   std::stringstream ss;

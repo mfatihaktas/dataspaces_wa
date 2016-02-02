@@ -3,3 +3,4 @@ lib
 cache
 dummy
 *.png
+*.log

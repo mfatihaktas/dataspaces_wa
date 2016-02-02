@@ -171,8 +171,9 @@ int MPBuffer::get_to_prefetch(int& num_app, std::vector<key_ver_pair>& kv_v)
              << "ep_id_v= " << patch::vec_to_str<ACC_T>(ep_id_v) << "\n"
              << "cache= " << patch::vec_to_str<>(cache.get_cached_acc_v() ) )
   
-  for (std::vector<ACC_T>::iterator jt = ep_id_v.begin(); jt != ep_id_v.end(); jt++)
-    p_id_v.push_back(*jt);
+  // for (std::vector<ACC_T>::iterator jt = ep_id_v.begin(); jt != ep_id_v.end(); jt++)
+  //   p_id_v.push_back(*jt);
+  p_id_v.insert(p_id_v.end(), ep_id_v.begin(), ep_id_v.end() );
   // 
   for (std::vector<ACC_T>::iterator it = p_id_v.begin(); it != p_id_v.end(); it++) {
     if (!p_id__last_cached_step_map.contains(*it) )

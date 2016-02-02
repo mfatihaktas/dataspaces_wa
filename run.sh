@@ -64,72 +64,35 @@ TRANS_PROTOCOL="t" # "i" # "g"
 W_PREFETCH=1
 
 if [ $1  = 's' ]; then
-  if [ -a conf ]; then
-    rm srv.lck
-    rm conf                                                                                         #dataspaces_server cannot overwrite this so before every new run this should be removed
-  fi
-  # export MPIRUN_OPTIONS="-e MPI_RDMA_MSGSIZE=32768,1048576,1048576"
+  [ -a conf ] && rm srv.lck; rm conf || echo
   $DSPACES_DIR/bin/./dataspaces_server --server 1 --cnodes $NUM_DSCNODE
 elif [ -z "$2" ]; then
   echo "Which site [0, *]?"
-elif [ $1  = 'p' ]; then
-  if [ -z "$3" ]; then
-    echo "Which app [1, *] ?"
-  else
-    GLOG_logtostderr=1 ./exp --type="put" --cl_id=$3 --base_client_id=$(($2*$NUM_CLIENT)) --num_peer=$NUM_PEER \
-      --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=$((${RI_MANAGER_LCONTROL_LPORT_LIST[$2] } + $3)) \
-      --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2] } --join_lcontrol_lport=${RI_MANAGER_LCONTROL_LPORT_LIST[$2] }
-  fi
-elif [ $1  = 'g' ]; then
-  if [ -z "$3" ]; then
-    echo "Which app [1, *] ?"
-  else
-    GLOG_logtostderr=1 ./exp --type="get" --cl_id=$3 --base_client_id=$(($2*$NUM_CLIENT)) --num_peer=$NUM_PEER \
-      --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=$((${RI_MANAGER_LCONTROL_LPORT_LIST[$2] } + $3)) \
-      --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2] } --join_lcontrol_lport=${RI_MANAGER_LCONTROL_LPORT_LIST[$2] }
-  fi
-elif [ $1  = 'dp' ]; then
-  if [ -z "$3" ]; then
-    echo "Which app [1, *] ?"
-  else
-    export GLOG_logtostderr=1
-    export MALLOC_CHECK_=2
-    gdb --args ./exp --type="put" --cl_id=1 --base_client_id=$(($2*$NUM_CLIENT)) --num_peer=$NUM_PEER \
-      --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=$((${RI_MANAGER_LCONTROL_LPORT_LIST[$2] } + $3)) \
-      --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2] } --join_lcontrol_lport=${RI_MANAGER_LCONTROL_LPORT_LIST[$2] }
-  fi
-elif [ $1  = 'dg' ]; then
-  if [ -z "$3" ]; then
-    echo "Which app [1, *] ?"
-  else
-    export GLOG_logtostderr=1
-    export MALLOC_CHECK_=2
-    gdb --args ./exp --type="get" --cl_id=1 --base_client_id=$(($2*$NUM_CLIENT)) --num_peer=$NUM_PEER \
-      --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=$((${RI_MANAGER_LCONTROL_LPORT_LIST[$2] } + $3)) \
-      --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2] } --join_lcontrol_lport=${RI_MANAGER_LCONTROL_LPORT_LIST[$2] }
-  fi
-elif [ $1  = 'mp' ]; then
-  if [ -z "$3" ]; then
-    echo "Which app [1, *] ?"
-  else
-    GLOG_logtostderr=1 ./mput_mget_test --type="mput" --cl_id=$3 --base_client_id=$(($2*$NUM_CLIENT)) --num_peer=$NUM_PEER \
-      --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=$((${RI_MANAGER_LCONTROL_LPORT_LIST[$2] } + $3)) \
-      --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2] } --join_lcontrol_lport=${RI_MANAGER_LCONTROL_LPORT_LIST[$2] } \
-      --num_putget=$NUM_PUTGET --inter_time_sec=0 --sleep_time_sec=0
-  fi
-elif [ $1  = 'mg' ]; then
-  if [ -z "$3" ]; then
-    echo "Which app [1, *] ?"
-  else
-    GLOG_logtostderr=1 ./mput_mget_test --type="mget" --cl_id=$3 --base_client_id=$(($2*$NUM_CLIENT)) --num_peer=$NUM_PEER \
-      --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=$((${RI_MANAGER_LCONTROL_LPORT_LIST[$2] } + $3)) \
-      --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2] } --join_lcontrol_lport=${RI_MANAGER_LCONTROL_LPORT_LIST[$2] } \
-      --num_putget=$NUM_PUTGET --inter_time_sec=0 --sleep_time_sec=0
-  fi
+elif [[ $1  == 'p' || $1  == 'dp' || $1  == 'g' || $1  == 'dg' ]]; then
+  [ -z "$3" ] && echo "Which app [1, *] ?"; exit 1 || echo
+  TYPE="put"
+  GDB=""
+  [[ $1  == 'g' || $1  == 'dg' ]] && TYPE="get" || echo
+  [[ $1  == 'dp' || $1  == 'dg' ]] && GDB=gdb --args
+  
+  export GLOG_logtostderr=1
+  $GDB ./exp --type=$TYPE --cl_id=$3 --base_client_id=$(($2*$NUM_CLIENT)) --num_peer=$NUM_PEER \
+    --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=$((${RI_MANAGER_LCONTROL_LPORT_LIST[$2] } + $3)) \
+    --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2] } --join_lcontrol_lport=${RI_MANAGER_LCONTROL_LPORT_LIST[$2] }
+elif [[ $1  == 'mp' || $1  == 'dmp' || $1  == 'mg' || $1  == 'dmg' ]]; then
+  [ -z "$3" ] && echo "Which app [1, *] ?"; exit 1 || echo
+  TYPE="put"
+  GDB=""
+  [[ $1  == 'mg' || $1  == 'dmg' ]] && TYPE="mget" || echo
+  [[ $1  == 'dmp' || $1  == 'dmg' ]] && GDB=gdb --args
+  
+  export GLOG_logtostderr=1
+  $GDB ./mput_mget_test --type=$TYPE --cl_id=$3 --base_client_id=$(($2*$NUM_CLIENT)) --num_peer=$NUM_PEER \
+    --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=$((${RI_MANAGER_LCONTROL_LPORT_LIST[$2] } + $3)) \
+    --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2] } --join_lcontrol_lport=${RI_MANAGER_LCONTROL_LPORT_LIST[$2] } \
+    --num_putget=$NUM_PUTGET --inter_time_sec=0 --sleep_time_sec=0
 elif [ $1  = 'map' ]; then
-  if [ -a mput.log ]; then
-    rm log mput.log
-  fi
+  [ -a mput.log ] && rm main.log mput.log || echo
   
   export GLOG_logtostderr=1
   for i in `seq 1 $NUM_CLIENT`; do
