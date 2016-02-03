@@ -39,12 +39,22 @@ void sim_prefetch_accuracy(MALGO& malgo,
     malgo.add_access(it->first); // Reg only the acc
     
     int num_acc = cache_size;
+    std::vector<ACC_T> cached_acc_v = cache.get_cached_acc_v();
     std::vector<ACC_T> acc_v, eacc_v;
-    malgo.get_to_prefetch(num_acc, acc_v, cache.get_cached_acc_v(), eacc_v);
-    
-    // Update cache
-    for (std::vector<ACC_T>::iterator iit = acc_v.begin(); iit != acc_v.end(); iit++)
+    malgo.get_to_prefetch(num_acc, acc_v, cached_acc_v, eacc_v);
+    // log_(INFO, "acc_step= <" << it->first << ", " << it->second << "> \n"
+    //           << "cache= \n" << patch::pvec_to_str<>(cache.get_content_v() ) )
+    for (std::vector<ACC_T>::iterator iit = acc_v.begin(); iit != acc_v.end(); iit++) {
+      // cache.push(*iit, std::make_pair(*iit, acc__last_acced_step_map[*iit] + 1) );
+      if (std::find(cached_acc_v.begin(), cached_acc_v.end(), *iit) == cached_acc_v.end() )
+        cache.push(*iit, std::make_pair(*iit, acc__last_acced_step_map[*iit] + 1) );
+    }
+    for (std::vector<ACC_T>::iterator iit = eacc_v.begin(); iit != eacc_v.end(); iit++) {
+      if (cache.size() >= cache.get_max_size() )
+        break;
       cache.push(*iit, std::make_pair(*iit, acc__last_acced_step_map[*iit] + 1) );
+    }
+    // std::cout << "after update; cache= \n" << patch::pvec_to_str<>(cache.get_content_v() ) << "\n";
   }
   
   hit_rate = 1.0 - (float)num_miss/acc_step_v.size();
@@ -80,14 +90,17 @@ void sim_prefetch_accuracy(MALGO& malgo,
     std::vector<ACC_T> cached_acc_v = cache.get_cached_acc_v();
     std::vector<ACC_T> acc_v, eacc_v;
     malgo.get_to_prefetch(num_acc, acc_v, cached_acc_v, eacc_v);
-    // acc_v.insert(acc_v.end(), eacc_v.begin(), eacc_v.end() );
     // log_(INFO, "acc_step= <" << it->first << ", " << it->second << "> \n"
     //           << "cache= \n" << patch::pvec_to_str<>(cache.get_content_v() ) )
-    // Update cache
     for (std::vector<ACC_T>::iterator iit = acc_v.begin(); iit != acc_v.end(); iit++) {
       // cache.push(*iit, std::make_pair(*iit, acc__last_acced_step_map[*iit] + 1) );
       if (std::find(cached_acc_v.begin(), cached_acc_v.end(), *iit) == cached_acc_v.end() )
         cache.push(*iit, std::make_pair(*iit, acc__last_acced_step_map[*iit] + 1) );
+    }
+    for (std::vector<ACC_T>::iterator iit = eacc_v.begin(); iit != eacc_v.end(); iit++) {
+      if (cache.size() >= cache.get_max_size() )
+        break;
+      cache.push(*iit, std::make_pair(*iit, acc__last_acced_step_map[*iit] + 1) );
     }
     // std::cout << "after update; cache= \n" << patch::pvec_to_str<>(cache.get_content_v() ) << "\n";
   }

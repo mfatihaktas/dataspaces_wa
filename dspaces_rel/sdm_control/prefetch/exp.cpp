@@ -102,12 +102,14 @@ int main(int argc, char **argv)
   // s_syncer.del_sync_point(b0);
   
   if (str_cstr_equals(opt_map["type"], "markov") ) {
-    test_rand_shuffle_train(); 
-    // test_fixed_train();
     // test_malgo();
     // test_bmmalgo();
     // m_prefetch_test();
     // mpcsim_test();
+    // test_fixed_train();
+    // test_rand_shuffle_train();
+    // test_rand_shuffle_train_w_varying_cache();
+    plot_hit_rate_vs_cache_size();
     
     // std::vector<int> ds_id_v = boost::assign::list_of(0)(1);
     // MWASpace mwa_space(ds_id_v, MALGO_W_PPM, 10, false, 0);
