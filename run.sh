@@ -2,7 +2,7 @@
 echo $1 $2 $3
 
 NUM_SNODE=1
-NUM_CLIENT=1
+NUM_CLIENT=2
 NUM_DSCNODE=$(($NUM_CLIENT+1)) # +1: RIManager
 NUM_PEER=1
 NUM_PUTGET=10
@@ -64,15 +64,15 @@ TRANS_PROTOCOL="t" # "i" # "g"
 W_PREFETCH=1
 
 if [ $1  = 's' ]; then
-  [ -a conf ] && rm srv.lck; rm conf || echo
+  [ -a conf ] && rm srv.lck conf
   $DSPACES_DIR/bin/./dataspaces_server --server 1 --cnodes $NUM_DSCNODE
 elif [ -z "$2" ]; then
   echo "Which site [0, *]?"
 elif [[ $1  == 'p' || $1  == 'dp' || $1  == 'g' || $1  == 'dg' ]]; then
-  [ -z "$3" ] && echo "Which app [1, *] ?"; exit 1 || echo
+  [ -z "$3" ] && { echo "Which app [1, *] ?"; exit 1; }
   TYPE="put"
   GDB=""
-  [[ $1  == 'g' || $1  == 'dg' ]] && TYPE="get" || echo
+  [[ $1  == 'g' || $1  == 'dg' ]] && TYPE="get"
   [[ $1  == 'dp' || $1  == 'dg' ]] && GDB=gdb --args
   
   export GLOG_logtostderr=1
@@ -80,10 +80,10 @@ elif [[ $1  == 'p' || $1  == 'dp' || $1  == 'g' || $1  == 'dg' ]]; then
     --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=$((${RI_MANAGER_LCONTROL_LPORT_LIST[$2] } + $3)) \
     --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2] } --join_lcontrol_lport=${RI_MANAGER_LCONTROL_LPORT_LIST[$2] }
 elif [[ $1  == 'mp' || $1  == 'dmp' || $1  == 'mg' || $1  == 'dmg' ]]; then
-  [ -z "$3" ] && echo "Which app [1, *] ?"; exit 1 || echo
-  TYPE="put"
+  [ -z "$3" ] && { echo "Which app [1, *] ?"; exit 1; }
+  TYPE="mput"
   GDB=""
-  [[ $1  == 'mg' || $1  == 'dmg' ]] && TYPE="mget" || echo
+  [[ $1  == 'mg' || $1  == 'dmg' ]] && TYPE="mget"
   [[ $1  == 'dmp' || $1  == 'dmg' ]] && GDB=gdb --args
   
   export GLOG_logtostderr=1
@@ -91,12 +91,14 @@ elif [[ $1  == 'mp' || $1  == 'dmp' || $1  == 'mg' || $1  == 'dmg' ]]; then
     --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=$((${RI_MANAGER_LCONTROL_LPORT_LIST[$2] } + $3)) \
     --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2] } --join_lcontrol_lport=${RI_MANAGER_LCONTROL_LPORT_LIST[$2] } \
     --num_putget=$NUM_PUTGET --inter_time_sec=0 --sleep_time_sec=0
-elif [ $1  = 'map' ]; then
-  [ -a mput.log ] && rm main.log mput.log || echo
+elif [[ $1  == 'map' || $1  == 'mag' ]]; then
+  [ -a mput.log ] && rm main.log mput.log mget.log
+  TYPE="mput"
+  [ $1  = 'mag' ] && TYPE="mget"
   
   export GLOG_logtostderr=1
   for i in `seq 1 $NUM_CLIENT`; do
-    ./mput_mget_test --type="mput" --cl_id=$i --base_client_id=$(($2*$NUM_CLIENT)) --num_peer=$NUM_PEER \
+    ./mput_mget_test --type=$TYPE --cl_id=$i --base_client_id=$(($2*$NUM_CLIENT)) --num_peer=$NUM_PEER \
       --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=$((${RI_MANAGER_LCONTROL_LPORT_LIST[$2] } + $i)) \
       --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2] } --join_lcontrol_lport=${RI_MANAGER_LCONTROL_LPORT_LIST[$2] } \
       --num_putget=$NUM_PUTGET --inter_time_sec=0 --sleep_time_sec=0 &
@@ -105,23 +107,10 @@ elif [ $1  = 'map' ]; then
   read -p "[Enter]"
   echo "killing..."
   pkill -f mput_mget_test
-elif [ $1  = 'mag' ]; then
-  if [ -a mget.log ]; then
-    rm mget.log
-  fi
+elif [[ $1  == 'r' || $1  == 'dr' ]]; then
+  GDB=""
+  [ $1  = 'dr' ] && GDB=gdb --args
   
-  export GLOG_logtostderr=1
-  for i in `seq 1 $NUM_CLIENT`; do
-    ./mput_mget_test --type="mget" --cl_id=$i --base_client_id=$(($2*$NUM_CLIENT)) --num_peer=$NUM_PEER \
-      --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=$((${RI_MANAGER_LCONTROL_LPORT_LIST[$2] } + $i)) \
-      --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2] } --join_lcontrol_lport=${RI_MANAGER_LCONTROL_LPORT_LIST[$2] } \
-      --num_putget=$NUM_PUTGET --inter_time_sec=0 --sleep_time_sec=0 &
-  done
-  
-  read -p "[Enter]"
-  echo "killing..."
-  pkill -f mput_mget_test
-elif [ $1  = 'r' ]; then
   # if [ $TRANS_PROTOCOL  = 'g' ]; then
   #   echo "Starting Gftps..."
   #   globus-gridftp-server -aa -password-file pwfile -c None \
@@ -129,30 +118,18 @@ elif [ $1  = 'r' ]; then
   #                         -d error,warn,info,dump,all &
   #                         # -data-interface $WA_LINTF \
   # fi
-  GLOG_logtostderr=1 ./exp --type="ri" --cl_id=111 --num_peer=$NUM_PEER --base_client_id=$(($2*$NUM_CLIENT)) \
-                           --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=${RI_MANAGER_LCONTROL_LPORT_LIST[$2] } \
-                           --ds_id=$2 --control_lintf=$CONTROL_LINTF --control_lport=${RI_MANAGER_CONTROL_LPORT_LIST[$2] } \
-                           --join_control_lip=${RI_MANAGER_JOIN_CONTROL_LIP_LIST[$2] } --join_control_lport=${RI_MANAGER_JOIN_CONTROL_LPORT_LIST[$2] } \
-                           --trans_protocol=$TRANS_PROTOCOL --ib_lintf=$IB_LINTF \
-                           --tcp_lintf=$TCP_LINTF --tcp_lport=$TCP_LPORT \
-                           --gftp_lintf=$GFTP_LINTF --gftp_lport=$GFTP_LPORT --tmpfs_dir=$TMPFS_DIR \
-                           --w_prefetch=$W_PREFETCH
-  read -p "[Enter]"
-  echo "Killing stubborns..."
-  # fuser -k -n tcp $GFTP_LPORT
-elif [ $1  = 'dr' ]; then
   export GLOG_logtostderr=1
-  gdb --args ./exp --type="ri" --cl_id=111 --num_peer=$NUM_PEER --base_client_id=$(($2*$NUM_CLIENT)) \
-                   --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=${RI_MANAGER_LCONTROL_LPORT_LIST[$2] } \
-                   --ds_id=$2 --control_lintf=$CONTROL_LINTF --control_lport=${RI_MANAGER_CONTROL_LPORT_LIST[$2] } \
-                   --join_control_lip=${RI_MANAGER_JOIN_CONTROL_LIP_LIST[$2] } --join_control_lport=${RI_MANAGER_JOIN_CONTROL_LPORT_LIST[$2] } \
-                   --trans_protocol=$TRANS_PROTOCOL --ib_lintf=$IB_LINTF \
-                   --tcp_lintf=$TCP_LINTF --tcp_lport=$TCP_LPORT \
-                   --gftp_lintf=$GFTP_LINTF --gftp_lport=$GFTP_LPORT --tmpfs_dir=$TMPFS_DIR \
-                   --w_prefetch=$W_PREFETCH
+  $GDB ./exp --type="ri" --cl_id=111 --num_peer=$NUM_PEER --base_client_id=$(($2*$NUM_CLIENT)) \
+             --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=${RI_MANAGER_LCONTROL_LPORT_LIST[$2] } \
+             --ds_id=$2 --control_lintf=$CONTROL_LINTF --control_lport=${RI_MANAGER_CONTROL_LPORT_LIST[$2] } \
+             --join_control_lip=${RI_MANAGER_JOIN_CONTROL_LIP_LIST[$2] } --join_control_lport=${RI_MANAGER_JOIN_CONTROL_LPORT_LIST[$2] } \
+             --trans_protocol=$TRANS_PROTOCOL --ib_lintf=$IB_LINTF \
+             --tcp_lintf=$TCP_LINTF --tcp_lport=$TCP_LPORT \
+             --gftp_lintf=$GFTP_LINTF --gftp_lport=$GFTP_LPORT --tmpfs_dir=$TMPFS_DIR \
+             --w_prefetch=$W_PREFETCH
   read -p "[Enter]"
-  echo "Killing stubborns..."
-  fuser -k -n tcp $GFTP_LPORT
+  # echo "Killing stubborns..."
+  # fuser -k -n tcp $GFTP_LPORT
 elif [ $1  = 'init' ]; then
   if [ $2  = 'd' ]; then
     export DELL=DELL

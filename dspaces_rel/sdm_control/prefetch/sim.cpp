@@ -106,7 +106,7 @@ MPCSim::MPCSim(std::vector<int> ds_id_v, bool w_prefetch,
                std::vector<int> p_id__num_put_v, std::vector<int> c_id__num_get_v,
                std::vector<float> p_id__put_rate_v, std::vector<float> c_id__get_rate_v,
                std::vector<std::vector<float> > p_id__inter_arr_time_v_v, std::vector<std::vector<float> > c_id__inter_arr_time_v_v,
-               MALGO_T malgo_t, int max_num_key_ver_in_mpbuffer)
+               PALGO_T palgo_t, int max_num_key_ver_in_mpbuffer)
 : PCSim(ds_id_v, w_prefetch,
         num_p, num_c,
         p_id__ds_id_v, c_id__ds_id_v,
@@ -114,7 +114,7 @@ MPCSim::MPCSim(std::vector<int> ds_id_v, bool w_prefetch,
         p_id__put_rate_v, c_id__get_rate_v,
         p_id__inter_arr_time_v_v, c_id__inter_arr_time_v_v)
 {
-  wa_space_ = boost::make_shared<MWASpace>(ds_id_v, malgo_t, max_num_key_ver_in_mpbuffer,
+  wa_space_ = boost::make_shared<MWASpace>(ds_id_v, palgo_t, max_num_key_ver_in_mpbuffer,
                                            w_prefetch, boost::bind(&PCSim::handle_data_act, this, _1, _2, _3, _4) );
   for (int p_id = 0; p_id < num_p; p_id++)
     wa_space_->reg_app(p_id, p_id__ds_id_v[p_id] );

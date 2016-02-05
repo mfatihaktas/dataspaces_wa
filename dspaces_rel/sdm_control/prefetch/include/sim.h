@@ -11,8 +11,8 @@
 
 #include "prefetch.h"
 
-template <typename MALGO>
-void sim_prefetch_accuracy(MALGO& malgo,
+template <typename PALGO>
+void sim_prefetch_accuracy(PALGO& palgo,
                            int cache_size, std::vector<acc_step_pair> acc_step_v,
                            float& hit_rate, std::vector<char>& accuracy_v)
 {
@@ -36,12 +36,12 @@ void sim_prefetch_accuracy(MALGO& malgo,
     // In wa-dataspaces scenario data is used only once
     cache.del(it->first, *it);
     
-    malgo.add_access(it->first); // Reg only the acc
+    palgo.add_access(it->first); // Reg only the acc
     
     int num_acc = cache_size;
     std::vector<ACC_T> cached_acc_v = cache.get_cached_acc_v();
     std::vector<ACC_T> acc_v, eacc_v;
-    malgo.get_to_prefetch(num_acc, acc_v, cached_acc_v, eacc_v);
+    palgo.get_to_prefetch(num_acc, acc_v, cached_acc_v, eacc_v);
     // log_(INFO, "acc_step= <" << it->first << ", " << it->second << "> \n"
     //           << "cache= \n" << patch::pvec_to_str<>(cache.get_content_v() ) )
     for (std::vector<ACC_T>::iterator iit = acc_v.begin(); iit != acc_v.end(); iit++) {
@@ -60,8 +60,8 @@ void sim_prefetch_accuracy(MALGO& malgo,
   hit_rate = 1.0 - (float)num_miss/acc_step_v.size();
 }
 
-template <typename MALGO>
-void sim_prefetch_accuracy(MALGO& malgo,
+template <typename PALGO>
+void sim_prefetch_accuracy(PALGO& palgo,
                            Cache<ACC_T, acc_step_pair>& cache, std::map<ACC_T, int>& acc__last_acced_step_map,
                            std::vector<acc_step_pair> acc_step_v,
                            float& hit_rate, std::vector<char>& accuracy_v)
@@ -84,12 +84,12 @@ void sim_prefetch_accuracy(MALGO& malgo,
     // In wa-dataspaces scenario data is used only once
     cache.del(it->first, *it);
     
-    malgo.add_access(it->first); // Reg only the acc
+    palgo.add_access(it->first); // Reg only the acc
     
     int num_acc = cache.get_max_size();
     std::vector<ACC_T> cached_acc_v = cache.get_cached_acc_v();
     std::vector<ACC_T> acc_v, eacc_v;
-    malgo.get_to_prefetch(num_acc, acc_v, cached_acc_v, eacc_v);
+    palgo.get_to_prefetch(num_acc, acc_v, cached_acc_v, eacc_v);
     // log_(INFO, "acc_step= <" << it->first << ", " << it->second << "> \n"
     //           << "cache= \n" << patch::pvec_to_str<>(cache.get_content_v() ) )
     for (std::vector<ACC_T>::iterator iit = acc_v.begin(); iit != acc_v.end(); iit++) {
@@ -183,7 +183,7 @@ class MPCSim : public PCSim { // Markov
            std::vector<int> p_id__num_put_v, std::vector<int> c_id__num_get_v,
            std::vector<float> p_id__put_rate_v, std::vector<float> c_id__get_rate_v,
            std::vector<std::vector<float> > p_id__inter_arr_time_v_v, std::vector<std::vector<float> > c_id__inter_arr_time_v_v,
-           MALGO_T malgo_t, int max_num_key_ver_in_mpbuffer);
+           PALGO_T palgo_t, int max_num_key_ver_in_mpbuffer);
     ~MPCSim();
     std::string to_str();
     

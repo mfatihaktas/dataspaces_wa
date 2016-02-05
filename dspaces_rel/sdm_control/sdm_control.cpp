@@ -421,7 +421,7 @@ int SDMMaster::sdm_mquery(bool blocking, std::string key, unsigned int ver, COOR
 int SDMMaster::reg_app(int app_id)
 {
   if (std::find(app_id_v.begin(), app_id_v.end(), app_id) != app_id_v.end() ) {
-    log_(ERROR, "already reged app_id= " << app_id)
+    log_(WARNING, "already reged app_id= " << app_id)
     return 1;
   }
   
@@ -829,13 +829,13 @@ void SDMMaster::handle_wa_space_data_act(PREFETCH_DATA_ACT_T data_act_t, int to_
 /************************************  MSDMMaster : SDMMaster  ************************************/
 MSDMMaster::MSDMMaster(int ds_id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
                        func_rimsg_recv_cb rimsg_recv_cb, func_dm_act_cb dm_act_cb,
-                       MALGO_T malgo_t, int max_num_key_ver_in_mpbuffer, bool w_prefetch)
+                       PALGO_T palgo_t, int max_num_key_ver_in_mpbuffer, bool w_prefetch)
 : SDMMaster(KV_DATA_ID,
             ds_id, lip, lport, joinhost_lip, joinhost_lport,
             rimsg_recv_cb, dm_act_cb,
             boost::make_shared<KVTable<int> >(),
             boost::make_shared<MWASpace>(std::vector<int>(),
-                                         malgo_t, max_num_key_ver_in_mpbuffer, w_prefetch, boost::bind(&SDMMaster::handle_wa_space_data_act, this, _1, _2, _3, _4) ) )
+                                         palgo_t, max_num_key_ver_in_mpbuffer, w_prefetch, boost::bind(&SDMMaster::handle_wa_space_data_act, this, _1, _2, _3, _4) ) )
 {
   // 
   log_(INFO, "constructed; \n" << to_str() )

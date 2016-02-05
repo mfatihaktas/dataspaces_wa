@@ -1,29 +1,31 @@
 #include "prefetch.h"
 
 /******************************************  MPBuffer  *********************************************/
-MPBuffer::MPBuffer(int ds_id, int max_num_key_ver, MALGO_T malgo_t,
+MPBuffer::MPBuffer(int ds_id, int max_num_key_ver, PALGO_T palgo_t,
                    bool w_prefetch, func_handle_mpbuffer_data_act_cb handle_mpbuffer_data_act_cb)
 : ds_id(ds_id), max_num_key_ver(max_num_key_ver),
   w_prefetch(w_prefetch), handle_mpbuffer_data_act_cb(handle_mpbuffer_data_act_cb),
   cache(max_num_key_ver, boost::bind(&MPBuffer::handle_data_del, this, _1) )
 {
-  if (malgo_t == MALGO_W_LZ)
-    malgo_to_pick_app_ = boost::make_shared<LZAlgo>();
-  else if (malgo_t == MALGO_W_ALZ)
-    malgo_to_pick_app_ = boost::make_shared<ALZAlgo>();
-  else if (malgo_t == MALGO_W_PPM)
-    malgo_to_pick_app_ = boost::make_shared<PPMAlgo>(2);
-  else if (malgo_t == MALGO_W_PO)
-    malgo_to_pick_app_ = boost::make_shared<POAlgo>();
+  if (palgo_t == MALGO_W_LZ)
+    palgo_to_pick_app_ = boost::make_shared<LZAlgo>();
+  else if (palgo_t == MALGO_W_ALZ)
+    palgo_to_pick_app_ = boost::make_shared<ALZAlgo>();
+  else if (palgo_t == MALGO_W_PPM)
+    palgo_to_pick_app_ = boost::make_shared<PPMAlgo>(4);
+  else if (palgo_t == MALGO_W_PO)
+    palgo_to_pick_app_ = boost::make_shared<POAlgo>();
+  else if (palgo_t == MPALGO_W_MC) {
+    std::vector<malgo_t__context_size_pair> malgo_t__context_size_v;
+    malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 3) );
+    malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 4) );
+    
+    palgo_to_pick_app_ = boost::make_shared<MMPAlgo>(malgo_t__context_size_v);
+  }
   else {
-    log_(ERROR, "unknown malgo_t= " << malgo_t)
+    log_(ERROR, "unknown palgo_t= " << palgo_t)
     exit(1);
   }
-  // std::map<MALGO_T, float> malgo_t__weight_map;
-  // malgo_t__weight_map[MALGO_W_LZ] = 0.5;
-  // malgo_t__weight_map[MALGO_W_PPM] = 0.5;
-  // malgo_t__weight_map[MALGO_W_PO] = 0.33;
-  // malgo_to_pick_app_ = boost::make_shared<MPrefetchAlgo>(malgo_t, malgo_t__weight_map);
   // 
   // log_(INFO, "constructed; \n" << to_str() )
 }
@@ -56,8 +58,8 @@ std::string MPBuffer::to_str()
   
   ss << "cache= \n" << cache.to_str() << "\n";
   
-  // ss << "malgo_to_pick_app_= \n"
-  //   << "\t parse_tree_to_pstr= \n" << malgo_to_pick_app_->parse_tree_to_pstr() << "\n";
+  // ss << "palgo_to_pick_app_= \n"
+  //   << "\t parse_tree_to_pstr= \n" << palgo_to_pick_app_->parse_tree_to_pstr() << "\n";
   
   return ss.str();
 }
@@ -108,8 +110,8 @@ int MPBuffer::add_access(key_ver_pair kv)
   {// Causes problems while building the parse tree for multi-threaded scenario
     boost::lock_guard<boost::mutex> guard(add_acc_mutex);
     
-    if (malgo_to_pick_app_->add_access(p_id) )
-      log_(ERROR, "malgo_to_pick_app_->add_access failed for p_id= " << p_id)
+    if (palgo_to_pick_app_->add_access(p_id) )
+      log_(ERROR, "palgo_to_pick_app_->add_access failed for p_id= " << p_id)
     
     // std::cout << "before calling get_to_prefetch; p_id__reged_kv_deq_map= \n";
     // for (std::map<int, std::deque<key_ver_pair> >::iterator it = p_id__reged_kv_deq_map.begin(); it != p_id__reged_kv_deq_map.end(); it++)
@@ -164,7 +166,7 @@ int MPBuffer::get_to_prefetch(int& num_app, std::vector<key_ver_pair>& kv_v)
 {
   // Pick app
   std::vector<ACC_T> p_id_v, ep_id_v;
-  malgo_to_pick_app_->get_to_prefetch(num_app, p_id_v, cache.get_cached_acc_v(), ep_id_v);
+  palgo_to_pick_app_->get_to_prefetch(num_app, p_id_v, cache.get_cached_acc_v(), ep_id_v);
   log_(INFO, "------------------------------------------------- \n"
              << "\n"
              << "p_id_v= " << patch::vec_to_str<ACC_T>(p_id_v) << "\n"
@@ -318,14 +320,14 @@ int WASpace::reg_app(int app_id, int ds_id)
 
 /******************************************  MWASpace  ********************************************/
 MWASpace::MWASpace(std::vector<int> ds_id_v,
-                   MALGO_T malgo_t, int max_num_key_ver_in_mpbuffer, bool w_prefetch, func_handle_data_act_cb handle_data_act_cb)
+                   PALGO_T palgo_t, int max_num_key_ver_in_mpbuffer, bool w_prefetch, func_handle_data_act_cb handle_data_act_cb)
 : WASpace(ds_id_v, handle_data_act_cb),
-  max_num_key_ver_in_mpbuffer(max_num_key_ver_in_mpbuffer), malgo_t(malgo_t), w_prefetch(w_prefetch)
+  max_num_key_ver_in_mpbuffer(max_num_key_ver_in_mpbuffer), palgo_t(palgo_t), w_prefetch(w_prefetch)
 {
   for (std::vector<int>::iterator it = ds_id_v.begin(); it != ds_id_v.end(); it++) {
     ds_id__kv_map[*it] = boost::make_shared<patch::thread_safe_vector<key_ver_pair> >();
     
-    ds_id__mpbuffer_map[*it] = boost::make_shared<MPBuffer>(*it, max_num_key_ver_in_mpbuffer, malgo_t,
+    ds_id__mpbuffer_map[*it] = boost::make_shared<MPBuffer>(*it, max_num_key_ver_in_mpbuffer, palgo_t,
                                                             w_prefetch, boost::bind(&MWASpace::handle_mpbuffer_data_act, this, _1, _2, _3) );
   }
   // 
@@ -342,7 +344,7 @@ std::string MWASpace::to_str()
   std::stringstream ss;
   ss << "WASpace::to_str= \n" << WASpace::to_str() << "\n"
      << "max_num_key_ver_in_mpbuffer= " << max_num_key_ver_in_mpbuffer << "\n"
-     << "malgo_t= " << malgo_t << "\n"
+     << "palgo_t= " << palgo_t << "\n"
      << "w_prefetch= " << w_prefetch << "\n";
   
   return ss.str();
@@ -403,7 +405,7 @@ int MWASpace::reg_ds(int ds_id)
     new patch::thread_safe_vector<key_ver_pair>() );
   ds_id__kv_map[ds_id] = kv_v_;
   
-  ds_id__mpbuffer_map[ds_id] = boost::make_shared<MPBuffer>(ds_id, max_num_key_ver_in_mpbuffer, malgo_t,
+  ds_id__mpbuffer_map[ds_id] = boost::make_shared<MPBuffer>(ds_id, max_num_key_ver_in_mpbuffer, palgo_t,
                                                             w_prefetch, boost::bind(&MWASpace::handle_mpbuffer_data_act, this, _1, _2, _3) );
   // Note: DS joins dynamically, its MPBuffer needs to be updated
   for (std::vector<key_ver_pair>::iterator it = kv_v.begin(); it != kv_v.end(); it++)

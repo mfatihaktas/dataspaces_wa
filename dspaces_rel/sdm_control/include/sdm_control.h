@@ -182,7 +182,7 @@ class MSDMMaster : public SDMMaster { // Markov
   public:
     MSDMMaster(int ds_id, std::string lip, int lport, std::string joinhost_lip, int joinhost_lport,
                func_rimsg_recv_cb rimsg_recv_cb, func_dm_act_cb dm_act_cb,
-               MALGO_T malgo_t, int max_num_key_ver_in_mpbuffer, bool w_prefetch);
+               PALGO_T palgo_t, int max_num_key_ver_in_mpbuffer, bool w_prefetch);
     ~MSDMMaster();
     std::string to_str();
 };

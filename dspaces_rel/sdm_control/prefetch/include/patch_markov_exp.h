@@ -96,7 +96,7 @@ void make_plot(std::vector<std::vector<T> > x_v_v, std::vector<std::vector<T> > 
   gp << "set key right top\n";
   gp << "set key outside\n";
   gp << "set title '" << plot_title << "'\n";
-  gp << "set xrange [" << min_x << ":" << max_x*1.05 << "]\nset yrange [" << min_y << ":" << max_y*1.1 << "]\n";
+  gp << "set xrange [" << min_x*0.9 << ":" << max_x*1.05 << "]\nset yrange [" << min_y*0.95 << ":" << max_y*1.1 << "]\n";
   gp << "set xlabel '" << x_label << "'\n";
   gp << "set ylabel '" << y_label << "'\n";
   gp << "set grid\n";
@@ -328,16 +328,15 @@ void gen_scenario(int num_ds, std::vector<int>& ds_id_v,
 // ------------------------------------------------------------------------------------------------/
 void test_malgo()
 {
-  // boost::shared_ptr<MAlgo> palgo_ = boost::make_shared<LZAlgo>();
-  // boost::shared_ptr<MAlgo> palgo_ = boost::make_shared<ALZAlgo>();
-  // boost::shared_ptr<MAlgo> palgo_ = boost::make_shared<PPMAlgo>(4);
-  // boost::shared_ptr<MAlgo> palgo_ = boost::make_shared<POAlgo>();
+  // boost::shared_ptr<PAlgo> palgo_ = boost::make_shared<LZAlgo>();
+  // boost::shared_ptr<PAlgo> palgo_ = boost::make_shared<ALZAlgo>();
+  // boost::shared_ptr<PAlgo> palgo_ = boost::make_shared<POAlgo>();
   
   // std::map<MALGO_T, float> prefetch_t__weight_map;
   // prefetch_t__weight_map[MALGO_W_LZ] = 0.5;
   // prefetch_t__weight_map[MALGO_W_PPM] = 0.5;
-  // boost::shared_ptr<MMAlgo> palgo_ = boost::make_shared<MMAlgo>(Mixed-blended, prefetch_t__weight_map);
-  // boost::shared_ptr<MMAlgo> palgo_ = boost::make_shared<MMAlgo>(Mixed-most confident, prefetch_t__weight_map);
+  // boost::shared_ptr<MPAlgo> palgo_ = boost::make_shared<MPAlgo>(Mixed-blended, prefetch_t__weight_map);
+  // boost::shared_ptr<MPAlgo> palgo_ = boost::make_shared<MPAlgo>(Mixed-most confident, prefetch_t__weight_map);
   
   // int acc_[] = {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
   //                   1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0 };
@@ -370,54 +369,54 @@ void test_malgo()
   int cache_size = 1;
   std::vector<char> accuracy_v;
   
-  boost::shared_ptr<MAlgo> lz_algo_ = boost::make_shared<LZAlgo>();
+  boost::shared_ptr<PAlgo> lz_algo_ = boost::make_shared<LZAlgo>();
   float lz_hit_rate;
-  sim_prefetch_accuracy<MAlgo>(*lz_algo_, cache_size, acc_step_v, lz_hit_rate, accuracy_v);
+  sim_prefetch_accuracy<PAlgo>(*lz_algo_, cache_size, acc_step_v, lz_hit_rate, accuracy_v);
   std::cout << "LZ_ALGO: \n"
             << "hit_rate= " << lz_hit_rate << "\n";
   // // std::cout << "parse_tree_to_pstr= \n" << lz_algo_->parse_tree_to_pstr() << "\n";
   // std::cout << "accuracy_v= \n" << patch::vec_to_str<char>(accuracy_v) << "\n";
   
-  boost::shared_ptr<MAlgo> alz_algo_ = boost::make_shared<ALZAlgo>();
+  boost::shared_ptr<PAlgo> alz_algo_ = boost::make_shared<ALZAlgo>();
   float alz_hit_rate;
   accuracy_v.clear();
-  sim_prefetch_accuracy<MAlgo>(*alz_algo_, cache_size, acc_step_v, alz_hit_rate, accuracy_v);
+  sim_prefetch_accuracy<PAlgo>(*alz_algo_, cache_size, acc_step_v, alz_hit_rate, accuracy_v);
   std::cout << "ALZ_ALGO: \n"
             << "hit_rate= " << alz_hit_rate << "\n";
   // // std::cout << "parse_tree_to_pstr= \n" << alz_algo_->parse_tree_to_pstr() << "\n";
   // std::cout << "accuracy_seq= \n" << patch::vec_to_str<char>(accuracy_v) << "\n";
   
-  boost::shared_ptr<MAlgo> ppm_1_algo_ = boost::make_shared<PPMAlgo>(1);
+  boost::shared_ptr<PAlgo> ppm_1_algo_ = boost::make_shared<PPMAlgo>(1);
   float ppm_1_hit_rate;
   accuracy_v.clear();
-  sim_prefetch_accuracy<MAlgo>(*ppm_1_algo_, cache_size, acc_step_v, ppm_1_hit_rate, accuracy_v);
+  sim_prefetch_accuracy<PAlgo>(*ppm_1_algo_, cache_size, acc_step_v, ppm_1_hit_rate, accuracy_v);
   std::cout << "PPM_1_ALGO: \n"
             << "hit_rate= " << ppm_1_hit_rate << "\n";
   // // std::cout << "parse_tree_to_pstr= \n" << ppm_1_algo_->parse_tree_to_pstr() << "\n";
   // std::cout << "accuracy_seq= \n" << patch::vec_to_str<char>(accuracy_v) << "\n";
   
-  boost::shared_ptr<MAlgo> ppm_2_algo_ = boost::make_shared<PPMAlgo>(2);
+  boost::shared_ptr<PAlgo> ppm_2_algo_ = boost::make_shared<PPMAlgo>(2);
   float ppm_2_hit_rate;
   accuracy_v.clear();
-  sim_prefetch_accuracy<MAlgo>(*ppm_2_algo_, cache_size, acc_step_v, ppm_2_hit_rate, accuracy_v);
+  sim_prefetch_accuracy<PAlgo>(*ppm_2_algo_, cache_size, acc_step_v, ppm_2_hit_rate, accuracy_v);
   std::cout << "PPM_2_ALGO: \n"
             << "hit_rate= " << ppm_2_hit_rate << "\n";
   // // std::cout << "parse_tree_to_pstr= \n" << ppm_2_algo_->parse_tree_to_pstr() << "\n";
   // std::cout << "accuracy_seq= \n" << patch::vec_to_str<char>(accuracy_v) << "\n";
   
-  boost::shared_ptr<MAlgo> ppm_3_algo_ = boost::make_shared<PPMAlgo>(3);
+  boost::shared_ptr<PAlgo> ppm_3_algo_ = boost::make_shared<PPMAlgo>(3);
   float ppm_3_hit_rate;
   accuracy_v.clear();
-  sim_prefetch_accuracy<MAlgo>(*ppm_3_algo_, cache_size, acc_step_v, ppm_3_hit_rate, accuracy_v);
+  sim_prefetch_accuracy<PAlgo>(*ppm_3_algo_, cache_size, acc_step_v, ppm_3_hit_rate, accuracy_v);
   std::cout << "PPM_3_ALGO: \n"
             << "hit_rate= " << ppm_3_hit_rate << "\n";
   // // std::cout << "parse_tree_to_pstr= \n" << ppm_3_algo_->parse_tree_to_pstr() << "\n";
   // std::cout << "accuracy_seq= \n" << patch::vec_to_str<char>(accuracy_v) << "\n";
   
-  boost::shared_ptr<MAlgo> po_algo_ = boost::make_shared<POAlgo>();
+  boost::shared_ptr<PAlgo> po_algo_ = boost::make_shared<POAlgo>();
   float po_hit_rate;
   accuracy_v.clear();
-  sim_prefetch_accuracy<MAlgo>(*po_algo_, cache_size, acc_step_v, po_hit_rate, accuracy_v);
+  sim_prefetch_accuracy<PAlgo>(*po_algo_, cache_size, acc_step_v, po_hit_rate, accuracy_v);
   std::cout << "PO_ALGO: \n"
             << "hit_rate= " << po_hit_rate << "\n";
   // // std::cout << "parse_tree_to_pstr= \n" << po_algo_->parse_tree_to_pstr() << "\n";
@@ -431,26 +430,26 @@ void test_malgo()
   malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 4) );
   
   std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.2)(0.2)(0.2)(0.2)(0.2);
-  boost::shared_ptr<MMAlgo> wmmalgo_ = boost::make_shared<WMMAlgo>(malgo_t__context_size_v, malgo_id__weight_v);
+  boost::shared_ptr<MPAlgo> wmmalgo_ = boost::make_shared<WMPAlgo>(malgo_t__context_size_v, malgo_id__weight_v);
   float wmmalgo_hit_rate;
   accuracy_v.clear();
-  sim_prefetch_accuracy<MMAlgo>(*wmmalgo_, cache_size, acc_step_v, wmmalgo_hit_rate, accuracy_v);
+  sim_prefetch_accuracy<MPAlgo>(*wmmalgo_, cache_size, acc_step_v, wmmalgo_hit_rate, accuracy_v);
   std::cout << "WMMALGO: \n"
             << "hit_rate= " << wmmalgo_hit_rate << "\n";
   // std::cout << "accuracy_seq= \n" << patch::vec_to_str<char>(accuracy_v) << "\n";
   
-  boost::shared_ptr<MMAlgo> mmmalgo_ = boost::make_shared<MMMAlgo>(malgo_t__context_size_v);
+  boost::shared_ptr<MPAlgo> mmmalgo_ = boost::make_shared<MMPAlgo>(malgo_t__context_size_v);
   float mmmalgo_hit_rate;
   accuracy_v.clear();
-  sim_prefetch_accuracy<MMAlgo>(*mmmalgo_, cache_size, acc_step_v, mmmalgo_hit_rate, accuracy_v);
+  sim_prefetch_accuracy<MPAlgo>(*mmmalgo_, cache_size, acc_step_v, mmmalgo_hit_rate, accuracy_v);
   std::cout << "MMMALGO: \n"
             << "hit_rate= " << mmmalgo_hit_rate << "\n";
   // std::cout << "accuracy_seq= \n" << patch::vec_to_str<char>(accuracy_v) << "\n";
   
-  boost::shared_ptr<MMAlgo> bmmalgo_ = boost::make_shared<BMMAlgo>(malgo_t__context_size_v, 4);
+  boost::shared_ptr<MPAlgo> bmmalgo_ = boost::make_shared<BMPAlgo>(malgo_t__context_size_v, 4);
   float bmmalgo_hit_rate;
   accuracy_v.clear();
-  sim_prefetch_accuracy<MMAlgo>(*bmmalgo_, cache_size, acc_step_v, bmmalgo_hit_rate, accuracy_v);
+  sim_prefetch_accuracy<MPAlgo>(*bmmalgo_, cache_size, acc_step_v, bmmalgo_hit_rate, accuracy_v);
   std::cout << "BMMALGO_WND_4: \n"
             << "bmmalgo= \n" << bmmalgo_->to_str() << "\n"
             << "hit_rate= " << bmmalgo_hit_rate << "\n";
@@ -498,10 +497,10 @@ void test_bmmalgo()
   malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 2) );
   malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 4) );
   
-  boost::shared_ptr<MMAlgo> bmmalgo_ = boost::make_shared<BMMAlgo>(malgo_t__context_size_v, 10);
+  boost::shared_ptr<MPAlgo> bmmalgo_ = boost::make_shared<BMPAlgo>(malgo_t__context_size_v, 10);
   float bmmalgo_hit_rate;
   accuracy_v.clear();
-  sim_prefetch_accuracy<MMAlgo>(*bmmalgo_, cache_size, acc_step_v, bmmalgo_hit_rate, accuracy_v);
+  sim_prefetch_accuracy<MPAlgo>(*bmmalgo_, cache_size, acc_step_v, bmmalgo_hit_rate, accuracy_v);
   std::cout << "BMMALGO_WND_4: \n"
             << "bmmalgo= \n" << bmmalgo_->to_str() << "\n"
             << "hit_rate= " << bmmalgo_hit_rate << "\n";
@@ -611,28 +610,27 @@ void test_fixed_train()
 {
   std::vector<std::string> title_v;
   
-  std::vector<boost::shared_ptr<MAlgo> > malgo_v;
-  malgo_v.push_back(boost::make_shared<LZAlgo>() );
+  std::vector<boost::shared_ptr<PAlgo> > palgo_v;
+  palgo_v.push_back(boost::make_shared<LZAlgo>() );
   title_v.push_back("lz");
-  malgo_v.push_back(boost::make_shared<POAlgo>() );
+  palgo_v.push_back(boost::make_shared<POAlgo>() );
   title_v.push_back("poisson");
-  malgo_v.push_back(boost::make_shared<PPMAlgo>(1) );
+  palgo_v.push_back(boost::make_shared<PPMAlgo>(1) );
   title_v.push_back("ppm order 1");
-  malgo_v.push_back(boost::make_shared<PPMAlgo>(2) );
+  palgo_v.push_back(boost::make_shared<PPMAlgo>(2) );
   title_v.push_back("ppm order 2");
-  malgo_v.push_back(boost::make_shared<PPMAlgo>(3) );
+  palgo_v.push_back(boost::make_shared<PPMAlgo>(3) );
   title_v.push_back("ppm order 3");
-  malgo_v.push_back(boost::make_shared<PPMAlgo>(4) );
+  palgo_v.push_back(boost::make_shared<PPMAlgo>(4) );
   title_v.push_back("ppm order 4");
-  // malgo_v.push_back(boost::make_shared<PPMAlgo>(6) );
+  // palgo_v.push_back(boost::make_shared<PPMAlgo>(6) );
   // title_v.push_back("ppm order 6");
-  // malgo_v.push_back(boost::make_shared<PPMAlgo>(8) );
+  // palgo_v.push_back(boost::make_shared<PPMAlgo>(8) );
   // title_v.push_back("ppm order 8");
-  // malgo_v.push_back(boost::make_shared<PPMAlgo>(10) );
+  // palgo_v.push_back(boost::make_shared<PPMAlgo>(10) );
   // title_v.push_back("ppm order 10");
   
-  std::vector<boost::shared_ptr<MMAlgo> > mmalgo_v;
-  std::vector<malgo_t__context_size_pair> malgo_t__context_size_v;
+    std::vector<malgo_t__context_size_pair> malgo_t__context_size_v;
   // malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_LZ, 0) );
   // malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 1) );
   malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 2) );
@@ -641,16 +639,16 @@ void test_fixed_train()
   // std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.2)(0.2)(0.2)(0.2)(0.2);
   // std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.25)(0.25)(0.25)(0.25);
   std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.5)(0.5);
-  mmalgo_v.push_back(boost::make_shared<WMMAlgo>(malgo_t__context_size_v, malgo_id__weight_v) );
+  palgo_v.push_back(boost::make_shared<WMPAlgo>(malgo_t__context_size_v, malgo_id__weight_v) );
   title_v.push_back("mixed-blended");
   
-  mmalgo_v.push_back(boost::make_shared<MMMAlgo>(malgo_t__context_size_v) );
+  palgo_v.push_back(boost::make_shared<MMPAlgo>(malgo_t__context_size_v) );
   title_v.push_back("mixed-most confident");
   
-  mmalgo_v.push_back(boost::make_shared<BMMAlgo>(malgo_t__context_size_v, 4) );
+  palgo_v.push_back(boost::make_shared<BMPAlgo>(malgo_t__context_size_v, 4) );
   title_v.push_back("mixed-best wnd 4");
   
-  int num_algo = malgo_v.size() + mmalgo_v.size();
+  int num_algo = palgo_v.size();
   
   int alphabet_size = 20; // 10;
   int num_acc = 200; // 20;
@@ -688,7 +686,7 @@ void test_fixed_train()
       // std::cout << "acc_v= " << patch::vec_to_str<>(acc_v) << "\n";
       
       int algo_id = 0;
-      for (std::vector<boost::shared_ptr<MAlgo> >::iterator it = malgo_v.begin(); it != malgo_v.end(); it++, algo_id++) {
+      for (std::vector<boost::shared_ptr<PAlgo> >::iterator it = palgo_v.begin(); it != palgo_v.end(); it++, algo_id++) {
         if (i == 1) {
           (*it)->reset();
           algo_id__cache_v[algo_id]->reset();
@@ -698,29 +696,8 @@ void test_fixed_train()
         acc_v_to_acc_step_v(acc_v, acc_step_v, algo_id__acc__last_acced_step_map_v[algo_id] );
         
         accuracy_v.clear();
-        sim_prefetch_accuracy<MAlgo>(**it, *(algo_id__cache_v[algo_id] ), algo_id__acc__last_acced_step_map_v[algo_id],
+        sim_prefetch_accuracy<PAlgo>(**it, *(algo_id__cache_v[algo_id] ), algo_id__acc__last_acced_step_map_v[algo_id],
                                      acc_step_v, hit_rate, accuracy_v);
-        if (f == 0) {
-          hit_rate_v_v[algo_id].push_back(hit_rate);
-          run_i_v_v[algo_id].push_back(i);
-        }
-        else {
-          hit_rate_v_v[algo_id][i - 1] += hit_rate;
-        }
-      }
-    
-      for (std::vector<boost::shared_ptr<MMAlgo> >::iterator it = mmalgo_v.begin(); it != mmalgo_v.end(); it++, algo_id++) {
-        if (i == 1) {
-          (*it)->reset();
-          algo_id__cache_v[algo_id]->reset();
-          (algo_id__acc__last_acced_step_map_v[algo_id] ).clear();
-        }
-        acc_step_v.clear();
-        acc_v_to_acc_step_v(acc_v, acc_step_v, algo_id__acc__last_acced_step_map_v[algo_id] );
-        
-        accuracy_v.clear();
-        sim_prefetch_accuracy<MMAlgo>(**it, *(algo_id__cache_v[algo_id] ), algo_id__acc__last_acced_step_map_v[algo_id],
-                                      acc_step_v, hit_rate, accuracy_v);
         if (f == 0) {
           hit_rate_v_v[algo_id].push_back(hit_rate);
           run_i_v_v[algo_id].push_back(i);
@@ -739,7 +716,7 @@ void test_fixed_train()
   std::stringstream plot_title_ss;
   plot_title_ss << "Avg Hit rate after training with fixed pattern; "
                 << "alphabet size= " << alphabet_size
-                << ", pattern length= " << num_acc;
+                << ", pattern size= " << num_acc;
   
   std::string out_url = ""; //"/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/prefetch/fig_hit_rate_w_fixed.png";
   make_plot<float>(run_i_v_v, hit_rate_v_v, title_v,
@@ -754,29 +731,44 @@ void test_fixed_train()
   std::cout << "acc_step_v= " << patch::pvec_to_str<>(acc_step_v) << "\n";
 }
 
+void check_acc_step_v(std::vector<acc_step_pair> acc_step_v)
+{
+  std::map<ACC_T, int> acc__last_acced_step_map;
+  for (std::vector<acc_step_pair>::iterator it = acc_step_v.begin(); it != acc_step_v.end(); it++) {
+    if (acc__last_acced_step_map.count(it->first) == 0) {
+      acc__last_acced_step_map[it->first] = it->second;
+    }
+    else {
+      if (it->second > acc__last_acced_step_map[it->first] + 1) {
+        log_(ERROR, "*** wrong ver; step= " << it->second << ", last_acced_step= " << acc__last_acced_step_map[it->first] )
+      }
+      acc__last_acced_step_map[it->first] = it->second;
+    }
+  }
+}
+
 void test_rand_shuffle_train()
 {
   std::vector<std::string> title_v;
   
-  std::vector<boost::shared_ptr<MAlgo> > malgo_v;
-  malgo_v.push_back(boost::make_shared<LZAlgo>() );
+  std::vector<boost::shared_ptr<PAlgo> > palgo_v;
+  palgo_v.push_back(boost::make_shared<LZAlgo>() );
   title_v.push_back("lz");
-  malgo_v.push_back(boost::make_shared<POAlgo>() );
+  palgo_v.push_back(boost::make_shared<POAlgo>() );
   title_v.push_back("poisson");
-  malgo_v.push_back(boost::make_shared<PPMAlgo>(1) );
+  palgo_v.push_back(boost::make_shared<PPMAlgo>(1) );
   title_v.push_back("ppm order 1");
-  malgo_v.push_back(boost::make_shared<PPMAlgo>(2) );
+  palgo_v.push_back(boost::make_shared<PPMAlgo>(2) );
   title_v.push_back("ppm order 2");
-  malgo_v.push_back(boost::make_shared<PPMAlgo>(3) );
+  palgo_v.push_back(boost::make_shared<PPMAlgo>(3) );
   title_v.push_back("ppm order 3");
-  malgo_v.push_back(boost::make_shared<PPMAlgo>(4) );
+  palgo_v.push_back(boost::make_shared<PPMAlgo>(4) );
   title_v.push_back("ppm order 4");
-  // malgo_v.push_back(boost::make_shared<PPMAlgo>(6) );
+  // palgo_v.push_back(boost::make_shared<PPMAlgo>(6) );
   // title_v.push_back("ppm order 6");
-  // malgo_v.push_back(boost::make_shared<PPMAlgo>(8) );
+  // palgo_v.push_back(boost::make_shared<PPMAlgo>(8) );
   // title_v.push_back("ppm order 8");
   
-  std::vector<boost::shared_ptr<MMAlgo> > mmalgo_v;
   std::vector<malgo_t__context_size_pair> malgo_t__context_size_v;
   // malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_LZ, 0) );
   // malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 1) );
@@ -787,16 +779,16 @@ void test_rand_shuffle_train()
   // std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.2)(0.2)(0.2)(0.2)(0.2);
   // std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.25)(0.25)(0.25)(0.25);
   std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.5)(0.5);
-  // mmalgo_v.push_back(boost::make_shared<WMMAlgo>(malgo_t__context_size_v, malgo_id__weight_v) );
+  // palgo_v.push_back(boost::make_shared<WMPAlgo>(malgo_t__context_size_v, malgo_id__weight_v) );
   // title_v.push_back("mixed-blended");
   
-  mmalgo_v.push_back(boost::make_shared<MMMAlgo>(malgo_t__context_size_v) );
+  palgo_v.push_back(boost::make_shared<MMPAlgo>(malgo_t__context_size_v) );
   title_v.push_back("mixed-most confident");
   
-  // mmalgo_v.push_back(boost::make_shared<BMMAlgo>(malgo_t__context_size_v, 4) );
+  // palgo_v.push_back(boost::make_shared<BMPAlgo>(malgo_t__context_size_v, 4) );
   // title_v.push_back("mixed-best wnd 4");
   
-  int num_algo = malgo_v.size() + mmalgo_v.size();
+  int num_algo = palgo_v.size();
   
   int alphabet_size = 20; // 10;
   int num_acc = 200; // 50;
@@ -823,10 +815,11 @@ void test_rand_shuffle_train()
   for (int i = 0; i < num_algo; i++)
     algo_id__cache_v.push_back(boost::make_shared<Cache<ACC_T, acc_step_pair> >(cache_size, boost::function<void(acc_step_pair)>() ) );
   std::vector<std::map<ACC_T, int> > algo_id__acc__last_acced_step_map_v(num_algo);
+  std::vector<std::vector<acc_step_pair> > algo_id__complete_acc_step_v_v(num_algo);
   // 
   float hit_rate;
   std::vector<char> accuracy_v;
-  int num_run = 50;
+  int num_run = 20;
   
   int num_filtering_run = 10;
   for (int f = 0; f < num_filtering_run; f++) {
@@ -846,7 +839,7 @@ void test_rand_shuffle_train()
       // std::cout << "acc_v= " << patch::vec_to_str<>(acc_v) << "\n";
       
       int algo_id = 0;
-      for (std::vector<boost::shared_ptr<MAlgo> >::iterator it = malgo_v.begin(); it != malgo_v.end(); it++, algo_id++) {
+      for (std::vector<boost::shared_ptr<PAlgo> >::iterator it = palgo_v.begin(); it != palgo_v.end(); it++, algo_id++) {
         if (i == 1) {
           (*it)->reset();
           algo_id__cache_v[algo_id]->reset();
@@ -854,31 +847,13 @@ void test_rand_shuffle_train()
         }
         acc_step_v.clear();
         acc_v_to_acc_step_v(acc_v, acc_step_v, algo_id__acc__last_acced_step_map_v[algo_id] );
+        // DEBUG
+        std::vector<acc_step_pair>& complete_acc_step_v = algo_id__complete_acc_step_v_v[algo_id];
+        complete_acc_step_v.insert(complete_acc_step_v.end(), acc_step_v.begin(), acc_step_v.end() );
         
         accuracy_v.clear();
-        sim_prefetch_accuracy<MAlgo>(**it, *(algo_id__cache_v[algo_id] ), algo_id__acc__last_acced_step_map_v[algo_id],
+        sim_prefetch_accuracy<PAlgo>(**it, *(algo_id__cache_v[algo_id] ), algo_id__acc__last_acced_step_map_v[algo_id],
                                      acc_step_v, hit_rate, accuracy_v);
-        if (f == 0) {
-          hit_rate_v_v[algo_id].push_back(hit_rate);
-          run_i_v_v[algo_id].push_back(i);
-        }
-        else {
-          hit_rate_v_v[algo_id][i - 1] += hit_rate;
-        }
-      }
-    
-      for (std::vector<boost::shared_ptr<MMAlgo> >::iterator it = mmalgo_v.begin(); it != mmalgo_v.end(); it++, algo_id++) {
-        if (i == 1) {
-          (*it)->reset();
-          algo_id__cache_v[algo_id]->reset();
-          (algo_id__acc__last_acced_step_map_v[algo_id] ).clear();
-        }
-        acc_step_v.clear();
-        acc_v_to_acc_step_v(acc_v, acc_step_v, algo_id__acc__last_acced_step_map_v[algo_id] );
-        
-        accuracy_v.clear();
-        sim_prefetch_accuracy<MMAlgo>(**it, *(algo_id__cache_v[algo_id] ), algo_id__acc__last_acced_step_map_v[algo_id],
-                                      acc_step_v, hit_rate, accuracy_v);
         if (f == 0) {
           hit_rate_v_v[algo_id].push_back(hit_rate);
           run_i_v_v[algo_id].push_back(i);
@@ -892,12 +867,14 @@ void test_rand_shuffle_train()
   for (int algo_id = 0; algo_id < num_algo; algo_id++) {
     for (int i = 0; i < num_run; i++)
       hit_rate_v_v[algo_id][i] = (float)hit_rate_v_v[algo_id][i] / num_filtering_run;
+    // DEBUG
+    check_acc_step_v(algo_id__complete_acc_step_v_v[algo_id] );
   }
   
   std::stringstream plot_title_ss;
   plot_title_ss << "Avg Hit rate after training with noisy pattern; "
                 << "alphabet size= " << alphabet_size
-                << ", pattern length= " << num_acc;
+                << ", pattern size= " << num_acc;
   
   std::string out_url = ""; // "/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/prefetch/img/fig_hit_rate_w_rand_partial_shuffle.png";
   make_plot<float>(run_i_v_v, hit_rate_v_v, title_v,
@@ -917,25 +894,24 @@ void test_rand_shuffle_train_w_varying_cache()
   std::vector<int> cache_size_v;
   std::vector<std::string> title_v;
   
-  std::vector<boost::shared_ptr<MAlgo> > malgo_v;
-  // malgo_v.push_back(boost::make_shared<LZAlgo>() );
+  std::vector<boost::shared_ptr<PAlgo> > palgo_v;
+  // palgo_v.push_back(boost::make_shared<LZAlgo>() );
   // title_v.push_back("lz");
-  // malgo_v.push_back(boost::make_shared<POAlgo>() );
+  // palgo_v.push_back(boost::make_shared<POAlgo>() );
   // cache_size_v.push_back(1);
   // title_v.push_back("poisson cache 1");
-  // malgo_v.push_back(boost::make_shared<POAlgo>() );
+  // palgo_v.push_back(boost::make_shared<POAlgo>() );
   // cache_size_v.push_back(4);
   // title_v.push_back("poisson cache 4");
-  // malgo_v.push_back(boost::make_shared<PPMAlgo>(1) );
+  // palgo_v.push_back(boost::make_shared<PPMAlgo>(1) );
   // title_v.push_back("ppm order 1");
-  // malgo_v.push_back(boost::make_shared<PPMAlgo>(2) );
+  // palgo_v.push_back(boost::make_shared<PPMAlgo>(2) );
   // title_v.push_back("ppm order 2");
-  // malgo_v.push_back(boost::make_shared<PPMAlgo>(3) );
+  // palgo_v.push_back(boost::make_shared<PPMAlgo>(3) );
   // title_v.push_back("ppm order 3");
-  // malgo_v.push_back(boost::make_shared<PPMAlgo>(4) );
+  // palgo_v.push_back(boost::make_shared<PPMAlgo>(4) );
   // title_v.push_back("ppm order 4");
   
-  std::vector<boost::shared_ptr<MMAlgo> > mmalgo_v;
   std::vector<malgo_t__context_size_pair> malgo_t__context_size_v;
   // malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_LZ, 0) );
   // malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 1) );
@@ -946,29 +922,29 @@ void test_rand_shuffle_train_w_varying_cache()
   // std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.2)(0.2)(0.2)(0.2)(0.2);
   // std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.25)(0.25)(0.25)(0.25);
   std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.5)(0.5);
-  // mmalgo_v.push_back(boost::make_shared<WMMAlgo>(malgo_t__context_size_v, malgo_id__weight_v) );
+  // palgo_v.push_back(boost::make_shared<WMPAlgo>(malgo_t__context_size_v, malgo_id__weight_v) );
   // title_v.push_back("mixed-blended");
   
-  mmalgo_v.push_back(boost::make_shared<MMMAlgo>(malgo_t__context_size_v) );
+  palgo_v.push_back(boost::make_shared<MMPAlgo>(malgo_t__context_size_v) );
   cache_size_v.push_back(1);
   title_v.push_back("mixed-most confident cache 1");
-  mmalgo_v.push_back(boost::make_shared<MMMAlgo>(malgo_t__context_size_v) );
+  palgo_v.push_back(boost::make_shared<MMPAlgo>(malgo_t__context_size_v) );
   cache_size_v.push_back(4);
   title_v.push_back("mixed-most confident cache 4");
-  mmalgo_v.push_back(boost::make_shared<MMMAlgo>(malgo_t__context_size_v) );
+  palgo_v.push_back(boost::make_shared<MMPAlgo>(malgo_t__context_size_v) );
   cache_size_v.push_back(10);
   title_v.push_back("mixed-most confident cache 10");
-  mmalgo_v.push_back(boost::make_shared<MMMAlgo>(malgo_t__context_size_v) );
+  palgo_v.push_back(boost::make_shared<MMPAlgo>(malgo_t__context_size_v) );
   cache_size_v.push_back(15);
   title_v.push_back("mixed-most confident cache 15");
-  mmalgo_v.push_back(boost::make_shared<MMMAlgo>(malgo_t__context_size_v) );
+  palgo_v.push_back(boost::make_shared<MMPAlgo>(malgo_t__context_size_v) );
   cache_size_v.push_back(20);
   title_v.push_back("mixed-most confident cache 20");
   
-  // mmalgo_v.push_back(boost::make_shared<BMMAlgo>(malgo_t__context_size_v, 4) );
+  // palgo_v.push_back(boost::make_shared<BMPAlgo>(malgo_t__context_size_v, 4) );
   // title_v.push_back("mixed-best wnd 4");
   
-  int num_algo = malgo_v.size() + mmalgo_v.size();
+  int num_algo = palgo_v.size();
   
   int alphabet_size = 20; // 10;
   int num_acc = 200; // 50;
@@ -1017,7 +993,7 @@ void test_rand_shuffle_train_w_varying_cache()
       // std::cout << "acc_v= " << patch::vec_to_str<>(acc_v) << "\n";
       
       int algo_id = 0;
-      for (std::vector<boost::shared_ptr<MAlgo> >::iterator it = malgo_v.begin(); it != malgo_v.end(); it++, algo_id++) {
+      for (std::vector<boost::shared_ptr<PAlgo> >::iterator it = palgo_v.begin(); it != palgo_v.end(); it++, algo_id++) {
         if (i == 1) {
           (*it)->reset();
           algo_id__cache_v[algo_id]->reset();
@@ -1027,29 +1003,8 @@ void test_rand_shuffle_train_w_varying_cache()
         acc_v_to_acc_step_v(acc_v, acc_step_v, algo_id__acc__last_acced_step_map_v[algo_id] );
         
         accuracy_v.clear();
-        sim_prefetch_accuracy<MAlgo>(**it, *(algo_id__cache_v[algo_id] ), algo_id__acc__last_acced_step_map_v[algo_id],
+        sim_prefetch_accuracy<PAlgo>(**it, *(algo_id__cache_v[algo_id] ), algo_id__acc__last_acced_step_map_v[algo_id],
                                      acc_step_v, hit_rate, accuracy_v);
-        if (f == 0) {
-          hit_rate_v_v[algo_id].push_back(hit_rate);
-          run_i_v_v[algo_id].push_back(i);
-        }
-        else {
-          hit_rate_v_v[algo_id][i - 1] += hit_rate;
-        }
-      }
-    
-      for (std::vector<boost::shared_ptr<MMAlgo> >::iterator it = mmalgo_v.begin(); it != mmalgo_v.end(); it++, algo_id++) {
-        if (i == 1) {
-          (*it)->reset();
-          algo_id__cache_v[algo_id]->reset();
-          (algo_id__acc__last_acced_step_map_v[algo_id] ).clear();
-        }
-        acc_step_v.clear();
-        acc_v_to_acc_step_v(acc_v, acc_step_v, algo_id__acc__last_acced_step_map_v[algo_id] );
-        
-        accuracy_v.clear();
-        sim_prefetch_accuracy<MMAlgo>(**it, *(algo_id__cache_v[algo_id] ), algo_id__acc__last_acced_step_map_v[algo_id],
-                                      acc_step_v, hit_rate, accuracy_v);
         if (f == 0) {
           hit_rate_v_v[algo_id].push_back(hit_rate);
           run_i_v_v[algo_id].push_back(i);
@@ -1068,7 +1023,7 @@ void test_rand_shuffle_train_w_varying_cache()
   std::stringstream plot_title_ss;
   plot_title_ss << "Avg Hit rate after training with noisy pattern; "
                 << "alphabet size= " << alphabet_size
-                << ", pattern length= " << num_acc;
+                << ", pattern size= " << num_acc;
   
   std::string out_url = ""; // "/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/prefetch/img/fig_hit_rate_w_rand_partial_shuffle.png";
   make_plot<float>(run_i_v_v, hit_rate_v_v, title_v,
@@ -1087,21 +1042,20 @@ void plot_hit_rate_vs_cache_size()
 {
   std::vector<std::string> title_v;
   
-  std::vector<boost::shared_ptr<MAlgo> > malgo_v;
-  malgo_v.push_back(boost::make_shared<LZAlgo>() );
+  std::vector<boost::shared_ptr<PAlgo> > palgo_v;
+  palgo_v.push_back(boost::make_shared<LZAlgo>() );
   title_v.push_back("lz");
-  malgo_v.push_back(boost::make_shared<POAlgo>() );
+  palgo_v.push_back(boost::make_shared<POAlgo>() );
   title_v.push_back("poisson");
-  malgo_v.push_back(boost::make_shared<PPMAlgo>(1) );
+  palgo_v.push_back(boost::make_shared<PPMAlgo>(1) );
   title_v.push_back("ppm order 1");
-  malgo_v.push_back(boost::make_shared<PPMAlgo>(2) );
+  palgo_v.push_back(boost::make_shared<PPMAlgo>(2) );
   title_v.push_back("ppm order 2");
-  malgo_v.push_back(boost::make_shared<PPMAlgo>(3) );
+  palgo_v.push_back(boost::make_shared<PPMAlgo>(3) );
   title_v.push_back("ppm order 3");
-  malgo_v.push_back(boost::make_shared<PPMAlgo>(4) );
+  palgo_v.push_back(boost::make_shared<PPMAlgo>(4) );
   title_v.push_back("ppm order 4");
   
-  std::vector<boost::shared_ptr<MMAlgo> > mmalgo_v;
   std::vector<malgo_t__context_size_pair> malgo_t__context_size_v;
   // malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_LZ, 0) );
   // malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 1) );
@@ -1112,16 +1066,16 @@ void plot_hit_rate_vs_cache_size()
   // std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.2)(0.2)(0.2)(0.2)(0.2);
   // std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.25)(0.25)(0.25)(0.25);
   std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.5)(0.5);
-  // mmalgo_v.push_back(boost::make_shared<WMMAlgo>(malgo_t__context_size_v, malgo_id__weight_v) );
+  // palgo_v.push_back(boost::make_shared<WMPAlgo>(malgo_t__context_size_v, malgo_id__weight_v) );
   // title_v.push_back("mixed-blended");
   
-  mmalgo_v.push_back(boost::make_shared<MMMAlgo>(malgo_t__context_size_v) );
+  palgo_v.push_back(boost::make_shared<MMPAlgo>(malgo_t__context_size_v) );
   title_v.push_back("mixed-most confident");
   
-  // mmalgo_v.push_back(boost::make_shared<BMMAlgo>(malgo_t__context_size_v, 4) );
+  // palgo_v.push_back(boost::make_shared<BMPAlgo>(malgo_t__context_size_v, 4) );
   // title_v.push_back("mixed-best wnd 4");
   
-  int num_algo = malgo_v.size() + mmalgo_v.size();
+  int num_algo = palgo_v.size();
   
   int alphabet_size = 20; // 10;
   int num_acc = 200; // 50;
@@ -1167,25 +1121,14 @@ void plot_hit_rate_vs_cache_size()
       std::cout << "cache_size= " << cache_size << ", f= " << f << "\n";
       
       int algo_id = 0;
-      for (std::vector<boost::shared_ptr<MAlgo> >::iterator it = malgo_v.begin(); it != malgo_v.end(); it++, algo_id++) {
+      for (std::vector<boost::shared_ptr<PAlgo> >::iterator it = palgo_v.begin(); it != palgo_v.end(); it++, algo_id++) {
+        (*it)->reset();
         if (f == 0) {
-          (*it)->reset();
           cache_size_v_v[algo_id].push_back(cache_size);
         }
         
         accuracy_v.clear();
-        sim_prefetch_accuracy<MAlgo>(**it, cache_size, acc_step_v, hit_rate, accuracy_v);
-        total_hit_rate_v[algo_id] += hit_rate;
-      }
-    
-      for (std::vector<boost::shared_ptr<MMAlgo> >::iterator it = mmalgo_v.begin(); it != mmalgo_v.end(); it++, algo_id++) {
-        if (f == 0) {
-          (*it)->reset();
-          cache_size_v_v[algo_id].push_back(cache_size);
-        }
-        
-        accuracy_v.clear();
-        sim_prefetch_accuracy<MMAlgo>(**it, cache_size, acc_step_v, hit_rate, accuracy_v);
+        sim_prefetch_accuracy<PAlgo>(**it, cache_size, acc_step_v, hit_rate, accuracy_v);
         total_hit_rate_v[algo_id] += hit_rate;
       }
     }
@@ -1194,18 +1137,18 @@ void plot_hit_rate_vs_cache_size()
   }
   
   std::stringstream plot_title_ss;
-  plot_title_ss << "Avg long run hit rate after training with noisy pattern \n"
+  plot_title_ss << "Avg Hit rate after training with noisy pattern; "
                 << "alphabet size= " << alphabet_size
-                << ", pattern length= " << num_acc;
+                << ", pattern size= " << num_acc;
   
   std::string out_url = "";
   make_plot<float>(cache_size_v_v, hit_rate_v_v, title_v,
-                   "Cache size", "Avg Hit rate",
+                   "Cache size (Number of data items)", "Avg Hit rate",
                    plot_title_ss.str(), out_url);
   
   out_url = "/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/sdm_control/prefetch/fig_hit_rate_vs_cache_size.png";
   make_plot<float>(cache_size_v_v, hit_rate_v_v, title_v,
-                   "Cache size", "Avg Hit rate",
+                   "Cache size (Number of data items)", "Avg Hit rate",
                    plot_title_ss.str(), out_url);
   
   // std::cout << "acc_step_v= " << patch::pvec_to_str<>(acc_step_v) << "\n";

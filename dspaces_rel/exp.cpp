@@ -167,7 +167,7 @@ int main(int argc , char **argv)
     std::string ib_lports[] = {"1234","1235","1236","1237"};
     std::list<std::string> ib_lport_list(ib_lports, ib_lports + sizeof(ib_lports)/sizeof(*ib_lports) );
     
-    MALGO_T malgo_t = MALGO_W_PPM;
+    PALGO_T palgo_t = MALGO_W_PPM;
     int max_num_key_ver_in_mpbuffer = 10;
     
     SALGO_T salgo_t = SALGO_H;
@@ -183,7 +183,7 @@ int main(int argc , char **argv)
           boost::lexical_cast<int>(opt_map["cl_id"] ), boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_client"] ),
           intf_to_ip(opt_map["lcontrol_lintf"] ), boost::lexical_cast<int>(opt_map["lcontrol_lport"] ), opt_map["join_lcontrol_lip"], boost::lexical_cast<int>(opt_map["join_lcontrol_lport"] ),
           boost::lexical_cast<int>(opt_map["ds_id"] ), intf_to_ip(opt_map["control_lintf"] ), boost::lexical_cast<int>(opt_map["control_lport"] ), opt_map["join_control_lip"], boost::lexical_cast<int>(opt_map["join_control_lport"] ),
-          malgo_t, max_num_key_ver_in_mpbuffer, w_prefetch,
+          palgo_t, max_num_key_ver_in_mpbuffer, w_prefetch,
           opt_map["trans_protocol"], intf_to_ip(opt_map["ib_lintf"] ), ib_lport_list,
           intf_to_ip(opt_map["tcp_lintf"] ), boost::lexical_cast<int>(opt_map["tcp_lport"] ),
           opt_map["gftp_lintf"], intf_to_ip(opt_map["gftp_lintf"] ), opt_map["gftp_lport"], opt_map["tmpfs_dir"] ) );

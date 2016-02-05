@@ -218,7 +218,7 @@ class MMRIManager : public RIManager { // Markov Master
     MMRIManager(int cl_id, int base_client_id, int num_client,
                 std::string lcontrol_lip, int lcontrol_lport, std::string join_lcontrol_lip, int join_lcontrol_lport,
                 int ds_id, std::string control_lip, int control_lport, std::string join_control_lip, int join_control_lport,
-                MALGO_T malgo_t, int max_num_key_ver_in_mpbuffer, bool w_prefetch,
+                PALGO_T palgo_t, int max_num_key_ver_in_mpbuffer, bool w_prefetch,
                 std::string data_trans_protocol, std::string ib_lip, std::list<std::string> ib_lport_list,
                 std::string tcp_lip, int tcp_lport,
                 std::string gftp_lintf, std::string gftp_lip, std::string gftp_lport, std::string tmpfs_dir)
@@ -231,7 +231,7 @@ class MMRIManager : public RIManager { // Markov Master
       boost::shared_ptr<SDMSlave> t_sdm_slave_(
         new MSDMMaster(ds_id, control_lip, control_lport, join_control_lip, join_control_lport,
                        boost::bind(&RIManager::handle_rimsg, this, _1), boost::bind(&RIManager::handle_dm_act, this, _1),
-                       malgo_t, max_num_key_ver_in_mpbuffer, w_prefetch) );
+                       palgo_t, max_num_key_ver_in_mpbuffer, w_prefetch) );
       sdm_slave_ = t_sdm_slave_;
       
       lsdm_node_ = boost::make_shared<SDMNode>(

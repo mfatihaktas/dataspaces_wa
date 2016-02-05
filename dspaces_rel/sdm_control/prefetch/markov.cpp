@@ -1,7 +1,13 @@
 #include "markov.h"
 
+/**********************************************  PAlgo  *******************************************/
+PAlgo::PAlgo() {}
+PAlgo::~PAlgo() {}
+
+std::vector<ACC_T> PAlgo::get_acc_v() { return acc_v; }
+
 /**********************************************  MAlgo  *******************************************/
-MAlgo::MAlgo(MALGO_T malgo_t, int context_size)
+MAlgo::MAlgo(PALGO_T malgo_t, int context_size)
 : parse_tree(malgo_t, context_size) {}
   
 MAlgo::~MAlgo() {}
@@ -15,8 +21,6 @@ void MAlgo::reset()
 }
 
 std::string MAlgo::parse_tree_to_pstr() { return parse_tree.to_pretty_str(); }
-
-std::vector<ACC_T> MAlgo::get_acc_v() { return acc_v; }
 
 int MAlgo::train(std::vector<ACC_T> acc_v)
 {
@@ -99,8 +103,8 @@ POAlgo::POAlgo()
 
 POAlgo::~POAlgo() { log_(INFO, "destructed.") }
 
-/**********************************************  MMAlgo  ******************************************/
-MMAlgo::MMAlgo(std::vector<malgo_t__context_size_pair> malgo_t__context_size_v)
+/**********************************************  MPAlgo  ******************************************/
+MPAlgo::MPAlgo(std::vector<malgo_t__context_size_pair> malgo_t__context_size_v)
 : malgo_t__context_size_v(malgo_t__context_size_v)
 {
   for (std::vector<malgo_t__context_size_pair>::iterator it = malgo_t__context_size_v.begin(); it != malgo_t__context_size_v.end(); it++)
@@ -109,9 +113,9 @@ MMAlgo::MMAlgo(std::vector<malgo_t__context_size_pair> malgo_t__context_size_v)
   log_(INFO, "constructed.")
 }
 
-MMAlgo::~MMAlgo() { log_(INFO, "destructed.") }
+MPAlgo::~MPAlgo() { log_(INFO, "destructed.") }
 
-std::string MMAlgo::to_str()
+std::string MPAlgo::to_str()
 {
   std::stringstream ss;
   ss << "malgo_t__context_size_v= \n" << patch::pvec_to_str<>(malgo_t__context_size_v) << "\n"
@@ -125,7 +129,7 @@ std::string MMAlgo::to_str()
   return ss.str();
 }
 
-void MMAlgo::reset()
+void MPAlgo::reset()
 {
   for (std::vector<boost::shared_ptr<ParseTree> >::iterator parse_tree__ = parse_tree_v.begin(); parse_tree__ != parse_tree_v.end(); parse_tree__++)
     (*parse_tree__)->reset();
@@ -134,9 +138,7 @@ void MMAlgo::reset()
   acc_v.clear();
 }
 
-std::vector<ACC_T> MMAlgo::get_acc_v() { return acc_v; }
-
-int MMAlgo::train(std::vector<ACC_T> acc_v)
+int MPAlgo::train(std::vector<ACC_T> acc_v)
 {
   int err;
   for (std::vector<ACC_T>::iterator it = acc_v.begin(); it != acc_v.end(); it++) {
@@ -146,7 +148,7 @@ int MMAlgo::train(std::vector<ACC_T> acc_v)
   return 0;
 }
 
-int MMAlgo::add_access(ACC_T acc)
+int MPAlgo::add_access(ACC_T acc)
 {
   int err;
   acc_s.insert(acc);
@@ -159,28 +161,28 @@ int MMAlgo::add_access(ACC_T acc)
   return 0;
 }
 
-/***************************************  WMMAlgo : MMAlgo  ***************************************/
-WMMAlgo::WMMAlgo(std::vector<malgo_t__context_size_pair> malgo_t__context_size_v,
+/***************************************  WMPAlgo : MPAlgo  ***************************************/
+WMPAlgo::WMPAlgo(std::vector<malgo_t__context_size_pair> malgo_t__context_size_v,
                  std::vector<float> malgo_id__weight_v)
-: MMAlgo(malgo_t__context_size_v),
+: MPAlgo(malgo_t__context_size_v),
   malgo_id__weight_v(malgo_id__weight_v)
 {
   // 
   log_(INFO, "constructed; \n" << to_str() )
 }
 
-WMMAlgo::~WMMAlgo() { log_(INFO, "destructed.") }
+WMPAlgo::~WMPAlgo() { log_(INFO, "destructed.") }
 
-std::string WMMAlgo::to_str()
+std::string WMPAlgo::to_str()
 {
   std::stringstream ss;
-  ss << "MMAlgo::to_str= \n" << MMAlgo::to_str() << "\n"
+  ss << "MPAlgo::to_str= \n" << MPAlgo::to_str() << "\n"
      << "malgo_id__weight_v= \n" << patch::vec_to_str<>(malgo_id__weight_v) << "\n";
   
   return ss.str();
 }
 
-int WMMAlgo::get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
+int WMPAlgo::get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
                              const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v)
 {
   int num_pt_ = parse_tree_v.size();
@@ -222,25 +224,25 @@ int WMMAlgo::get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
   return 0;
 }
 
-/***************************************  MMMAlgo : MMAlgo  ***************************************/
-MMMAlgo::MMMAlgo(std::vector<malgo_t__context_size_pair> malgo_t__context_size_v)
-: MMAlgo(malgo_t__context_size_v)
+/***************************************  MMPAlgo : MPAlgo  ***************************************/
+MMPAlgo::MMPAlgo(std::vector<malgo_t__context_size_pair> malgo_t__context_size_v)
+: MPAlgo(malgo_t__context_size_v)
 {
   // 
   log_(INFO, "constructed; \n" << to_str() )
 }
 
-MMMAlgo::~MMMAlgo() { log_(INFO, "destructed.") }
+MMPAlgo::~MMPAlgo() { log_(INFO, "destructed.") }
 
-std::string MMMAlgo::to_str()
+std::string MMPAlgo::to_str()
 {
   std::stringstream ss;
-  ss << "MMAlgo::to_str= \n" << MMAlgo::to_str() << "\n";
+  ss << "MPAlgo::to_str= \n" << MPAlgo::to_str() << "\n";
   
   return ss.str();
 }
 
-int MMMAlgo::get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
+int MMPAlgo::get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
                              const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v)
 {
   int num_pt_ = parse_tree_v.size();
@@ -283,9 +285,9 @@ int MMMAlgo::get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
   return 0;
 }
 
-/***************************************  BMMAlgo : MMAlgo  ***************************************/
-BMMAlgo::BMMAlgo(std::vector<malgo_t__context_size_pair> malgo_t__context_size_v, int window_size)
-: MMAlgo(malgo_t__context_size_v),
+/***************************************  BMPAlgo : MPAlgo  ***************************************/
+BMPAlgo::BMPAlgo(std::vector<malgo_t__context_size_pair> malgo_t__context_size_v, int window_size)
+: MPAlgo(malgo_t__context_size_v),
   window_size(window_size)
 {
   for (int i = 0; i < malgo_t__context_size_v.size(); i++) {
@@ -296,12 +298,12 @@ BMMAlgo::BMMAlgo(std::vector<malgo_t__context_size_pair> malgo_t__context_size_v
   log_(INFO, "constructed; \n" << to_str() )
 }
 
-BMMAlgo::~BMMAlgo() { log_(INFO, "destructed.") }
+BMPAlgo::~BMPAlgo() { log_(INFO, "destructed.") }
 
-std::string BMMAlgo::to_str()
+std::string BMPAlgo::to_str()
 {
   std::stringstream ss;
-  ss << "MMAlgo::to_str= \n" << MMAlgo::to_str() << "\n"
+  ss << "MPAlgo::to_str= \n" << MPAlgo::to_str() << "\n"
      << "window_size= " << window_size << "\n"
      << "malgo_id__score_queue_v= \n";
   int id = 0;
@@ -311,7 +313,7 @@ std::string BMMAlgo::to_str()
   return ss.str();
 }
 
-int BMMAlgo::add_access(ACC_T acc)
+int BMPAlgo::add_access(ACC_T acc)
 {
   // log_(INFO, "acc= " << acc)
   int id = 0;
@@ -322,11 +324,11 @@ int BMMAlgo::add_access(ACC_T acc)
       malgo_id__score_queue_v[id]->push(0);
   }
   int err;
-  return_if_err(MMAlgo::add_access(acc), err)
+  return_if_err(MPAlgo::add_access(acc), err)
   return 0;
 }
 
-int BMMAlgo::get_malgo_score(int malgo_id)
+int BMPAlgo::get_malgo_score(int malgo_id)
 {
   int score = 0;
   for (std::deque<int>::iterator it = malgo_id__score_queue_v[malgo_id]->begin(); it != malgo_id__score_queue_v[malgo_id]->end(); it++)
@@ -335,7 +337,7 @@ int BMMAlgo::get_malgo_score(int malgo_id)
   return score;
 }
 
-int BMMAlgo::get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
+int BMPAlgo::get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
                              const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v)
 {
   int err;

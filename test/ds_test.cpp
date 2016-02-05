@@ -70,12 +70,11 @@ int DSTest::init(uint64_t data_length)
   gdim_ = (uint64_t*)malloc(ndim*sizeof(uint64_t) );
   lb_ = (uint64_t*)malloc(ndim*sizeof(uint64_t) );
   ub_ = (uint64_t*)malloc(ndim*sizeof(uint64_t) );
-  for (int i = 0; i < ndim; i++)
-    lb_[i] = 0;
   // uint64_t ub_limit = ceil(pow(data_length, (float)1/ndim) );
   uint64_t ub_limit = floor(pow(data_length, (float)1/ndim) );
   for (int i = 0; i < ndim; i++) {
     gdim_[i] = ub_limit;
+    lb_[i] = 0;
     ub_[i] = ub_limit - 1;
   }
   

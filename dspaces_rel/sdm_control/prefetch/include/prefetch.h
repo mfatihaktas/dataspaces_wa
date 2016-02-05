@@ -224,10 +224,10 @@ class MPBuffer { // Markov Prefetching
     patch::thread_safe_map<int, std::vector<key_ver_pair> > app_id__acced_kv_v_map;
     
     Cache<ACC_T, key_ver_pair> cache;
-    boost::shared_ptr<MAlgo> malgo_to_pick_app_;
+    boost::shared_ptr<PAlgo> palgo_to_pick_app_;
     boost::mutex add_acc_mutex;
   public:
-    MPBuffer(int ds_id, int max_num_key_ver, MALGO_T malgo_t,
+    MPBuffer(int ds_id, int max_num_key_ver, PALGO_T palgo_t,
              bool w_prefetch, func_handle_mpbuffer_data_act_cb handle_mpbuffer_data_act_cb = 0);
     ~MPBuffer();
     std::string to_str();
@@ -273,7 +273,7 @@ class WASpace {
 class MWASpace : public WASpace {
   private:
     int max_num_key_ver_in_mpbuffer;
-    MALGO_T malgo_t;
+    PALGO_T palgo_t;
     bool w_prefetch;
     
     patch::thread_safe_vector<key_ver_pair> kv_v;
@@ -286,7 +286,7 @@ class MWASpace : public WASpace {
     // patch::thread_safe_map<int, std::vector<std::string> > p_id__key_map;
   public:
     MWASpace(std::vector<int> ds_id_v,
-             MALGO_T malgo_t, int max_num_key_ver_in_mpbuffer, bool w_prefetch, func_handle_data_act_cb handle_data_act_cb = 0);
+             PALGO_T palgo_t, int max_num_key_ver_in_mpbuffer, bool w_prefetch, func_handle_data_act_cb handle_data_act_cb = 0);
     ~MWASpace();
     std::string to_str();
     std::string to_str_end();

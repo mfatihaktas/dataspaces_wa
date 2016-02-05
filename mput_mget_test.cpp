@@ -105,26 +105,23 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
   
   return opt_map;
 }
-// 10*1024*
-#define TEST_SIZE pow(25*1024*1024, (float)1/NDIM)
-#define TEST_DATASIZE pow(TEST_SIZE, NDIM)
-#define TEST_VER 0
-#define TEST_SGDIM TEST_SIZE
+// 
+const uint64_t TEST_DATA_LENGTH = 1*1024*1024; // 25*1024*1024;
+const uint64_t TEST_UB_LIMIT = floor(pow(TEST_DATA_LENGTH, (float)1/NDIM) );
+const int TEST_VER = 0;
 
 void mget_test(int sleep_time_sec, int num_get, float inter_get_time_sec,
                std::string base_var_name, WADSDriver& wads_driver, TProfiler<int>& get_tprofiler,
                std::ofstream& log_file)
 {
+  int* data_ = (int*)malloc(TEST_DATA_LENGTH*sizeof(int) );
   uint64_t* gdim_ = (uint64_t*)malloc(NDIM*sizeof(uint64_t) );
-  for (int i = 0; i < NDIM; i++)
-    gdim_[i] = TEST_SGDIM;
-  //specifics
-  int* data_ = (int*)malloc(TEST_DATASIZE*sizeof(int) );
   uint64_t *lb_ = (uint64_t*)malloc(NDIM*sizeof(uint64_t) );
   uint64_t *ub_ = (uint64_t*)malloc(NDIM*sizeof(uint64_t) );
   for (int i = 0; i < NDIM; i++) {
+    gdim_[i] = TEST_UB_LIMIT;
     lb_[i] = 0;
-    ub_[i] = TEST_SIZE - 1;
+    ub_[i] = TEST_UB_LIMIT - 1;
   }
   
   sleep(sleep_time_sec);
@@ -163,19 +160,17 @@ void mput_test(int sleep_time_sec, int num_put, float inter_put_time_sec,
                std::string base_var_name, WADSDriver& wads_driver, TProfiler<int>& put_tprofiler,
                std::ofstream& log_file)
 {
+  int* data_ = (int*)malloc(TEST_DATA_LENGTH*sizeof(int) );
   uint64_t* gdim_ = (uint64_t*)malloc(NDIM*sizeof(uint64_t) );
-  for (int i = 0; i < NDIM; i++)
-    gdim_[i] = TEST_SGDIM;
-  //specifics
-  int* data_ = (int*)malloc(TEST_DATASIZE*sizeof(int) );
   uint64_t *lb_ = (uint64_t*)malloc(NDIM*sizeof(uint64_t) );
   uint64_t *ub_ = (uint64_t*)malloc(NDIM*sizeof(uint64_t) );
   for (int i = 0; i < NDIM; i++) {
+    gdim_[i] = TEST_UB_LIMIT;
     lb_[i] = 0;
-    ub_[i] = TEST_SIZE - 1;
+    ub_[i] = TEST_UB_LIMIT - 1;
   }
   
-  for (int i = 0; i < TEST_DATASIZE; i++)
+  for (int i = 0; i < TEST_DATA_LENGTH; i++)
     data_[i] = i + 1;
   
   sleep(sleep_time_sec);

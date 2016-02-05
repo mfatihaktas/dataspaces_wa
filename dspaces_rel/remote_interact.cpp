@@ -499,8 +499,8 @@ int RIManager::handle_dm_del(std::map<std::string, std::string> msg_map)
     log_(INFO, "done waiting for del; data_id= " << data_id)
   }
   
-  int err;
-  return_if_err(ds_driver_->del(msg_map["key"].c_str(), boost::lexical_cast<unsigned int>(msg_map["ver"] ) ), err)
+  // int err;
+  // return_if_err(ds_driver_->del(msg_map["key"].c_str(), boost::lexical_cast<unsigned int>(msg_map["ver"] ) ), err)
   
   return 0;
 }
