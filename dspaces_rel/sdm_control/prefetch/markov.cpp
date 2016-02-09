@@ -1,11 +1,5 @@
 #include "markov.h"
 
-/**********************************************  PAlgo  *******************************************/
-PAlgo::PAlgo() {}
-PAlgo::~PAlgo() {}
-
-std::vector<ACC_T> PAlgo::get_acc_v() { return acc_v; }
-
 /**********************************************  MAlgo  *******************************************/
 MAlgo::MAlgo(PALGO_T malgo_t, int context_size)
 : parse_tree(malgo_t, context_size) {}
@@ -14,10 +8,8 @@ MAlgo::~MAlgo() {}
 
 void MAlgo::reset()
 {
+  PAlgo::reset();
   parse_tree.reset();
-  
-  acc_s.clear();
-  acc_v.clear();
 }
 
 std::string MAlgo::parse_tree_to_pstr() { return parse_tree.to_pretty_str(); }
@@ -34,9 +26,8 @@ int MAlgo::train(std::vector<ACC_T> acc_v)
 
 int MAlgo::add_access(ACC_T acc)
 {
-  acc_s.insert(acc);
-  acc_v.push_back(acc);
   int err;
+  return_if_err(PAlgo::add_access(acc), err);
   return_if_err(parse_tree.add_access(acc), err)
   
   return 0;
@@ -54,12 +45,13 @@ int MAlgo::get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
 {
   int err;
   return_if_err(parse_tree.get_to_prefetch(num_acc, acc_v), err)
-  
+  // 
   for (std::set<ACC_T>::iterator it = acc_s.begin(); it != acc_s.end(); it++) {
     if (std::find(cached_acc_v.begin(), cached_acc_v.end(), *it) == cached_acc_v.end() && 
         std::find(acc_v.begin(), acc_v.end(), *it) == acc_v.end() )
       eacc_v.push_back(*it);
   }
+  
   return 0;
 }
 
@@ -118,9 +110,8 @@ MPAlgo::~MPAlgo() { log_(INFO, "destructed.") }
 std::string MPAlgo::to_str()
 {
   std::stringstream ss;
-  ss << "malgo_t__context_size_v= \n" << patch::pvec_to_str<>(malgo_t__context_size_v) << "\n"
-     << "acc_s= " << patch::set_to_str<>(acc_s) << "\n"
-     << "acc_v= " << patch::vec_to_str<>(acc_v) << "\n";
+  ss << "PAlgo::to_str= \n" << PAlgo::to_str() << "\n"
+     << "malgo_t__context_size_v= \n" << patch::pvec_to_str<>(malgo_t__context_size_v) << "\n";
   
   // ss << "parse_tree_v= \n";
   // for (std::vector<boost::shared_ptr<ParseTree> >::iterator parse_tree__ = parse_tree_v.begin(); parse_tree__ != parse_tree_v.end(); parse_tree__++)
@@ -131,11 +122,9 @@ std::string MPAlgo::to_str()
 
 void MPAlgo::reset()
 {
+  PAlgo::reset();
   for (std::vector<boost::shared_ptr<ParseTree> >::iterator parse_tree__ = parse_tree_v.begin(); parse_tree__ != parse_tree_v.end(); parse_tree__++)
     (*parse_tree__)->reset();
-    
-  acc_s.clear();
-  acc_v.clear();
 }
 
 int MPAlgo::train(std::vector<ACC_T> acc_v)
@@ -151,8 +140,7 @@ int MPAlgo::train(std::vector<ACC_T> acc_v)
 int MPAlgo::add_access(ACC_T acc)
 {
   int err;
-  acc_s.insert(acc);
-  acc_v.push_back(acc);
+  return_if_err(PAlgo::add_access(acc), err);
   
   for (std::vector<boost::shared_ptr<ParseTree> >::iterator parse_tree__ = parse_tree_v.begin(); parse_tree__ != parse_tree_v.end(); parse_tree__++) {
     return_if_err( (*parse_tree__)->add_access(acc), err)
@@ -316,6 +304,9 @@ std::string BMPAlgo::to_str()
 int BMPAlgo::add_access(ACC_T acc)
 {
   // log_(INFO, "acc= " << acc)
+  int err;
+  return_if_err(MPAlgo::add_access(acc), err)
+  
   int id = 0;
   for (std::vector<boost::shared_ptr<std::vector<ACC_T> > >::iterator it = malgo_id__last_predicted_acc_v_v.begin(); it != malgo_id__last_predicted_acc_v_v.end(); it++, id++) {
     if (std::find((*it)->begin(), (*it)->end(), acc) != (*it)->end() )
@@ -323,8 +314,7 @@ int BMPAlgo::add_access(ACC_T acc)
     else
       malgo_id__score_queue_v[id]->push(0);
   }
-  int err;
-  return_if_err(MPAlgo::add_access(acc), err)
+  
   return 0;
 }
 
@@ -343,7 +333,8 @@ int BMPAlgo::get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
   int err;
   for (int i = 0; i < malgo_t__context_size_v.size(); i++) {
     malgo_id__last_predicted_acc_v_v[i]->clear();
-    return_if_err(parse_tree_v[i]->get_to_prefetch(1, *malgo_id__last_predicted_acc_v_v[i] ), err)
+    int num_key = 1;
+    return_if_err(parse_tree_v[i]->get_to_prefetch(num_key, *malgo_id__last_predicted_acc_v_v[i] ), err)
   }
   
   // log_(INFO, "malgo_id__last_predicted_acc_v_v=")

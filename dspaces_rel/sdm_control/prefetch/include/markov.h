@@ -2,14 +2,10 @@
 #define _MARKOV_H_
 
 #include <iostream>
-#include <vector>
-#include <set>
 #include <cstdlib>
 #include <ctime>
 #include <boost/lexical_cast.hpp>
-#include <glog/logging.h>
 
-#include <utility> // std::pair
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/adjacency_list.hpp>
 // #include <boost/graph/dijkstra_shortest_paths.hpp>
@@ -21,6 +17,7 @@
 #include <boost/property_map/property_map.hpp>
 #include <boost/static_assert.hpp>
 
+#include "palgo.h"
 #include "patch_pre.h"
 
 // Definition of basic boost::graph properties
@@ -371,7 +368,7 @@ class ParseTree {
       return false;
     }
     
-    int get_to_prefetch(int num_keys, std::vector<KEY_T>& key_v)
+    int get_to_prefetch(int& num_keys, std::vector<KEY_T>& key_v)
     {
       std::map<KEY_T, float> key_prob_map;
       get_key_prob_map_for_prefetch(key_prob_map);
@@ -381,11 +378,11 @@ class ParseTree {
       for (std::map<KEY_T, float>::iterator it = key_prob_map.begin(); it != key_prob_map.end(); it++)
         prob_key_map[it->second] = it->first;
       
-      for (std::map<float, KEY_T>::reverse_iterator rit = prob_key_map.rbegin(); rit != prob_key_map.rend(); rit++) {
+      int counter = 0;
+      for (std::map<float, KEY_T>::reverse_iterator rit = prob_key_map.rbegin();
+           rit != prob_key_map.rend(), counter < num_keys; rit++, counter++)
         key_v.push_back(rit->second);
-        if (key_v.size() == num_keys)
-          break;
-      }
+      num_keys = key_v.size();
       
       return 0;
     }
@@ -734,27 +731,6 @@ class ParseTree {
       
       return 0;
     }
-};
-
-
-/**********************************************  PAlgo  *******************************************/
-typedef KEY_T ACC_T;
-typedef std::pair<ACC_T, int> acc_step_pair;
-class PAlgo { // Prefetching
-  protected:
-    std::set<ACC_T> acc_s;
-    std::vector<ACC_T> acc_v;
-  public:
-    PAlgo();
-    ~PAlgo();
-  
-    std::vector<ACC_T> get_acc_v();
-    
-    virtual void reset() = 0;
-    virtual int train(std::vector<ACC_T> acc_v) = 0;
-    virtual int add_access(ACC_T acc) = 0;
-    virtual int get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
-                                const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v) = 0;
 };
 
 /**********************************************  MAlgo  *******************************************/

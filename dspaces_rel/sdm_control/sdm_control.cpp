@@ -37,7 +37,7 @@ std::string SDMSlave::to_str()
 int SDMSlave::reg_app(int app_id)
 {
   if (std::find(app_id_v.begin(), app_id_v.end(), app_id) != app_id_v.end() ) {
-    log_(ERROR, "already reged app_id= " << app_id)
+    log_(WARNING, "already reged app_id= " << app_id)
     return 1;
   }
   app_id_v.push_back(app_id);

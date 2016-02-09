@@ -156,7 +156,7 @@ int DSTest::exp_get(uint64_t data_length)
 }
 
 // -----------------------------------  Multi-threaded  ----------------------------------------- //
-#define NUM_REP 20
+#define NUM_REP 3
 
 int DSTest::repetitive_put()
 {
@@ -205,6 +205,7 @@ int DSTest::repetitive_get()
     std::string key = base_key + "_" + patch_test::to_str(counter);
     char* data_to_get_ = (char*)malloc(data_length*sizeof(char) );
     return_if_err(ds_driver.get(key.c_str(), ver, sizeof(char), ndim, gdim_, lb_, ub_, data_to_get_), err)
+    return_if_err(ds_driver.del(key.c_str(), ver), err)
     if (data_length == MSG_SIZE)
       log(INFO, "got key= " << key << ", data= " << data_to_get_)
     else {
@@ -258,4 +259,3 @@ int DSTest::run_multithreaded_get_test(std::string base_key, uint64_t data_lengt
     return_if_err(pthread_create(get_thread_ptr_vector[i], NULL, call_repetitive_get_w_wrap, wrap_), err)
   }
 }
-

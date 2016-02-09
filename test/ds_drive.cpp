@@ -90,11 +90,11 @@ int DSDriver::sync_put(const char* var_name, unsigned int ver, int size,
                        int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_, void* data_)
 {
   lock_on_write(var_name);
-  int result = dspaces_put(var_name, ver, size, ndim, lb_, ub_, data_);
+  int r = dspaces_put(var_name, ver, size, ndim, lb_, ub_, data_);
   // dspaces_put_sync();
   unlock_on_write(var_name);
   
-  return result;
+  return r;
 }
 
 int DSDriver::get(const char* var_name, unsigned int ver, int size,
@@ -102,37 +102,47 @@ int DSDriver::get(const char* var_name, unsigned int ver, int size,
 {
   lock_on_read(var_name);
   // dspaces_define_gdim(var_name, ndim, gdim_);
-  int result = dspaces_get(var_name, ver, size, ndim, lb_, ub_, data_);
+  int r = dspaces_get(var_name, ver, size, ndim, lb_, ub_, data_);
   unlock_on_read(var_name);
   
-  return result;
+  return r;
+}
+
+int DSDriver::del(const char* var_name, unsigned int ver)
+{
+  lock_on_read(var_name);
+  // dspaces_define_gdim(var_name, ndim, gdim_);
+  int r = dspaces_remove(var_name, ver);
+  unlock_on_read(var_name);
+  
+  return r;
 }
 
 void DSDriver::lock_on_write(const char* var_name)
 {
-  log(INFO, "locking var_name= " << var_name)
+  log(INFO, "started; var_name= " << var_name)
   dspaces_lock_on_write(var_name, &mpi_comm);
-  log(INFO, "locked var_name= " << var_name)
+  log(INFO, "done; var_name= " << var_name)
 }
 
 
 void DSDriver::unlock_on_write(const char* var_name)
 {
-  log(INFO, "unlocking var_name= " << var_name)
+  log(INFO, "started; var_name= " << var_name)
   dspaces_unlock_on_write(var_name, &mpi_comm);
-  log(INFO, "unlocked var_name= " << var_name)
+  log(INFO, "done; var_name= " << var_name)
 }
 
 void DSDriver::lock_on_read(const char* var_name)
 {
-  log(INFO, "locking var_name= " << var_name)
+  log(INFO, "started; var_name= " << var_name)
   dspaces_lock_on_read(var_name, &mpi_comm);
-  log(INFO, "locked var_name= " << var_name)
+  log(INFO, "done; var_name= " << var_name)
 }
 
 void DSDriver::unlock_on_read(const char* var_name)
 {
-  log(INFO, "ununlocking var_name= " << var_name)
+  log(INFO, "started; var_name= " << var_name)
   dspaces_unlock_on_read(var_name, &mpi_comm);
-  log(INFO, "ununlocked var_name= " << var_name)
+  log(INFO, "done; var_name= " << var_name)
 }

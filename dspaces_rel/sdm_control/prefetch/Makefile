@@ -18,7 +18,7 @@ INC = $(GLOG_INC) $(BOOST_INC) $(PREFETCH_INC)
 LIB = $(GLOG_LIB) $(BOOST_LIB)
 
 ODIR = obj
-OBJS = $(ODIR)/exp.o $(ODIR)/sim.o $(ODIR)/prefetch.o $(ODIR)/markov.o $(ODIR)/sfc.o $(ODIR)/hilbert.o
+OBJS = $(ODIR)/exp.o $(ODIR)/sim.o $(ODIR)/prefetch.o $(ODIR)/palgo.o $(ODIR)/markov.o $(ODIR)/sfc.o $(ODIR)/hilbert.o
 
 .PHONY: all clean
 

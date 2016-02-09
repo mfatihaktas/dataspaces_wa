@@ -8,6 +8,8 @@
 #define str_str_equals(x,y) (strcmp(x.c_str(), y.c_str() ) == 0)
 #define str_cstr_equals(x, y) (strcmp(x.c_str(), (const char*)y) == 0)
 #define cstr_cstr_equals(x, y) (strcmp((const char*)x, (const char*)y) == 0)
+
+#define PAIR_TO_STR(p) "<" << (p).first << ", " << (p).second << ">"
 #endif // _STR_MACROS_
 
 #define DEBUG_IB

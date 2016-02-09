@@ -3,8 +3,8 @@
         "/default.json"
     ],
     "preferences": {
-        "editorTheme": "ambiance",
-        "fontSize": 20,
+        "editorTheme": "solarized_light",
+        "fontSize": 11,
         "tabSize": 2,
         "printMarginColumn": 100
     },

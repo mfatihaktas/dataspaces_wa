@@ -484,23 +484,24 @@ void RIManager::handle_dm_move(std::map<std::string, std::string> msg_map)
 int RIManager::handle_dm_del(std::map<std::string, std::string> msg_map)
 {
   log_(INFO, "msg_map= \n" << patch::map_to_str<>(msg_map) )
-  if (data_id_t != KV_DATA_ID) {
-    log_(WARNING, "dspaces_remove is supported only for KV_DATA_ID!")
-    return 1;
-  }
+  // if (data_id_t != KV_DATA_ID) {
+  //   log_(WARNING, "dspaces_remove is supported only for KV_DATA_ID!")
+  //   return 1;
+  // }
   
-  std::string data_id = patch_sdm::get_data_id(data_id_t, msg_map);
-  if (busy_data_id_v.contains(data_id) ) {
-    log_(INFO, "waiting for del; data_id= " << data_id)
-    unsigned int sync_point = patch_sdm::hash_str("D" + data_id);
-    ri_syncer.add_sync_point(sync_point, 1);
-    ri_syncer.wait(sync_point);
-    ri_syncer.del_sync_point(sync_point);
-    log_(INFO, "done waiting for del; data_id= " << data_id)
-  }
+  // std::string data_id = patch_sdm::get_data_id(data_id_t, msg_map);
+  // if (busy_data_id_v.contains(data_id) ) {
+  //   log_(INFO, "waiting for del; data_id= " << data_id)
+  //   unsigned int sync_point = patch_sdm::hash_str("D" + data_id);
+  //   ri_syncer.add_sync_point(sync_point, 1);
+  //   ri_syncer.wait(sync_point);
+  //   ri_syncer.del_sync_point(sync_point);
+  //   log_(INFO, "done waiting for del; data_id= " << data_id)
+  // }
   
   // int err;
   // return_if_err(ds_driver_->del(msg_map["key"].c_str(), boost::lexical_cast<unsigned int>(msg_map["ver"] ) ), err)
+  // log_(INFO, "deled; data_id= " << data_id)
   
   return 0;
 }

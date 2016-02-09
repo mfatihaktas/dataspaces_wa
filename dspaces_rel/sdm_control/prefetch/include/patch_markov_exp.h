@@ -8,55 +8,11 @@
 #include <ctime>
 
 #include <boost/assign/list_of.hpp>
-#include <boost/math/distributions/normal.hpp>
+// #include <boost/math/distributions/normal.hpp>
+// #include <boost/math/distributions/exponential.hpp>
+#include <boost/math/distributions.hpp>
 
 #include "gnuplot_iostream.h"
-
-template<typename T>
-void make_plot(std::vector<T> x1_v, std::vector<T> y1_v, std::string title1,
-               std::vector<T> x2_v, std::vector<T> y2_v, std::string title2,
-               std::string x_label, std::string y_label, 
-               std::string plot_title,
-               std::string out_url)
-{
-  Gnuplot gp;
-  T min_x = std::min<T>(*std::min_element(x1_v.begin(), x1_v.end() ), *std::min_element(x2_v.begin(), x2_v.end() ) );
-  T max_x = std::max<T>(*std::max_element(x1_v.begin(), x1_v.end() ), *std::max_element(x2_v.begin(), x2_v.end() ) );
-  
-  T min_y = std::min<T>(*std::min_element(y1_v.begin(), y1_v.end() ), *std::min_element(y2_v.begin(), y2_v.end() ) );
-  T max_y = std::max<T>(*std::max_element(y1_v.begin(), y1_v.end() ), *std::max_element(y2_v.begin(), y2_v.end() ) );
-  
-  if (out_url.compare("") != 0) {
-    gp << "set term png large enhanced font '/usr/share/fonts/dejavu/DejaVuSans.ttf' 12\n";
-    gp << "set output \"" << out_url << "\"\n";
-  }
-  gp << "set key left top\n";
-  gp << "set title '" << plot_title << "'\n";
-  gp << "set style line 1 lc rgb '#7F7F7F' lt 1 lw 2 pt 4 ps 1.5\n";
-  gp << "set style line 2 lc rgb '#0060ad' lt 1 lw 2 pt 5 ps 1.5\n";
-  gp << "set xrange [" << min_x << ":" << max_x*1.2 << "]\nset yrange [" << min_y << ":" << max_y*1.2 << "]\n";
-  gp << "set xlabel '" << x_label << "'\n";
-  gp << "set ylabel '" << y_label << "'\n";
-  gp << "set grid\n";
-  
-  gp << "set logscale xy\n";
-  // typename std::vector<T>::iterator it_y1, it_y2; // supposedly vectors of same size
-  // for (it_y1 = y1_v.begin(), it_y2 = y2_v.begin(); 
-  //     it_y1 != y1_v.end(), it_y2 != y2_v.end(); it_y1++, it_y2++) {
-  //   gp << "set ytics add (" << boost::lexical_cast<std::string>(*it_y1) << ")\n";
-  //   gp << "set ytics add (" << boost::lexical_cast<std::string>(*it_y2) << ")\n";
-  // }
-  // gp << "set ytics add (" << boost::lexical_cast<std::string>(min_y) << ")\n";
-  // for (T f = 0; f < max_y; f += 20) {
-  //   if (f > min_y)
-  //     gp << "set ytics add (" << boost::lexical_cast<std::string>(f) << ")\n";
-  // }
-  
-  gp << "plot '-' u 1:2 title '" << title1 << "' w linespoints ls 1, "
-          << "'-' u 1:2 title '" << title2 << "' w linespoints ls 2\n";
-  gp.send1d(boost::make_tuple(x1_v, y1_v) );
-  gp.send1d(boost::make_tuple(x2_v, y2_v) );
-}
 
 template<typename T>
 void make_plot(std::vector<std::vector<T> > x_v_v, std::vector<std::vector<T> > y_v_v, std::vector<std::string> title_v,
@@ -172,6 +128,37 @@ void random_partial_shuffle(float shuffle_prob, int shuffle_width, std::vector<i
 // }
 
 // ----------------------------------------  test_malgo  -----------------------------------------//
+int gen_real_acc_seq(int alphabet_size, int num_acc, std::vector<ACC_T>& acc_v)
+{
+  const int MIN_INTER_ACC_TIME = 20;
+  const int MAX_INTER_ACC_TIME = 100;
+  const int VARIANCE = 1; // 10;
+  
+  // std::vector<>
+  std::map<float, ACC_T> time_acc_map;
+  for (ACC_T acc = 1; acc <= alphabet_size; acc++) {
+    float inter_acc_time_mean = rand() % (MAX_INTER_ACC_TIME - MIN_INTER_ACC_TIME) + MIN_INTER_ACC_TIME;
+    log_(INFO, "acc= " << acc << ", inter_acc_time_mean= " << inter_acc_time_mean)
+    
+    // boost::math::normal_distribution<float> inter_acc_time_dist(inter_acc_time_mean, VARIANCE);
+    float last_acc_time = 0;
+    for (int i = 0; i < num_acc; i++) {
+      // float inter_acc_time = (float)std::abs(quantile(inter_acc_time_dist, (static_cast<float>(rand() ) / static_cast<float>(RAND_MAX) ) ) );
+      float inter_acc_time = inter_acc_time_mean;
+      last_acc_time += inter_acc_time;
+      while (time_acc_map.count(last_acc_time) != 0)
+        last_acc_time += 0.001;
+      time_acc_map[last_acc_time] = acc;
+    }
+  }
+  log_(INFO, "time_acc_map= \n" << patch::map_to_str<>(time_acc_map) )
+  
+  for (std::map<float, ACC_T>::iterator it = time_acc_map.begin(); it != time_acc_map.end(); it++)
+    acc_v.push_back(it->second);
+  
+  return 0;
+}
+
 void gen_random_acc_seq(size_t alphabet_size, size_t num_acc, std::vector<ACC_T>& acc_v)
 {
   for (int i = 0; i < num_acc; i++)
@@ -1116,6 +1103,105 @@ void plot_hit_rate_vs_cache_size()
   
   int num_filtering_run = 10;
   for (int cache_size = 1; cache_size <= alphabet_size; cache_size++) {
+    std::vector<float> total_hit_rate_v(num_algo);
+    for (int f = 0; f < num_filtering_run; f++) {
+      std::cout << "cache_size= " << cache_size << ", f= " << f << "\n";
+      
+      int algo_id = 0;
+      for (std::vector<boost::shared_ptr<PAlgo> >::iterator it = palgo_v.begin(); it != palgo_v.end(); it++, algo_id++) {
+        (*it)->reset();
+        if (f == 0) {
+          cache_size_v_v[algo_id].push_back(cache_size);
+        }
+        
+        accuracy_v.clear();
+        sim_prefetch_accuracy<PAlgo>(**it, cache_size, acc_step_v, hit_rate, accuracy_v);
+        total_hit_rate_v[algo_id] += hit_rate;
+      }
+    }
+    for (int algo_id = 0; algo_id < num_algo; algo_id++)
+      hit_rate_v_v[algo_id].push_back(total_hit_rate_v[algo_id] / num_filtering_run);
+  }
+  
+  std::stringstream plot_title_ss;
+  plot_title_ss << "Avg Hit rate after training with noisy pattern; "
+                << "alphabet size= " << alphabet_size
+                << ", pattern size= " << num_acc;
+  
+  std::string out_url = "";
+  make_plot<float>(cache_size_v_v, hit_rate_v_v, title_v,
+                   "Cache size (Number of data items)", "Avg Hit rate",
+                   plot_title_ss.str(), out_url);
+  
+  out_url = "/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/sdm_control/prefetch/fig_hit_rate_vs_cache_size.png";
+  make_plot<float>(cache_size_v_v, hit_rate_v_v, title_v,
+                   "Cache size (Number of data items)", "Avg Hit rate",
+                   plot_title_ss.str(), out_url);
+  
+  // std::cout << "acc_step_v= " << patch::pvec_to_str<>(acc_step_v) << "\n";
+}
+
+void plot_hit_rate_w_real()
+{
+  std::vector<std::string> title_v;
+  
+  std::vector<boost::shared_ptr<PAlgo> > palgo_v;
+  palgo_v.push_back(boost::make_shared<LZAlgo>() );
+  title_v.push_back("lz");
+  palgo_v.push_back(boost::make_shared<POAlgo>() );
+  title_v.push_back("poisson");
+  palgo_v.push_back(boost::make_shared<PPMAlgo>(1) );
+  title_v.push_back("ppm order 1");
+  palgo_v.push_back(boost::make_shared<PPMAlgo>(2) );
+  title_v.push_back("ppm order 2");
+  palgo_v.push_back(boost::make_shared<PPMAlgo>(3) );
+  title_v.push_back("ppm order 3");
+  palgo_v.push_back(boost::make_shared<PPMAlgo>(4) );
+  title_v.push_back("ppm order 4");
+  
+  std::vector<malgo_t__context_size_pair> malgo_t__context_size_v;
+  // malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_LZ, 0) );
+  // malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 1) );
+  malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 3) );
+  malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 4) );
+  // malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 8) );
+  
+  // std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.2)(0.2)(0.2)(0.2)(0.2);
+  // std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.25)(0.25)(0.25)(0.25);
+  std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.5)(0.5);
+  // palgo_v.push_back(boost::make_shared<WMPAlgo>(malgo_t__context_size_v, malgo_id__weight_v) );
+  // title_v.push_back("mixed-blended");
+  
+  palgo_v.push_back(boost::make_shared<MMPAlgo>(malgo_t__context_size_v) );
+  title_v.push_back("mixed-most confident");
+  
+  // palgo_v.push_back(boost::make_shared<BMPAlgo>(malgo_t__context_size_v, 4) );
+  // title_v.push_back("mixed-best wnd 4");
+  
+  int num_algo = palgo_v.size();
+  
+  int alphabet_size = 20; // 10;
+  int num_acc = 200; // 50;
+  
+  std::vector<ACC_T> acc_v;
+  gen_real_acc_seq(alphabet_size, num_acc, acc_v);
+  log_(INFO, "acc_v= " << patch::vec_to_str<>(acc_v) )
+  std::vector<acc_step_pair> acc_step_v;
+  acc_v_to_acc_step_v(acc_v, acc_step_v);
+  // log_(INFO, "acc_v= " << patch::vec_to_str<>(acc_v) )
+  // 
+  std::vector<std::vector<float> > cache_size_v_v(num_algo);
+  std::vector<std::vector<float> > hit_rate_v_v(num_algo);
+  // 
+  std::vector<boost::shared_ptr<Cache<ACC_T, acc_step_pair> > > algo_id__cache_v;
+  std::vector<std::map<ACC_T, int> > algo_id__acc__last_acced_step_map_v(num_algo);
+  // 
+  float hit_rate;
+  std::vector<char> accuracy_v;
+  
+  int num_filtering_run = 3;
+  // for (int cache_size = 1; cache_size <= alphabet_size; cache_size++) {
+  for (int cache_size = 1; cache_size <= 3; cache_size++) {
     std::vector<float> total_hit_rate_v(num_algo);
     for (int f = 0; f < num_filtering_run; f++) {
       std::cout << "cache_size= " << cache_size << ", f= " << f << "\n";

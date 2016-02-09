@@ -107,10 +107,15 @@ int main(int argc, char **argv)
     // m_prefetch_test();
     // mpcsim_test();
     // test_fixed_train();
-    test_rand_shuffle_train();
+    // test_rand_shuffle_train();
     // test_rand_shuffle_train_w_varying_cache();
     // plot_hit_rate_vs_cache_size(); 
+    plot_hit_rate_w_real();
     
+    // std::vector<ACC_T> acc_v;
+    // gen_real_acc_seq(10, 20, acc_v);
+    // log_(INFO, "acc_v= " << patch::vec_to_str<>(acc_v) )
+     
     // std::vector<int> ds_id_v = boost::assign::list_of(0)(1);
     // MWASpace mwa_space(ds_id_v, MALGO_W_PPM, 10, false, 0);
     // COOR_T lc_[] = {0, 0};
