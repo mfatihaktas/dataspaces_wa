@@ -4,6 +4,7 @@
 #include <vector>
 #include <set>
 #include <map>
+#include <algorithm>
 #include <utility> // std::pair
 
 #include <boost/lexical_cast.hpp>
@@ -12,6 +13,7 @@
 /**********************************************  PAlgo  *******************************************/
 typedef int ACC_T; // Note: ACC_T is a "more sounding" substitute for KEY_T in Markov
 typedef std::pair<ACC_T, int> acc_step_pair;
+typedef std::pair<float, ACC_T> arr_time__acc_pair;
 class PAlgo { // Prefetching
   protected:
     std::set<ACC_T> acc_s;
@@ -25,16 +27,21 @@ class PAlgo { // Prefetching
     
     virtual void reset();
     virtual int train(std::vector<ACC_T> acc_v) = 0;
+    virtual int train(std::vector<arr_time__acc_pair> arr_time__acc_pair_v) = 0;
     virtual int add_access(ACC_T acc);
+    virtual int add_access(float acc_time, ACC_T acc) = 0;
     virtual int get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
+                                const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v) = 0;
+    virtual int get_to_prefetch(float _time, int& num_acc, std::vector<ACC_T>& acc_v,
                                 const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v) = 0;
 };
 
 /**********************************************  TAlgo  *******************************************/
-typedef std::pair<float, ACC_T> arr_time__acc_pair;
 typedef std::pair<float, float> time_time_pair;
 typedef std::pair<float, float> mean_var_pair;
-#define NO_INTER_TIME 0
+const int NO_INTER_TIME = 0;
+const float MIN_INTER_TIME_FOR_PREDICTION = 1;
+const float MIN_VARIANCE = 20;
 
 class TAlgo : public PAlgo { // Time
   private:
@@ -48,12 +55,11 @@ class TAlgo : public PAlgo { // Time
     
     void reset();
     int train(std::vector<ACC_T> acc_v) { return 1; }
+    int train(std::vector<arr_time__acc_pair> arr_time__acc_pair_v);
     int add_access(ACC_T acc) { return 1; }
+    int add_access(float acc_time, ACC_T acc);
     int get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
                         const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v) { return 1; }
-    
-    int train(std::vector<arr_time__acc_pair> arr_time__acc_pair_v);
-    int add_access(float acc_time, ACC_T acc);
     int get_to_prefetch(float _time, int& num_acc, std::vector<ACC_T>& acc_v,
                         const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v);
 };

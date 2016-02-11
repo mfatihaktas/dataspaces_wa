@@ -44,11 +44,14 @@ void make_plot(std::vector<std::vector<T> > x_v_v, std::vector<std::vector<T> > 
   T min_y = *std::min_element(y_v.begin(), y_v.end() );
   T max_y = *std::max_element(y_v.begin(), y_v.end() );
   
+  // gp << "set term x11 enhanced\n";
+  gp << "set term post eps enh \"Helvetica\" 24\n";
   if (out_url.compare("") != 0) {
-    gp << "set term png size 1200,800 enhanced font '/usr/share/fonts/dejavu/DejaVuSans.ttf' 12\n";
+    // gp << "set term png size 1200,800 enhanced font '/usr/share/fonts/dejavu/DejaVuSans.ttf' 12\n";
     // gp << "set term png enhanced font '/usr/share/fonts/dejavu/DejaVuSans.ttf' 12\n";
     gp << "set output \"" << out_url << "\"\n";
   }
+  // gp << "set encoding utf8\n";
   gp << "set key right top\n";
   gp << "set key outside\n";
   gp << "set title '" << plot_title << "'\n";
@@ -128,33 +131,37 @@ void random_partial_shuffle(float shuffle_prob, int shuffle_width, std::vector<i
 // }
 
 // ----------------------------------------  test_malgo  -----------------------------------------//
-int gen_real_acc_seq(int alphabet_size, int num_acc, std::vector<ACC_T>& acc_v)
+int gen_real_acc_seq(int alphabet_size, int num_acc,
+                     float min_inter_acc_time, float max_inter_acc_time, float stdev,
+                     std::vector<ACC_T>& acc_v,
+                     std::vector<arr_time__acc_pair>& arr_time__acc_pair_v)
 {
-  const int MIN_INTER_ACC_TIME = 20;
-  const int MAX_INTER_ACC_TIME = 100;
-  const int VARIANCE = 1; // 10;
+  // const int min_inter_acc_time = 20;
+  // const int max_inter_acc_time = 100;
+  // const int stdev = 20; // 1; // 10;
   
-  // std::vector<>
   std::map<float, ACC_T> time_acc_map;
   for (ACC_T acc = 1; acc <= alphabet_size; acc++) {
-    float inter_acc_time_mean = rand() % (MAX_INTER_ACC_TIME - MIN_INTER_ACC_TIME) + MIN_INTER_ACC_TIME;
+    float inter_acc_time_mean = rand() % (int)(max_inter_acc_time - min_inter_acc_time) + min_inter_acc_time;
     log_(INFO, "acc= " << acc << ", inter_acc_time_mean= " << inter_acc_time_mean)
     
-    // boost::math::normal_distribution<float> inter_acc_time_dist(inter_acc_time_mean, VARIANCE);
+    boost::math::normal_distribution<float> inter_acc_time_dist(inter_acc_time_mean, stdev);
     float last_acc_time = 0;
     for (int i = 0; i < num_acc; i++) {
-      // float inter_acc_time = (float)std::abs(quantile(inter_acc_time_dist, (static_cast<float>(rand() ) / static_cast<float>(RAND_MAX) ) ) );
-      float inter_acc_time = inter_acc_time_mean;
+      float inter_acc_time = (float)std::abs(quantile(inter_acc_time_dist, (static_cast<float>(rand() ) / static_cast<float>(RAND_MAX) ) ) );
+      // float inter_acc_time = inter_acc_time_mean;
       last_acc_time += inter_acc_time;
       while (time_acc_map.count(last_acc_time) != 0)
         last_acc_time += 0.001;
       time_acc_map[last_acc_time] = acc;
     }
   }
-  log_(INFO, "time_acc_map= \n" << patch::map_to_str<>(time_acc_map) )
+  // log_(INFO, "time_acc_map= \n" << patch::map_to_str<>(time_acc_map) )
   
-  for (std::map<float, ACC_T>::iterator it = time_acc_map.begin(); it != time_acc_map.end(); it++)
+  for (std::map<float, ACC_T>::iterator it = time_acc_map.begin(); it != time_acc_map.end(); it++) {
     acc_v.push_back(it->second);
+    arr_time__acc_pair_v.push_back(std::make_pair(it->first, it->second) );
+  }
   
   return 0;
 }
@@ -244,7 +251,7 @@ void acc_v_to_acc_step_v(std::vector<ACC_T>& acc_v, std::vector<acc_step_pair>& 
 }
 
 // ----------------------------------------  sim_test  -------------------------------------------//
-#define VARIANCE 2
+#define STDEV 2
 void gen_scenario(int num_ds, std::vector<int>& ds_id_v,
                   int max_num_p, int max_num_c, int num_putget_mean, float put_rate_mean, float get_rate_mean,
                   int& num_p, int& num_c,
@@ -258,7 +265,7 @@ void gen_scenario(int num_ds, std::vector<int>& ds_id_v,
   
   num_p = max_num_p; // rand() % max_num_p + 1;
   for (int i = 0; i < num_p; i++) {
-    boost::math::normal_distribution<float> num_putget_dist(num_putget_mean, VARIANCE);
+    boost::math::normal_distribution<float> num_putget_dist(num_putget_mean, STDEV);
     int num_put = (int) std::abs(quantile(num_putget_dist, (static_cast<float>(rand() ) / static_cast<float>(RAND_MAX) ) ) );
     
     // TODO: may be randomized
@@ -266,7 +273,7 @@ void gen_scenario(int num_ds, std::vector<int>& ds_id_v,
     
     p_id__num_put_v.push_back(num_put);
     
-    boost::math::normal_distribution<float> put_rate_dist(put_rate_mean, VARIANCE);
+    boost::math::normal_distribution<float> put_rate_dist(put_rate_mean, STDEV);
     p_id__put_rate_vec.push_back(
       std::abs(quantile(put_rate_dist, (static_cast<float>(rand() ) / static_cast<float>(RAND_MAX) ) ) )
     );
@@ -281,7 +288,7 @@ void gen_scenario(int num_ds, std::vector<int>& ds_id_v,
     // c_id__num_get_v.push_back(num_get);
     c_id__num_get_v.push_back(p_id__num_put_v[i] );
     
-    boost::math::normal_distribution<float> get_rate_dist(get_rate_mean, VARIANCE);
+    boost::math::normal_distribution<float> get_rate_dist(get_rate_mean, STDEV);
     c_id__get_rate_v.push_back(
       std::abs(quantile(get_rate_dist, (static_cast<float>(rand() ) / static_cast<float>(RAND_MAX) ) ) )
     );
@@ -298,7 +305,7 @@ void gen_scenario(int num_ds, std::vector<int>& ds_id_v,
     p_id__inter_arr_time_v_v.push_back(inter_arr_time_vec);
   }
 
-  boost::math::normal_distribution<float> inter_arr_time_dist(1, VARIANCE);
+  boost::math::normal_distribution<float> inter_arr_time_dist(1, STDEV);
   for (int c_id = 0; c_id < num_c; c_id++) {
     std::vector<float> inter_arr_time_vec;
     for (int i = 0; i < c_id__num_get_v[c_id]; i++) {
@@ -1184,7 +1191,8 @@ void plot_hit_rate_w_real()
   int num_acc = 200; // 50;
   
   std::vector<ACC_T> acc_v;
-  gen_real_acc_seq(alphabet_size, num_acc, acc_v);
+  std::vector<arr_time__acc_pair> arr_time__acc_pair_v;
+  gen_real_acc_seq(alphabet_size, num_acc, 20, 100, 1, acc_v, arr_time__acc_pair_v);
   log_(INFO, "acc_v= " << patch::vec_to_str<>(acc_v) )
   std::vector<acc_step_pair> acc_step_v;
   acc_v_to_acc_step_v(acc_v, acc_step_v);
@@ -1192,9 +1200,6 @@ void plot_hit_rate_w_real()
   // 
   std::vector<std::vector<float> > cache_size_v_v(num_algo);
   std::vector<std::vector<float> > hit_rate_v_v(num_algo);
-  // 
-  std::vector<boost::shared_ptr<Cache<ACC_T, acc_step_pair> > > algo_id__cache_v;
-  std::vector<std::map<ACC_T, int> > algo_id__acc__last_acced_step_map_v(num_algo);
   // 
   float hit_rate;
   std::vector<char> accuracy_v;

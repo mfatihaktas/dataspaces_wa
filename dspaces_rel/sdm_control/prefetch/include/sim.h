@@ -108,6 +108,63 @@ void sim_prefetch_accuracy(PALGO& palgo,
   hit_rate = 1.0 - (float)num_miss/acc_step_v.size();
 }
 
+template <typename PALGO>
+void sim_prefetch_accuracy(PALGO& palgo,
+                           int cache_size, std::vector<arr_time__acc_pair> arr_time__acc_pair_v,
+                           float& hit_rate, std::vector<char>& accuracy_v)
+{
+  Cache<ACC_T, acc_step_pair> cache(cache_size, boost::function<void(acc_step_pair)>() );
+  int num_miss = 0;
+  
+  std::map<ACC_T, int> acc__last_acced_step_map;
+  
+  for (std::vector<arr_time__acc_pair>::iterator it = arr_time__acc_pair_v.begin(); it != arr_time__acc_pair_v.end(); it++) {
+    // std::cout << "is <" << it->first << ", " << it->second << ">"
+    //           << " in the cache= \n" << cache.to_str() << "\n";
+    if (acc__last_acced_step_map.count(it->second) == 0)
+      acc__last_acced_step_map[it->second] = -1;
+    
+    acc_step_pair acc_step = std::make_pair(it->second, ++acc__last_acced_step_map[it->second] );
+    if (!cache.contains(acc_step) ) {
+      accuracy_v.push_back('f');
+      num_miss++;
+    }
+    else
+      accuracy_v.push_back('-');
+    
+    // std::cout << "acc_step= " << PAIR_TO_STR(acc_step) << "\n";
+    // In wa-dataspaces scenario data is used only once
+    cache.del(it->second, acc_step);
+    
+    palgo.add_access(it->first, it->second);
+    
+    // Note: Relatively large num_acc does more harm then benefit for large cache_size
+    int num_acc = std::min(3, cache_size);
+    std::vector<ACC_T> cached_acc_v = cache.get_cached_acc_v();
+    std::vector<ACC_T> acc_v, eacc_v;
+    palgo.get_to_prefetch(it->first + 0.01, num_acc, acc_v, cached_acc_v, eacc_v);
+    // log_(INFO, "\n"
+    //           // << "palgo= \n" << palgo.to_str() << "\n"
+    //           << "arr_time= " << it->first << ", acc_step= " << PAIR_TO_STR(acc_step) << "\n"
+    //           << "acc_v= " << patch::vec_to_str<>(acc_v) << "\n"
+    //           << "eacc_v= " << patch::vec_to_str<>(eacc_v) << "\n"
+    //           << "cache= \n" << patch::pvec_to_str<>(cache.get_content_v() ) )
+    for (std::vector<ACC_T>::iterator iit = acc_v.begin(); iit != acc_v.end(); iit++) {
+      // cache.push(*iit, std::make_pair(*iit, acc__last_acced_step_map[*iit] + 1) );
+      if (std::find(cached_acc_v.begin(), cached_acc_v.end(), *iit) == cached_acc_v.end() )
+        cache.push(*iit, std::make_pair(*iit, acc__last_acced_step_map[*iit] + 1) );
+    }
+    for (std::vector<ACC_T>::iterator iit = eacc_v.begin(); iit != eacc_v.end(); iit++) {
+      if (cache.size() >= cache.get_max_size() )
+        break;
+      cache.push(*iit, std::make_pair(*iit, acc__last_acced_step_map[*iit] + 1) );
+    }
+    // std::cout << "after update; cache= \n" << patch::pvec_to_str<>(cache.get_content_v() ) << "\n";
+  }
+  
+  hit_rate = 1.0 - (float)num_miss/arr_time__acc_pair_v.size();
+}
+
 template <typename SALGO>
 void sim_prefetch_accuracy(SALGO& salgo,
                            std::vector<lcoor_ucoor_pair>& lucoor_to_acc_v,

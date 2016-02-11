@@ -20,7 +20,7 @@ LIB = $(GLOG_LIB) $(BOOST_LIB)
 ODIR = obj
 OBJS = $(ODIR)/exp.o $(ODIR)/sim.o $(ODIR)/prefetch.o $(ODIR)/palgo.o $(ODIR)/markov.o $(ODIR)/sfc.o $(ODIR)/hilbert.o
 
-.PHONY: all clean
+.PHONY: all eclean clean
 
 APPS := exp
 
@@ -34,6 +34,9 @@ $(ODIR)/%.o: %.cpp
 
 $(ODIR)/%.o: %.c
 	$(CPP) -g -c -o $@ $< $(INC) $(LIB)
+
+eclean:
+	rm -f $(ODIR)/exp.o ${APPS}
 
 clean:
 	rm -f $(ODIR)/*.o ${APPS}

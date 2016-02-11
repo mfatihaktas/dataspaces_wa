@@ -1,6 +1,6 @@
 #include "prefetch.h"
 #include "sim.h"
-#include "patch_markov_exp.h"
+#include "patch_palgo_exp.h"
 #include "patch_sfc_exp.h"
 
 #include <getopt.h>
@@ -110,7 +110,9 @@ int main(int argc, char **argv)
     // test_rand_shuffle_train();
     // test_rand_shuffle_train_w_varying_cache();
     // plot_hit_rate_vs_cache_size(); 
-    plot_hit_rate_w_real();
+    // plot_hit_rate_w_real();
+    // test_talgo();
+    plot_galgo_hit_rate_vs_stdev();
     
     // std::vector<ACC_T> acc_v;
     // gen_real_acc_seq(10, 20, acc_v);

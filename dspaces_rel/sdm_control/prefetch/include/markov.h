@@ -378,10 +378,11 @@ class ParseTree {
       for (std::map<KEY_T, float>::iterator it = key_prob_map.begin(); it != key_prob_map.end(); it++)
         prob_key_map[it->second] = it->first;
       
-      int counter = 0;
-      for (std::map<float, KEY_T>::reverse_iterator rit = prob_key_map.rbegin();
-           rit != prob_key_map.rend(), counter < num_keys; rit++, counter++)
+      for (std::map<float, KEY_T>::reverse_iterator rit = prob_key_map.rbegin(); rit != prob_key_map.rend(); rit++) {
         key_v.push_back(rit->second);
+        if (key_v.size() == num_keys)
+          break;
+      }
       num_keys = key_v.size();
       
       return 0;
@@ -744,10 +745,14 @@ class MAlgo : public PAlgo { // Markov
     
     std::string parse_tree_to_pstr();
     int train(std::vector<ACC_T> acc_v);
+    int train(std::vector<arr_time__acc_pair> arr_time__acc_pair_v) { return 1; }
     int add_access(ACC_T acc);
+    int add_access(float acc_time, ACC_T acc) { return 1; }
     int get_acc_prob_map_for_prefetch(std::map<ACC_T, float>& acc_prob_map); // TODO: will be deprecated
     int get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
                         const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v);
+    int get_to_prefetch(float _time, int& num_acc, std::vector<ACC_T>& acc_v,
+                        const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v) { return 1; }
 };
 
 class LZAlgo : public MAlgo {
@@ -788,9 +793,13 @@ class MPAlgo : public PAlgo { // Mixed
     void reset();
     
     int train(std::vector<ACC_T> acc_v);
+    int train(std::vector<arr_time__acc_pair> arr_time__acc_pair_v) { return 1; }
     virtual int add_access(ACC_T acc);
+    int add_access(float acc_time, ACC_T acc) { return 1; }
     virtual int get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
                                 const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v) = 0;
+    int get_to_prefetch(float _time, int& num_acc, std::vector<ACC_T>& acc_v,
+                        const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v) { return 1; }
 };
 
 /***************************************  WMPAlgo : MPAlgo  ***************************************/
