@@ -32,28 +32,35 @@ if [ $1  = 's' ]; then
                                          --cnodes $(($NUM_PUTTER + $NUM_GETTER)) > $LOG_F 2>&1 < /dev/null &
   done
 elif [ $1  = 'p' ]; then
-  NODE_LIST=(${PUTTER_NODES//,/ } )
-  for i in `seq 1 $NUM_PUTTER`; do
-    NODE=${NODE_LIST[$(($(($i - 1)) % ${#NODE_LIST[@]} )) ] }
-    LOG_F=putter"_id_"$i"_"$NODE".log"
-    echo "run putter $i on $NODE"
+  # NODE_LIST=(${PUTTER_NODES//,/ } )
+  # for i in `seq 1 $NUM_PUTTER`; do
+  #   NODE=${NODE_LIST[$(($(($i - 1)) % ${#NODE_LIST[@]} )) ] }
+  #   LOG_F=putter"_id_"$i"_"$NODE".log"
+  #   echo "run putter $i on $NODE"
     
-    $MPIRUN -n $NUM_PUTTER -host $NODE \
-      $DSPACES_DIR/bin/test_writer DATASPACES $NUM_PUTTER 3 4 4 4 64 64 64 20 1 # > $LOG_F 2>&1 < /dev/null &
-    break
-  done
+  #   # ./test_writer type npapp dims np[0] ... np[dims-1] sp[0] ... sp[dims-1] timestep appid
+  #   $MPIRUN -host $NODE -n $NUM_PUTTER \
+  #     $DSPACES_DIR/bin/test_writer DATASPACES $NUM_PUTTER 3 4 4 4 64 64 64 20 1 # > $LOG_F 2>&1 < /dev/null &
+  #   break
+  # done
+  
+  $MPIRUN -n $NUM_PUTTER \
+    $DSPACES_DIR/bin/test_writer DATASPACES $NUM_PUTTER 3 4 4 4 64 64 64 20 1 # > $LOG_F 2>&1 < /dev/null &
   
 elif [ $1  = 'g' ]; then
-  NODE_LIST=(${GETTER_NODES//,/ } )
-  for i in `seq 1 $NUM_GETTER`; do
-    NODE=${NODE_LIST[$(($(($i - 1)) % ${#NODE_LIST[@]} )) ] }
-    LOG_F=getter"_id_"$i"_"$NODE".log"
-    echo "run getter $i on $NODE"
+  # NODE_LIST=(${GETTER_NODES//,/ } )
+  # for i in `seq 1 $NUM_GETTER`; do
+  #   NODE=${NODE_LIST[$(($(($i - 1)) % ${#NODE_LIST[@]} )) ] }
+  #   LOG_F=getter"_id_"$i"_"$NODE".log"
+  #   echo "run getter $i on $NODE"
     
-    $MPIRUN -n $NUM_GETTER -host $NODE \
-      $DSPACES_DIR/bin/test_reader DATASPACES $NUM_GETTER 3 2 4 4 128 64 64 20 2 # > $LOG_F 2>&1 < /dev/null &
-    break
-  done
+  #   $MPIRUN -host $NODE -n $NUM_GETTER \
+  #     $DSPACES_DIR/bin/test_reader DATASPACES $NUM_GETTER 3 2 4 4 128 64 64 20 2 # > $LOG_F 2>&1 < /dev/null &
+  #   break
+  # done
+  
+  $MPIRUN -n $NUM_GETTER \
+    $DSPACES_DIR/bin/test_reader DATASPACES $NUM_GETTER 3 2 4 4 128 64 64 20 2 # > $LOG_F 2>&1 < /dev/null &
 elif [ $1  = 'k' ]; then
   NODE_LIST=(${DS_NODES//,/ } )
   for NODE in "${NODE_LIST[@]}"; do

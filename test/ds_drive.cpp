@@ -25,10 +25,9 @@ uint64_t DSDriver::get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uin
   return volume;
 }
 
-DSDriver::DSDriver(int num_dscnodes, int app_id)
-: closed(false),
-  num_dscnodes(num_dscnodes),
-  app_id(app_id)
+DSDriver::DSDriver(int num_peer, int app_id)
+: num_peer(num_peer), app_id(app_id),
+  closed(false)
 {
   MPI_Init(NULL, NULL);
   MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
@@ -37,19 +36,17 @@ DSDriver::DSDriver(int num_dscnodes, int app_id)
   mpi_comm = MPI_COMM_WORLD;
   
   int err;
-  return_err_if_ret_cond_flag(init(num_dscnodes, app_id), err, !=, 0, )
+  return_err_if_ret_cond_flag(init(num_peer, app_id), err, !=, 0, )
   // 
   log(INFO, "constructed.")
 }
 
-DSDriver::DSDriver(MPI_Comm mpi_comm, int num_dscnodes, int app_id)
-: closed(false),
-  num_dscnodes(num_dscnodes),
-  app_id(app_id),
-  mpi_comm(mpi_comm)
+DSDriver::DSDriver(MPI_Comm mpi_comm, int num_peer, int app_id)
+: mpi_comm(mpi_comm), num_peer(num_peer), app_id(app_id),
+  closed(false)
 {
   int err;
-  return_err_if_ret_cond_flag(init(num_dscnodes, app_id), err, !=, 0, )
+  return_err_if_ret_cond_flag(init(num_peer, app_id), err, !=, 0, )
   // 
   log(INFO, "constructed.")
 }
@@ -81,9 +78,9 @@ int DSDriver::close()
   return 0;
 }
 
-int DSDriver::init(int num_dscnodes, int app_id)
+int DSDriver::init(int num_peer, int app_id)
 {
-  return dspaces_init(num_dscnodes - 1, app_id, &mpi_comm, NULL);
+  return dspaces_init(num_peer, app_id, &mpi_comm, NULL);
 }
 
 int DSDriver::sync_put(const char* var_name, unsigned int ver, int size,

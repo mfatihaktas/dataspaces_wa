@@ -44,17 +44,20 @@ void make_plot(std::vector<std::vector<T> > x_v_v, std::vector<std::vector<T> > 
   T min_y = *std::min_element(y_v.begin(), y_v.end() );
   T max_y = *std::max_element(y_v.begin(), y_v.end() );
   
-  // gp << "set term x11 enhanced\n";
-  gp << "set term post eps enh \"Helvetica\" 24\n";
+  // gp << "set title \"n\"\n";
+  // gp << "shift = 0.05\n";
+  // gp << "set label 1 \"first line\nsecond line\" at graph (0.5-shift),1.125 left\n";
+  // gp << "set label 1 \"first line\"\n\"second line\" at 4, 4\n";
+  gp << "set label 3 \"y=x^2\" at 2,3,4 right\n";
   if (out_url.compare("") != 0) {
     // gp << "set term png size 1200,800 enhanced font '/usr/share/fonts/dejavu/DejaVuSans.ttf' 12\n";
     // gp << "set term png enhanced font '/usr/share/fonts/dejavu/DejaVuSans.ttf' 12\n";
+    gp << "set term post eps enh \"Helvetica\" 12 size 5,4\n"; // For Symbols
     gp << "set output \"" << out_url << "\"\n";
   }
-  // gp << "set encoding utf8\n";
   gp << "set key right top\n";
   gp << "set key outside\n";
-  gp << "set title '" << plot_title << "'\n";
+  // gp << "set title \"" << plot_title << "\"\n";
   gp << "set xrange [" << min_x*0.9 << ":" << max_x*1.05 << "]\nset yrange [" << min_y*0.95 << ":" << max_y*1.1 << "]\n";
   gp << "set xlabel '" << x_label << "'\n";
   gp << "set ylabel '" << y_label << "'\n";

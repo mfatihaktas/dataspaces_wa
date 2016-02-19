@@ -25,9 +25,7 @@ extern "C" void* call_repetitive_get_w_wrap(void* wrap_)
 #define RANDOM_INT_RANGE 100
 
 DSTest::DSTest(int num_dscnodes, int app_id, int num_putget_threads)
-: num_dscnodes(num_dscnodes),
-  app_id(app_id),
-  num_putget_threads(num_putget_threads),
+: num_dscnodes(num_dscnodes), app_id(app_id), num_putget_threads(num_putget_threads),
   ds_driver(num_dscnodes, app_id)
 {
   for (int i = 0; i < num_putget_threads; i++) {
@@ -205,7 +203,7 @@ int DSTest::repetitive_get()
     std::string key = base_key + "_" + patch_test::to_str(counter);
     char* data_to_get_ = (char*)malloc(data_length*sizeof(char) );
     return_if_err(ds_driver.get(key.c_str(), ver, sizeof(char), ndim, gdim_, lb_, ub_, data_to_get_), err)
-    return_if_err(ds_driver.del(key.c_str(), ver), err)
+    // return_if_err(ds_driver.del(key.c_str(), ver), err)
     if (data_length == MSG_SIZE)
       log(INFO, "got key= " << key << ", data= " << data_to_get_)
     else {

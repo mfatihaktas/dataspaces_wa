@@ -25,7 +25,7 @@ typedef boost::function<void(char*)> function_cb_on_get;
 class DSDriver
 {
   private:
-    int app_id, num_peers;
+    int app_id, num_peer;
     MPI_Comm mpi_comm;
     
     bool closed;
@@ -51,11 +51,11 @@ class DSDriver
   public:
     static uint64_t get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_);
     
-    DSDriver(int app_id, int num_peers);
-    DSDriver(int app_id, int num_peers, MPI_Comm mpi_comm);
+    DSDriver(int app_id, int num_peer);
+    DSDriver(int app_id, int num_peer, MPI_Comm mpi_comm);
     ~DSDriver();
     int close();
-    int init(int num_peers, int app_id);
+    int init(int num_peer, int app_id);
     int sync_put(const char* var_name, unsigned int ver, int size,
                  int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
     int get_(const char* var_name, unsigned int ver, int size,

@@ -20,17 +20,17 @@ class DSDriver
 {
   private:
     bool closed;
-    int num_dscnodes, app_id;
+    int num_peer, app_id;
     int nprocs, rank;
     MPI_Comm mpi_comm;
   public:
     static uint64_t get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_);
     
-    DSDriver(int num_dscnodes, int app_id);
-    DSDriver(MPI_Comm mpi_comm, int num_dscnodes, int app_id);
+    DSDriver(int num_peer, int app_id);
+    DSDriver(MPI_Comm mpi_comm, int num_peer, int app_id);
     ~DSDriver();
     int close();
-    int init(int num_dscnodes, int app_id);
+    int init(int num_peer, int app_id);
     int sync_put(const char* var_name, unsigned int ver, int size,
                  int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
     int get(const char* var_name, unsigned int ver, int size,

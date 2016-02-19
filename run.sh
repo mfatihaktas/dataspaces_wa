@@ -73,7 +73,7 @@ elif [[ $1  == 'p' || $1  == 'dp' || $1  == 'g' || $1  == 'dg' ]]; then
   TYPE="put"
   GDB=""
   [[ $1  == 'g' || $1  == 'dg' ]] && TYPE="get"
-  [[ $1  == 'dp' || $1  == 'dg' ]] && GDB=gdb --args
+  [[ $1  == 'dp' || $1  == 'dg' ]] && GDB="gdb --args"
   
   export GLOG_logtostderr=1
   $GDB ./exp --type=$TYPE --cl_id=$3 --base_client_id=$(($2*$NUM_CLIENT)) --num_peer=$NUM_PEER \
@@ -84,7 +84,7 @@ elif [[ $1  == 'mp' || $1  == 'dmp' || $1  == 'mg' || $1  == 'dmg' ]]; then
   TYPE="mput"
   GDB=""
   [[ $1  == 'mg' || $1  == 'dmg' ]] && TYPE="mget"
-  [[ $1  == 'dmp' || $1  == 'dmg' ]] && GDB=gdb --args
+  [[ $1  == 'dmp' || $1  == 'dmg' ]] && GDB="gdb --args"
   
   export GLOG_logtostderr=1
   $GDB ./mput_mget_test --type=$TYPE --cl_id=$3 --base_client_id=$(($2*$NUM_CLIENT)) --num_peer=$NUM_PEER \
@@ -109,7 +109,7 @@ elif [[ $1  == 'map' || $1  == 'mag' ]]; then
   pkill -f mput_mget_test
 elif [[ $1  == 'r' || $1  == 'dr' ]]; then
   GDB=""
-  [ $1  = 'dr' ] && GDB=gdb --args
+  [ $1  = 'dr' ] && GDB="gdb --args"
   
   # if [ $TRANS_PROTOCOL  = 'g' ]; then
   #   echo "Starting Gftps..."

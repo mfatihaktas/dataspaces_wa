@@ -71,7 +71,12 @@ void test_talgo()
 void plot_galgo_hit_rate_vs_stdev()
 {
   std::vector<std::string> title_v;
-  boost::shared_ptr<PAlgo> palgo_ = boost::make_shared<TAlgo>();
+  boost::shared_ptr<PAlgo> talgo_ = boost::make_shared<TAlgo>();
+  
+  std::vector<malgo_t__context_size_pair> malgo_t__context_size_v;
+  malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 3) );
+  malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 4) );
+  boost::shared_ptr<PAlgo> oalgo_ = boost::make_shared<MMPAlgo>(malgo_t__context_size_v);
   
   int alphabet_size = 20; // 4; // 20; // 10;
   int num_acc = 200; // 10; // 200; // 50;
@@ -82,40 +87,66 @@ void plot_galgo_hit_rate_vs_stdev()
   float hit_rate;
   std::vector<char> accuracy_v;
   
-  int num_filtering_run = 1;
-  int stdev_id = 0;
-  for (int stdev = 1; stdev <= 20; stdev += 5, stdev_id++) {
+  int num_filtering_run = 2;
+  int index = 0;
+  for (int stdev = 1; stdev <= 11; stdev += 5, index++) {
     std::vector<ACC_T> acc_v;
     std::vector<arr_time__acc_pair> arr_time__acc_pair_v;
     gen_real_acc_seq(alphabet_size, num_acc, 20, 100, stdev, acc_v, arr_time__acc_pair_v);
+    std::vector<acc_step_pair> acc_step_v;
+    acc_v_to_acc_step_v(acc_v, acc_step_v);
     
-    title_v.push_back("gaussian algo {/Symbol s}= " + stdev);
+    title_v.push_back("gaussian {/Symbol s}= " + boost::lexical_cast<std::string>(stdev) );
     cache_size_v_v.push_back(std::vector<float>() );
     hit_rate_v_v.push_back(std::vector<float>() );
     for (int cache_size = 1; cache_size <= alphabet_size; cache_size += 4) {
     // for (int cache_size = 1; cache_size <= 7; cache_size++) {
       float total_hit_rate = 0;
       for (int f = 0; f < num_filtering_run; f++) {
-        std::cout << "stdev= " << stdev << ", cache_size= " << cache_size << ", f= " << f << "\n";
+        std::cout << "gaussian; stdev= " << stdev << ", cache_size= " << cache_size << ", f= " << f << "\n";
         if (f == 0)
-          cache_size_v_v[stdev_id].push_back(cache_size);
+          cache_size_v_v[index].push_back(cache_size);
         
-        palgo_->reset();
+        talgo_->reset();
         accuracy_v.clear();
-        sim_prefetch_accuracy<PAlgo>(*palgo_, cache_size, arr_time__acc_pair_v, hit_rate, accuracy_v);
+        sim_prefetch_accuracy<PAlgo>(*talgo_, cache_size, arr_time__acc_pair_v, hit_rate, accuracy_v);
         // log_(INFO, "arr_time__acc_pair_v= \n" << patch::pvec_to_str<>(arr_time__acc_pair_v) )
         // std::cout << "accuracy_v= " << patch::vec_to_str<>(accuracy_v) << "\n";
         
         total_hit_rate += hit_rate;
       }
-      hit_rate_v_v[stdev_id].push_back(total_hit_rate / num_filtering_run);
+      hit_rate_v_v[index].push_back(total_hit_rate / num_filtering_run);
     }
+    
+    // title_v.push_back("mixed-most confident {/Symbol s}= " + boost::lexical_cast<std::string>(stdev) );
+    // cache_size_v_v.push_back(std::vector<float>() );
+    // hit_rate_v_v.push_back(std::vector<float>() );
+    // ++index;
+    // for (int cache_size = 1; cache_size <= alphabet_size; cache_size += 4) {
+    // // for (int cache_size = 1; cache_size <= 7; cache_size++) {
+    //   float total_hit_rate = 0;
+    //   for (int f = 0; f < num_filtering_run; f++) {
+    //     std::cout << "mixed-most confident; stdev= " << stdev << ", cache_size= " << cache_size << ", f= " << f << "\n";
+    //     if (f == 0)
+    //       cache_size_v_v[index].push_back(cache_size);
+        
+    //     oalgo_->reset();
+    //     accuracy_v.clear();
+    //     sim_prefetch_accuracy<PAlgo>(*oalgo_, cache_size, acc_step_v, hit_rate, accuracy_v);
+    //     // log_(INFO, "arr_time__acc_pair_v= \n" << patch::pvec_to_str<>(arr_time__acc_pair_v) )
+    //     // std::cout << "accuracy_v= " << patch::vec_to_str<>(accuracy_v) << "\n";
+        
+    //     total_hit_rate += hit_rate;
+    //   }
+    //   hit_rate_v_v[index].push_back(total_hit_rate / num_filtering_run);
+    // }
   }
   
   std::stringstream plot_title_ss;
-  plot_title_ss << "Avg Hit rate for independent inter arrivals ~ N([20, 100], {/Symbol s}^2); "
+  // plot_title_ss << "Avg Hit rate of Gaussian-Prefetcher for independent inter arrivals \\~ N(U[20, 100], {/Symbol s}^2); "
+  plot_title_ss << "Avg Hit rate of Gaussian and Mixed-Most Confident Prefetchers for independent inter arrivals \\~ N(U[20, 100], {/Symbol s}^2); "
                 << "alphabet size= " << alphabet_size
-                << ", pattern size= " << num_acc;
+                << ", number of access per app= " << num_acc;
   
   std::string out_url = "";
   make_plot<float>(cache_size_v_v, hit_rate_v_v, title_v,

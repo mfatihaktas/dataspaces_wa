@@ -135,14 +135,14 @@ void RFPManager::handle_recv(std::string data_id, uint64_t data_size, void* data
 }
 
 /********************************************  RIManager  *****************************************/
-RIManager::RIManager(int cl_id, int base_client_id, int num_client, DATA_ID_T data_id_t,
+RIManager::RIManager(int cl_id, int base_client_id, int num_peer, DATA_ID_T data_id_t,
                      std::string lcontrol_lip, int lcontrol_lport, std::string join_lcontrol_lip, int join_lcontrol_lport,
                      std::string data_trans_protocol, std::string ib_lip, std::list<std::string> ib_lport_list,
                      std::string tcp_lip, int tcp_lport,
                      std::string gftp_lintf, std::string gftp_lip, std::string gftp_lport, std::string tmpfs_dir)
-: cl_id(cl_id), base_client_id(base_client_id), num_client(num_client), data_id_t(data_id_t),
+: cl_id(cl_id), base_client_id(base_client_id), num_peer(num_peer), data_id_t(data_id_t),
   data_trans_protocol(data_trans_protocol),
-  ds_driver_(new DSDriver(cl_id, num_client) ),
+  ds_driver_(new DSDriver(cl_id, num_peer) ),
   rfp_manager_(new RFPManager(data_id_t, data_trans_protocol,
                               ib_lip, ib_lport_list,
                               tcp_lip, tcp_lport,
@@ -173,7 +173,7 @@ std::string RIManager::to_str()
 {
   std::stringstream ss;
   ss << "\t cl_id= " << cl_id << "\n"
-     << "\t num_client= " << num_client << "\n"
+     << "\t num_peer= " << num_peer << "\n"
      << "\t rfp_manager= \n" << rfp_manager_->to_str() << "\n";
   
   return ss.str();

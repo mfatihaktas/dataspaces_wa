@@ -11,31 +11,41 @@ DATA_SIZE=$((100*1024*1024))
 # DATA_SIZE=$((1024*1024*1024))
 
 NUM_DSCNODES=2 # 96
+NUM_PEER=1
 
 if [[ $1  == 's' || $1  == 'ds' ]]; then
-  [ -a conf ] && rm srv.lck conf
+  [ -a conf ] && rm srv.lck conf # dataspaces.conf
   GDB=
-  [ $1  = 'ds' ] && GDB=gdb --args
+  [ $1  = 'ds' ] && GDB="gdb --args"
+  
+  # echo "## Config file for DataSpaces
+  # ndim = 2
+  # dims = 1280123123,1280123123
+  # max_versions = 1
+  # max_readers = 1 
+  # lock_type = 1
+  # " > dataspaces.conf
   
   $GDB $DSPACES_DIR/bin/./dataspaces_server --server 1 --cnodes $NUM_DSCNODES
 elif [[ $1  == 'p' || $1  == 'dp' ]]; then
   GDB=
-  [ $1  = 'dp' ] && GDB=gdb --args
+  [ $1  = 'dp' ] && GDB="gdb --args"
   
   export GLOG_logtostderr=1
-  $GDB ./exp --type=put_test --app_id=1 --num_dscnodes=$NUM_DSCNODES \
+  $GDB ./exp --type=put_test --app_id=1 --num_peer=$NUM_PEER \
              --num_putget_threads=$NUM_PUTGET_THREADS --data_size=$DATA_SIZE
 elif [[ $1  == 'g' || $1  == 'dg' ]]; then
   GDB=
-  [ $1  = 'dg' ] && GDB=gdb --args
+  [ $1  = 'dg' ] && GDB="gdb --args"
   
   export GLOG_logtostderr=1
-  $GDB ./exp --type=get_test --app_id=2 --num_dscnodes=$NUM_DSCNODES \
+  $GDB ./exp --type=get_test --app_id=2 --num_peer=$NUM_PEER \
              --num_putget_threads=$NUM_PUTGET_THREADS --data_size=$DATA_SIZE
 elif [ $1  = 'init' ]; then
   if [ $2  = 'd' ]; then
-    # export DSPACES_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces/install
-    export DSPACES_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.6.0/install
+    export DSPACES_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces/install
+    # export DSPACES_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.5.0/install
+    # export DSPACES_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.6.0/install
     echo "DSPACES_DIR= "$DSPACES_DIR
   fi
 # elif [ $1  = 'tp' ]; then

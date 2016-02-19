@@ -41,6 +41,10 @@ FKID_TBOOTH_DIR=/net/hp101/ihpcsc/maktas7/dataspaces_wa
 TBOOTH_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa_nstx-sc14-demo
 BOOTH_DIR=/home/jchoi/project
 
+# TSTAMPEDE_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.6.0
+TSTAMPEDE_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces
+STAMPEDE_DIR=/home1/03016/mfatih
+
 if [ $1  = 'issh' ]; then
   if [ $2 = 'm' ]; then
     cat ~/.ssh/id_rsa.pub | ssh maktas7@maquis$3.cc.gatech.edu 'cat >> /net/rd7/maktas7/.ssh/authorized_keys'
@@ -117,6 +121,8 @@ elif [ $1  = 'ssh' ]; then
     sleep 0.1; kill $PIDSAVE
     
     ssh $SSH_OPTS jchoi@$BOOTH_IP
+  elif [ $2 = 's' ]; then
+    ssh -X mfatih@stampede.tacc.utexas.edu
   fi
 elif [ $1  = 'tr' ]; then #scp only source code
   if [ $2 = 'm' ]; then
@@ -153,6 +159,8 @@ elif [ $1  = 'tr' ]; then #scp only source code
     sleep 0.1; kill $PIDSAVE
     
     rsync -avz --exclude-from=$TBOOTH_DIR/.gitignore $TBOOTH_DIR jchoi@$BOOTH_IP:$BOOTH_DIR
+  elif [ $2 = 's' ]; then
+    rsync -avz --exclude-from=$TSTAMPEDE_DIR/.gitignore $TSTAMPEDE_DIR mfatih@stampede.tacc.utexas.edu:$STAMPEDE_DIR
   fi
 elif [ $1  = 'fr' ]; then #scp only source code
   if [ $2 = 'd' ]; then

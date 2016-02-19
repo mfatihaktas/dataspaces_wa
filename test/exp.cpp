@@ -13,7 +13,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv__)
   {
     {"type", optional_argument, NULL, 0},
     {"app_id", optional_argument, NULL, 1},
-    {"num_dscnodes", optional_argument, NULL, 2},
+    {"num_peer", optional_argument, NULL, 2},
     {"num_putget_threads", optional_argument, NULL, 3},
     {"data_size", optional_argument, NULL, 4},
     {0, 0, 0, 0}
@@ -34,7 +34,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv__)
         opt_map["app_id"] = optarg;
         break;
       case 2:
-        opt_map["num_dscnodes"] = optarg;
+        opt_map["num_peer"] = optarg;
         break;
       case 3:
         opt_map["num_putget_threads"] = optarg;
@@ -61,14 +61,14 @@ int main(int argc , char** argv__)
 {
   std::string temp;
   std::map<std::string, std::string> opt_map = parse_opts(argc, argv__);
-  int num_dscnodes = atoi(opt_map["num_dscnodes"].c_str() );
+  int num_peer = atoi(opt_map["num_peer"].c_str() );
   int app_id = atoi(opt_map["app_id"].c_str() );
   int num_putget_threads = atoi(opt_map["num_putget_threads"].c_str() );
   uint64_t data_size = atof(opt_map["data_size"].c_str() );
   log(INFO, "data_size= " << data_size)
   // 
-  DSTest ds_test(num_dscnodes, app_id, num_putget_threads);
-  // DSDriver ds_driver(num_dscnodes, app_id);
+  DSTest ds_test(num_peer, app_id, num_putget_threads);
+  // DSDriver ds_driver(num_peer, app_id);
   
   if (str_cstr_equals(opt_map["type"], "put_test") ) {
     ds_test.run_multithreaded_put_test("thread", data_size);
