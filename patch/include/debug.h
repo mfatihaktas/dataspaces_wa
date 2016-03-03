@@ -30,17 +30,19 @@
 #define TEST_NZ(x) if (x) {log_(ERROR, #x << "failed!") exit(EXIT_FAILURE); }
 #define TEST_Z(x)  if (!(x)) {log_(ERROR, #x << "failed!") exit(EXIT_FAILURE); }
 
-#define return_if_err(x, err) \
+#define return_if_err(x, err, a...) \
   err = x; \
   if (err) { \
     log_(ERROR, __func__ << ":: " #x " failed!") \
+    a \
     return err; \
   }
 
-#define return_err_if_ret_cond_flag(x, ret, cond, flag, err) \
+#define return_err_if_ret_cond_flag(x, ret, cond, flag, err, a...) \
   ret = x; \
   if (ret cond flag) { \
     log_(ERROR, __func__ << ":: " #x " failed!") \
+    a \
     return err; \
   }
 #endif // _TEST_MACROS_

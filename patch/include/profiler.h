@@ -12,52 +12,7 @@
 #include <boost/tuple/tuple.hpp>
 #include <glog/logging.h>
 
-#include "debug.h"
-
-namespace patch_profiler
-{
-  template <typename Tk, typename Tv>
-  struct thread_safe_map {
-    private:
-      boost::mutex mutex;
-      typename std::map<Tk, Tv> map;
-      typename std::map<Tk, Tv>::iterator map_it;
-    public:
-      thread_safe_map() {}
-      ~thread_safe_map() {}
-      
-      Tv& operator[](Tk k) {
-        boost::lock_guard<boost::mutex> guard(this->mutex);
-        return map[k];
-      }
-      
-      int del(Tk k) {
-        boost::lock_guard<boost::mutex> guard(this->mutex);
-        map_it = map.find(k);
-        map.erase(map_it);
-      }
-      
-      bool contains(Tk k) {
-        boost::lock_guard<boost::mutex> guard(this->mutex);
-        return !(map.count(k) == 0);
-      }
-      
-      typename std::map<Tk, Tv>::iterator begin() {
-        boost::lock_guard<boost::mutex> guard(this->mutex);
-        return map.begin();
-      }
-      
-      typename std::map<Tk, Tv>::iterator end() {
-        boost::lock_guard<boost::mutex> guard(this->mutex);
-        return map.end();
-      }
-      
-      size_t size() {
-        boost::lock_guard<boost::mutex> guard(this->mutex);
-        return map.size();
-      }
-  };
-}
+#include "patch.h"
 
 struct Event {
   private:
@@ -103,7 +58,7 @@ struct Event {
 template <typename T>
 class TProfiler { // Time Profiler
   private:
-    patch_profiler::thread_safe_map<T, Event> event_map;
+    patch::thread_safe_map<T, Event> event_map;
     timeval created_time;
   public:
     TProfiler() { gettimeofday(&created_time, NULL); };
@@ -133,13 +88,19 @@ class TProfiler { // Time Profiler
       return ss.str();
     }
     
-    void add_event(T event_key, std::string event_name) {
+    int add_event(T event_key, std::string event_name) {
       Event e(event_name, created_time);
       event_map[event_key] = e;
+      return 0;
     }
     
-    void end_event(T event_key) {
+    int end_event(T event_key) {
+      if (!event_map.contains(event_key) ) {
+        log_(WARNING, "NOT in; event_key= " << event_key)
+        return 1;
+      }
       event_map[event_key].end();
+      return 0;
     }
     
     void get_event_dur_vector(float& total_dur, std::vector<T>& event_dur_v) {

@@ -65,6 +65,7 @@ W_PREFETCH=1
 
 if [ $1  = 's' ]; then
   [ -a conf ] && rm srv.lck conf
+  
   $DSPACES_DIR/bin/./dataspaces_server --server 1 --cnodes $NUM_DSCNODE
 elif [ -z "$2" ]; then
   echo "Which site [0, *]?"

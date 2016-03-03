@@ -1,13 +1,13 @@
 #!/bin/bash
 echo $1 $2 $3
 
-TRANS_PROTOCOL="t" # "i" # "g"
+TRANS_PROTOCOL="i" # "i" # "g"
 IB_LINTF="ib0"
 TCP_LINTF="eth0" # "em2"
 GFTP_LINTF="eth0" # "em2"
 TMPFS_DIR=""
 
-S_LIP=192.168.210.161 # 192.168.2.151 # 10.0.0.151
+S_LIP=10.0.0.151 # 192.168.2.151 # 10.0.0.151
 S_LPORT=1234
 
 if [ $1  = 'g' ]; then

@@ -125,9 +125,10 @@ int IBClient::send_data(std::string data_id, uint64_t data_size, void* data_)
   }
   // free(data_);
   
-  char* end_indicator_ = (char*)malloc(3*sizeof(char) );
-  memcpy(end_indicator_, (char*)"EOF", 3);
-  size_data_bq.push(std::make_pair(3, end_indicator_) );
+  char* end_indicator_ = (char*)malloc(4*sizeof(char) );
+  memcpy(end_indicator_, (char*)"EOF", 4);
+  end_indicator_[3] = '\0';
+  size_data_bq.push(std::make_pair(4, end_indicator_) );
   
   syncer.add_sync_point(WAIT_SEND_DATA, 1);
   syncer.wait(WAIT_SEND_DATA);
@@ -183,7 +184,6 @@ int IBClient::make_header(RDMA_DATA_T data_t, std::string data_id, uint64_t data
     memcpy(header_, data_size_, IB_MAX_DATA_SIZE_LENGTH);
     header_ += IB_MAX_DATA_SIZE_LENGTH;
   }
-  // Add null-char
   *header_ = '\0';
   
   return 0;
@@ -195,7 +195,7 @@ int IBClient::send_next()
   log_(INFO, "popped size= " << size_data.first)
   if (size_data.first < 200)
     std::cout << "data_= " << (char*)size_data.second << "\n";
-  if (size_data.first == 3 && cstr_cstr_equals("EOF", (const char*)size_data.second) ) {
+  if (size_data.first == 4 && cstr_cstr_equals("EOF", (const char*)size_data.second) ) {
     syncer.notify(WAIT_SEND_DATA);
     return 0;
   }
@@ -226,6 +226,7 @@ int IBClient::send_chunk(uint64_t chunk_size, void* chunk_)
 
 int IBClient::write_remote(struct rdma_cm_id* id_, uint64_t size)
 {
+  int err;
   struct conn_context* ctx_ = (struct conn_context*)id_->context;
 
   struct ibv_send_wr wr, *bad_wr_ = NULL;
@@ -249,35 +250,33 @@ int IBClient::write_remote(struct rdma_cm_id* id_, uint64_t size)
   wr.wr.rdma.remote_addr = ctx_->peer_addr;
   wr.wr.rdma.rkey = ctx_->peer_rkey;
   
-  int r = ibv_post_send(id_->qp, &wr, &bad_wr_);
-  if (r) {
-    log_(ERROR, "ibv_post_send returned non-zero; r= " << r)
-    return 1;
-  }
-  else {
-    log_(INFO, "wrote size= " << size)
-    return 0;
-  }
+  return_if_err(ibv_post_send(id_->qp, &wr, &bad_wr_), err)
+  log_(INFO, "wrote size= " << size)
+  
+  return 0;
 }
 
 int IBClient::post_receive(struct rdma_cm_id* id_)
 {
+  int err;
   struct conn_context* ctx_ = (struct conn_context*)id_->context;
-
+  
   struct ibv_recv_wr wr, *bad_wr_ = NULL;
   struct ibv_sge sge;
-
+  
   memset(&wr, 0, sizeof(wr) );
-
+  
   wr.wr_id = (uintptr_t)id_;
   wr.sg_list = &sge;
   wr.num_sge = 1;
-
+  
   sge.addr = (uintptr_t)ctx_->msg_;
   sge.length = sizeof(*ctx_->msg_);
   sge.lkey = ctx_->msg_mr_->lkey;
-
-  return ibv_post_recv(id_->qp, &wr, &bad_wr_);
+  
+  return_if_err(ibv_post_recv(id_->qp, &wr, &bad_wr_), err)
+  
+  return 0;
 }
 
 //----------------------------------------  State handlers  --------------------------------------//

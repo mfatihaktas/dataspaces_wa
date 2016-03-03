@@ -8,7 +8,7 @@ namespace patch_sdm {
     else if (data_id_t == LUCOOR_DATA_ID)
       return patch::arr_to_str<>(NDIM, lb_) + "_" + patch::arr_to_str<>(NDIM, ub_);
     else
-      LOG(ERROR) << "get_data_id:: unknown data_id_t= " << data_id_t;
+      log_(ERROR, "unknown data_id_t= " << data_id_t)
   }
   
   std::string get_data_id(DATA_ID_T data_id_t, std::map<std::string, std::string> msg_map)
@@ -18,7 +18,7 @@ namespace patch_sdm {
     else if (data_id_t == LUCOOR_DATA_ID)
       return msg_map["lb_"] + "_" + msg_map["ub_"];
     else
-      LOG(ERROR) << "get_data_id:: unknown data_id_t= " << data_id_t;
+      log_(ERROR, "unknown data_id_t= " << data_id_t)
   }
   
   unsigned int hash_str(std::string str)
@@ -46,7 +46,7 @@ namespace patch_sdm {
       ia >> msg_map;
     }
     catch(boost::archive::archive_exception &e) {
-      LOG(ERROR) << "decode:: exceptioon e= " << e.what();
+      log_(ERROR, "exceptioon e= " << e.what() )
       return 1;
     }
     
@@ -63,7 +63,7 @@ namespace patch_sdm {
       str = ss.str();
     }
     catch(boost::archive::archive_exception &e) {
-      LOG(ERROR) << "encode:: exceptioon e= " << e.what();
+      log_(ERROR, "exceptioon e= " << e.what() )
       return 1;
     }
     
@@ -94,7 +94,7 @@ namespace patch_sdm {
       }
     }
     catch (std::exception& ex) {
-      LOG(ERROR) << "decode_msg_map:: Exception=" << ex.what();
+      log_(ERROR, "Exception=" << ex.what() )
       return 1;
     }
     return 0;
@@ -131,7 +131,7 @@ namespace patch_sdm {
       }
     }
     catch (std::exception& ex) {
-      LOG(ERROR) << "decode_msg_map:: Exception=" << ex.what();
+      log_(ERROR, "Exception=" << ex.what() )
       return 1;
     }
     return 0;
@@ -147,8 +147,8 @@ namespace patch_sdm {
       msg_map["lb_"] = patch::arr_to_str<>(ndim, lb_);
       msg_map["ub_"] = patch::arr_to_str<>(ndim, ub_);
     }
-    catch(std::exception& ex) {
-      LOG(ERROR) << "encode_msg_map:: Exception=" << ex.what();
+    catch (std::exception& ex) {
+      log_(ERROR, "Exception=" << ex.what() )
       return 1;
     }
     return 0;
@@ -169,7 +169,7 @@ namespace patch_sdm {
       msg_map["ub_"] = patch::arr_to_str<>(ndim, ub_);
     }
     catch (std::exception& ex) {
-      LOG(ERROR) << "encode_msg_map:: Exception=" << ex.what();
+      log_(ERROR, "Exception=" << ex.what() )
       return 1;
     }
     return 0;

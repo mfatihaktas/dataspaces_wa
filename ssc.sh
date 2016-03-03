@@ -11,8 +11,9 @@ FKID_DIR=/net/hp101/ihpcsc/maktas7/dataspaces_wa_nstx-sc14-demo/img-chunk
 # TKID_DIR=/cac/u01/mfa51/Desktop/adios-1.7.0
 # TKID_DIR=/cac/u01/mfa51/Desktop/boost_1_56_0
 # TKID_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa
-TKID_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa_nstx-sc14-demo
-KID_DIR=/net/hp101/ihpcsc/maktas7
+TKID_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.6.0
+# KID_DIR=/net/hp101/ihpcsc/maktas7
+KID_DIR=/net/rd7/maktas7
 
 # TULAM_DIR=/cac/u01/mfa51/Desktop/ib_verbs_test
 # TULAM_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.6.0
@@ -44,6 +45,7 @@ BOOTH_DIR=/home/jchoi/project
 # TSTAMPEDE_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.6.0
 TSTAMPEDE_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces
 STAMPEDE_DIR=/home1/03016/mfatih
+FSTAMPEDE_DIR=$STAMPEDE_DIR/log
 
 if [ $1  = 'issh' ]; then
   if [ $2 = 'm' ]; then
@@ -59,13 +61,11 @@ elif [ $1  = 'ssh' ]; then
     if [ -z "$3" ]; then
       echo "which dell node? 1-32"
     else
-      if [ "$3" -lt "10" ]; then
-        echo "sshing to dell0$3"
-        ssh -A -t mfa51@spring.rutgers.edu ssh dell0$3
-      else
-        echo "sshing to dell$3"
-        ssh -A -t mfa51@spring.rutgers.edu ssh dell$3
-      fi
+      _3=$3
+      [[ "$3" -lt "10" ]] && _3=0$3
+      
+      echo "sshing to dell$_3"
+      ssh -AX -t mfa51@spring.rutgers.edu ssh -X dell$_3
     fi
   elif [ $2 = 'm' ]; then
     if [ -z "$3" ]; then
@@ -123,6 +123,8 @@ elif [ $1  = 'ssh' ]; then
     ssh $SSH_OPTS jchoi@$BOOTH_IP
   elif [ $2 = 's' ]; then
     ssh -X mfatih@stampede.tacc.utexas.edu
+  elif [ $2 = 'e' ]; then
+    ssh -X mfa51@elf.rdi2.rutgers.edu
   fi
 elif [ $1  = 'tr' ]; then #scp only source code
   if [ $2 = 'm' ]; then
@@ -167,6 +169,8 @@ elif [ $1  = 'fr' ]; then #scp only source code
     scp mfa51@spring.rutgers.edu:~/Desktop/dataspaces_wa/dspaces_rel/sdm_control/prefetch/*.png ~/Desktop
   elif [ $2 = 'k' ]; then
     rsync -avz --exclude-from=$TKID_DIR/.gitignore maktas7@kid42.cc.gatech.edu:$FKID_DIR $TKID_DIR 
+  elif [ $2 = 's' ]; then
+    rsync -avz mfatih@stampede.tacc.utexas.edu:$FSTAMPEDE_DIR $TSTAMPEDE_DIR
   fi
 else
   echo "Argument did not match !"

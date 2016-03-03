@@ -7,6 +7,8 @@
 #include <net/if.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+// for ip_search
+// #include <ifaddrs.h>
 
 #include <iostream>
 #include <string>
@@ -20,6 +22,36 @@
 #include <boost/lexical_cast.hpp>
 
 #include "ib_trans.h"
+
+// char* ip_search()
+// {
+//   int err;
+//   struct ifaddrs* addr_;
+//   return_err_if_ret_cond_flag(getifaddrs(&addr_), err, !=, 0, NULL);
+//   int count = 0;
+//   for (struct ifaddrs* head_ = addr_; head_ != NULL; head_ = head_->ifa_next) {
+    
+//     // if (head_->ifa_name == NULL || strcmp(IB_INTERFACE, head_->ifa_name) == 0)
+//     //   break;
+//     count++;
+//   }
+  
+//   int sfd, intr;
+//   struct ifreq buf[16];
+//   struct ifconf ifc;
+//   sfd = socket(AF_INET, SOCK_DGRAM, 0);
+//   if (sfd < 0)
+//     return (char*)ERRORIP;
+//   ifc.ifc_len = sizeof(buf);
+//   ifc.ifc_buf = (caddr_t) buf;
+//   if (ioctl(sfd, SIOCGIFCONF, (char *) &ifc) )
+//     return (char*)ERRORIP;
+//   intr = ifc.ifc_len / sizeof(struct ifreq);
+//   while(intr-- > 0 && ioctl(sfd, SIOCGIFADDR, (char *) &buf[intr] ) );
+//   close(sfd);
+  
+//   return inet_ntoa(((struct sockaddr_in *) (&buf[count-1].ifr_addr) )->sin_addr);
+// }
 
 char* intf_to_ip(std::string intf)
 {
@@ -107,17 +139,18 @@ void data_recv_handler(std::string data_id, uint64_t data_size, void* data_)
 
 int main(int argc , char **argv)
 {
+  int err;
   std::string temp;
-  google::InitGoogleLogging("exp");
-  // 
-  struct timeval start_time;
-  struct timeval end_time;
+  google::InitGoogleLogging(argv[0] );
   // 
   std::map<std::string, std::string> opt_map = parse_opts(argc, argv);
   
+  struct timeval start_time;
+  struct timeval end_time;
+  
   std::string ib_lports[] = {"1234","1235","1236","1237"};
   std::list<std::string> ib_lport_list(ib_lports, ib_lports + sizeof(ib_lports) / sizeof(std::string) );
-  // 
+  
   IBTrans ib_trans(opt_map["s_lip"], ib_lport_list);
   if (str_cstr_equals(opt_map["type"], "server") ) {
     ib_trans.init_server(ib_trans.get_s_lport().c_str(),
@@ -131,18 +164,13 @@ int main(int argc , char **argv)
     for (int i = 0; i < data_length; i++)
       static_cast<data_type*>(data_)[i] = (data_type)i*1.2;
     // 
-    if (gettimeofday(&start_time, NULL) ) {
-      log_(ERROR, "gettimeofday returned non-zero.")
-      return 1;
-    }
     
+    return_if_err(gettimeofday(&start_time, NULL), err)
     ib_trans.init_client(opt_map["s_lip"].c_str(), opt_map["s_lport"].c_str(),
                          "dummy", data_length*sizeof(data_type), data_);
     
-    if (gettimeofday(&end_time, NULL) ) {
-      log_(ERROR, "gettimeofday returned non-zero.")
-      return 1;
-    }
+    return_if_err(gettimeofday(&end_time, NULL), err)
+    
     long exec_time_sec = end_time.tv_sec - start_time.tv_sec;
     long exec_time_usec = end_time.tv_usec - start_time.tv_usec;
     log_(INFO, "exec_time= " << exec_time_sec << "." << exec_time_usec / 1000 << " sec.")

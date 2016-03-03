@@ -142,7 +142,7 @@ int IBServer::on_completion(struct ibv_wc* wc_)
       }
       else if (data_t == RDMA_DATA) {
         if (data_size_recved + size > data_size_to_recv) {
-          LOG(ERROR) << "recving more than advertised; data_size_recved + size= " << data_size_recved + size << " while data_size_to_recv= " << data_size_to_recv;
+          log_(ERROR, "recving more than advertised; data_size_recved + size= " << data_size_recved + size << " while data_size_to_recv= " << data_size_to_recv)
           return 1;
         }
         memcpy(static_cast<char*>(data_to_recv_) + data_size_recved, ctx_->buffer_, size);
@@ -162,7 +162,7 @@ int IBServer::on_completion(struct ibv_wc* wc_)
     }
     else if (recv_state == HEADER_RECV) {
       if (proc_header((char*)ctx_->buffer_) ) {
-        LOG(ERROR) << "proc_header failed; header_= " << (char*)ctx_->buffer_;
+        log_(ERROR, "proc_header failed; header_= " << (char*)ctx_->buffer_)
         return 1;
       }
       
@@ -170,7 +170,7 @@ int IBServer::on_completion(struct ibv_wc* wc_)
         recv_state = DATA_RECV;
     }
     else {
-      LOG(ERROR) << "recv_state_err; data_t= " << (char)data_t << ", recv_state= " << (char)recv_state << ", recved size= " << size;
+      log_(ERROR, "recv_state_err; data_t= " << (char)data_t << ", recv_state= " << (char)recv_state << ", recved size= " << size)
       return 1;
     }
     

@@ -106,7 +106,7 @@ int SDMSlave::get(int app_id, bool blocking, std::string key, unsigned int ver, 
   // log_(INFO, KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_) )
   std::vector<int> p_id_v;
   if (qtable_->query(key, ver, lcoor_, ucoor_, p_id_v) ) {
-    log_(ERROR, "qtable_->query failed; " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_) )
+    log_(INFO, "qtable_->query failed; " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_) )
     log_s(sdm_log_f, INFO, "MISS; " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_) << "\n"
                            << "\t blocking= " << blocking)
     

@@ -16,7 +16,7 @@ PATCH_INC = -I$(DSPACESWA_DIR)/patch/include
 
 PREFETCH_DIR ?= $(SDM_CONTROL_DIR)/prefetch
 PREFETCH_ODIR = $(PREFETCH_DIR)/obj
-PREFETCH_OBJS = $(PREFETCH_ODIR)/prefetch.o $(PREFETCH_ODIR)/markov.o $(PREFETCH_ODIR)/sfc.o $(PREFETCH_ODIR)/hilbert.o
+PREFETCH_OBJS = $(PREFETCH_ODIR)/prefetch.o $(PREFETCH_ODIR)/markov.o $(PREFETCH_ODIR)/sfc.o $(PREFETCH_ODIR)/palgo.o $(PREFETCH_ODIR)/hilbert.o
 
 SDM_CONTROL_DIR ?= $(DSPACESWA_DIR)/dspaces_rel/sdm_control
 SDM_CONTROL_INC = $(PATCH_INC) -I$(PREFETCH_DIR)/include -I$(SDM_CONTROL_DIR)/include

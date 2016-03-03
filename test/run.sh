@@ -14,19 +14,19 @@ NUM_DSCNODES=2 # 96
 NUM_PEER=1
 
 if [[ $1  == 's' || $1  == 'ds' ]]; then
-  [ -a conf ] && rm srv.lck conf # dataspaces.conf
+  # [ -a conf ] && rm srv.lck conf dataspaces.conf
   GDB=
   [ $1  = 'ds' ] && GDB="gdb --args"
   
   # echo "## Config file for DataSpaces
   # ndim = 2
-  # dims = 1280123123,1280123123
+  # dims = 128012,128012
   # max_versions = 1
   # max_readers = 1 
   # lock_type = 1
   # " > dataspaces.conf
   
-  $GDB $DSPACES_DIR/bin/./dataspaces_server --server 1 --cnodes $NUM_DSCNODES
+  $GDB $DSPACES_DIR/bin/./dataspaces_server --server 2 --cnodes $NUM_DSCNODES
 elif [[ $1  == 'p' || $1  == 'dp' ]]; then
   GDB=
   [ $1  = 'dp' ] && GDB="gdb --args"
@@ -43,9 +43,9 @@ elif [[ $1  == 'g' || $1  == 'dg' ]]; then
              --num_putget_threads=$NUM_PUTGET_THREADS --data_size=$DATA_SIZE
 elif [ $1  = 'init' ]; then
   if [ $2  = 'd' ]; then
-    export DSPACES_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces/install
     # export DSPACES_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.5.0/install
     # export DSPACES_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.6.0/install
+    export DSPACES_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces/install
     echo "DSPACES_DIR= "$DSPACES_DIR
   fi
 # elif [ $1  = 'tp' ]; then

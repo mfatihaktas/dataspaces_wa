@@ -30,10 +30,14 @@ class SDMCEntity { // SDM Control
       }
     }
     
-    virtual int close() { return sdm_node.close(); }
+    virtual int close() {
+      int err;
+      sdm_log_f.close();
+      return_if_err(sdm_node.close(), err);
+      return 0;
+    }
     
-    virtual std::string to_str()
-    {
+    virtual std::string to_str() {
       std::stringstream ss;
       ss << "sdm_node= \n" << sdm_node.to_str() << "\n";
       return ss.str();
@@ -47,8 +51,7 @@ class SDMCEntity { // SDM Control
     int send_cmsg(int to_id, std::map<std::string, std::string> msg_map) { return sdm_node.send_msg(to_id, PACKET_CMSG, msg_map); }
     int send_rimsg(int to_id, std::map<std::string, std::string> msg_map) { return sdm_node.send_msg(to_id, PACKET_RIMSG, msg_map); }
     
-    void handle_cmsg(boost::shared_ptr<Packet> p_)
-    {
+    void handle_cmsg(boost::shared_ptr<Packet> p_) {
       // log_(INFO, "p= " << p_->to_str() )
       switch (p_->get_type() ) {
         case PACKET_JOIN_ACK:

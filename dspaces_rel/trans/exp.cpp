@@ -146,18 +146,15 @@ int main(int argc , char **argv)
   }
   else if (str_cstr_equals(opt_map["type"], "put") ) {
     // int data_length = 4* 1024*1024*256;
-    int data_length = 1024; //1024*1024*256;
+    int data_length = 1024*1024*256; // 1024; //1024*1024*256;
     void* data_ = (void*)malloc(sizeof(DATA_T)*data_length);
     
     for (int i = 0; i < data_length; i++)
       static_cast<DATA_T*>(data_)[i] = (DATA_T)i*1.2;
     // 
     return_if_err(gettimeofday(&start_time, NULL), err)
-    //TODO: for now
-    if (str_cstr_equals(opt_map["trans_protocol"], "t") )
-      data_length *= sizeof(DATA_T);
-      trans.init_put(opt_map["s_lip"], opt_map["s_lport"], opt_map["tmpfs_dir"],
-                     DATA_T_STR, "dummy", data_length, data_);
+    trans.init_put(opt_map["s_lip"], opt_map["s_lport"], opt_map["tmpfs_dir"],
+                   DATA_T_STR, "dummy", data_length, data_);
     return_if_err(gettimeofday(&end_time, NULL), err)
     
     long exec_time_sec = end_time.tv_sec - start_time.tv_sec;
@@ -168,8 +165,9 @@ int main(int argc , char **argv)
     // std::cout << "Enter \n";
     // getline(std::cin, temp);
   }
-  else
+  else {
      log_(ERROR, "unknown type= " << opt_map["type"] )
-
+  }
+  
   return 0;
 }

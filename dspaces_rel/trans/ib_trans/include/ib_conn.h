@@ -15,7 +15,7 @@ enum RDMA_DATA_T {
   RDMA_DATA = 'D',
 };
 // For client-server comm protocol
-const char HEADER_DELIMITER = '_';
+const char HEADER_DELIMITER = '#';
 
 const int IB_MAX_DATA_T_LENGTH = 1;
 const int IB_MAX_DATA_ID_LENGTH = 20;

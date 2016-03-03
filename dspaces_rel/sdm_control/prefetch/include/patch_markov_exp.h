@@ -6,6 +6,10 @@
 #include <string>
 #include <cstdlib>
 #include <ctime>
+// For exec
+#include <iostream>
+#include <cstdio>
+#include <memory>
 
 #include <boost/assign/list_of.hpp>
 // #include <boost/math/distributions/normal.hpp>
@@ -13,6 +17,94 @@
 #include <boost/math/distributions.hpp>
 
 #include "gnuplot_iostream.h"
+
+std::string exec(std::string cmd)
+{
+  boost::shared_ptr<FILE> pipe_(popen(cmd.c_str(), "r"), pclose);
+  if (!pipe_) {
+    log_(ERROR, "opening pipe_ failed!")
+    return "ERROR";
+  }
+  
+  char buffer_[128];
+  std::string result = "";
+  while (!feof(pipe_.get() ) ) {
+    if (fgets(buffer_, 128, pipe_.get() ) != NULL)
+      result += buffer_;
+  }
+  return result;
+}
+
+// Note: enclosing any latex code ($code$) with '' is required
+template<typename T>
+void make_latex_plot(std::vector<std::vector<T> > x_v_v, std::vector<std::vector<T> > y_v_v, std::vector<std::string> title_v,
+                     std::string x_label, std::string y_label,
+                     std::string plot_title, std::string out_name)
+{
+  std::cout << "x_v_v= \n";
+  for (typename std::vector<std::vector<T> >::iterator it = x_v_v.begin(); it != x_v_v.end(); it++)
+    std::cout << patch::vec_to_str<>(*it) << "\n";
+  
+  std::cout << "y_v_v= \n";
+  for (typename std::vector<std::vector<T> >::iterator it = y_v_v.begin(); it != y_v_v.end(); it++)
+    std::cout << patch::vec_to_str<>(*it) << "\n";
+  // 
+  std::string color_code_[] = {"#0060ad", "#DAA520", "#7F7F7F", "#D2691E", "#556B2F", "#DC143C", "#DA70D6", "#8B008B", "#1E90FF", "#9ACD32"};
+  
+  std::vector<T> x_v;
+  for (typename std::vector<std::vector<T> >::iterator it = x_v_v.begin(); it != x_v_v.end(); it++)
+    x_v.insert(x_v.end(), it->begin(), it->end() );
+  
+  T min_x = *std::min_element(x_v.begin(), x_v.end() );
+  T max_x = *std::max_element(x_v.begin(), x_v.end() );
+  
+  std::vector<T> y_v;
+  for (typename std::vector<std::vector<T> >::iterator it = y_v_v.begin(); it != y_v_v.end(); it++)
+    y_v.insert(y_v.end(), it->begin(), it->end() );
+  
+  T min_y = *std::min_element(y_v.begin(), y_v.end() );
+  T max_y = *std::max_element(y_v.begin(), y_v.end() );
+  
+  // out_name = "gnuplot/" + out_name;
+  {
+    Gnuplot gp;
+    gp << "set terminal epslatex standalone color colortext font ',8' size 20cm,15cm\n";
+    gp << "set output '" << out_name << ".tex'\n";
+    gp << "set key right bottom\n";
+    // gp << "set key outside\n";
+    // gp << "set key width -8\n";
+    gp << "set title '" << plot_title << "'\n"; // offset 0,1 // to lift title up
+    gp << "set xrange [" << min_x*0.9 << ":" << max_x*1.1 << "]\nset yrange [" << min_y*0.95 << ":" << max_y*1.1 << "]\n";
+    gp << "set xlabel '" << x_label << "'\n";
+    gp << "set ylabel '" << y_label << "'\n";
+    gp << "set grid\n";
+    
+    for (int i = 0; i < x_v_v.size(); i++)
+      gp << "set style line " << boost::lexical_cast<std::string>(i + 1) << " lc rgb '" << color_code_[i] << "' " << "pt " << boost::lexical_cast<std::string>(i + 1) << " lt 1 lw 2 ps 1\n";
+    
+    gp << "plot ";
+    gp << "x lw 1 lt 3 title 'y=x',";
+    for (int i = 0; i < x_v_v.size(); i++) {
+      gp << "'-' u 1:2 title '" << title_v[i] << "' w linespoints ls " << boost::lexical_cast<std::string>(i + 1);
+      if (i == x_v_v.size() - 1)
+        gp << "\n";
+      else
+        gp << ", ";
+    }
+    
+    typename std::vector<std::vector<T> >::iterator it_x_v, it_y_v;
+    for (it_x_v = x_v_v.begin(), it_y_v = y_v_v.begin(); it_x_v != x_v_v.end(); it_x_v++, it_y_v++)
+      gp.send1d(boost::make_tuple(*it_x_v, *it_y_v) );
+  }
+  // log_(INFO, "exec(latex " << out_name << ".tex) returned= \n"
+  //           << exec("latex " + out_name + ".tex") << "\n"
+  //           << "exec(dvips -o " << out_name << ".ps " << out_name << ".dvi) returned= \n"
+  //           << exec("dvips -o " + out_name + ".ps " + out_name + ".dvi") )
+  log_(INFO, "exec(latex " << out_name << ".tex) returned= \n"
+             << exec("latex " + out_name + ".tex") )
+  log_(INFO, "exec(dvips -o " << out_name << ".ps " << out_name << ".dvi) returned= \n"
+             << exec("dvips -o " + out_name + ".ps " + out_name + ".dvi") )
+}
 
 template<typename T>
 void make_plot(std::vector<std::vector<T> > x_v_v, std::vector<std::vector<T> > y_v_v, std::vector<std::string> title_v,
@@ -44,15 +136,10 @@ void make_plot(std::vector<std::vector<T> > x_v_v, std::vector<std::vector<T> > 
   T min_y = *std::min_element(y_v.begin(), y_v.end() );
   T max_y = *std::max_element(y_v.begin(), y_v.end() );
   
-  // gp << "set title \"n\"\n";
-  // gp << "shift = 0.05\n";
-  // gp << "set label 1 \"first line\nsecond line\" at graph (0.5-shift),1.125 left\n";
-  // gp << "set label 1 \"first line\"\n\"second line\" at 4, 4\n";
-  gp << "set label 3 \"y=x^2\" at 2,3,4 right\n";
   if (out_url.compare("") != 0) {
     // gp << "set term png size 1200,800 enhanced font '/usr/share/fonts/dejavu/DejaVuSans.ttf' 12\n";
-    // gp << "set term png enhanced font '/usr/share/fonts/dejavu/DejaVuSans.ttf' 12\n";
-    gp << "set term post eps enh \"Helvetica\" 12 size 5,4\n"; // For Symbols
+    gp << "set term png enhanced font '/usr/share/fonts/dejavu/DejaVuSans.ttf' 12\n";
+    // gp << "set term post eps enh \"Helvetica\" 12 size 5,4\n"; // For Symbols
     gp << "set output \"" << out_url << "\"\n";
   }
   gp << "set key right top\n";
@@ -63,11 +150,9 @@ void make_plot(std::vector<std::vector<T> > x_v_v, std::vector<std::vector<T> > 
   gp << "set ylabel '" << y_label << "'\n";
   gp << "set grid\n";
   
-  
   for (int i = 0; i < x_v_v.size(); i++)
     gp << "set style line " << boost::lexical_cast<std::string>(i + 1) << " lc rgb '" << color_code_[i] << "' " << "pt " << boost::lexical_cast<std::string>(i + 1) << " lt 1 lw 2 ps 1\n";
     // gp << "set style line " << boost::lexical_cast<std::string>(i + 1) << " lc rgb '" << color_code_[i] << "' lt 1 lw 2 pt 5 ps 1.5\n";
-  
   // gp << "set logscale xy\n";
   
   gp << "plot";
@@ -139,16 +224,13 @@ int gen_real_acc_seq(int alphabet_size, int num_acc,
                      std::vector<ACC_T>& acc_v,
                      std::vector<arr_time__acc_pair>& arr_time__acc_pair_v)
 {
-  // const int min_inter_acc_time = 20;
-  // const int max_inter_acc_time = 100;
-  // const int stdev = 20; // 1; // 10;
-  
   std::map<float, ACC_T> time_acc_map;
   for (ACC_T acc = 1; acc <= alphabet_size; acc++) {
     float inter_acc_time_mean = rand() % (int)(max_inter_acc_time - min_inter_acc_time) + min_inter_acc_time;
     log_(INFO, "acc= " << acc << ", inter_acc_time_mean= " << inter_acc_time_mean)
-    
+    // boost::math::exponential_distribution<float> inter_acc_time_dist((float)1/inter_acc_time_mean);
     boost::math::normal_distribution<float> inter_acc_time_dist(inter_acc_time_mean, stdev);
+    
     float last_acc_time = 0;
     for (int i = 0; i < num_acc; i++) {
       float inter_acc_time = (float)std::abs(quantile(inter_acc_time_dist, (static_cast<float>(rand() ) / static_cast<float>(RAND_MAX) ) ) );
@@ -1140,12 +1222,12 @@ void plot_hit_rate_vs_cache_size()
   
   std::string out_url = "";
   make_plot<float>(cache_size_v_v, hit_rate_v_v, title_v,
-                   "Cache size (Number of data items)", "Avg Hit rate",
+                   "Cache size", "Avg Hit rate",
                    plot_title_ss.str(), out_url);
   
   out_url = "/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/sdm_control/prefetch/fig_hit_rate_vs_cache_size.png";
   make_plot<float>(cache_size_v_v, hit_rate_v_v, title_v,
-                   "Cache size (Number of data items)", "Avg Hit rate",
+                   "Cache size", "Avg Hit rate",
                    plot_title_ss.str(), out_url);
   
   // std::cout << "acc_step_v= " << patch::pvec_to_str<>(acc_step_v) << "\n";
@@ -1237,12 +1319,12 @@ void plot_hit_rate_w_real()
   
   std::string out_url = "";
   make_plot<float>(cache_size_v_v, hit_rate_v_v, title_v,
-                   "Cache size (Number of data items)", "Avg Hit rate",
+                   "Cache size", "Avg Hit rate",
                    plot_title_ss.str(), out_url);
   
   out_url = "/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/sdm_control/prefetch/fig_hit_rate_vs_cache_size.png";
   make_plot<float>(cache_size_v_v, hit_rate_v_v, title_v,
-                   "Cache size (Number of data items)", "Avg Hit rate",
+                   "Cache size", "Avg Hit rate",
                    plot_title_ss.str(), out_url);
   
   // std::cout << "acc_step_v= " << patch::pvec_to_str<>(acc_step_v) << "\n";

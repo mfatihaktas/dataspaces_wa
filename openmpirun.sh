@@ -80,7 +80,7 @@ if [ -z "$2" ]; then
   echo "Which site? 0 | 1"
 elif [ $1  = 'ar' ]; then
   _1=mg
-  [[ $2 == 0 ]] && { _1=mp; rm *.log; }
+  [ $2 = 0 ] && { _1=mp; rm *.log; }
   
   ./openmpirun.sh r $2
   sleep 1

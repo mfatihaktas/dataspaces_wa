@@ -107,7 +107,7 @@ int Trans::init_put(std::string s_lip, std::string s_lport, std::string tmpfs_di
                     std::string data_type, std::string data_id, uint64_t data_length, void* data_)
 {
   if (str_str_equals(trans_protocol, INFINIBAND) )
-    ib_trans_->init_client(s_lip.c_str(), s_lport.c_str(), data_type, data_length, data_);
+    ib_trans_->init_client(s_lip.c_str(), s_lport.c_str(), data_id, data_length, data_);
   else if (str_str_equals(trans_protocol, TCP) ) {
     // Note: data_length should be data_size for TCP
     int data_size = data_length;

@@ -113,6 +113,9 @@ int main(int argc, char **argv)
     // plot_hit_rate_w_real();
     // test_talgo();
     plot_galgo_hit_rate_vs_stdev();
+    // test_gnuplot();
+    
+    log_(INFO, "exec(ls)= \n" << exec("ls") )
     
     // std::vector<ACC_T> acc_v;
     // gen_real_acc_seq(10, 20, acc_v);

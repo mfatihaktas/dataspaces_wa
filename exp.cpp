@@ -218,57 +218,47 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
 #define TEST_VER 0
 #define TEST_SGDIM TEST_DATASIZE
 
-void get_test(std::string var_name, WADSDriver& wads_driver)
+int get_test(std::string var_name, WADSDriver& wads_driver)
 {
-  uint64_t* gdim_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
-  for (int i = 0; i < TEST_NDIM; i++)
-    gdim_[i] = TEST_SGDIM;
+  int err;
   
-  int* data_ = (int*)malloc(TEST_DATASIZE*sizeof(int) );
+  uint64_t* gdim_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
   uint64_t* lb_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
   uint64_t* ub_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
   for (int i = 0; i < TEST_NDIM; i++) {
     lb_[i] = 0;
-    ub_[i] = TEST_SIZE;
+    ub_[i] = TEST_SIZE - 1;
+    gdim_[i] = TEST_SIZE - 1;
   }
+  int* data_ = (int*)malloc(TEST_DATASIZE*sizeof(int) );
   
-  if (wads_driver.get(true, var_name, TEST_VER, "int", sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_) ) {
-    log_(ERROR, "wads_driver.get failed!")
-  }
-  else {
-    log_(INFO, "got; kv= " << KV_TO_STR(var_name, TEST_VER) << "\n"
-               << "\t data_size= " << get_data_length(TEST_NDIM, gdim_, lb_, ub_) )
-  }
+  return_if_err(wads_driver.get(true, var_name, TEST_VER, "int", sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_), err, patch::free_all<uint64_t>(3, gdim_, lb_, ub_);)
+  log_(INFO, "got; kv= " << KV_TO_STR(var_name, TEST_VER) << "\n"
+             << "\t data_size= " << (float)sizeof(int)*get_data_length(TEST_NDIM, gdim_, lb_, ub_) / (1024*1024) << " MB")
   
   patch::free_all<uint64_t>(3, gdim_, lb_, ub_);
   free(data_);
 }
 
-void put_test(std::string var_name, WADSDriver& wads_driver)
+int put_test(std::string var_name, WADSDriver& wads_driver)
 {
-  uint64_t* gdim_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
-  for (int i = 0; i < TEST_NDIM; i++)
-    gdim_[i] = TEST_SGDIM;
+  int err;
   
-  int* data_ = (int*)malloc(TEST_DATASIZE*sizeof(int) );
+  uint64_t* gdim_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
   uint64_t* lb_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
   uint64_t* ub_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
   for (int i = 0; i < TEST_NDIM; i++) {
     lb_[i] = 0;
-    ub_[i] = TEST_SIZE;
+    ub_[i] = TEST_SIZE - 1;
+    gdim_[i] = TEST_SIZE - 1;
   }
-  
+  int* data_ = (int*)malloc(TEST_DATASIZE*sizeof(int) );
   // for (int i = 0; i < TEST_DATASIZE; i++)
   //   data_[i] = i + 1;
   
-  log_(INFO, "will put datasize= " << (float)TEST_DATASIZE*sizeof(int)/1024/1024 << " MB.")
-  if (wads_driver.put(var_name, TEST_VER, "int", sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_) ) {
-    log_(ERROR, "wads_driver.local_put failed!")
-  }
-  else {
-    log_(INFO, "putt; kv= " << KV_TO_STR(var_name, TEST_VER) << "\n"
-               << "\t data_size= " << get_data_length(TEST_NDIM, gdim_, lb_, ub_) )
-  }
+  return_if_err(wads_driver.put(var_name, TEST_VER, "int", sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_), err, patch::free_all<uint64_t>(3, gdim_, lb_, ub_);)
+  log_(INFO, "put; kv= " << KV_TO_STR(var_name, TEST_VER) << "\n"
+             << "\t data_size= "<< (float)sizeof(int)*get_data_length(TEST_NDIM, gdim_, lb_, ub_) / (1024*1024) << " MB")
   
   patch::free_all<uint64_t>(3, gdim_, lb_, ub_);
   free(data_);
@@ -282,12 +272,12 @@ int main(int argc , char **argv)
   std::map<std::string, std::string> opt_map = parse_opts(argc, argv);
   
   TProfiler<std::string> tprofiler;
-  if (str_cstr_equals(opt_map["type"], "put") ) {
+  if (str_cstr_equals(opt_map["type"], "put") || str_cstr_equals(opt_map["type"], "get") ) {
     MWADSDriver wads_driver(
       boost::lexical_cast<int>(opt_map["cl_id"] ), boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_peer"] ),
       intf_to_ip(opt_map["lcontrol_lintf"] ), boost::lexical_cast<int>(opt_map["lcontrol_lport"] ), opt_map["join_lcontrol_lip"], boost::lexical_cast<int>(opt_map["join_lcontrol_lport"] ) );
     
-    std::cout << "Enter for put_test...\n";
+    std::cout << "Enter for " << opt_map["type"] << "_test... \n";
     getline(std::cin, temp);
     
     tprofiler.add_event("put_test", "put_test");
@@ -302,7 +292,7 @@ int main(int argc , char **argv)
       boost::lexical_cast<int>(opt_map["cl_id"] ), boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_peer"] ),
       intf_to_ip(opt_map["lcontrol_lintf"] ), boost::lexical_cast<int>(opt_map["lcontrol_lport"] ), opt_map["join_lcontrol_lip"], boost::lexical_cast<int>(opt_map["join_lcontrol_lport"] ) );
     
-    std::cout << "Enter for get_test...\n";
+    std::cout << "Enter for get_test... \n";
     getline(std::cin, temp);
     
     tprofiler.add_event("get_test", "get_test");
@@ -319,10 +309,10 @@ int main(int argc , char **argv)
     PALGO_T palgo_t = MALGO_W_PPM;
     int max_num_key_ver_in_mpbuffer = 10;
     
-    SALGO_T salgo_t = SALGO_H;
-    COOR_T lcoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 0) };
-    COOR_T ucoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 16) };
-    int sexpand_length = 1;
+    // SALGO_T salgo_t = SALGO_H;
+    // COOR_T lcoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 0) };
+    // COOR_T ucoor_[] = { BOOST_PP_ENUM(NDIM, FIXED_REP, 16) };
+    // int sexpand_length = 1;
     
     if (opt_map.count("join_lcontrol_lip") == 0) {
       opt_map["join_lcontrol_lip"] = "";
@@ -391,7 +381,7 @@ int main(int argc , char **argv)
     log_(ERROR, "unknown type= " << opt_map["type"] )
   }
   
-  std::cout << "tprofiler= \n" << tprofiler.to_str();
-  // 
+  log_(INFO, "tprofiler= \n" << tprofiler.to_str() )
+  
   return 0;
 }
