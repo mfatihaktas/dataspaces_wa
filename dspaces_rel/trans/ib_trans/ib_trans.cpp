@@ -35,4 +35,3 @@ void IBTrans::init_client(const char* s_lip_, const char* s_lport_,
   IBClient ib_client(s_lip_, s_lport_);
   ib_client.send_data(data_id, data_size, data_);
 }
-

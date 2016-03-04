@@ -68,12 +68,10 @@ void IBClient::init()
 
 int IBClient::send_init()
 {
+  int err;
   int header_size;
   char* header_;
-  if (make_header(RDMA_INIT, "", 0, header_size, header_) ) {
-    log_(ERROR, "make_header failed.")
-    return 1;
-  }
+  return_if_err(make_header(RDMA_INIT, "", 0, header_size, header_), err)
   size_data_bq.push(std::make_pair(header_size, (void*)header_) );
   
   return 0;
@@ -81,12 +79,10 @@ int IBClient::send_init()
 
 int IBClient::send_msg(std::string msg)
 {
+  int err;
   int header_size;
   char* header_;
-  if (make_header(RDMA_MSG, "", msg.size(), header_size, header_) ) {
-    log_(ERROR, "make_header failed; msg= " << msg)
-    return 1;
-  }
+  return_if_err(make_header(RDMA_MSG, "", msg.size(), header_size, header_), err)
   size_data_bq.push(std::make_pair(header_size, (void*)header_) );
   
   int msg_length = msg.size() + 1;
@@ -102,12 +98,10 @@ int IBClient::send_msg(std::string msg)
 int IBClient::send_data(std::string data_id, uint64_t data_size, void* data_)
 {
   log_(INFO, "started; data_size= " << data_size)
+  int err;
   int header_size;
   char* header_;
-  if (make_header(RDMA_DATA, data_id, data_size, header_size, header_) ) {
-    log_(ERROR, "make_header failed; data_id= " << data_id << ", data_size= " << data_size)
-    return 1;
-  }
+  return_if_err(make_header(RDMA_DATA, data_id, data_size, header_size, header_), err)
   size_data_bq.push(std::make_pair(header_size, (void*)header_) );
   
   void* data_t_ = data_;
@@ -135,13 +129,18 @@ int IBClient::send_data(std::string data_id, uint64_t data_size, void* data_)
   syncer.del_sync_point(WAIT_SEND_DATA);
   log_(INFO, "done; data_size= " << data_size)
   
+  // TODO: to make ib_server to go ahead and destruct after finished recving
+  // struct conn_context* ctx_ = (struct conn_context*)id_->context;
+  // ctx_->msg_->id = MSG_DONE;
+  // return_if_err(write_remote(id_, 0), err)
+  
   return 0;
 }
 
 int IBClient::make_header(RDMA_DATA_T data_t, std::string data_id, uint64_t data_size,
                           int& header_size, char*& arg_header_)
 {
-  if (data_t == RDMA_INIT)
+  if (data_t == RDMA_INIT || data_t == RDMA_DONE)
     header_size = IB_MAX_DATA_T_LENGTH + 1;
   else if (data_t == RDMA_MSG)
     header_size = IB_MAX_DATA_T_LENGTH + IB_MAX_DATA_SIZE_LENGTH + 1;
@@ -191,22 +190,25 @@ int IBClient::make_header(RDMA_DATA_T data_t, std::string data_id, uint64_t data
 
 int IBClient::send_next()
 {
+  int err;
   size_data_pair size_data = size_data_bq.pop();
   log_(INFO, "popped size= " << size_data.first)
   if (size_data.first < 200)
     std::cout << "data_= " << (char*)size_data.second << "\n";
   if (size_data.first == 4 && cstr_cstr_equals("EOF", (const char*)size_data.second) ) {
+    // TODO: to make ib_server to go ahead and destruct after finished recving
+    // log_(INFO, "sending RDMA_DONE...")
+    // int header_size;
+    // char* header_;
+    // return_if_err(make_header(RDMA_DONE, "", 0, header_size, header_), err)
+    // return_if_err(send_chunk(header_size, (void*)header_), err)
+    
     syncer.notify(WAIT_SEND_DATA);
     return 0;
   }
+  return_if_err(send_chunk(size_data.first, size_data.second), err, free(size_data.second);)
+  // free(size_data.second); // This causes segmentation fault in memcpy(ctx_->buffer_, chunk_, chunk_size);
   
-  if (send_chunk(size_data.first, size_data.second) ) {
-    log_(ERROR, "send_chunk failed while sending size= " << size_data.first)
-    free(size_data.second);
-    return 1;
-  }
-  
-  // free(size_data.second);
   return 0;
 }
 
@@ -216,7 +218,6 @@ int IBClient::send_chunk(uint64_t chunk_size, void* chunk_)
   // sleep(2);
   struct conn_context* ctx_ = (struct conn_context*)id_->context;
   
-  // ctx_->buffer_ = malloc(chunk_size);
   log_(INFO, "chunk_size= " << chunk_size)
   memcpy(ctx_->buffer_, chunk_, chunk_size);
   
@@ -282,6 +283,7 @@ int IBClient::post_receive(struct rdma_cm_id* id_)
 //----------------------------------------  State handlers  --------------------------------------//
 int IBClient::on_pre_conn(struct rdma_cm_id* id_)
 {
+  int err;
   struct conn_context* ctx_ = (struct conn_context*)id_->context;
   ctx_->buffer_ = malloc(BUFFER_SIZE);
   
@@ -291,11 +293,14 @@ int IBClient::on_pre_conn(struct rdma_cm_id* id_)
   posix_memalign((void**)&ctx_->msg_, sysconf(_SC_PAGESIZE), sizeof(*ctx_->msg_) );
   TEST_Z(ctx_->msg_mr_ = ibv_reg_mr(connector_->get_pd_(), ctx_->msg_, sizeof(*ctx_->msg_), IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE) );
 
-  post_receive(id_);
+  return_if_err(post_receive(id_), err)
+  
+  return 0;
 }
 
 int IBClient::on_completion(struct ibv_wc* wc_)
 {
+  int err;
   struct rdma_cm_id* id_ = (struct rdma_cm_id*)(uintptr_t)(wc_->wr_id);
   struct conn_context* ctx_ = (struct conn_context*)id_->context;
 
@@ -319,8 +324,9 @@ int IBClient::on_completion(struct ibv_wc* wc_)
       connector_->rc_disconnect(id_);
       return 0;
     }
+    return_if_err(post_receive(id_), err)
     
-    return post_receive(id_);
+    return 0;
   }
   // else if (wc_->opcode & IBV_WC_SEND) {
   //   log_(INFO, "IBV_WC_SEND success.")
@@ -331,5 +337,5 @@ int IBClient::on_completion(struct ibv_wc* wc_)
   //   return wc_->opcode;
   // }
   
-  return 1;
+  return 0;
 }

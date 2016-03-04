@@ -47,6 +47,12 @@ TSTAMPEDE_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces
 STAMPEDE_DIR=/home1/03016/mfatih
 FSTAMPEDE_DIR=$STAMPEDE_DIR/log
 
+# TELF_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces
+# TELF_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.6.0
+TELF_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa
+# ELF_DIR=/project1/parashar-001/mfa51
+ELF_DIR=/home1/mfa51
+
 if [ $1  = 'issh' ]; then
   if [ $2 = 'm' ]; then
     cat ~/.ssh/id_rsa.pub | ssh maktas7@maquis$3.cc.gatech.edu 'cat >> /net/rd7/maktas7/.ssh/authorized_keys'
@@ -67,6 +73,10 @@ elif [ $1  = 'ssh' ]; then
       echo "sshing to dell$_3"
       ssh -AX -t mfa51@spring.rutgers.edu ssh -X dell$_3
     fi
+  elif [ $2 = 'e' ]; then
+    ssh -X mfa51@elf.rdi2.rutgers.edu
+  elif [ $2 = 's' ]; then
+    ssh -X mfatih@stampede.tacc.utexas.edu
   elif [ $2 = 'm' ]; then
     if [ -z "$3" ]; then
       echo "which Maquis node? 1-16"
@@ -121,13 +131,13 @@ elif [ $1  = 'ssh' ]; then
     sleep 0.1; kill $PIDSAVE
     
     ssh $SSH_OPTS jchoi@$BOOTH_IP
-  elif [ $2 = 's' ]; then
-    ssh -X mfatih@stampede.tacc.utexas.edu
-  elif [ $2 = 'e' ]; then
-    ssh -X mfa51@elf.rdi2.rutgers.edu
   fi
 elif [ $1  = 'tr' ]; then #scp only source code
-  if [ $2 = 'm' ]; then
+  if [ $2 = 'e' ]; then
+    rsync -avz --exclude-from=$TELF_DIR/.gitignore $TELF_DIR mfa51@elf.rdi2.rutgers.edu:$ELF_DIR
+  elif [ $2 = 's' ]; then
+    rsync -avz --exclude-from=$TSTAMPEDE_DIR/.gitignore $TSTAMPEDE_DIR mfatih@stampede.tacc.utexas.edu:$STAMPEDE_DIR
+  elif [ $2 = 'm' ]; then
     rsync -avz --exclude-from=$TKID_DIR/.gitignore $TKID_DIR maktas7@maquis1.cc.gatech.edu:$KID_DIR
   elif [ $2 = 'k' ]; then
     rsync -avz --exclude-from=$TKID_DIR/.gitignore $TKID_DIR maktas7@kid42.cc.gatech.edu:$KID_DIR
@@ -161,16 +171,14 @@ elif [ $1  = 'tr' ]; then #scp only source code
     sleep 0.1; kill $PIDSAVE
     
     rsync -avz --exclude-from=$TBOOTH_DIR/.gitignore $TBOOTH_DIR jchoi@$BOOTH_IP:$BOOTH_DIR
-  elif [ $2 = 's' ]; then
-    rsync -avz --exclude-from=$TSTAMPEDE_DIR/.gitignore $TSTAMPEDE_DIR mfatih@stampede.tacc.utexas.edu:$STAMPEDE_DIR
   fi
 elif [ $1  = 'fr' ]; then #scp only source code
-  if [ $2 = 'd' ]; then
+  if [ $2 = 's' ]; then
+    rsync -avz mfatih@stampede.tacc.utexas.edu:$FSTAMPEDE_DIR $TSTAMPEDE_DIR
+  elif [ $2 = 'd' ]; then
     scp mfa51@spring.rutgers.edu:~/Desktop/dataspaces_wa/dspaces_rel/sdm_control/prefetch/*.png ~/Desktop
   elif [ $2 = 'k' ]; then
     rsync -avz --exclude-from=$TKID_DIR/.gitignore maktas7@kid42.cc.gatech.edu:$FKID_DIR $TKID_DIR 
-  elif [ $2 = 's' ]; then
-    rsync -avz mfatih@stampede.tacc.utexas.edu:$FSTAMPEDE_DIR $TSTAMPEDE_DIR
   fi
 else
   echo "Argument did not match !"

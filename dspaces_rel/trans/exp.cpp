@@ -146,7 +146,7 @@ int main(int argc , char **argv)
   }
   else if (str_cstr_equals(opt_map["type"], "put") ) {
     // int data_length = 4* 1024*1024*256;
-    int data_length = 1024*1024*256; // 1024; //1024*1024*256;
+    int data_length = 1024; //1024*1024*256;
     void* data_ = (void*)malloc(sizeof(DATA_T)*data_length);
     
     for (int i = 0; i < data_length; i++)
@@ -162,8 +162,8 @@ int main(int argc , char **argv)
     log_(INFO, "exec_time= " << exec_time_sec << "." << exec_time_usec / 1000 << " sec.")
     // 
     free(data_);
-    // std::cout << "Enter \n";
-    // getline(std::cin, temp);
+    std::cout << "Enter \n";
+    getline(std::cin, temp);
   }
   else {
      log_(ERROR, "unknown type= " << opt_map["type"] )

@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <math.h>
+#include <cstring> // some old compilers require this for strcpy
 
 #include "ds_drive.h"
 

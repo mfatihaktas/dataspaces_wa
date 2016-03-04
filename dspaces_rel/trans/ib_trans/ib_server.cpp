@@ -71,6 +71,7 @@ int IBServer::post_receive(struct rdma_cm_id* id_)
 //----------------------------------------  State handlers  --------------------------------------//
 int IBServer::on_pre_conn(struct rdma_cm_id* id_)
 {
+  int err;
   struct conn_context* ctx_ = (struct conn_context*)malloc(sizeof(struct conn_context) );
 
   id_->context = ctx_;
@@ -80,19 +81,22 @@ int IBServer::on_pre_conn(struct rdma_cm_id* id_)
 
   posix_memalign((void **)&ctx_->msg_, sysconf(_SC_PAGESIZE), sizeof(*ctx_->msg_) );
   TEST_Z(ctx_->msg_mr_ = ibv_reg_mr(connector_->get_pd_(), ctx_->msg_, sizeof(*ctx_->msg_), IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE) );
-
-  return post_receive(id_);
+  
+  return_if_err(post_receive(id_), err)
+  return 0;
 }
 
 int IBServer::on_conn(struct rdma_cm_id* id_)
 {
+  int err;
   struct conn_context* ctx_ = (struct conn_context*)id_->context;
   
   ctx_->msg_->id = MSG_MR;
   ctx_->msg_->data.mr.addr = (uintptr_t)ctx_->buffer_mr_->addr;
   ctx_->msg_->data.mr.rkey = ctx_->buffer_mr_->rkey;
-
-  return send_message(id_);
+  
+  return_if_err(send_message(id_), err)
+  return 0;
 }
 
 int IBServer::on_disconn(struct rdma_cm_id* id_)
@@ -106,12 +110,13 @@ int IBServer::on_disconn(struct rdma_cm_id* id_)
   free(ctx_->msg_);
   free(ctx_);
 
-  log_(INFO, "on_disconn:: done." )
+  log_(INFO, "done.")
   return 0;
 }
 
 int IBServer::on_completion(struct ibv_wc* wc_)
 {
+  int err;
   struct rdma_cm_id* id_ = (struct rdma_cm_id*)(uintptr_t)wc_->wr_id;
   struct conn_context* ctx_ = (struct conn_context*)id_->context;
   
@@ -122,12 +127,14 @@ int IBServer::on_completion(struct ibv_wc* wc_)
     if (size == 0) {
       log_(INFO, "recved size= " << size)
       ctx_->msg_->id = MSG_DONE;
-      return send_message(id_);
+      return_if_err(send_message(id_), err)
+      return 0;
     }
     else if (ctx_->msg_->id == MSG_DONE) {
       log_(INFO, "recved MSG_DONE.")
       ctx_->msg_->id = MSG_DONE;
-      return send_message(id_);
+      return_if_err(send_message(id_), err)
+      return 0;
     }
     
     if (recv_state == DATA_RECV) {
@@ -154,6 +161,12 @@ int IBServer::on_completion(struct ibv_wc* wc_)
           if (data_recv_cb)
             data_recv_cb(boost::lexical_cast<std::string>(data_id_), data_size_recved, data_to_recv_);
           
+          delete connector_;
+          // ctx_->msg_->id = MSG_DONE;
+          // return_if_err(send_message(id_), err)
+          // TODO: for now to end ib_server, return 1 will terminate Connector::poll_cq loop
+          return 1;
+          
           recv_state = HEADER_RECV;
           data_id_ = NULL;
           data_to_recv_ = NULL;
@@ -168,6 +181,10 @@ int IBServer::on_completion(struct ibv_wc* wc_)
       
       if (data_t == RDMA_MSG || data_t == RDMA_DATA)
         recv_state = DATA_RECV;
+      // else if (data_t == RDMA_DONE) { // TODO: to terminate ib_server
+      //   log_(INFO, "recved RDMA_DONE.")
+      //   return 1;
+      // }
     }
     else {
       log_(ERROR, "recv_state_err; data_t= " << (char)data_t << ", recv_state= " << (char)recv_state << ", recved size= " << size)
@@ -177,7 +194,8 @@ int IBServer::on_completion(struct ibv_wc* wc_)
     TEST_NZ(post_receive(id_) )
     
     ctx_->msg_->id = MSG_READY_TO_RECV;
-    return send_message(id_);
+    return_if_err(send_message(id_), err)
+    return 0;
   }
 }
 

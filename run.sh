@@ -18,6 +18,16 @@ if [ -n "$DELL" ]; then
   IB_LINTF="ib0"
   TCP_LINTF="em2"
   GFTP_LINTF="em2"
+# elif [ -n "$ELF" ]; then
+  # LCONTROL_LINTF="em2"
+  # APP_JOIN_LCONTROL_LIP_LIST=( "192.168.2.151" "192.168.2.152" )
+  
+  # CONTROL_LINTF="em2"
+  # RI_JOIN_CONTROL_LIP_LIST=( "" "192.168.2.151" )
+  
+  # IB_LINTF="ib0"
+  # TCP_LINTF="em2"
+  # GFTP_LINTF="em2"
 elif [ -n "$ULAM" ]; then
   LCONTROL_LINTF="eth0"
   APP_JOIN_LCONTROL_LIP_LIST=( "192.168.2.100" "192.168.2.202" )
@@ -49,7 +59,7 @@ elif [ -n "$BOOTH" ]; then
   TCP_LINTF="eth0"
   GFTP_LINTF="eth0"
 else
-  echo "Which system DELL | ULAM | KID | BOOTH"
+  echo "Which system DELL | ELF | ULAM | KID | BOOTH"
 fi
 
 RI_LCONTROL_LPORT_LIST=( 9000 9000 )
@@ -152,6 +162,24 @@ elif [ $1  = 'init' ]; then
     unset LD_LIBRARY_PATH
     # LD_LIBRARY_PATH=/cac/u01/mfa51/Desktop/mpich-3.1.2/install/lib:$LD_LIBRARY_PATH
     # LD_LIBRARY_PATH=/opt/gcc-4.8.2/lib64:$LD_LIBRARY_PATH
+    LD_LIBRARY_PATH=$BOOST_DIR/lib:$LD_LIBRARY_PATH
+    LD_LIBRARY_PATH=$GLOG_DIR/lib:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH
+    echo "LD_LIBRARY_PATH= " $LD_LIBRARY_PATH
+  elif [ $2  = 'e' ]; then
+    export ELF=ELF
+    export CC=gcc
+    export CPP=g++
+    export MPICPP=mpicxx
+    # export MPI_DIR=/cac/u01/mfa51/Desktop/mpich-3.1.2/install
+    export GLOG_DIR=
+    export BOOST_DIR=
+    export GFTPINC_DIR=
+    export GFTPLIB_DIR=
+    export DSPACES_DIR=/home1/mfa51/dataspaces-1.6.0/install
+    export DSPACESWA_DIR=/home1/mfa51/dataspaces_wa
+    
+    unset LD_LIBRARY_PATH
     LD_LIBRARY_PATH=$BOOST_DIR/lib:$LD_LIBRARY_PATH
     LD_LIBRARY_PATH=$GLOG_DIR/lib:$LD_LIBRARY_PATH
     export LD_LIBRARY_PATH

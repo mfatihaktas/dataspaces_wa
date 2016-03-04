@@ -13,6 +13,7 @@ enum RDMA_DATA_T {
   RDMA_INIT = 'I',
   RDMA_MSG = 'M',
   RDMA_DATA = 'D',
+  RDMA_DONE = 'O',
 };
 // For client-server comm protocol
 const char HEADER_DELIMITER = '#';
