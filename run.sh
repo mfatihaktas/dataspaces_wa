@@ -2,7 +2,7 @@
 echo $1 $2 $3
 
 NUM_SNODE=1
-NUM_CLIENT=2
+NUM_CLIENT=1
 NUM_DSCNODE=$(($NUM_CLIENT+1)) # +1: RIManager
 NUM_PEER=1
 NUM_PUTGET=3
@@ -70,11 +70,19 @@ RI_JOIN_CONTROL_LPORT_LIST=( 0 7000 7000 )
 TCP_LPORT=6000
 GFTP_LPORT=6000
 
-TRANS_PROTOCOL="t" # "i" # "g"
+TRANS_PROTOCOL="i" # "t" # "i" # "g"
 W_PREFETCH=1
 
 if [ $1  = 's' ]; then
-  [ -a conf ] && rm srv.lck conf
+  [ -a conf ] && rm srv.lck conf dataspaces.conf
+  
+  echo "## Config file for DataSpaces
+  ndim = 3
+  dims = 1024,1024,1024
+  max_versions = 1
+  max_readers = 1
+  lock_type = 1
+  " > dataspaces.conf
   
   $DSPACES_DIR/bin/./dataspaces_server --server 1 --cnodes $NUM_DSCNODE
 elif [ -z "$2" ]; then
@@ -172,8 +180,8 @@ elif [ $1  = 'init' ]; then
     export CPP=g++
     export MPICPP=mpicxx
     # export MPI_DIR=/cac/u01/mfa51/Desktop/mpich-3.1.2/install
-    export GLOG_DIR=
-    export BOOST_DIR=
+    export GLOG_DIR=/home1/mfa51/glog-0.3.3/install
+    export BOOST_DIR=/home1/mfa51/boost_1_56_0/install
     export GFTPINC_DIR=
     export GFTPLIB_DIR=
     export DSPACES_DIR=/home1/mfa51/dataspaces-1.6.0/install

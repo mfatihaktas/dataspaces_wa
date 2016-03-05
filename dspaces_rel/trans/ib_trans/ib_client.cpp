@@ -37,7 +37,8 @@ IBClient::IBClient(const char* s_lip_, const char* s_lport_)
   
   // To initiate with server so server can start sending MSG_READY_TO_RECV
   pthread_t t2;
-  TEST_NZ(pthread_create(&t2, NULL, call_send_next_w_wrap, wrap_) );
+  wrap_IBClient* wrap_2_ = new wrap_IBClient(this);
+  TEST_NZ(pthread_create(&t2, NULL, call_send_next_w_wrap, wrap_2_) );
   
   TEST_NZ(send_init() );
 }
@@ -46,6 +47,7 @@ IBClient::~IBClient()
 {
   syncer.close();
   delete connector_;
+  // delete wrap_;
   // 
   log_(INFO, "destructed.")
 }
@@ -64,6 +66,7 @@ void IBClient::init()
 {
   struct conn_context ctx;
   connector_->rc_client_loop(s_lip_, s_lport_, &ctx);
+  syncer.notify(WAIT_SEND_DATA);
 }
 
 int IBClient::send_init()
@@ -133,6 +136,8 @@ int IBClient::send_data(std::string data_id, uint64_t data_size, void* data_)
   // struct conn_context* ctx_ = (struct conn_context*)id_->context;
   // ctx_->msg_->id = MSG_DONE;
   // return_if_err(write_remote(id_, 0), err)
+  // sleep(1);
+  // connector_->rc_disconnect(id_);
   
   return 0;
 }
@@ -203,10 +208,12 @@ int IBClient::send_next()
     // return_if_err(make_header(RDMA_DONE, "", 0, header_size, header_), err)
     // return_if_err(send_chunk(header_size, (void*)header_), err)
     
-    syncer.notify(WAIT_SEND_DATA);
+    // syncer.notify(WAIT_SEND_DATA);
     return 0;
   }
+  
   return_if_err(send_chunk(size_data.first, size_data.second), err, free(size_data.second);)
+  // return_if_err(send_chunk(size_data.first, size_data.second), err, free(size_data.second);)
   // free(size_data.second); // This causes segmentation fault in memcpy(ctx_->buffer_, chunk_, chunk_size);
   
   return 0;
@@ -322,7 +329,7 @@ int IBClient::on_completion(struct ibv_wc* wc_)
     else if (ctx_->msg_->id == MSG_DONE) {
       log_(INFO, "received DONE, disconnecting.")
       connector_->rc_disconnect(id_);
-      return 0;
+      return 1;
     }
     return_if_err(post_receive(id_), err)
     

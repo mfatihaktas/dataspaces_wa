@@ -6,7 +6,7 @@ BCServer::BCServer(int app_id, int base_client_id, int num_client, int msg_size,
                    boost::shared_ptr<DSDriver> ds_driver_)
 : app_id(app_id), base_client_id(base_client_id), num_client(num_client), msg_size(msg_size),
   base_comm_var_name(base_comm_var_name), f_cb(f_cb),
-  ds_driver_ ( ds_driver_ )
+  ds_driver_(ds_driver_)
 {
   // 
   log_(INFO, "constructed;\n" << to_str() )
@@ -17,7 +17,7 @@ BCServer::BCServer(int app_id, int msg_size,
                    boost::shared_ptr<DSDriver> ds_driver_)
 : app_id(app_id), base_client_id(0), num_client(0), msg_size(msg_size),
   base_comm_var_name(base_comm_var_name), f_cb(f_cb),
-  ds_driver_ ( ds_driver_ )
+  ds_driver_(ds_driver_)
 {
   // 
   log_(INFO, "constructed;" << to_str() )

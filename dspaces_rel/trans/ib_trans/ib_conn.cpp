@@ -68,8 +68,8 @@ Connector::Connector(IBEnd* ib_end_)
 }
 
 Connector::~Connector() {
-  rc_disconnect();
   log_(INFO, "destructed.")
+  // delete wrap_;
 }
 
 struct ibv_pd* Connector::get_pd_() { return s_ctx_->pd_; }
@@ -152,12 +152,12 @@ void Connector::event_loop(struct rdma_event_channel* ec_, bool exit_on_disconn)
       build_conn(event_copy.id);
       
       ib_end_->on_pre_conn(event_copy.id);
-
+      
       TEST_NZ(rdma_accept(event_copy.id, &cm_param) )
     } 
     else if (event_copy.event == RDMA_CM_EVENT_ESTABLISHED) {
       ib_end_->on_conn(event_copy.id);
-    } 
+    }
     else if (event_copy.event == RDMA_CM_EVENT_DISCONNECTED) {
       rdma_destroy_qp(event_copy.id);
       
@@ -202,7 +202,8 @@ void* Connector::poll_cq(void* ctx_)
       }
       else {
         log_(ERROR, "status is not IBV_WC_SUCCESS")
-        exit(EXIT_FAILURE);
+        // exit(EXIT_FAILURE); //TODO: for now to make ib_server tear down without exiting once the data transfer is finished
+        return NULL;
       }
     }
   }
@@ -220,19 +221,18 @@ void Connector::rc_client_loop(const char* host_, const char* port_, void* ctx_)
   log_(INFO, "host_= " << host_ << ", port_= " << port_)
   
   TEST_NZ(getaddrinfo(host_, port_, NULL, &addr_) )
-
+  
   TEST_Z(ec_ = rdma_create_event_channel() );
   TEST_NZ(rdma_create_id(ec_, &conn_, NULL, RDMA_PS_TCP) )
   TEST_NZ(rdma_resolve_addr(conn_, NULL, addr_->ai_addr, TIMEOUT_IN_MS) )
-
+  
   freeaddrinfo(addr_);
-
+  
   conn_->context = ctx_;
-
+  
   build_param(&cm_param);
-
+  
   event_loop(ec_, true); // exit on disconnect
-
   rdma_destroy_event_channel(ec_);
 }
 
@@ -245,15 +245,15 @@ void Connector::rc_server_loop(const char* port_)
   memset(&addr, 0, sizeof(addr) );
   addr.sin_family = AF_INET;
   addr.sin_port = htons(atoi(port_) );
-
+  
   TEST_Z(ec_ = rdma_create_event_channel() );
   TEST_NZ(rdma_create_id(ec_, &listener_, NULL, RDMA_PS_TCP) )
   TEST_NZ(rdma_bind_addr(listener_, (struct sockaddr *)&addr) )
   TEST_NZ(rdma_listen(listener_, 10) ) /* backlog=10 is arbitrary */
-
+  
   // event_loop(ec_, false); // don't exit on disconnect
   event_loop(ec_, true); // TODO: to end ib_server after completed recving
-
+  
   rdma_destroy_id(listener_);
   rdma_destroy_event_channel(ec_);
 }

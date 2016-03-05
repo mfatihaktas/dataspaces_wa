@@ -161,11 +161,12 @@ int IBServer::on_completion(struct ibv_wc* wc_)
           if (data_recv_cb)
             data_recv_cb(boost::lexical_cast<std::string>(data_id_), data_size_recved, data_to_recv_);
           
-          delete connector_;
-          // ctx_->msg_->id = MSG_DONE;
-          // return_if_err(send_message(id_), err)
+          // delete connector_;
+          ctx_->msg_->id = MSG_DONE;
+          return_if_err(send_message(id_), err)
           // TODO: for now to end ib_server, return 1 will terminate Connector::poll_cq loop
           return 1;
+          // connector_->rc_disconnect(id_); // this causes double free corruption error on ib_client
           
           recv_state = HEADER_RECV;
           data_id_ = NULL;

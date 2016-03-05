@@ -436,7 +436,9 @@ int SDMMaster::reg_app(int app_id)
 
 int SDMMaster::add_access(int c_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_)
 {
-  return wa_space_->add_access(c_id, key, ver, lcoor_, ucoor_);
+  int err;
+  return_if_err(wa_space_->add_access(c_id, key, ver, lcoor_, ucoor_), err)
+  return 0;
 }
 
 int SDMMaster::put(bool notify, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, int p_id)

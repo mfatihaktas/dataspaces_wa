@@ -64,7 +64,7 @@ int DSTest::init(uint64_t data_length)
 {
   log(INFO, "with data_length= " << data_length)
   ver = 0;
-  ndim = 2;
+  ndim = 3;
   gdim_ = (uint64_t*)malloc(ndim*sizeof(uint64_t) );
   lb_ = (uint64_t*)malloc(ndim*sizeof(uint64_t) );
   ub_ = (uint64_t*)malloc(ndim*sizeof(uint64_t) );
@@ -86,7 +86,7 @@ int DSTest::init(uint64_t data_length)
   else {
     data_ = (char*)malloc(data_length*sizeof(char) );
     
-    int chunk_size = 100*1024*1024;
+    // int chunk_size = 100*1024*1024;
     // for (int i = 0; i < data_length; i++) {
     //   char c = patch_test::to_str<>(i/chunk_size).c_str()[0];
     //   data_[i] = c;
@@ -154,7 +154,7 @@ int DSTest::exp_get(uint64_t data_length)
 }
 
 // -----------------------------------  Multi-threaded  ----------------------------------------- //
-#define NUM_REP 3
+#define NUM_REP 1
 
 int DSTest::repetitive_put()
 {

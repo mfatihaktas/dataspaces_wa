@@ -212,16 +212,15 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
   return opt_map;
 }
 
-#define TEST_SIZE 25*1024*1024
-#define TEST_NDIM 1
+#define TEST_SIZE 256
+#define TEST_NDIM 3
 #define TEST_DATASIZE pow(TEST_SIZE, TEST_NDIM)
 #define TEST_VER 0
 #define TEST_SGDIM TEST_DATASIZE
 
-int get_test(std::string var_name, WADSDriver& wads_driver)
+int test(std::string type, std::string var_name, WADSDriver& wads_driver)
 {
   int err;
-  
   uint64_t* gdim_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
   uint64_t* lb_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
   uint64_t* ub_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
@@ -232,33 +231,22 @@ int get_test(std::string var_name, WADSDriver& wads_driver)
   }
   int* data_ = (int*)malloc(TEST_DATASIZE*sizeof(int) );
   
-  return_if_err(wads_driver.get(true, var_name, TEST_VER, "int", sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_), err, patch::free_all<uint64_t>(3, gdim_, lb_, ub_);)
-  log_(INFO, "got; kv= " << KV_TO_STR(var_name, TEST_VER) << "\n"
-             << "\t data_size= " << (float)sizeof(int)*get_data_length(TEST_NDIM, gdim_, lb_, ub_) / (1024*1024) << " MB")
-  
-  patch::free_all<uint64_t>(3, gdim_, lb_, ub_);
-  free(data_);
-}
-
-int put_test(std::string var_name, WADSDriver& wads_driver)
-{
-  int err;
-  
-  uint64_t* gdim_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
-  uint64_t* lb_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
-  uint64_t* ub_ = (uint64_t*)malloc(TEST_NDIM*sizeof(uint64_t) );
-  for (int i = 0; i < TEST_NDIM; i++) {
-    lb_[i] = 0;
-    ub_[i] = TEST_SIZE - 1;
-    gdim_[i] = TEST_SIZE - 1;
+  if (str_cstr_equals(type, "put") ) {
+    // for (int i = 0; i < TEST_DATASIZE; i++)
+    //   data_[i] = i + 1;
+    return_if_err(wads_driver.put(var_name, TEST_VER, "int", sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_), err, patch::free_all<uint64_t>(3, gdim_, lb_, ub_);)
+    log_(INFO, "put; kv= " << KV_TO_STR(var_name, TEST_VER) << "\n"
+               << "\t data_size= "<< (float)sizeof(int)*get_data_length(TEST_NDIM, gdim_, lb_, ub_) / (1024*1024) << " MB")
   }
-  int* data_ = (int*)malloc(TEST_DATASIZE*sizeof(int) );
-  // for (int i = 0; i < TEST_DATASIZE; i++)
-  //   data_[i] = i + 1;
-  
-  return_if_err(wads_driver.put(var_name, TEST_VER, "int", sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_), err, patch::free_all<uint64_t>(3, gdim_, lb_, ub_);)
-  log_(INFO, "put; kv= " << KV_TO_STR(var_name, TEST_VER) << "\n"
-             << "\t data_size= "<< (float)sizeof(int)*get_data_length(TEST_NDIM, gdim_, lb_, ub_) / (1024*1024) << " MB")
+  else if (str_cstr_equals(type, "get") ) {
+    return_if_err(wads_driver.get(true, var_name, TEST_VER, "int", sizeof(int), TEST_NDIM, gdim_, lb_, ub_, data_), err, patch::free_all<uint64_t>(3, gdim_, lb_, ub_);)
+    log_(INFO, "got; kv= " << KV_TO_STR(var_name, TEST_VER) << "\n"
+               << "\t data_size= " << (float)sizeof(int)*get_data_length(TEST_NDIM, gdim_, lb_, ub_) / (1024*1024) << " MB")
+  }
+  else {
+    log_(ERROR, "unknown type= " << type)
+    return 1;
+  }
   
   patch::free_all<uint64_t>(3, gdim_, lb_, ub_);
   free(data_);
@@ -277,27 +265,12 @@ int main(int argc , char **argv)
       boost::lexical_cast<int>(opt_map["cl_id"] ), boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_peer"] ),
       intf_to_ip(opt_map["lcontrol_lintf"] ), boost::lexical_cast<int>(opt_map["lcontrol_lport"] ), opt_map["join_lcontrol_lip"], boost::lexical_cast<int>(opt_map["join_lcontrol_lport"] ) );
     
-    std::cout << "Enter for " << opt_map["type"] << "_test... \n";
+    std::cout << "Enter for " << opt_map["type"] << " test... \n";
     getline(std::cin, temp);
     
-    tprofiler.add_event("put_test", "put_test");
-    put_test("dummy", wads_driver);
-    tprofiler.end_event("put_test");
-    
-    std::cout << "Enter \n";
-    getline(std::cin, temp);
-  }
-  else if (str_cstr_equals(opt_map["type"], "get") ) {
-    MWADSDriver wads_driver(
-      boost::lexical_cast<int>(opt_map["cl_id"] ), boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_peer"] ),
-      intf_to_ip(opt_map["lcontrol_lintf"] ), boost::lexical_cast<int>(opt_map["lcontrol_lport"] ), opt_map["join_lcontrol_lip"], boost::lexical_cast<int>(opt_map["join_lcontrol_lport"] ) );
-    
-    std::cout << "Enter for get_test... \n";
-    getline(std::cin, temp);
-    
-    tprofiler.add_event("get_test", "get_test");
-    get_test("dummy", wads_driver);
-    tprofiler.end_event("get_test");
+    tprofiler.add_event("test", "test");
+    test(opt_map["type"], "dummy", wads_driver);
+    tprofiler.end_event("test");
     
     std::cout << "Enter \n";
     getline(std::cin, temp);

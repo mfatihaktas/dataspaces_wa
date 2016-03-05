@@ -406,6 +406,7 @@ void RIManager::remote_put(std::map<std::string, std::string> msg_map)
   //   return;
   // }
   
+  log_(INFO, "done; key= " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
   patch::free_all<uint64_t>(2, lb_, ub_);
 }
 
@@ -479,6 +480,7 @@ void RIManager::handle_dm_move(std::map<std::string, std::string> msg_map)
       return;
     }
   }
+  log_(INFO, "done; key= " << msg_map["key"] )
 }
 
 int RIManager::handle_dm_del(std::map<std::string, std::string> msg_map)

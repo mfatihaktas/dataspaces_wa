@@ -102,7 +102,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
 const float INTER_ARR_TIME = 0; // sec
 const float GET_ARR_RATE = (float)1/20; // num_arr / sec
 
-const uint64_t TEST_DATA_LENGTH = 750*1024*1024; // 25*1024*1024;
+const uint64_t TEST_DATA_LENGTH = 250*1024*1024; // 750*1024*1024; // 25*1024*1024;
 const uint64_t TEST_UB_LIMIT = floor(pow(TEST_DATA_LENGTH, (float)1/NDIM) );
 const int TEST_VER = 0;
 

@@ -38,7 +38,7 @@ if [ -n "$DELL" ]; then
   echo "# hosts to run apps on
   dell01 slots=16 max_slots=16
   dell02 slots=16 max_slots=16
-  dell03 slots=16 max_slots=16
+  # dell03 slots=16 max_slots=16
   dell04 slots=16 max_slots=16
   dell05 slots=16 max_slots=16
   dell06 slots=16 max_slots=16
@@ -56,7 +56,7 @@ fi
 # NUM_DS=352
 # NUM_PUTTER=80
 # NUM_GETTER=80
-NUM_DS=1 # 32
+NUM_DS=16 # 32
 NUM_PUTTER=1 # 8 # 64
 NUM_GETTER=1 # 8 # 32
 NUM_TIMESTEP=5
@@ -70,9 +70,10 @@ if [[ $1  == 's' || $1  == 'ds' ]]; then
   VALGRIND="valgrind --vgdb=yes"
   [ $1  = 'ds' ] && DEBUG=$GDB
   
+  # dims = 256,256,256
   echo "# Config file for DataSpaces
   ndim = 3 
-  dims = 256,256,256
+  dims = 2048,2048,2048
   max_versions = 1
   max_readers = 1 
   lock_type = 2
