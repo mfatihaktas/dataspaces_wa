@@ -144,9 +144,9 @@ int SDMSlave::get(int app_id, bool blocking, std::string key, unsigned int ver, 
     }
   }
   else {
-    if (!did_send_sdm_squery) {
-      return_if_err(add_access(app_id, key, ver, lcoor_, ucoor_), err)
-    }
+    // if (!did_send_sdm_squery) {
+    //   return_if_err(add_access(app_id, key, ver, lcoor_, ucoor_), err)
+    // }
     ++num_hit;
     log_s(sdm_log_f, INFO, "HIT; " << KV_LUCOOR_TO_STR(key, ver, lcoor_, ucoor_) << "\n"
                            << "\t hit_rate= " << (float)num_hit/num_get_req)
@@ -387,7 +387,7 @@ int SDMMaster::sdm_mquery(bool blocking, int c_id, std::string key, unsigned int
   if (move_act) {
     log_(INFO, "move_act= " << move_act << ", ds_id_v= " << patch::vec_to_str<>(ds_id_v) )
     
-    boost::thread(&SDMMaster::add_access, this, c_id, key, ver, lcoor_, ucoor_);
+    // boost::thread(&SDMMaster::add_access, this, c_id, key, ver, lcoor_, ucoor_);
     
     // TODO: choose from ds_id_v wisely -- considering proximity, load etc.
     int from_id = ds_id_v[0];
@@ -667,7 +667,7 @@ void SDMMaster::handle_sdm_squery(std::map<std::string, std::string> msg_map)
   if (move_act) {
     log_(INFO, "move_act= " << move_act << ", ds_id_v= " << patch::vec_to_str<>(ds_id_v) )
     
-    boost::thread(&SDMMaster::add_access, this, boost::lexical_cast<int>(msg_map["app_id"] ), key, ver, lcoor_, ucoor_);
+    // boost::thread(&SDMMaster::add_access, this, boost::lexical_cast<int>(msg_map["app_id"] ), key, ver, lcoor_, ucoor_);
     
     // TODO: choose from ds_id_v wisely -- considering proximity, load etc.
     int from_id = ds_id_v[0];

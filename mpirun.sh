@@ -1,7 +1,7 @@
 #!/bin/bash
 echo $1 $2 $3
 
-NUM_DS=12 # 32
+NUM_DS=3 # 32
 NUM_CLIENT=10
 NUM_DSCNODE=$(($NUM_CLIENT+1)) # +1: RIManager
 NUM_PEER=1
@@ -106,17 +106,17 @@ elif [[ $1  == 's' || $1  == 'ds' ]]; then
   [ $1  = 'ds' ] && DEBUG=$GDB
   
   echo "# Config file for DataSpaces
-  ndim = 3 
-  dims = 2048,2048,2048
+  ndim = 3
+  dims = 1024,1024,1024
   max_versions = 1
-  max_readers = 1 
-  lock_type = 2
+  max_readers = 1
+  lock_type = 1
   " > dataspaces.conf
   
   LOG_F="ds.log"
   $MPIRUN --hostfile DS_HOST_FILE_$2 -n $NUM_DS --byslot $DEBUG \
     $DSPACES_DIR/bin/dataspaces_server --server $NUM_DS \
-                                       --cnodes $NUM_DSCNODE > $LOG_F 2>&1 < /dev/null &
+                                       --cnodes $NUM_DSCNODE < /dev/null 2>&1 | tee $LOG_F & # > $LOG_F 2>&1 < /dev/null &
 # elif [ $1 = "den" ]; then
 elif [[ $1 == 'map' || $1 == 'dmap' || $1 == 'mag' || $1 == 'dmag' ]]; then
   GDB=
@@ -144,7 +144,7 @@ elif [[ $1 == 'map' || $1 == 'dmap' || $1 == 'mag' || $1 == 'dmag' ]]; then
     ./mput_mget_test --type=$TYPE --cl_id=$i --base_client_id=$(($2*$NUM_CLIENT)) \
                     --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=${RI_LCONTROL_LPORT_LIST[$2] } \
                     --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2] } --join_lcontrol_lport=${RI_LCONTROL_LPORT_LIST[$2] } \
-                    --num_putget=$NUM_PUTGET > $LOG_F 2>&1 < /dev/null &
+                    --num_putget=$NUM_PUTGET < /dev/null 2>&1 | tee $LOG_F & # > $LOG_F 2>&1 < /dev/null &
   done
 elif [ $1  = 'k' ]; then
   # Sometimes works sometimes not!

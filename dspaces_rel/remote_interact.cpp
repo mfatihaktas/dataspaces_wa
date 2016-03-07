@@ -228,9 +228,9 @@ void RIManager::handle_get(bool blocking, int cl_id, std::map<std::string, std::
       // Note: If an app local-peer to SDMMaster initiated this get and data is put by another local-peer, 
       // add_access should not be called.
       // Note: add_access will be done by the SDMMaster upon recving SDM_SQUERY for early start of prefetching
-      // if (sdm_slave_->add_access(cl_id, key, ver, lb_, ub_) ) {
-      //   log_(ERROR, "sdm_slave_->add_access failed; c_id= " << cl_id << ", " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
-      // }
+      if (sdm_slave_->add_access(cl_id, key, ver, lb_, ub_) ) {
+        log_(ERROR, "sdm_slave_->add_access failed; c_id= " << cl_id << ", " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
+      }
     }
   }
   if (lsdm_node_->send_msg(cl_id, PACKET_RIMSG, get_map) ) {
@@ -404,6 +404,9 @@ void RIManager::remote_put(std::map<std::string, std::string> msg_map)
     log_(ERROR, "rfp_manager_->wa_put failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) << "\n"
                 << "will repeat...")
     msg_map["type"] = RI_REPEAT_TRANS;
+    msg_map["lip"] = boost::lexical_cast<std::string>(trans_info_->lip);
+    msg_map["lport"] = boost::lexical_cast<std::string>(trans_info_->lport);
+    
     return_err_if_ret_cond_flag(sdm_slave_->send_rimsg(to_id, msg_map), err, !=, 0,)
     log_(INFO, "waiting for RI_REPEAT_TRANS_REPLY; data_id= " << data_id)
     unsigned int sync_point = patch_sdm::hash_str(RI_REPEAT_TRANS + "_" + data_id);
