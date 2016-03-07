@@ -25,8 +25,8 @@ class IBTrans {
                      std::string recv_id, ib_data_recv_cb_func data_recv_cb);
     // void init_client(const char* s_lip_, const char* s_lport_,
     //                 std::string data_id, uint64_t data_size, void* data_);
-    void init_client(const char* s_lip_, const char* s_lport_,
-                     std::string data_type, int data_length, void* data_);
+    int init_client(const char* s_lip_, const char* s_lport_,
+                    std::string data_type, int data_length, void* data_);
 };
 
 #endif // _IB_TRANS_H_

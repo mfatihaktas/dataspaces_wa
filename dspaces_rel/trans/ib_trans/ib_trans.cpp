@@ -52,14 +52,15 @@ void IBTrans::init_server(std::string data_type, const char* lport_,
 
 // void IBTrans::init_client(const char* s_lip_, const char* s_lport_,
 //                           std::string data_id, uint64_t data_size, void* data_)
-void IBTrans::init_client(const char* s_lip_, const char* s_lport_,
-                          std::string data_type, int data_length, void* data_)
+int IBTrans::init_client(const char* s_lip_, const char* s_lport_,
+                         std::string data_type, int data_length, void* data_)
 {
+  int err;
   // IBClient ib_client(s_lip_, s_lport_);
   // ib_client.send_data(data_id, data_size, data_);
   if (str_cstr_equals(data_type, "int") ) {
     IBClient<int> ib_client(s_lip_, s_lport_, data_length, static_cast<int*>(data_) );
-    ib_client.init();
+    return_if_err(ib_client.init(), err)
   }
   else if (str_cstr_equals(data_type, "char") ) {
     IBClient<char> ib_client(s_lip_, s_lport_, data_length, static_cast<char*>(data_) );
@@ -76,4 +77,6 @@ void IBTrans::init_client(const char* s_lip_, const char* s_lport_,
   else {
     log_(ERROR, "unknown data_type= " << data_type)
   }
+  
+  return 0;
 }

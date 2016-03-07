@@ -2,10 +2,10 @@
 echo $1 $2 $3
 
 NUM_DS=12 # 32
-NUM_CLIENT=5
+NUM_CLIENT=10
 NUM_DSCNODE=$(($NUM_CLIENT+1)) # +1: RIManager
 NUM_PEER=1
-NUM_PUTGET=3
+NUM_PUTGET=10
 
 if [ -n "$DELL" ]; then
   echo "# hosts to run ds on
@@ -19,6 +19,8 @@ if [ -n "$DELL" ]; then
   dell18 slots=16 max_slots=16
   dell19 slots=16 max_slots=16
   dell20 slots=16 max_slots=16
+  " > DS_HOST_FILE_0
+  echo "# hosts to run ds on
   dell21 slots=16 max_slots=16
   dell22 slots=16 max_slots=16
   dell23 slots=16 max_slots=16
@@ -31,7 +33,7 @@ if [ -n "$DELL" ]; then
   dell30 slots=16 max_slots=16
   dell31 slots=16 max_slots=16
   dell32 slots=16 max_slots=16
-  " > DS_HOST_FILE
+  " > DS_HOST_FILE_1
   # echo "# hosts to run apps on
   # dell01 slots=16 max_slots=16
   # dell02 slots=16 max_slots=16
@@ -67,7 +69,7 @@ if [ -n "$DELL" ]; then
   done
   echo "PUTTER_NODES= $PUTTER_NODES"
   
-  BEGIN_GNODE_ID=4
+  BEGIN_GNODE_ID=7
   END_GNODE_ID=$(($BEGIN_GNODE_ID + 2))
   GETTER_NODES=""
   for i in `seq $BEGIN_GNODE_ID $END_GNODE_ID`; do
@@ -112,7 +114,7 @@ elif [[ $1  == 's' || $1  == 'ds' ]]; then
   " > dataspaces.conf
   
   LOG_F="ds.log"
-  $MPIRUN --hostfile DS_HOST_FILE -n $NUM_DS --byslot $DEBUG \
+  $MPIRUN --hostfile DS_HOST_FILE_$2 -n $NUM_DS --byslot $DEBUG \
     $DSPACES_DIR/bin/dataspaces_server --server $NUM_DS \
                                        --cnodes $NUM_DSCNODE > $LOG_F 2>&1 < /dev/null &
 # elif [ $1 = "den" ]; then

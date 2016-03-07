@@ -105,7 +105,7 @@ class IBClient {
           boost::bind(&IBClient::on_pre_conn, this, _1),
           NULL,
           boost::bind(&IBClient::on_completion, this, _1),
-          NULL ) )
+          boost::bind(&IBClient::on_disconn, this, _1) ) )
     {
       // 
       LOG(INFO) << "IBClient:: constructed client= \n" << to_str();
@@ -259,11 +259,31 @@ class IBClient {
       }
     };
     
-    void init()
+    void on_disconn(struct rdma_cm_id* id_)
     {
-      struct client_context ctx;
+      int err;
+      struct client_context* ctx_ = (struct client_context*)id_->context;
       
-      connector_->rc_client_loop(s_lip, s_lport, &ctx);
+      return_err_if_ret_cond_flag(ibv_dereg_mr(ctx_->buffer_mr), err, !=, 0,)
+      return_err_if_ret_cond_flag(ibv_dereg_mr(ctx_->msg_mr), err, !=, 0,)
+      log_(INFO, "done.")
+    };
+    
+    int init()
+    {
+      int err;
+      struct client_context ctx;
+      return_if_err(connector_->rc_client_loop(s_lip, s_lport, &ctx), err)
+      // err = 1;
+      // while (err) {
+      //   err = connector_->rc_client_loop(s_lip, s_lport, &ctx);
+      //   if (err) {
+      //     log_(ERROR, "connector_->rc_client_loop failed; will try again...")
+      //     // sleep(1);
+      //   }
+      // }
+      
+      return 0;
     };
 };
 

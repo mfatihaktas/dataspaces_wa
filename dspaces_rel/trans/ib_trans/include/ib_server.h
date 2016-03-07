@@ -88,9 +88,9 @@ class IBServer {
       connector_( 
         new Connector(
           boost::bind(&IBServer::on_pre_conn, this, _1),
-          boost::bind(&IBServer::on_connection, this, _1),
+          boost::bind(&IBServer::on_conn, this, _1),
           boost::bind(&IBServer::on_completion, this, _1),
-          boost::bind(&IBServer::on_disconnect, this, _1)
+          boost::bind(&IBServer::on_disconn, this, _1)
         )
       )
     {
@@ -157,7 +157,7 @@ class IBServer {
       post_receive(id);
     };
     
-    void on_connection(struct rdma_cm_id *id)
+    void on_conn(struct rdma_cm_id *id)
     {
       struct conn_context *ctx = (struct conn_context *)id->context;
       
@@ -168,18 +168,19 @@ class IBServer {
       send_message(id);
     };
     
-    void on_disconnect(struct rdma_cm_id *id)
+    void on_disconn(struct rdma_cm_id* id_)
     {
-      struct conn_context *ctx = (struct conn_context *)id->context;
+      int err;
+      struct conn_context* ctx_ = (struct conn_context*)id_->context;
+      
+      return_err_if_ret_cond_flag(ibv_dereg_mr(ctx_->buffer_mr), err, !=, 0,)
+      return_err_if_ret_cond_flag(ibv_dereg_mr(ctx_->msg_mr), err, !=, 0,)
     
-      ibv_dereg_mr(ctx->buffer_mr);
-      ibv_dereg_mr(ctx->msg_mr);
-    
-      free(ctx->buffer);
-      free(ctx->msg);
-      free(ctx);
-    
-      LOG(INFO) << "on_disconnect:: done.";
+      free(ctx_->buffer);
+      free(ctx_->msg);
+      free(ctx_);
+      
+      LOG(INFO) << "on_disconn:: done.";
     };
     
     void on_completion(struct ibv_wc *wc)

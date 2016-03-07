@@ -38,7 +38,7 @@ class RFPManager { // Remote Fetch & Place
                std::string key, unsigned int ver, std::string data_type,
                int size, int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_);
     int wa_get(std::string lip, std::string lport, std::string tmpfs_dir,
-               std::string key, unsigned int ver,
+               std::string key, unsigned int ver, std::string data_type,
                int size, int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_);
     bool is_being_get(std::string key, unsigned int ver, uint64_t* lb_, uint64_t* ub_);
     int wait_for_get(std::string key, unsigned int ver, uint64_t* lb_, uint64_t* ub_);
@@ -62,6 +62,8 @@ const std::string DEL_REPLY = "dr";
 const std::string RI_TINFO_QUERY = "ri_tiq";
 const std::string RI_TINFO_QUERY_REPLY = "ri_tiqr";
 const std::string RI_GRIDFTP_PUT = "ri_gp";
+const std::string RI_REPEAT_TRANS = "ri_rt";
+const std::string RI_REPEAT_TRANS_REPLY = "ri_rtr";
 
 const int CL__RIMANAGER_MAX_MSG_SIZE = 1000;
 
@@ -104,6 +106,8 @@ class RIManager {
     
     boost::asio::io_service io_service;
     boost::asio::signal_set signals;
+    
+    patch::thread_safe_map<std::string, boost::shared_ptr<boost::thread> > data_id__remote_get_t_map;
   public:
     RIManager(int cl_id, int base_client_id, int num_peer, DATA_ID_T data_id_t,
               std::string lcontrol_lip, int lcontrol_lport, std::string join_lcontrol_lip, int join_lcontrol_lport,
@@ -127,6 +131,8 @@ class RIManager {
     void remote_put(std::map<std::string, std::string> msg_map);
     void handle_tinfo_query_reply(std::map<std::string, std::string> msg_map);
     void handle_gridftp_put(std::map<std::string, std::string> msg_map);
+    void handle_repeat_trans(std::map<std::string, std::string> msg_map);
+    void handle_repeat_trans_reply(std::map<std::string, std::string> msg_map);
     
     void handle_dm_act(std::map<std::string, std::string> dm_act_map);
     void handle_dm_move(std::map<std::string, std::string> msg_map);

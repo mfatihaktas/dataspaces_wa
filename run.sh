@@ -69,7 +69,7 @@ RI_JOIN_CONTROL_LPORT_LIST=( 0 7000 7000 )
 TCP_LPORT=6000
 GFTP_LPORT=6000
 
-TRANS_PROTOCOL="t" # "t" # "i" # "g"
+TRANS_PROTOCOL="i" # "t" # "i" # "g"
 W_PREFETCH=1
 
 if [ $1 = 's' ]; then

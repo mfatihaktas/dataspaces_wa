@@ -1,5 +1,55 @@
 #include "common.h"
 
+std::string rpc_event_to_str(struct rdma_cm_event* event_)
+{
+  std::stringstream ss;
+  switch (event_->event) {
+    case RDMA_CM_EVENT_DISCONNECTED:
+      ss << "RDMA_CM_EVENT_DISCONNECTED";
+      break;
+    case RDMA_CM_EVENT_REJECTED:
+      ss << "RDMA_CM_EVENT_REJECTED";
+      break;
+    case RDMA_CM_EVENT_ADDR_ERROR:
+      ss << "RDMA_CM_EVENT_ADDR_ERROR";
+      break;
+    case RDMA_CM_EVENT_ROUTE_ERROR:
+      ss << "RDMA_CM_EVENT_ROUTE_ERROR";
+      break;
+    case RDMA_CM_EVENT_CONNECT_RESPONSE:
+      ss << "RDMA_CM_EVENT_CONNECT_RESPONSE";
+      break;
+    case RDMA_CM_EVENT_CONNECT_ERROR:
+      ss << "RDMA_CM_EVENT_CONNECT_ERROR";
+      break;
+    case RDMA_CM_EVENT_UNREACHABLE:
+      ss << "RDMA_CM_EVENT_UNREACHABLE";
+      break;
+    case RDMA_CM_EVENT_DEVICE_REMOVAL:
+      ss << "RDMA_CM_EVENT_DEVICE_REMOVAL";
+      break;
+    case RDMA_CM_EVENT_MULTICAST_JOIN:
+      ss << "RDMA_CM_EVENT_MULTICAST_JOIN";
+      break;
+    case RDMA_CM_EVENT_MULTICAST_ERROR:
+      ss << "RDMA_CM_EVENT_MULTICAST_ERROR";
+      break;
+    case RDMA_CM_EVENT_ADDR_CHANGE:
+      ss << "RDMA_CM_EVENT_ADDR_CHANGE";
+      break;
+    case RDMA_CM_EVENT_TIMEWAIT_EXIT:
+      ss << "RDMA_CM_EVENT_TIMEWAIT_EXIT";
+      break;
+    case RDMA_CM_EVENT_CONNECT_REQUEST:
+      ss << "RDMA_CM_EVENT_CONNECT_REQUEST";
+      break;
+    default:
+      log_(WARNING, "unknown event= " << event_->event)
+      break;
+  }
+  return ss.str();
+}
+
 const int TIMEOUT_IN_MS = 500;
 
 void rc_die(const char *reason)
@@ -37,7 +87,7 @@ void Connector::build_context(struct ibv_context *verbs)
     return;
   }
 
-  s_ctx = (struct context *)malloc(sizeof(struct context) );
+  s_ctx = (struct context*)malloc(sizeof(struct context) );
 
   s_ctx->ctx = verbs;
 
@@ -71,7 +121,7 @@ void Connector::build_qp_attr(struct ibv_qp_init_attr *qp_attr)
   qp_attr->cap.max_recv_sge = 1;
 }
 
-void Connector::event_loop(struct rdma_event_channel *ec, int exit_on_disconnect)
+int Connector::event_loop(struct rdma_event_channel *ec, int exit_on_disconnect)
 {
   struct rdma_cm_event *event = NULL;
   struct rdma_conn_param cm_params;
@@ -91,7 +141,6 @@ void Connector::event_loop(struct rdma_event_channel *ec, int exit_on_disconnect
         s_on_pre_conn_cb(event_copy.id);
 
       TEST_NZ(rdma_resolve_route(event_copy.id, TIMEOUT_IN_MS) );
-
     } 
     else if (event_copy.event == RDMA_CM_EVENT_ROUTE_RESOLVED) {
       TEST_NZ(rdma_connect(event_copy.id, &cm_params) );
@@ -120,9 +169,13 @@ void Connector::event_loop(struct rdma_event_channel *ec, int exit_on_disconnect
         break;
     } 
     else {
-      rc_die("event_loop:: Unknown event \n");
+      // rc_die("Unknown event \n");
+      log_(ERROR, "unknown event= " << rpc_event_to_str(&event_copy) )
+      return 1;
     }
   }
+  
+  return 0;
 }
 
 void* Connector::poll_cq(void *ctx)
@@ -130,28 +183,46 @@ void* Connector::poll_cq(void *ctx)
   // struct ibv_cq *cq = ((struct context*)ctx)->cq;
   struct ibv_cq *cq;
   struct ibv_wc wc;
-
+  
   while (1) {
     // LOG(INFO) << "poll_cq:: before ibv_get_cq_event.";
     TEST_NZ(ibv_get_cq_event(s_ctx->comp_channel, &cq, &ctx) );
     ibv_ack_cq_events(cq, 1);
     TEST_NZ(ibv_req_notify_cq(cq, 0) );
     // LOG(INFO) << "poll_cq:: before ibv_poll_cq.";
-    while (ibv_poll_cq(cq, 1, &wc) ) {
-      if (wc.status == IBV_WC_SUCCESS) {
-        // LOG(INFO) << "poll_cq:: calling s_on_completion_cb...";
-        try {
-          s_on_completion_cb(&wc);
-        }
-        catch(boost::bad_function_call) {
-          LOG(ERROR) << "poll_cq:: how can s_on_completion_cb be empty!!!";
-          rc_die("poll_cq:: status is not IBV_WC_SUCCESS");
-        }
+    int err;
+    return_err_if_ret_cond_flag(ibv_poll_cq(cq, 1, &wc), err, <, 0, NULL)
+    if (err == 0)
+      continue;
+    if (wc.status == IBV_WC_SUCCESS) {
+      try {
+        s_on_completion_cb(&wc);
       }
-      else {
-        rc_die("poll_cq:: status is not IBV_WC_SUCCESS");
+      catch(boost::bad_function_call) {
+        log_(ERROR, "WTF: how can s_on_completion_cb be empty!!!")
       }
     }
+    else {
+      // log_(ERROR, "status is not IBV_WC_SUCCESS; will sleep 1 sec and will try again...")
+      // sleep(1);
+      log_(ERROR, "status is not IBV_WC_SUCCESS.")
+      return NULL;
+    }
+    // while (ibv_poll_cq(cq, 1, &wc) ) {
+    //   if (wc.status == IBV_WC_SUCCESS) {
+    //     // LOG(INFO) << "poll_cq:: calling s_on_completion_cb...";
+    //     try {
+    //       s_on_completion_cb(&wc);
+    //     }
+    //     catch(boost::bad_function_call) {
+    //       LOG(ERROR) << "poll_cq:: how can s_on_completion_cb be empty!!!";
+    //       rc_die("poll_cq:: status is not IBV_WC_SUCCESS");
+    //     }
+    //   }
+    //   else {
+    //     rc_die("poll_cq:: status is not IBV_WC_SUCCESS");
+    //   }
+    // }
   }
 
   return NULL;
@@ -165,28 +236,30 @@ void Connector::rc_init(pre_conn_cb_fn pc, connect_cb_fn conn, completion_cb_fn 
   s_on_disconnect_cb = disc;
 }
 
-void Connector::rc_client_loop(const char *host, const char *port, void *context)
+int Connector::rc_client_loop(const char *host, const char *port, void *context)
 {
+  int err;
   struct addrinfo *addr;
   struct rdma_cm_id *conn = NULL;
   struct rdma_event_channel *ec = NULL;
   struct rdma_conn_param cm_params;
-
+  
   TEST_NZ(getaddrinfo(host, port, NULL, &addr) );
-
+  
   TEST_Z(ec = rdma_create_event_channel() );
   TEST_NZ(rdma_create_id(ec, &conn, NULL, RDMA_PS_TCP) );
   TEST_NZ(rdma_resolve_addr(conn, NULL, addr->ai_addr, TIMEOUT_IN_MS) );
-
+  
   freeaddrinfo(addr);
-
+  
   conn->context = context;
-
+  
   build_params(&cm_params);
-
-  event_loop(ec, 1); // exit on disconnect
-
+  
+  return_if_err(event_loop(ec, 1), err)
+  
   rdma_destroy_event_channel(ec);
+  return 0;
 }
 
 void Connector::rc_server_loop(const char *port)
