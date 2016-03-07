@@ -2,9 +2,8 @@
 echo $1 $2 $3
 
 NUM_SNODE=1
-NUM_CLIENT=1
+NUM_CLIENT=3
 NUM_DSCNODE=$(($NUM_CLIENT+1)) # +1: RIManager
-NUM_PEER=1
 NUM_PUTGET=3
 
 # TMPFS_DIR=$DSPACESWA_DIR/tmpfs
@@ -70,11 +69,11 @@ RI_JOIN_CONTROL_LPORT_LIST=( 0 7000 7000 )
 TCP_LPORT=6000
 GFTP_LPORT=6000
 
-TRANS_PROTOCOL="i" # "t" # "i" # "g"
+TRANS_PROTOCOL="t" # "t" # "i" # "g"
 W_PREFETCH=1
 
-if [ $1  = 's' ]; then
-  [ -a conf ] && rm srv.lck conf dataspaces.conf
+if [ $1 = 's' ]; then
+  [ -a conf ] && rm srv.lck conf dataspaces.conf rm *.log
   
   echo "## Config file for DataSpaces
   ndim = 3
@@ -87,50 +86,50 @@ if [ $1  = 's' ]; then
   $DSPACES_DIR/bin/./dataspaces_server --server 1 --cnodes $NUM_DSCNODE
 elif [ -z "$2" ]; then
   echo "Which site [0, *]?"
-elif [[ $1  == 'p' || $1  == 'dp' || $1  == 'g' || $1  == 'dg' ]]; then
+elif [[ $1 == 'p' || $1 == 'dp' || $1 == 'g' || $1 == 'dg' ]]; then
   [ -z "$3" ] && { echo "Which app [1, *] ?"; exit 1; }
   TYPE="put"
   GDB=""
-  [[ $1  == 'g' || $1  == 'dg' ]] && TYPE="get"
-  [[ $1  == 'dp' || $1  == 'dg' ]] && GDB="gdb --args"
+  [[ $1 == 'g' || $1 == 'dg' ]] && TYPE="get"
+  [[ $1 == 'dp' || $1 == 'dg' ]] && GDB="gdb --args"
   
   export GLOG_logtostderr=1
-  $GDB ./exp --type=$TYPE --cl_id=$3 --base_client_id=$(($2*$NUM_CLIENT)) --num_peer=$NUM_PEER \
+  $GDB ./exp --type=$TYPE --cl_id=$3 --base_client_id=$(($2*$NUM_CLIENT)) \
     --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=$((${RI_LCONTROL_LPORT_LIST[$2] } + $3)) \
     --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2] } --join_lcontrol_lport=${RI_LCONTROL_LPORT_LIST[$2] }
-elif [[ $1  == 'mp' || $1  == 'dmp' || $1  == 'mg' || $1  == 'dmg' ]]; then
+elif [[ $1 == 'mp' || $1 == 'dmp' || $1 == 'mg' || $1 == 'dmg' ]]; then
   [ -z "$3" ] && { echo "Which app [1, *] ?"; exit 1; }
   TYPE="mput"
   GDB=""
-  [[ $1  == 'mg' || $1  == 'dmg' ]] && TYPE="mget"
-  [[ $1  == 'dmp' || $1  == 'dmg' ]] && GDB="gdb --args"
+  [[ $1 == 'mg' || $1 == 'dmg' ]] && TYPE="mget"
+  [[ $1 == 'dmp' || $1 == 'dmg' ]] && GDB="gdb --args"
   
   export GLOG_logtostderr=1
-  $GDB ./mput_mget_test --type=$TYPE --cl_id=$3 --base_client_id=$(($2*$NUM_CLIENT)) --num_peer=$NUM_PEER \
+  $GDB ./mput_mget_test --type=$TYPE --cl_id=$3 --base_client_id=$(($2*$NUM_CLIENT)) \
     --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=$((${RI_LCONTROL_LPORT_LIST[$2] } + $3)) \
     --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2] } --join_lcontrol_lport=${RI_LCONTROL_LPORT_LIST[$2] } \
     --num_putget=$NUM_PUTGET
-elif [[ $1  == 'map' || $1  == 'mag' ]]; then
-  [ -a mput.log ] && rm main.log mput.log mget.log
+elif [[ $1 == 'map' || $1 == 'mag' ]]; then
+  # rm $1_*.log
   TYPE="mput"
-  [ $1  = 'mag' ] && TYPE="mget"
+  [ $1 = 'mag' ] && TYPE="mget"
   
   export GLOG_logtostderr=1
   for i in `seq 1 $NUM_CLIENT`; do
-    ./mput_mget_test --type=$TYPE --cl_id=$i --base_client_id=$(($2*$NUM_CLIENT)) --num_peer=$NUM_PEER \
+    ./mput_mget_test --type=$TYPE --cl_id=$i --base_client_id=$(($2*$NUM_CLIENT)) \
       --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=$((${RI_LCONTROL_LPORT_LIST[$2] } + $i)) \
       --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2] } --join_lcontrol_lport=${RI_LCONTROL_LPORT_LIST[$2] } \
-      --num_putget=$NUM_PUTGET &
+      --num_putget=$NUM_PUTGET 2>&1 < /dev/null | tee $1_$i.log &
   done
   
   read -p "[Enter]"
   echo "killing..."
   pkill -f mput_mget_test
-elif [[ $1  == 'r' || $1  == 'dr' ]]; then
+elif [[ $1 == 'r' || $1 == 'dr' ]]; then
   GDB=""
-  [ $1  = 'dr' ] && GDB="gdb --args"
+  [ $1 = 'dr' ] && GDB="gdb --args"
   
-  # if [ $TRANS_PROTOCOL  = 'g' ]; then
+  # if [ $TRANS_PROTOCOL = 'g' ]; then
   #   echo "Starting Gftps..."
   #   globus-gridftp-server -aa -password-file pwfile -c None \
   #                         -port $GFTP_LPORT \
@@ -138,7 +137,7 @@ elif [[ $1  == 'r' || $1  == 'dr' ]]; then
   #                         # -data-interface $WA_LINTF \
   # fi
   export GLOG_logtostderr=1
-  $GDB ./exp --type="ri" --cl_id=111 --num_peer=$NUM_PEER --base_client_id=$(($2*$NUM_CLIENT)) \
+  $GDB ./exp --type="ri" --cl_id=111 --num_peer=1 --base_client_id=$(($2*$NUM_CLIENT)) \
              --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=${RI_LCONTROL_LPORT_LIST[$2] } \
              --ds_id=$2 --control_lintf=$CONTROL_LINTF --control_lport=${RI_CONTROL_LPORT_LIST[$2] } \
              --join_control_lip=${RI_JOIN_CONTROL_LIP_LIST[$2] } --join_control_lport=${RI_JOIN_CONTROL_LPORT_LIST[$2] } \
@@ -149,8 +148,8 @@ elif [[ $1  == 'r' || $1  == 'dr' ]]; then
   read -p "[Enter]"
   # echo "Killing stubborns..."
   # fuser -k -n tcp $GFTP_LPORT
-elif [ $1  = 'init' ]; then
-  if [ $2  = 'd' ]; then
+elif [ $1 = 'init' ]; then
+  if [ $2 = 'd' ]; then
     export DELL=DELL
     # ENV VARIABLES FOR MAKE
     # export GRIDFTP=GRIDFTP
@@ -174,7 +173,7 @@ elif [ $1  = 'init' ]; then
     LD_LIBRARY_PATH=$GLOG_DIR/lib:$LD_LIBRARY_PATH
     export LD_LIBRARY_PATH
     echo "LD_LIBRARY_PATH= " $LD_LIBRARY_PATH
-  elif [ $2  = 'e' ]; then
+  elif [ $2 = 'e' ]; then
     export ELF=ELF
     export CC=gcc
     export CPP=g++
@@ -192,7 +191,7 @@ elif [ $1  = 'init' ]; then
     LD_LIBRARY_PATH=$GLOG_DIR/lib:$LD_LIBRARY_PATH
     export LD_LIBRARY_PATH
     echo "LD_LIBRARY_PATH= " $LD_LIBRARY_PATH
-  elif [ $2  = 'u' ]; then
+  elif [ $2 = 'u' ]; then
     export ULAM=ULAM
     export CC=gcc
     export CPP=g++
@@ -210,7 +209,7 @@ elif [ $1  = 'init' ]; then
     LD_LIBRARY_PATH=$GLOG_DIR/lib:$LD_LIBRARY_PATH
     export LD_LIBRARY_PATH
     echo "LD_LIBRARY_PATH= " $LD_LIBRARY_PATH
-  elif [ $2  = 'k' ]; then
+  elif [ $2 = 'k' ]; then
     export KID=KID
     export CC=gcc
     export CPP=g++
@@ -230,7 +229,7 @@ elif [ $1  = 'init' ]; then
     
     export PATH=/net/hj1/ihpcl/bin:/sbin:$PATH
     echo "PATH=" $PATH
-  elif [ $2  = 'b' ]; then
+  elif [ $2 = 'b' ]; then
     export BOOTH=BOOTH
     export CC=gcc
     export CPP=g++
@@ -247,7 +246,7 @@ elif [ $1  = 'init' ]; then
     export LD_LIBRARY_PATH
     echo "LD_LIBRARY_PATH= " $LD_LIBRARY_PATH
   fi
-elif [ $1  = 'iperf' ]; then
+elif [ $1 = 'iperf' ]; then
   if [ -n "$DELL" ]; then
     echo "No iperf on DELL"
   elif [ -n "$ULAM" ]; then
@@ -258,9 +257,9 @@ elif [ $1  = 'iperf' ]; then
   if [ -z "$2" ]; then
     echo "Which s | c"
   else
-    if [ $2  = 's' ]; then
+    if [ $2 = 's' ]; then
       $IPERF_BIN_DIR/./iperf -s
-    elif [ $2  = 'c' ]; then
+    elif [ $2 = 'c' ]; then
       if [ -z "$3" ]; then
         echo "Client ip?"
       else
@@ -268,7 +267,7 @@ elif [ $1  = 'iperf' ]; then
       fi
     fi
   fi
-elif [ $1  = 'gc' ]; then
+elif [ $1 = 'gc' ]; then
   TRANS_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/gftp_trans/dummy
   # S_IP=192.168.2.152
   S_IP=127.0.0.1
@@ -277,7 +276,7 @@ elif [ $1  = 'gc' ]; then
   C_FNAME=recved_tx.dat
   globus-url-copy -vb \
                   ftp://"$S_IP:$GFTP_LPORT$TRANS_DIR/$S_FNAME" file://"$TRANS_DIR/$C_FNAME"
-elif [ $1  = 'show' ]; then
+elif [ $1 = 'show' ]; then
   netstat -antu
 else
   echo "Argument did not match !"

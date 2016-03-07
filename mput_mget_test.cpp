@@ -39,12 +39,11 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
     {"type", optional_argument, NULL, 0},
     {"cl_id", optional_argument, NULL, 1},
     {"base_client_id", optional_argument, NULL, 2},
-    {"num_peer", optional_argument, NULL, 3},
-    {"lcontrol_lintf", optional_argument, NULL, 4},
-    {"lcontrol_lport", optional_argument, NULL, 5},
-    {"join_lcontrol_lip", optional_argument, NULL, 6},
-    {"join_lcontrol_lport", optional_argument, NULL, 7},
-    {"num_putget", optional_argument, NULL, 8},
+    {"lcontrol_lintf", optional_argument, NULL, 3},
+    {"lcontrol_lport", optional_argument, NULL, 4},
+    {"join_lcontrol_lip", optional_argument, NULL, 5},
+    {"join_lcontrol_lport", optional_argument, NULL, 6},
+    {"num_putget", optional_argument, NULL, 7},
     {0, 0, 0, 0}
   };
   
@@ -67,21 +66,18 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
         opt_map["base_client_id"] = optarg;
         break;
       case 3:
-        opt_map["num_peer"] = optarg;
-        break;
-      case 4:
         opt_map["lcontrol_lintf"] = optarg;
         break;
-      case 5:
+      case 4:
         opt_map["lcontrol_lport"] = optarg;
         break;
-      case 6:
+      case 5:
         opt_map["join_lcontrol_lip"] = optarg;
         break;
-      case 7:
+      case 6:
         opt_map["join_lcontrol_lport"] = optarg;
         break;
-      case 8:
+      case 7:
         opt_map["num_putget"] = optarg;
         break;
       default:
@@ -102,7 +98,8 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
 const float INTER_ARR_TIME = 0; // sec
 const float GET_ARR_RATE = (float)1/20; // num_arr / sec
 
-const uint64_t TEST_DATA_LENGTH = 250*1024*1024; // 750*1024*1024; // 25*1024*1024;
+const uint64_t TEST_DATA_SIZE = 100*1024*1024; // 1024*1024*1024;
+const uint64_t TEST_DATA_LENGTH = TEST_DATA_SIZE/sizeof(int);
 const uint64_t TEST_UB_LIMIT = floor(pow(TEST_DATA_LENGTH, (float)1/NDIM) );
 const int TEST_VER = 0;
 
@@ -256,33 +253,41 @@ int main(int argc , char **argv)
     return 1;
   }
   
-  MWADSDriver wads_driver(
-    boost::lexical_cast<int>(opt_map["cl_id"] ), boost::lexical_cast<int>(opt_map["base_client_id"] ), boost::lexical_cast<int>(opt_map["num_peer"] ),
-    intf_to_ip(opt_map["lcontrol_lintf"] ), boost::lexical_cast<int>(opt_map["lcontrol_lport"] ), opt_map["join_lcontrol_lip"], boost::lexical_cast<int>(opt_map["join_lcontrol_lport"] ) );
+  // int rank, size;
+  // MPI_Comm comm = MPI_COMM_WORLD;
+  // MPI_Init(&argc, &argv);
+  // MPI_Comm_rank(comm, &rank);
+  // rank += 1; // Note: mpi starts ranking from 0
+  // MPI_Comm_size(comm, &size);
+  // std::cout << "main:: size= " << size << ", rank= " << rank << "\n";
   
+  int cl_id = boost::lexical_cast<int>(opt_map["cl_id"] );
+  // if (cl_id == 0) cl_id = rank;
+  // MWADSDriver wads_driver(
+  //   cl_id, boost::lexical_cast<int>(opt_map["base_client_id"] ), size, comm,
+  //   intf_to_ip(opt_map["lcontrol_lintf"] ), boost::lexical_cast<int>(opt_map["lcontrol_lport"] ) + cl_id,
+  //   opt_map["join_lcontrol_lip"], boost::lexical_cast<int>(opt_map["join_lcontrol_lport"] ) );
+  MWADSDriver wads_driver(
+    cl_id, boost::lexical_cast<int>(opt_map["base_client_id"] ), 1,
+    intf_to_ip(opt_map["lcontrol_lintf"] ), boost::lexical_cast<int>(opt_map["lcontrol_lport"] ) + cl_id,
+    opt_map["join_lcontrol_lip"], boost::lexical_cast<int>(opt_map["join_lcontrol_lport"] ) );
   TProfiler<int> putget_tprofiler;
+  
+  std::cout << "Enter for " << opt_map["type"] << "_test... \n";
+  getline(std::cin, temp);
   if (str_cstr_equals(opt_map["type"], "mput") ) {
-    std::cout << "Enter for mput_test... \n";
-    getline(std::cin, temp);
-    
     mput_test(boost::lexical_cast<int>(opt_map["num_putget"] ),
-              std::string("dummy_") + opt_map["cl_id"], wads_driver, putget_tprofiler, log_file);
-    
-    std::cout << "Enter. \n";
-    getline(std::cin, temp);
+              std::string("dummy_") + boost::lexical_cast<std::string>(cl_id), wads_driver, putget_tprofiler, log_file);
   }
   else if (str_cstr_equals(opt_map["type"], "mget") ) {
-    std::cout << "Enter for mget_test... \n";
-    getline(std::cin, temp);
-    
     mget_test(boost::lexical_cast<int>(opt_map["num_putget"] ),
-              std::string("dummy_") + opt_map["cl_id"], wads_driver, putget_tprofiler, log_file);
-    
-    std::cout << "Enter. \n";
-    getline(std::cin, temp);
+              std::string("dummy_") + boost::lexical_cast<std::string>(cl_id), wads_driver, putget_tprofiler, log_file);
   }
-  else
+  else {
     log_(ERROR, "unknown type= " << opt_map["type"] )
+  }
+  std::cout << "Enter. \n";
+  getline(std::cin, temp);
   // 
   log_(INFO, "putget_tprofiler= \n" << putget_tprofiler.to_str() )
   log_s(log_file, INFO, putget_tprofiler.to_str() )

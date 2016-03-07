@@ -59,7 +59,6 @@ fi
 
 NUM_CLIENT=1
 NUM_DSWA_CLIENT_LIST=( $NUM_CLIENT $NUM_CLIENT )
-NUM_PEER=1
 NUM_PUTGET=4
 
 RI_LCONTROL_LPORT_LIST=( 9000 9000 )
@@ -94,11 +93,11 @@ elif [[ $1  == 'mp' || $1  == 'mg' ]]; then
   NODE_LIST=(${DSWA_CLIENT_NODES_LIST[$2]//,/ } )
   for i in `seq 1 $NUM_CLIENT`; do
     NODE=${NODE_LIST[$(($(($i - 1)) % ${#NODE_LIST[@]} )) ] }
-    LOG_F=$TYPE"_s_"$2"_cid_"$i"_"$NODE".log"
+    LOG_F="$TYPE_s_$2_cid_$i_$NODE.log"
     echo "run dspaces_wa client $i on $NODE; TYPE= $TYPE"
     
     $MPIRUN -x LD_LIBRARY_PATH -x GLOG_logtostderr -npernode 1 -host $NODE \
-      $DSPACESWA_DIR/mput_mget_test --type=$TYPE --cl_id=$i --base_client_id=$(($2*$NUM_CLIENT)) --num_peer=$NUM_PEER \
+      $DSPACESWA_DIR/mput_mget_test --type=$TYPE --cl_id=$i --base_client_id=$(($2*$NUM_CLIENT)) \
         --lcontrol_lintf=${LCONTROL_LINTF_LIST[$2]} --lcontrol_lport=$((${RI_LCONTROL_LPORT_LIST[$2]} + $i)) \
         --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2]} --join_lcontrol_lport=${RI_LCONTROL_LPORT_LIST[$2]} \
         --num_putget=$NUM_PUTGET --inter_time_sec=0 --sleep_time_sec=0 > $LOG_F 2>&1 < /dev/null &

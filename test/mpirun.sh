@@ -81,7 +81,7 @@ if [[ $1  == 's' || $1  == 'ds' ]]; then
   
   # NODE_LIST=(${DS_NODES//,/ } )
   # for NODE in "${NODE_LIST[@]}"; do
-  #   LOG_F="ds_"$NODE".log"
+  #   LOG_F="ds_$NODE.log"
   #   echo "run dataspaces_server on $NODE"
     
   #   $MPIRUN -npernode 1 -host $NODE $GDB \
@@ -103,22 +103,12 @@ elif [[ $1  == 'p' || $1  == 'dp' ]]; then
   LOG_F="putter.log"
   
   #   # ./test_writer type npapp dims np[0] ... np[dims-1] sp[0] ... sp[dims-1] timestep appid
-  # $GDB $MPIRUN -n $NUM_PUTTER \
-  #   $DSPACES_DIR/bin/test_writer DATASPACES $NUM_PUTTER 3 4 4 4 64 64 64 $NUM_TIMESTEP 1 # > $LOG_F 2>&1 < /dev/null &
-  # $MPIRUN -n $NUM_PUTTER $GDB \
-  #   $DSPACES_DIR/bin/test_writer DATASPACES $NUM_PUTTER 3 4 4 4 64 64 64 $NUM_TIMESTEP 1 # > $LOG_F 2>&1 < /dev/null &
-  
   $MPIRUN --hostfile APP_HOST_FILE -n $NUM_PUTTER --byslot $GDB \
     $DSPACES_DIR/bin/test_writer DATASPACES $NUM_PUTTER 3 4 4 4 64 64 64 $NUM_TIMESTEP 1 # > $LOG_F 2>&1 < /dev/null &
 elif [[ $1  == 'g' || $1  == 'dg' ]]; then
   GDB=
   [ $1  = 'dg' ] && GDB="xterm -e gdb --args"
   LOG_F="getter.log"
-  
-  # $GDB $MPIRUN -n $NUM_GETTER \
-  #   $DSPACES_DIR/bin/test_reader DATASPACES $NUM_GETTER 3 2 4 4 128 64 64 $NUM_TIMESTEP 2 # > $LOG_F 2>&1 < /dev/null &
-  # $MPIRUN -n $NUM_GETTER $GDB \
-  #   $DSPACES_DIR/bin/test_reader DATASPACES $NUM_GETTER 3 2 4 4 128 64 64 $NUM_TIMESTEP 2 # > $LOG_F 2>&1 < /dev/null &
   
   $MPIRUN --hostfile APP_HOST_FILE -n $NUM_GETTER --byslot $GDB \
     $DSPACES_DIR/bin/test_reader DATASPACES $NUM_GETTER 3 2 4 4 128 64 64 $NUM_TIMESTEP 2 # > $LOG_F 2>&1 < /dev/null &

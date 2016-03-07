@@ -158,7 +158,7 @@ class SDMMaster : public SDMSlave {
     int close();
     virtual std::string to_str();
     
-    int sdm_mquery(bool blocking, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_);
+    int sdm_mquery(bool blocking, int c_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_);
     
     int reg_app(int app_id);
     int add_access(int c_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_);

@@ -229,9 +229,10 @@ void RIManager::handle_get(bool blocking, int cl_id, std::map<std::string, std::
       get_map["ds_id"] = boost::lexical_cast<std::string>(sdm_slave_->get_id() );
       // Note: If an app local-peer to SDMMaster initiated this get and data is put by another local-peer, 
       // add_access should not be called.
-      if (sdm_slave_->add_access(cl_id, key, ver, lb_, ub_) ) {
-        log_(ERROR, "sdm_slave_->add_access failed; c_id= " << cl_id << ", " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
-      }
+      // Note: add_access will be done by the SDMMaster upon recving SDM_SQUERY for early start of prefetching
+      // if (sdm_slave_->add_access(cl_id, key, ver, lb_, ub_) ) {
+      //   log_(ERROR, "sdm_slave_->add_access failed; c_id= " << cl_id << ", " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
+      // }
     }
   }
   if (lsdm_node_->send_msg(cl_id, PACKET_RIMSG, get_map) ) {
