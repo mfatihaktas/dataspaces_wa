@@ -139,14 +139,14 @@ int main(int argc , char **argv)
               intf_to_ip(opt_map["tcp_lintf"] ), boost::lexical_cast<int>(opt_map["s_lport"] ),
               opt_map["gftp_lintf"], intf_to_ip(opt_map["gftp_lintf"] ), gftp_lport, opt_map["tmpfs_dir"] );
   if (str_cstr_equals(opt_map["type"], "get") ) {
-    trans.init_get(trans.get_s_lport(), "dummy", boost::bind(&data_recv_handler, _1, _2, _3) );
+    trans.init_get(DATA_T_STR, trans.get_s_lport(), "dummy", boost::bind(&data_recv_handler, _1, _2, _3) );
     
     std::cout << "Enter \n";
     getline(std::cin, temp);
   }
   else if (str_cstr_equals(opt_map["type"], "put") ) {
     // int data_length = 4* 1024*1024*256;
-    int data_length = 1024; //1024*1024*256;
+    int data_length = 1024*1024*256; // 1024; //1024*1024*256;
     void* data_ = (void*)malloc(sizeof(DATA_T)*data_length);
     
     for (int i = 0; i < data_length; i++)

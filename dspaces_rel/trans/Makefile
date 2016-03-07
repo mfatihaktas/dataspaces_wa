@@ -23,7 +23,8 @@ GFTP_LIB = -L$(GFTPLIB_DIR) -lglobus_ftp_client
 endif # GRIDFTP
 IB_TRANS_DIR ?= $(TRANS_DIR)/ib_trans
 IB_TRANS_ODIR = $(IB_TRANS_DIR)/obj
-IB_TRANS_OBJS = $(IB_TRANS_ODIR)/ib_trans.o $(IB_TRANS_ODIR)/ib_server.o $(IB_TRANS_ODIR)/ib_client.o $(IB_TRANS_ODIR)/ib_conn.o
+# $(IB_TRANS_ODIR)/ib_server.o $(IB_TRANS_ODIR)/ib_client.o $(IB_TRANS_ODIR)/ib_conn.o
+IB_TRANS_OBJS = $(IB_TRANS_ODIR)/ib_trans.o $(IB_TRANS_ODIR)/common.o
 
 TCP_TRANS_DIR ?= $(TRANS_DIR)/tcp_trans
 TCP_TRANS_ODIR = $(TCP_TRANS_DIR)/obj

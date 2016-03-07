@@ -62,7 +62,7 @@ int RFPManager::wa_put(std::string lip, std::string lport, std::string tmpfs_dir
 }
 
 int RFPManager::wa_get(std::string lip, std::string lport, std::string tmpfs_dir,
-                       std::string key, unsigned int ver,
+                       std::string key, unsigned int ver, std::string data_type,
                        int size, int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_)
 {
   log_(INFO, "started; lip= " << lip << ", lport= " << lport << "\n"
@@ -72,7 +72,7 @@ int RFPManager::wa_get(std::string lip, std::string lport, std::string tmpfs_dir
   data_id__recved_size_map[data_id] = 0;
   data_id__data_map[data_id] = malloc(size*DSDriver::get_data_length(ndim, gdim_, lb_, ub_) );
   
-  if (trans_->init_get(lport, data_id, boost::bind(&RFPManager::handle_recv, this, _1, _2, _3) ) ) {
+  if (trans_->init_get(data_type, lport, data_id, boost::bind(&RFPManager::handle_recv, this, _1, _2, _3) ) ) {
     log_(ERROR, "trans_->init_get failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
     return 1;
   }
@@ -356,7 +356,7 @@ int RIManager::remote_get(std::map<std::string, std::string> msg_map)
   // }
   
   if (rfp_manager_->wa_get(msg_map["lip"], msg_map["lport"], msg_map["tmpfs_dir"],
-                           key, ver, size, ndim, gdim_, lb_, ub_) ) {
+                           key, ver, data_type, size, ndim, gdim_, lb_, ub_) ) {
     log_(ERROR, "rfp_manager_->wa_get failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
     patch::free_all<uint64_t>(3, gdim_, lb_, ub_);
     return 1;

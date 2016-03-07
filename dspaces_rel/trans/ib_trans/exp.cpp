@@ -153,9 +153,11 @@ int main(int argc , char **argv)
   
   IBTrans ib_trans(opt_map["s_lip"], ib_lport_list);
   if (str_cstr_equals(opt_map["type"], "server") ) {
-    ib_trans.init_server(ib_trans.get_s_lport().c_str(),
-                         boost::bind(&data_recv_handler, _1, _2, _3),
-                         boost::bind(&msg_recv_handler, _1, _2) );
+    // ib_trans.init_server(ib_trans.get_s_lport().c_str(),
+    //                     boost::bind(&data_recv_handler, _1, _2, _3),
+    //                     boost::bind(&msg_recv_handler, _1, _2) );
+    ib_trans.init_server(data_type_str, ib_trans.get_s_lport().c_str(),
+                         "dummy", boost::bind(&data_recv_handler, _1, _2, _3) );
   }
   else if (str_cstr_equals(opt_map["type"], "client") ) {
     uint64_t data_length = 1024; // 1024*1024*256; // 1024*1024*256;
@@ -166,9 +168,10 @@ int main(int argc , char **argv)
     // 
     
     return_if_err(gettimeofday(&start_time, NULL), err)
+    // ib_trans.init_client(opt_map["s_lip"].c_str(), opt_map["s_lport"].c_str(),
+    //                     "dummy", data_length*sizeof(data_type), data_);
     ib_trans.init_client(opt_map["s_lip"].c_str(), opt_map["s_lport"].c_str(),
-                         "dummy", data_length*sizeof(data_type), data_);
-    
+                         data_type_str, data_length, data_);
     return_if_err(gettimeofday(&end_time, NULL), err)
     
     long exec_time_sec = end_time.tv_sec - start_time.tv_sec;

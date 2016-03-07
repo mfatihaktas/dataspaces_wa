@@ -79,10 +79,12 @@ std::string Trans::get_tmpfs_dir()
 }
 
 // Note: should block until get is finished
-int Trans::init_get(std::string s_lport, std::string data_id, data_recv_cb_func data_recv_cb)
+// int Trans::init_get(std::string s_lport, std::string data_id, data_recv_cb_func data_recv_cb)
+int Trans::init_get(std::string data_type, std::string s_lport, std::string data_id, data_recv_cb_func data_recv_cb)
 {
   if (str_str_equals(trans_protocol, INFINIBAND) ) {
-    ib_trans_->init_server(s_lport.c_str(), data_recv_cb);
+    // ib_trans_->init_server(s_lport.c_str(), data_recv_cb);
+    ib_trans_->init_server(data_type, s_lport.c_str(), data_id, data_recv_cb);
     ib_trans_->return_s_lport(s_lport);
   }
   else if (str_str_equals(trans_protocol, TCP) ) {
@@ -113,7 +115,7 @@ int Trans::init_put(std::string s_lip, std::string s_lport, std::string tmpfs_di
     // memcpy(s_lport_, s_lport.c_str(), 16);
     // log_(INFO, "s_lip_= " << s_lip_ << ", s_lport_= " << s_lport_)
     // ib_trans_->init_client(s_lip_, s_lport_, data_id, data_length, data_);
-    ib_trans_->init_client(s_lip.c_str(), s_lport.c_str(), data_id, data_length, data_);
+    ib_trans_->init_client(s_lip.c_str(), s_lport.c_str(), data_type, data_length, data_);
   }
   else if (str_str_equals(trans_protocol, TCP) ) {
     // Note: data_length should be data_size for TCP

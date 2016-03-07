@@ -16,7 +16,8 @@ INC = $(GLOG_INC) $(BOOST_INC) $(IB_TRANS_INC)
 LIB = $(GLOG_LIB) $(BOOST_LIB) $(IBVERBS_LIB)
 
 ODIR = obj
-OBJS = $(ODIR)/exp.o $(ODIR)/ib_trans.o $(ODIR)/ib_server.o $(ODIR)/ib_client.o $(ODIR)/ib_conn.o
+# $(ODIR)/ib_server.o $(ODIR)/ib_client.o $(ODIR)/ib_conn.o
+OBJS = $(ODIR)/exp.o $(ODIR)/ib_trans.o $(ODIR)/common.o
 
 .PHONY: all lclean clean
 

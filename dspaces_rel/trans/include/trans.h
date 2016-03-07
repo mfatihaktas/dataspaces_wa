@@ -45,7 +45,8 @@ class Trans { // Transport
     std::string get_s_lport();
     std::string get_tmpfs_dir();
     
-    int init_get(std::string s_lport, std::string data_id, data_recv_cb_func recv_cb);
+    // int init_get(std::string s_lport, std::string data_id, data_recv_cb_func recv_cb);
+    int init_get(std::string data_type, std::string s_lport, std::string data_id, data_recv_cb_func recv_cb);
     int init_put(std::string s_lip, std::string s_lport, std::string tmpfs_dir,
                  std::string data_type, std::string data_id, uint64_t data_length, void* data_);
 };
