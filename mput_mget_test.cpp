@@ -127,6 +127,7 @@ void mget_test(int num_get,
     std::string var_name = base_var_name + "_" + boost::lexical_cast<std::string>(i);
     int counter = 0;
     while (1) {
+      log_s(log_file, INFO, "base_var_name= " << base_var_name << ", " << get_tprofiler.to_brief_str() )
       get_tprofiler.add_event(i, std::string("get_") + var_name);
       int err = wads_driver.get(true, var_name, TEST_VER, "int", sizeof(int), NDIM, gdim_, lb_, ub_, data_);
       get_tprofiler.end_event(i);

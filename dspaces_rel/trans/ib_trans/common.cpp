@@ -68,6 +68,11 @@ Connector::Connector(pre_conn_cb_fn pc, connect_cb_fn conn, completion_cb_fn com
 
 Connector::~Connector() {
   free(s_ctx);
+  for (std::vector<boost::thread*>::iterator it = t_v.begin(); it != t_v.end(); it++) {
+    // (*it)->join();
+    (*it)->interrupt();
+    delete *it;
+  }
   LOG(INFO) << "Connector:: destructed.";
 }
 
@@ -91,15 +96,17 @@ void Connector::build_context(struct ibv_context *verbs)
   }
 
   s_ctx = (struct context*)malloc(sizeof(struct context) );
-
+  
   s_ctx->ctx = verbs;
-
+  
   TEST_Z(s_ctx->pd = ibv_alloc_pd(s_ctx->ctx) );
   TEST_Z(s_ctx->comp_channel = ibv_create_comp_channel(s_ctx->ctx) );
   TEST_Z(s_ctx->cq = ibv_create_cq(s_ctx->ctx, MAX_QP__CQ_LENGTH, NULL, s_ctx->comp_channel, 0) );
   TEST_NZ(ibv_req_notify_cq(s_ctx->cq, 0) );
-
-  boost::thread t(boost::bind(&Connector::poll_cq, this, s_ctx) );
+  
+  t_v.push_back(new boost::thread(&Connector::poll_cq, this, s_ctx) );
+  // boost::thread t(boost::bind(&Connector::poll_cq, this, s_ctx) );
+  // poll_cq_t_ = boost::make_shared<boost::thread>(boost::bind(&Connector::poll_cq, this, s_ctx) );
 }
 
 void Connector::build_params(struct rdma_conn_param *params)
@@ -209,7 +216,7 @@ void* Connector::poll_cq(void *ctx)
       // log_(ERROR, "status is not IBV_WC_SUCCESS; will sleep 1 sec and will try again...")
       // sleep(1);
       log_(ERROR, "status is not IBV_WC_SUCCESS.")
-      return NULL;
+      // return NULL;
     }
     // while (ibv_poll_cq(cq, 1, &wc) ) {
     //   if (wc.status == IBV_WC_SUCCESS) {
@@ -247,11 +254,11 @@ int Connector::rc_client_loop(const char *host, const char *port, void *context)
   struct rdma_event_channel *ec = NULL;
   struct rdma_conn_param cm_params;
   
-  TEST_NZ(getaddrinfo(host, port, NULL, &addr) );
+  TEST_NZ(getaddrinfo(host, port, NULL, &addr) )
   
-  TEST_Z(ec = rdma_create_event_channel() );
-  TEST_NZ(rdma_create_id(ec, &conn, NULL, RDMA_PS_TCP) );
-  TEST_NZ(rdma_resolve_addr(conn, NULL, addr->ai_addr, TIMEOUT_IN_MS) );
+  TEST_Z(ec = rdma_create_event_channel() )
+  TEST_NZ(rdma_create_id(ec, &conn, NULL, RDMA_PS_TCP) )
+  TEST_NZ(rdma_resolve_addr(conn, NULL, addr->ai_addr, TIMEOUT_IN_MS) )
   
   freeaddrinfo(addr);
   
@@ -259,31 +266,38 @@ int Connector::rc_client_loop(const char *host, const char *port, void *context)
   
   build_params(&cm_params);
   
-  return_if_err(event_loop(ec, 1), err)
+  int r = event_loop(ec, 1);
   
   rdma_destroy_event_channel(ec);
-  return 0;
+  return r;
 }
 
-void Connector::rc_server_loop(const char *port)
+int Connector::rc_server_loop(const char *port)
 {
   struct sockaddr_in addr;
   struct rdma_cm_id *listener = NULL;
   struct rdma_event_channel *ec = NULL;
-
+  
   memset(&addr, 0, sizeof(addr) );
   addr.sin_family = AF_INET;
   addr.sin_port = htons(atoi(port) );
-
-  TEST_Z(ec = rdma_create_event_channel() );
-  TEST_NZ(rdma_create_id(ec, &listener, NULL, RDMA_PS_TCP) );
-  TEST_NZ(rdma_bind_addr(listener, (struct sockaddr *)&addr) );
-  TEST_NZ(rdma_listen(listener, 10) ); /* backlog=10 is arbitrary */
-
-  event_loop(ec, 1); // don't exit on disconnect
-
+  
+  TEST_Z(ec = rdma_create_event_channel() )
+  TEST_NZ(rdma_create_id(ec, &listener, NULL, RDMA_PS_TCP) )
+  // TEST_NZ(rdma_bind_addr(listener, (struct sockaddr *)&addr) )
+  int r = rdma_bind_addr(listener, (struct sockaddr*)&addr);
+  if (r) {
+    log_(ERROR, "rdma_bind_addr failed on addr= " << patch::sockaddr_in_to_str(addr) << ", with errno= " << errno)
+    return r;
+  }
+  TEST_NZ(rdma_listen(listener, 10) ) /* backlog=10 is arbitrary */
+  
+  r = event_loop(ec, 1); // don't exit on disconnect
+  
   rdma_destroy_id(listener);
   rdma_destroy_event_channel(ec);
+  
+  return r;
 }
 
 void Connector::rc_disconnect(struct rdma_cm_id *id)

@@ -53,6 +53,8 @@ DSDriver::DSDriver(int app_id, int num_peer, MPI_Comm mpi_comm)
   this->get__flag = false;
   
   refresh_last_lock_time();
+  
+  // TEST_NZ(pthread_mutex_init(&dspaces_put_get_mtx, NULL) )
   // 
   log_(INFO, "constructed.")
 }
@@ -66,6 +68,8 @@ DSDriver::~DSDriver()
   
   if (!closed)
     close();
+  
+  // TEST_NZ(pthread_mutex_destroy(&dspaces_put_get_mtx) )
   // 
   log_(INFO, "destructed.")
 }
@@ -99,25 +103,34 @@ int DSDriver::init(int num_peer, int app_id)
 int DSDriver::sync_put(const char* var_name, unsigned int ver, int size,
                       int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
 {
+  // {
+  //   boost::lock_guard<boost::mutex> guard(property_mtx);
+  //   ++putget_lock_unlock_count;
+  //   log_(INFO, "before lock putget_lock_unlock_count= " << putget_lock_unlock_count)
+  // }
+  // TEST_NZ(pthread_mutex_lock(&dspaces_put_get_mtx) )
+  // boost::unique_lock<boost::timed_mutex> guard(dspaces_put_get_mtx, 1);
+  // boost::timed_mutex::scoped_lock scoped_lock(dspaces_put_get_mtx, boost::get_system_time() + boost::posix_time::seconds(10) );
+  // boost::lock_guard<boost::mutex> guard(dspaces_put_get_mtx);
   boost::lock_guard<boost::mutex> guard(dspaces_sync_put_mtx);
   // dspaces_define_gdim(var_name, ndim, gdim_);
-  {
-    boost::lock_guard<boost::mutex> guard(property_mtx);
-    this->sync_put_flag = true;
-  }
+  // {
+  //   boost::lock_guard<boost::mutex> guard(property_mtx);
+  //   this->sync_put_flag = true;
+  // }
   
   // log_(INFO, "will wait for get__flag= " << this->get__flag)
   
-  while (this->get__flag) {
-    // {
-    //   boost::lock_guard<boost::mutex> guard(property_mtx);
-    //   flag = this->get__flag;
-    // }
-  }
+  // while (this->get__flag) {
+  //   // {
+  //   //   boost::lock_guard<boost::mutex> guard(property_mtx);
+  //   //   flag = this->get__flag;
+  //   // }
+  // }
   // usleep(10*1000);
   // log_(INFO, "done waiting for get__flag.")
   
-  do_timing("sync_put");
+  // do_timing("sync_put");
   {
     // boost::lock_guard<boost::mutex> guard(dspaces_write_mtx);
     lock_on_write(var_name);
@@ -132,17 +145,23 @@ int DSDriver::sync_put(const char* var_name, unsigned int ver, int size,
   }
   // dspaces_put_sync();
   
-  do_timing("sync_put");
+  // do_timing("sync_put");
   {
     // boost::lock_guard<boost::mutex> guard(dspaces_write_mtx);
     unlock_on_write(var_name);
   }
   // refresh_last_lock_time();
   
-  {
-    boost::lock_guard<boost::mutex> guard(property_mtx);
-    this->sync_put_flag = false;
-  }
+  // {
+  //   boost::lock_guard<boost::mutex> guard(property_mtx);
+  //   this->sync_put_flag = false;
+  // }
+  // TEST_NZ(pthread_mutex_unlock(&dspaces_put_get_mtx) )
+  // {
+  //   boost::lock_guard<boost::mutex> guard(property_mtx);
+  //   --putget_lock_unlock_count;
+  //   log_(INFO, "after unlock putget_lock_unlock_count= " << putget_lock_unlock_count)
+  // }
   
   return r;
 }
@@ -210,81 +229,133 @@ int DSDriver::sync_put(const char* var_name, unsigned int ver, int size,
 //   return r;
 // }
 
+int DSDriver::reg_get_wait_for_completion(const char* var_name, unsigned int ver, int size,
+                                          int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
+{
+  
+}
+
+// boost::mutex dspaces_get_mtx;
 int DSDriver::get(const char* var_name, unsigned int ver, int size,
                   int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
 {
   int err;
+  // boost::recursive_mutex::scoped_lock scoped_lock(dspaces_get_mtx);
+  // {
+  //   boost::lock_guard<boost::mutex> guard(property_mtx);
+  //   ++putget_lock_unlock_count;
+  //   log_(INFO, "before lock putget_lock_unlock_count= " << putget_lock_unlock_count)
+  // }
+  // TEST_NZ(pthread_mutex_lock(&dspaces_put_get_mtx) )
+  // boost::unique_lock<boost::timed_mutex> guard(dspaces_put_get_mtx, 1);
+  // boost::timed_mutex::scoped_lock scoped_lock(dspaces_put_get_mtx, boost::get_system_time() + boost::posix_time::milliseconds(1000) );
+  // boost::lock_guard<boost::mutex> guard(dspaces_put_get_mtx);
   boost::lock_guard<boost::mutex> guard(dspaces_get_mtx);
+  // boost::mutex::scoped_lock scoped_lock(dspaces_get_mtx);
   
-  {
-    boost::lock_guard<boost::mutex> guard(property_mtx);
-    this->get_flag = true;
-  }
+  // {
+  //   boost::lock_guard<boost::mutex> guard(property_mtx);
+  //   this->get_flag = true;
+  // }
   
-  // log_(INFO, "will wait for get__flag...")
-  struct timeval wait_start_time_val, current_time_val, diff_time_val;
-  return_if_err(gettimeofday(&wait_start_time_val, NULL), err)
-  bool flag = true;
-  while (flag) {
-    {
-      return_if_err(gettimeofday(&current_time_val, NULL), err)
-      timeval_subtract(&diff_time_val, &current_time_val, &wait_start_time_val);
-      if (diff_time_val.tv_sec > 1) {
-        log_(ERROR, "too much waiting for get__flag, breaking.")
-        // TODO
-        // this->get__flag = false;
-        break;
-      }
+  // // log_(INFO, "will wait for get__flag...")
+  // struct timeval wait_start_time_val, current_time_val, diff_time_val;
+  // return_if_err(gettimeofday(&wait_start_time_val, NULL), err)
+  // bool flag = true;
+  // while (flag) {
+  //   {
+  //     return_if_err(gettimeofday(&current_time_val, NULL), err)
+  //     timeval_subtract(&diff_time_val, &current_time_val, &wait_start_time_val);
+  //     if (diff_time_val.tv_sec > 1) {
+  //       log_(ERROR, "too much waiting for get__flag, breaking.")
+  //       // TODO
+  //       // this->get__flag = false;
+  //       break;
+  //     }
       
-      boost::lock_guard<boost::mutex> guard(property_mtx);
-      flag = this->get__flag;
-    }
-  }
+  //     boost::lock_guard<boost::mutex> guard(property_mtx);
+  //     flag = this->get__flag;
+  //   }
+  // }
   // log_(INFO, "done waiting for get__flag.")
   
   // dspaces_define_gdim(var_name, ndim, gdim_);
-  do_timing("get");
-  {
-    // boost::lock_guard<boost::mutex> guard(dspaces_read_mtx);
-    // do_timing("get");
-    lock_on_read(var_name);
-  }
+  // do_timing("get");
+  // {
+  //   // boost::lock_guard<boost::mutex> guard(lock_mtx);
+  //   lock_on_read(var_name);
+  // }
   
-  int r;
-  {
+  // int r;
+  // {
+  //   // log_(INFO, "will get var_name= " << var_name)
+  //   // boost::lock_guard<boost::mutex> guard(dspaces_read_mtx);
+  //   r = dspaces_get(var_name, ver, size,
+  //                   ndim, lb_, ub_, data_);
+  //   // log_(INFO, "got var_name= " << var_name)
+  //   // log_(INFO, "dspaces_get done for var_name= " << var_name)
     
-    // log_(INFO, "will get var_name= " << var_name)
-    // boost::lock_guard<boost::mutex> guard(dspaces_read_mtx);
-    r = dspaces_get(var_name, ver, size,
-                    ndim, lb_, ub_, data_);
-    // log_(INFO, "got var_name= " << var_name)
-    // log_(INFO, "dspaces_get done for var_name= " << var_name)
-    
-  }
+  // }
   
-  do_timing("get");
-  {
-    // boost::lock_guard<boost::mutex> guard(dspaces_read_mtx);
-    unlock_on_read(var_name);
-  }
+  // do_timing("get");
+  // {
+  //   // boost::lock_guard<boost::mutex> guard(unlock_mtx);
+  //   unlock_on_read(var_name);
+  // }
   
-  {
-    boost::lock_guard<boost::mutex> guard(property_mtx);
-    this->get_flag = false;
+  // {
+  //   boost::lock_guard<boost::mutex> guard(property_mtx);
+  //   this->get_flag = false;
+  // }
+  
+  // TEST_NZ(pthread_mutex_unlock(&dspaces_put_get_mtx) )
+  // {
+  //   boost::lock_guard<boost::mutex> guard(property_mtx);
+  //   --putget_lock_unlock_count;
+  //   log_(INFO, "after unlock putget_lock_unlock_count= " << putget_lock_unlock_count)
+  // }
+  
+  // Note: Works but mutual exclusive get using only mutex does not allow fair access between threads
+  lock_on_read(var_name);
+  get_done = false;
+  get_success = false;
+  boost::thread t(&DSDriver::plain_get, this, var_name, ver, size, ndim, gdim_, lb_, ub_, data_);
+  int counter = 0;
+  do {
+    if (counter)
+      sleep(1);
+    ++counter;
+  } while (!get_done && counter < 10);
+  
+  int r = 1; // TODO: for now always return success
+  if (get_done) {
+    if (get_success)
+      r = 0;
   }
+  else {
+    log_(INFO, "get_done= " << get_done << " but plain_get returned failure since counter= " << counter)
+    t.interrupt();
+  }
+  unlock_on_read(var_name);
+  
+  boost::this_thread::yield();
   
   return r;
 }
-// int DSDriver::get(const char* var_name, unsigned int ver, int size,
-//                       int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_, void *data_)
-// {
-//   lock_on_read(var_name);
-//   // dspaces_define_gdim(var_name, ndim, gdim_);
-//   int r = dspaces_get(var_name, ver, size, ndim, lb_, ub_, data_);
-//   unlock_on_read(var_name);
+int DSDriver::plain_get(const char* var_name, unsigned int ver, int size,
+                        int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_, void *data_)
+{
+  int r = dspaces_get(var_name, ver, size, ndim, lb_, ub_, data_);
+  if (r) {
+    log_(ERROR, "dspaces_get failed for <var_name= " << var_name << ", ver= " << ver << ">")
+    get_success = false; // TODO: for now to not mess with dspaces' failures and carry on with the experiments
+  }
+  else 
+    get_success = true;
+  get_done = true;
   
-//   return r;
-// }
+  return 0;
+}
 
 // int DSDriver::sync_put_without_lock(const char* var_name, unsigned int ver, int size,
 //                                     int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)

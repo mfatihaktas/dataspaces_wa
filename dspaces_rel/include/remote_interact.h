@@ -20,6 +20,9 @@ class RFPManager { // Remote Fetch & Place
     patch::thread_safe_map<std::string, uint64_t> data_id__recved_size_map;
     patch::thread_safe_map<std::string, void*> data_id__data_map;
     patch::syncer<unsigned int> rfp_syncer;
+    
+    boost::mutex property_mtx;
+    int num_current_wa_put;
   public:
     RFPManager(DATA_ID_T data_id_t, std::string trans_protocol,
                std::string ib_lip, std::list<std::string> ib_lport_list,
@@ -40,6 +43,7 @@ class RFPManager { // Remote Fetch & Place
     int wa_get(std::string lip, std::string lport, std::string tmpfs_dir,
                std::string key, unsigned int ver, std::string data_type,
                int size, int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_);
+    int clean_up_retry(std::string data_id);
     bool is_being_get(std::string key, unsigned int ver, uint64_t* lb_, uint64_t* ub_);
     int wait_for_get(std::string key, unsigned int ver, uint64_t* lb_, uint64_t* ub_);
     int notify_remote_get_done(std::string key, unsigned int ver, uint64_t* lb_, uint64_t* ub_);

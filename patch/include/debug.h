@@ -38,6 +38,24 @@
     return err; \
   }
 
+#define try_n_times__return_if_err(x, err, n, a...) \
+for (int c = 0; c < n; c++) { \
+  err = x; \
+  if (err) { \
+    if (c < n - 1) { \
+      log_(WARNING, #x "failed, sleeping 1 sec before trying again") \
+      sleep(1); \
+    } \
+    else { \
+      log_(ERROR, #x "failed " << n << " times, no more trying!") \
+      a \
+      return err; \
+    } \
+  } \
+  else \
+    break; \
+}
+
 #define return_err_if_ret_cond_flag(x, ret, cond, flag, err, a...) \
   ret = x; \
   if (ret cond flag) { \
@@ -45,6 +63,7 @@
     a \
     return err; \
   }
+
 #endif // _TEST_MACROS_
 
 #endif // _DEBUG_

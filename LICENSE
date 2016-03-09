@@ -19,3 +19,27 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+w/p,i 400MB
+base_var_name= dummy_7,        total_dur_sec= 124.073
+base_var_name= dummy_10,       total_dur_sec= 127.091
+base_var_name= dummy_1,        total_dur_sec= 133.191
+base_var_name= dummy_8,        total_dur_sec= 139.106
+base_var_name= dummy_9,        total_dur_sec= 212.112
+base_var_name= dummy_5,        total_dur_sec= 222.874
+
+base_var_name= dummy_9,        total_dur_sec= 249.771
+base_var_name= dummy_8,        total_dur_sec= 255.516
+base_var_name= dummy_6,        total_dur_sec= 258.388
+
+
+
+INFO mput_mget_test.cpp:154] mget_test:: base_var_name= dummy_2,        total_dur_sec= 479.151
+INFO mput_mget_test.cpp:154] mget_test:: base_var_name= dummy_4,        total_dur_sec= 469.983
+INFO mput_mget_test.cpp:154] mget_test:: base_var_name= dummy_6,        total_dur_sec= 460.949
+INFO mput_mget_test.cpp:154] mget_test:: base_var_name= dummy_7,        total_dur_sec= 451.843
+INFO mput_mget_test.cpp:154] mget_test:: base_var_name= dummy_5,        total_dur_sec= 442.732
+INFO mput_mget_test.cpp:154] mget_test:: base_var_name= dummy_10,       total_dur_sec= 435.735
+INFO mput_mget_test.cpp:154] mget_test:: base_var_name= dummy_8,        total_dur_sec= 221.715
+INFO mput_mget_test.cpp:154] mget_test:: base_var_name= dummy_9,        total_dur_sec= 197.35
+INFO mput_mget_test.cpp:154] mget_test:: base_var_name= dummy_3,        total_dur_sec= 190.259

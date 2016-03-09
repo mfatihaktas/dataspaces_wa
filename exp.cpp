@@ -276,8 +276,10 @@ int main(int argc , char **argv)
     getline(std::cin, temp);
   }
   else if (str_cstr_equals(opt_map["type"], "ri") ) {
-    std::string ib_lports[] = {"1234","1235","1236","1237","1238","1239","1240","1241","1242","1243","1244","1245","1246","1247","12348","1249","1250","1251","1252","1253","1254","1255","1256","1257","1258","1259","1260"};
-    std::list<std::string> ib_lport_list(ib_lports, ib_lports + sizeof(ib_lports)/sizeof(*ib_lports) );
+    std::list<std::string> ib_lport_list;
+    for (int port = 1234; port < 1299; port++)
+      ib_lport_list.push_back(boost::lexical_cast<std::string>(port) );
+    
     
     PALGO_T palgo_t = MALGO_W_PPM;
     int max_num_key_ver_in_mpbuffer = 10;

@@ -212,9 +212,9 @@ class IBServer {
             // LOG(INFO) << "on_completion:: is_eof_buf= " << is_eof_buf;
             if(!strcmp(is_eof_buf, (char*)"EOF") ) {
               LOG(INFO) << "on_completion:: EOF received.";
-              ctx->msg->id = MSG_DONE;
-              send_message(id);
-              // connector_->rc_disconnect(id);
+              // ctx->msg->id = MSG_DONE;
+              // send_message(id);
+              connector_->rc_disconnect(id);
               
               return;
             }

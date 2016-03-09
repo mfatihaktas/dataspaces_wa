@@ -11,7 +11,8 @@ RFPManager::RFPManager(DATA_ID_T data_id_t, std::string trans_protocol,
                                    ib_lip, ib_lport_list,
                                    tcp_lip, tcp_lport,
                                    gftp_lintf, gftp_lip, gftp_lport, tmpfs_dir) ),
-  ds_driver_(ds_driver_)
+  ds_driver_(ds_driver_),
+  num_current_wa_put(0)
 {
   // 
   log_(INFO, "constructed.")
@@ -46,16 +47,24 @@ int RFPManager::wa_put(std::string lip, std::string lport, std::string tmpfs_dir
   }
   void* data_ = malloc(size*data_length);
   // patch_ds::debug_print(key, ver, size, ndim, gdim_, lb_, ub_, NULL, 0);
-  if (ds_driver_->get(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_) ) {
-    log_(ERROR, "ds_driver_->get failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
-    return 1;
-  }
+  
+  try_n_times__return_if_err(ds_driver_->get(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_), err, 3,
+                             log_(ERROR, "ds_driver_->get failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) ) )
+  // if (ds_driver_->get(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_) ) {
+  //   log_(ERROR, "ds_driver_->get failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
+  //   return 1;
+  // }
   
   std::string data_id = patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_);
   return_if_err(trans_->init_put(lip, lport, tmpfs_dir, data_type, data_id, data_length, data_), err, free(data_);)
   free(data_); data_ = NULL;
   // 
+  // {
+  //   boost::lock_guard<boost::mutex> guard(property_mtx);
+  //   --num_current_wa_put;
+  // }
   log_(INFO, "done; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
+  
   return 0;
 }
 
@@ -86,6 +95,18 @@ int RFPManager::wa_get(std::string lip, std::string lport, std::string tmpfs_dir
   // rfp_syncer.notify(patch_sdm::hash_str(patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_) ) );
   // 
   log_(INFO, "done; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
+  return 0;
+}
+
+int RFPManager::clean_up_retry(std::string data_id)
+{
+  if (!data_id__data_map.contains(data_id) ) {
+    log_(ERROR, "data_id__data_map does not contain data_id= " << data_id)
+    return 1;
+  }
+  free(data_id__data_map[data_id] ); data_id__data_map[data_id] = NULL;
+  data_id__data_map.del(data_id);
+  data_id__recved_size_map.del(data_id);
   return 0;
 }
 
@@ -402,7 +423,7 @@ void RIManager::remote_put(std::map<std::string, std::string> msg_map)
   
   int err = rfp_manager_->wa_put(trans_info_->lip, trans_info_->lport, trans_info_->tmpfs_dir,
                                  key, ver, data_info_->data_type, data_info_->size, ndim, data_info_->gdim_, lb_, ub_);
-  while (err) {
+  if (err) {
     log_(ERROR, "rfp_manager_->wa_put failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) << "\n"
                 << "will repeat...")
     msg_map["type"] = RI_REPEAT_TRANS;
@@ -410,33 +431,29 @@ void RIManager::remote_put(std::map<std::string, std::string> msg_map)
     msg_map["lport"] = boost::lexical_cast<std::string>(trans_info_->lport);
     
     return_err_if_ret_cond_flag(sdm_slave_->send_rimsg(to_id, msg_map), err, !=, 0,)
-    log_(INFO, "waiting for RI_REPEAT_TRANS_REPLY; data_id= " << data_id)
+    log_(INFO, "waiting for act upon RI_REPEAT_TRANS_REPLY; data_id= " << data_id)
     unsigned int sync_point = patch_sdm::hash_str(RI_REPEAT_TRANS + "_" + data_id);
     ri_syncer.add_sync_point(sync_point, 1);
     ri_syncer.wait(sync_point);
     ri_syncer.del_sync_point(sync_point);
-    log_(INFO, "done waiting for RI_REPEAT_TRANS_REPLY; data_id= " << data_id)
+    log_(INFO, "done waiting for act upon RI_REPEAT_TRANS_REPLY; data_id= " << data_id)
+    // log_(INFO, "waiting for RI_REPEAT_TRANS_REPLY; data_id= " << data_id)
+    // unsigned int sync_point = patch_sdm::hash_str(RI_REPEAT_TRANS + "_" + data_id);
+    // ri_syncer.add_sync_point(sync_point, 1);
+    // ri_syncer.wait(sync_point);
+    // ri_syncer.del_sync_point(sync_point);
+    // log_(INFO, "done waiting for RI_REPEAT_TRANS_REPLY; data_id= " << data_id)
     
-    if (msg_map.count("repeat") == 0) {
-      log_(INFO, "apparently trans was successful, will not repeat; data_id= " << data_id)
-      break;
-    }
-    else {
-      log_(INFO, "indeed trans was failure, will repeat; data_id= " << data_id)
-      err = rfp_manager_->wa_put(trans_info_->lip, trans_info_->lport, trans_info_->tmpfs_dir,
-                                 key, ver, data_info_->data_type, data_info_->size, ndim, data_info_->gdim_, lb_, ub_);
-    }
+    // if (msg_map.count("repeat") == 0) {
+    //   log_(INFO, "apparently trans was successful, will not repeat; data_id= " << data_id)
+    //   break;
+    // }
+    // else {
+    //   log_(INFO, "indeed trans was failure, will repeat; data_id= " << data_id)
+    //   err = rfp_manager_->wa_put(trans_info_->lip, trans_info_->lport, trans_info_->tmpfs_dir,
+    //                             key, ver, data_info_->data_type, data_info_->size, ndim, data_info_->gdim_, lb_, ub_);
+    // }
   }
-  
-  // Note: To resolve unexpected data_size and data_id received by the tcp_server.
-  // unsigned int data_id_hash = patch_sdm::hash_str(patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_) );
-  // boost::shared_ptr<trans_info> trans_info_ = ds_id__trans_info_map[boost::lexical_cast<int>(msg_map["to_id"] ) ];
-  
-  // if (rfp_manager_->wa_put(trans_info_->lip, trans_info_->lport, trans_info_->tmpfs_dir,
-  //                         key, ver, data_id_hash__data_info_map[data_id_hash]->data_type, data_id_hash__data_info_map[data_id_hash]->size, ndim, data_id_hash__data_info_map[data_id_hash]->gdim_, lb_, ub_) ) {
-  //   log_(ERROR, "rfp_manager_->wa_put failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
-  //   return;
-  // }
   
   log_(INFO, "done; key= " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
   patch::free_all<uint64_t>(2, lb_, ub_);
@@ -479,18 +496,22 @@ void RIManager::handle_repeat_trans(std::map<std::string, std::string> msg_map)
   log_(INFO, "msg_map= \n" << patch::map_to_str<>(msg_map) )
   
   std::string data_id = patch_sdm::get_data_id(data_id_t, msg_map);
-  data_id__remote_get_t_map[data_id].reset();
-  data_id__remote_get_t_map.del(data_id);
   
   int ndim;
   std::string key;
   unsigned ver;
   uint64_t* gdim_, *lb_, *ub_;
   return_err_if_ret_cond_flag(msg_coder.decode_msg_map(msg_map, ndim, key, ver, lb_, ub_), err, !=, 0,)
-  rfp_manager_->wait_for_get(key, ver, lb_, ub_);
+  // rfp_manager_->wait_for_get(key, ver, lb_, ub_);
   if (sdm_slave_->query(key, ver, lb_, ub_) ) {
     log_(INFO, "requires repeat indeed; data_id= " << data_id)
     msg_map["repeat"] = "";
+    
+    data_id__remote_get_t_map[data_id]->interrupt();
+    data_id__remote_get_t_map[data_id].reset();
+    data_id__remote_get_t_map.del(data_id);
+    rfp_manager_->clean_up_retry(data_id);
+    
     data_id__remote_get_t_map[data_id] = boost::make_shared<boost::thread>(&RIManager::remote_get, this, msg_map);
   }
   else {
@@ -504,6 +525,35 @@ void RIManager::handle_repeat_trans(std::map<std::string, std::string> msg_map)
 void RIManager::handle_repeat_trans_reply(std::map<std::string, std::string> msg_map)
 {
   log_(INFO, "msg_map= \n" << patch::map_to_str<>(msg_map) )
+  int err;
+  
+  int ndim;
+  std::string key;
+  unsigned ver;
+  uint64_t* lb_, *ub_;
+  if (msg_coder.decode_msg_map(msg_map, ndim, key, ver, lb_, ub_) ) {
+    log_(ERROR, "msg_coder.decode_msg_map failed; msg_map= \n" << patch::map_to_str<>(msg_map) )
+    return;
+  }
+  
+  int to_id = boost::lexical_cast<int>(msg_map["to_id"] );
+  std::string data_id = patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_);
+  boost::shared_ptr<data_info> data_info_ =
+    data_id_hash__data_info_map[patch_sdm::hash_str(data_id) ];
+  boost::shared_ptr<trans_info> trans_info_ = ds_id__trans_info_map[to_id];
+  
+  if (msg_map.count("repeat") == 0) {
+    log_(INFO, "apparently trans was successful, will not repeat; data_id= " << data_id)
+  }
+  else {
+    log_(INFO, "indeed trans was failure, will repeat; data_id= " << data_id)
+    err = rfp_manager_->wa_put(trans_info_->lip, trans_info_->lport, trans_info_->tmpfs_dir,
+                               key, ver, data_info_->data_type, data_info_->size, ndim, data_info_->gdim_, lb_, ub_);
+    if (err) {
+      log_(ERROR, "rfp_manager_->wa_put failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) << "\n"
+                  << "\t this is 2nd attempt and still failed, no more...")
+    }
+  }
   
   unsigned int sync_point = patch_sdm::hash_str(
     RI_REPEAT_TRANS + "_" + patch_sdm::get_data_id(data_id_t, msg_map) );

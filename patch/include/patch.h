@@ -1,6 +1,7 @@
 #ifndef _PATCH_H_
 #define _PATCH_H_
 
+#include <arpa/inet.h> // For sockaddr_in_to_str
 #include <cstdarg> // For variable argument lists
 #include <string>
 #include <sstream>
@@ -38,6 +39,17 @@ namespace patch {
       s_++;
     }
     return h; // return h % HASH_PRIME_3;
+  }
+  
+  static std::string sockaddr_in_to_str(struct sockaddr_in addr)
+  {
+    char lip_[INET_ADDRSTRLEN];
+    TEST_Z(inet_ntop(AF_INET, &(addr.sin_addr), lip_, sizeof(lip_) ) )
+    
+    std::stringstream ss;
+    ss << lip_ << ":" << addr.sin_port;
+    
+    return ss.str();
   }
   
   template <typename T>

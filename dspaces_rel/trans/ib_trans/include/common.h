@@ -39,6 +39,14 @@ typedef boost::function<void(struct ibv_wc *wc)> completion_cb_fn;
 typedef boost::function<void(struct rdma_cm_id *id)> disconnect_cb_fn;
 
 class Connector {
+  private:
+    struct context *s_ctx;
+    pre_conn_cb_fn s_on_pre_conn_cb;
+    connect_cb_fn s_on_connect_cb;
+    completion_cb_fn s_on_completion_cb;
+    disconnect_cb_fn s_on_disconnect_cb;
+    
+    std::vector<boost::thread*> t_v;
   public:
     Connector(pre_conn_cb_fn pc, connect_cb_fn conn, completion_cb_fn comp, disconnect_cb_fn disc);
     ~Connector();
@@ -55,13 +63,7 @@ class Connector {
     int rc_client_loop(const char *host, const char *port, void *context);
     void rc_disconnect(struct rdma_cm_id *id);
     struct ibv_pd * rc_get_pd();
-    void rc_server_loop(const char *port);
-  private:
-    struct context *s_ctx;
-    pre_conn_cb_fn s_on_pre_conn_cb;
-    connect_cb_fn s_on_connect_cb;
-    completion_cb_fn s_on_completion_cb;
-    disconnect_cb_fn s_on_disconnect_cb;
+    int rc_server_loop(const char *port);
 };
 
 #endif // _COMMON_H_

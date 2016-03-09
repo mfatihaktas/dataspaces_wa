@@ -14,6 +14,9 @@
 #include <boost/thread.hpp>
 #include <boost/function.hpp>
 
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <pthread.h>
+
 #include "patch_ds.h"
 
 extern "C" {
@@ -40,7 +43,14 @@ class DSDriver
     
     boost::mutex dspaces_get__mtx;
     boost::mutex dspaces_get_mtx;
+    // boost::recursive_mutex dspaces_get_mtx;
     boost::mutex dspaces_sync_put_mtx;
+    // boost::mutex dspaces_put_get_mtx;
+    // boost::timed_mutex dspaces_put_get_mtx;
+    // pthread_mutex_t dspaces_put_get_mtx;
+    // boost::mutex lock_mtx, unlock_mtx;
+    // int putget_lock_unlock_count;
+    bool get_done, get_success;
     
     int get_flag;
     int get__flag;
@@ -48,6 +58,7 @@ class DSDriver
     //
     std::map<std::string, function_cb_on_get> varname_cbonget_map;
     std::vector<boost::shared_ptr<boost::thread> > riget_thread_v;
+    
   public:
     static uint64_t get_data_length(int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_);
     
@@ -62,6 +73,8 @@ class DSDriver
              int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
     int get(const char* var_name, unsigned int ver, int size,
             int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
+    int plain_get(const char* var_name, unsigned int ver, int size,
+                  int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
     int sync_put_without_lock(const char* var_name, unsigned int ver, int size,
                               int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_);
     int del(const char* var_name, unsigned int ver);
