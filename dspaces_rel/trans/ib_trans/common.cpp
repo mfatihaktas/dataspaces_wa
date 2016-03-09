@@ -66,7 +66,10 @@ Connector::Connector(pre_conn_cb_fn pc, connect_cb_fn conn, completion_cb_fn com
   LOG(INFO) << "Connector:: constructed.";
 }
 
-Connector::~Connector() { LOG(INFO) << "Connector:: destructed."; }
+Connector::~Connector() {
+  free(s_ctx);
+  LOG(INFO) << "Connector:: destructed.";
+}
 
 void Connector::build_connection(struct rdma_cm_id *id)
 {

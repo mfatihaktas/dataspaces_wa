@@ -125,6 +125,7 @@ int WADSDriver::get(bool blocking, std::string key, unsigned int ver, std::strin
     return 1;
   }
   
+  sleep(1);
   if (ds_driver_->get(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_) ) {
     log_(ERROR, "ds_driver_->get failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
     return 1;

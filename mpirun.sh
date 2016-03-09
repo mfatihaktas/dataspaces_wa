@@ -1,38 +1,37 @@
 #!/bin/bash
 echo $1 $2 $3
 
-NUM_DS=3 # 32
+NUM_DS=5 # 32
 NUM_CLIENT=10
 NUM_DSCNODE=$(($NUM_CLIENT+1)) # +1: RIManager
-NUM_PEER=1
 NUM_PUTGET=10
 
 if [ -n "$DELL" ]; then
+  # echo "# hosts to run ds on
+  # dell07 slots=16 max_slots=16
+  # dell08 slots=16 max_slots=16
+  # dell09 slots=16 max_slots=16
+  # dell10 slots=16 max_slots=16
+  # dell11 slots=16 max_slots=16
+  # dell12 slots=16 max_slots=16
+  # dell13 slots=16 max_slots=16
+  # dell14 slots=16 max_slots=16
+  # dell15 slots=16 max_slots=16
+  # dell16 slots=16 max_slots=16
+  # " > DS_HOST_FILE
   echo "# hosts to run ds on
+  dell07 slots=16 max_slots=16
+  dell08 slots=16 max_slots=16
+  dell09 slots=16 max_slots=16
+  dell10 slots=16 max_slots=16
   dell11 slots=16 max_slots=16
+  " > DS_HOST_FILE_0
+  echo "# hosts to run ds on
   dell12 slots=16 max_slots=16
   dell13 slots=16 max_slots=16
   dell14 slots=16 max_slots=16
   dell15 slots=16 max_slots=16
   dell16 slots=16 max_slots=16
-  dell17 slots=16 max_slots=16
-  dell18 slots=16 max_slots=16
-  dell19 slots=16 max_slots=16
-  dell20 slots=16 max_slots=16
-  " > DS_HOST_FILE_0
-  echo "# hosts to run ds on
-  dell21 slots=16 max_slots=16
-  dell22 slots=16 max_slots=16
-  dell23 slots=16 max_slots=16
-  dell24 slots=16 max_slots=16
-  dell25 slots=16 max_slots=16
-  dell26 slots=16 max_slots=16
-  dell27 slots=16 max_slots=16
-  dell28 slots=16 max_slots=16
-  dell29 slots=16 max_slots=16
-  dell30 slots=16 max_slots=16
-  dell31 slots=16 max_slots=16
-  dell32 slots=16 max_slots=16
   " > DS_HOST_FILE_1
   # echo "# hosts to run apps on
   # dell01 slots=16 max_slots=16
@@ -47,9 +46,20 @@ if [ -n "$DELL" ]; then
   # dell10 slots=16 max_slots=16
   # " > APP_HOST_FILE
   
-  BEGIN_DSNODE_ID=11
-  END_DSNODE_ID=$(($BEGIN_DSNODE_ID + 2))
   DS_NODES=""
+  # For site 0
+  BEGIN_DSNODE_ID=7
+  END_DSNODE_ID=$(($BEGIN_DSNODE_ID + 4))
+  for i in `seq $BEGIN_DSNODE_ID $END_DSNODE_ID`; do
+    STR=""
+    [ "$i" -lt 10 ] && STR+="0"
+    DS_NODES+="dell$STR$i"
+    [ "$i" -lt $END_DSNODE_ID ] && DS_NODES+=","
+  done
+  # For site 1
+  DS_NODES+=","
+  BEGIN_DSNODE_ID=12
+  END_DSNODE_ID=$(($BEGIN_DSNODE_ID + 4))
   for i in `seq $BEGIN_DSNODE_ID $END_DSNODE_ID`; do
     STR=""
     [ "$i" -lt 10 ] && STR+="0"
@@ -58,9 +68,9 @@ if [ -n "$DELL" ]; then
   done
   echo "DS_NODES= $DS_NODES"
   
+  PUTTER_NODES=""
   BEGIN_PNODE_ID=4
   END_PNODE_ID=$(($BEGIN_PNODE_ID + 2))
-  PUTTER_NODES=""
   for i in `seq $BEGIN_PNODE_ID $END_PNODE_ID`; do
     STR=""
     [ "$i" -lt 10 ] && STR+="0"
@@ -68,10 +78,10 @@ if [ -n "$DELL" ]; then
     [ "$i" -lt $END_PNODE_ID ] && PUTTER_NODES+=","
   done
   echo "PUTTER_NODES= $PUTTER_NODES"
-  
-  BEGIN_GNODE_ID=7
-  END_GNODE_ID=$(($BEGIN_GNODE_ID + 2))
+    
   GETTER_NODES=""
+  BEGIN_GNODE_ID=4
+  END_GNODE_ID=$(($BEGIN_GNODE_ID + 2))
   for i in `seq $BEGIN_GNODE_ID $END_GNODE_ID`; do
     STR=""
     [ "$i" -lt 10 ] && STR+="0"
@@ -91,7 +101,7 @@ else
   echo "Which system DELL | ULAM | KID"
 fi
 
-RI_LCONTROL_LPORT_LIST=( 9000 9000 )
+RI_LCONTROL_LPORT_LIST=( 8000 9000 )
 
 PKILL=/usr/bin/pkill
 
@@ -114,9 +124,10 @@ elif [[ $1  == 's' || $1  == 'ds' ]]; then
   " > dataspaces.conf
   
   LOG_F="ds.log"
-  $MPIRUN --hostfile DS_HOST_FILE_$2 -n $NUM_DS --byslot $DEBUG \
+  # $MPIRUN --hostfile DS_HOST_FILE -n $NUM_DS --bynode $DEBUG \
+  $MPIRUN --hostfile DS_HOST_FILE_$2 -n $NUM_DS --bynode $DEBUG \
     $DSPACES_DIR/bin/dataspaces_server --server $NUM_DS \
-                                       --cnodes $NUM_DSCNODE < /dev/null 2>&1 | tee $LOG_F & # > $LOG_F 2>&1 < /dev/null &
+                                       --cnodes $NUM_DSCNODE > $LOG_F 2>&1 < /dev/null & # < /dev/null 2>&1 | tee $LOG_F & #
 # elif [ $1 = "den" ]; then
 elif [[ $1 == 'map' || $1 == 'dmap' || $1 == 'mag' || $1 == 'dmag' ]]; then
   GDB=
@@ -144,7 +155,7 @@ elif [[ $1 == 'map' || $1 == 'dmap' || $1 == 'mag' || $1 == 'dmag' ]]; then
     ./mput_mget_test --type=$TYPE --cl_id=$i --base_client_id=$(($2*$NUM_CLIENT)) \
                     --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=${RI_LCONTROL_LPORT_LIST[$2] } \
                     --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2] } --join_lcontrol_lport=${RI_LCONTROL_LPORT_LIST[$2] } \
-                    --num_putget=$NUM_PUTGET < /dev/null 2>&1 | tee $LOG_F & # > $LOG_F 2>&1 < /dev/null &
+                    --num_putget=$NUM_PUTGET > $LOG_F 2>&1 < /dev/null & # < /dev/null 2>&1 | tee $LOG_F & # 
   done
 elif [ $1  = 'k' ]; then
   # Sometimes works sometimes not!

@@ -114,6 +114,7 @@ class SDMSlave : public SDMCEntity {
     virtual int add_access(int c_id, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_);
     virtual int put(bool notify, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_, int p_id);
     virtual int get(int app_id, bool blocking, std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_);
+    int query(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_);
     virtual int notify_remote_get_done(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_);
     
     virtual void handle_conn_up(std::map<std::string, std::string> msg_map);

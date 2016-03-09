@@ -98,7 +98,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
 const float INTER_ARR_TIME = 0; // sec
 const float GET_ARR_RATE = (float)1/20; // num_arr / sec
 
-const uint64_t TEST_DATA_SIZE = 100*1024*1024; // 1024*1024*1024;
+const uint64_t TEST_DATA_SIZE = 400*1024*1024; // 1024*1024*1024;
 const uint64_t TEST_DATA_LENGTH = TEST_DATA_SIZE/sizeof(int);
 const uint64_t TEST_UB_LIMIT = floor(pow(TEST_DATA_LENGTH, (float)1/NDIM) );
 const int TEST_VER = 0;
@@ -125,15 +125,28 @@ void mget_test(int num_get,
   // TProfiler<int> get_tprofiler;
   for (int i = 0; i < num_get; i++) {
     std::string var_name = base_var_name + "_" + boost::lexical_cast<std::string>(i);
-    get_tprofiler.add_event(i, std::string("get_") + var_name);
-    if (wads_driver.get(true, var_name, TEST_VER, "int", sizeof(int), NDIM, gdim_, lb_, ub_, data_) ) {
-      log_(ERROR, "wads_driver.get failed for var_name= " << var_name)
-      log_s(log_file, ERROR, "wads_driver.get failed for var_name= " << var_name)
-      return;
+    int counter = 0;
+    while (1) {
+      get_tprofiler.add_event(i, std::string("get_") + var_name);
+      int err = wads_driver.get(true, var_name, TEST_VER, "int", sizeof(int), NDIM, gdim_, lb_, ub_, data_);
+      get_tprofiler.end_event(i);
+      if (err) {
+        log_(ERROR, "wads_driver.get failed; var_name= " << var_name)
+        ++counter;
+        if (counter < 3) {
+          log_(INFO, "will try wads_driver.get again; var_name= " << var_name)
+        }
+        else {
+          log_(ERROR, "tried wads_driver.get for 3 times already, will return failure; var_name= " << var_name)
+          // return;
+          break;
+        }
+      }
+      else {
+        log_(INFO, "got; " << KV_TO_STR(var_name, TEST_VER) )
+        break;
+      }
     }
-    log_(INFO, "got; " << KV_TO_STR(var_name, TEST_VER) )
-    get_tprofiler.end_event(i);
-    
     sleep(INTER_ARR_TIME);
   }
   // log_(INFO, "get_tprofiler= \n" << get_tprofiler.to_str() )
@@ -184,7 +197,8 @@ void poisson_mget_test(int num_get,
     sleep(inter_arr_time);
   }
   // log_(INFO, "get_tprofiler= \n" << get_tprofiler.to_str() )
-  log_s(mget_log_file, INFO, "base_var_name= " << base_var_name << ", " << get_tprofiler.to_brief_str() )
+  // log_s(mget_log_file, INFO, "base_var_name= " << base_var_name << ", " << get_tprofiler.to_brief_str() )
+  mget_log_file <<  "base_var_name= " << base_var_name << ", " << get_tprofiler.to_brief_str() << "\n";
   mget_log_file.close();
   
   // int data_length = patch::get_data_length(NDIM, gdim, lb, ub);
@@ -229,7 +243,8 @@ void mput_test(int num_put,
     
     sleep(INTER_ARR_TIME);
   }
-  log_s(mput_log_file, INFO, "base_var_name= " << base_var_name << ", " << put_tprofiler.to_brief_str() )
+  // log_s(mput_log_file, INFO, "base_var_name= " << base_var_name << ", " << put_tprofiler.to_brief_str() )
+  mput_log_file << "base_var_name= " << base_var_name << ", " << put_tprofiler.to_brief_str() << "\n";
   mput_log_file.close();
   
   patch::free_all<uint64_t>(3, gdim_, lb_, ub_);

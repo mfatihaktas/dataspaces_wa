@@ -221,6 +221,7 @@ class IBClient {
       memcpy(ctx->buffer, eof_, eof_size*sizeof(DATA_T) );
     
       write_remote(id, eof_size);
+      free(eof);
     };
     
     // State handlers

@@ -106,9 +106,9 @@ int IBServer::on_disconn(struct rdma_cm_id* id_)
   ibv_dereg_mr(ctx_->buffer_mr_);
   ibv_dereg_mr(ctx_->msg_mr_);
 
-  free(ctx_->buffer_);
-  free(ctx_->msg_);
-  free(ctx_);
+  free(ctx_->buffer_); ctx_->buffer_ = NULL;
+  free(ctx_->msg_); ctx_->msg_ = NULL;
+  free(ctx_); ctx_ = NULL;
 
   log_(INFO, "done.")
   return 0;
@@ -145,6 +145,7 @@ int IBServer::on_completion(struct ibv_wc* wc_)
         if (msg_recv_cb)
           msg_recv_cb(size, msg_);
         
+        free(msg_); msg_ = NULL;
         recv_state = HEADER_RECV;
       }
       else if (data_t == RDMA_DATA) {
@@ -169,8 +170,9 @@ int IBServer::on_completion(struct ibv_wc* wc_)
           // connector_->rc_disconnect(id_); // this causes double free corruption error on ib_client
           
           recv_state = HEADER_RECV;
-          data_id_ = NULL;
-          data_to_recv_ = NULL;
+          free(data_id_); data_id_ = NULL;
+          // free(data_to_recv_); data_to_recv_ = NULL; // done in data_recv_cb
+          free(data_size_); data_size_ = NULL;
         }
       }
     }
@@ -220,7 +222,7 @@ int IBServer::proc_header(char* header_)
     
     data_size_recved = 0;
     data_size_to_recv = atoi(data_size_);
-    free(data_size_);
+    free(data_size_); data_size_ = NULL;
     data_to_recv_ = malloc(data_size_to_recv);
   }
   

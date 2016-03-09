@@ -321,8 +321,9 @@ void SDMNode::handle_join_reply(std::map<std::string, std::string> msg_map)
     int from_id = boost::lexical_cast<int>(msg_map["id"] );
     
     if (msg_map["node_type"].compare("m") == 0) {
-      if (sdm_master_id != -1)
+      if (sdm_master_id != -1) {
         log_(WARNING, "from_id= " << from_id << " overwriting sdm_master_id= " << sdm_master_id)
+      }
       sdm_master_id = from_id;
     }
     std::string from_lip = msg_map["lip"];
@@ -353,25 +354,27 @@ void SDMNode::handle_join_reply(std::map<std::string, std::string> msg_map)
         std::string ppeer_lip = msg_map["lip_" + key_tail_str];
         int ppeer_lport = boost::lexical_cast<int>(msg_map["lport_" + key_tail_str] );
         
-        if (commer.connect_send_to(ppeer_lip, ppeer_lport, *gen_join_req() ) )
+        if (commer.connect_send_to(ppeer_lip, ppeer_lport, *gen_join_req() ) ) {
           log_(ERROR, "commer.connect_send_to failed for join; ppeer_lip= " << ppeer_lip << ", ppeer_lport= " << ppeer_lport)
-        
+        }
         count++;
       }
     }
   }
-  else
+  else {
     log_(INFO, "could not join :(")
+  }
 }
 
 void SDMNode::handle_join_nack(std::map<std::string, std::string> msg_map)
 {
+  log_(INFO, "msg_map= \n" << patch::map_to_str<>(msg_map) )
   int from_id = boost::lexical_cast<int>(msg_map["id"] );
   // With join_req recved, we connected to it, now we learned things did not work out on the other side
-  if (commer.rm_peer(from_id) )
+  if (commer.rm_peer(from_id) ) {
     log_(ERROR, "commer.rm_peer failed; peer_id= " << from_id)
-  
-  log_(INFO, "commer= \n" << commer.to_str() )
+  }
+  // log_(INFO, "commer= \n" << commer.to_str() )
 }
 
 void SDMNode::handle_ping(std::map<std::string, std::string> msg_map)

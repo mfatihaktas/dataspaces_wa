@@ -129,8 +129,8 @@ void TCPServer::init_recv(boost::shared_ptr<boost::asio::ip::tcp::socket>& socke
     log_(INFO, "server= " << server_name << ", data_id_= " << data_id_ << ", data_size_= " << data_size_)
     int data_size = boost::lexical_cast<int>(data_size_);
     
-    free(data_id_);
-    free(data_size_);
+    free(data_id_); data_id_ = NULL;
+    free(data_size_); data_size_ = NULL;
     
     int total_to_recv_size = data_size;
     while (!closed) {

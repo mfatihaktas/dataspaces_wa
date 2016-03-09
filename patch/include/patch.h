@@ -19,8 +19,10 @@ namespace patch {
     va_list arguments;                     // A place to store the list of arguments
 
     va_start(arguments, num);           // Initializing arguments to store all values after num
-    for (int x = 0; x < num; x++)        // Loop all
-      free(va_arg(arguments, T*) );
+    for (int x = 0; x < num; x++) {       // Loop all
+      T* arg_ = va_arg(arguments, T*);
+      free(arg_); arg_ = NULL;
+    }
     va_end(arguments);                  // Cleans up the list
   };
   

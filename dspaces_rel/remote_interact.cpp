@@ -53,7 +53,7 @@ int RFPManager::wa_put(std::string lip, std::string lport, std::string tmpfs_dir
   
   std::string data_id = patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_);
   return_if_err(trans_->init_put(lip, lport, tmpfs_dir, data_type, data_id, data_length, data_), err, free(data_);)
-  free(data_);
+  free(data_); data_ = NULL;
   // 
   log_(INFO, "done; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
   return 0;
@@ -80,8 +80,7 @@ int RFPManager::wa_get(std::string lip, std::string lport, std::string tmpfs_dir
     return 1;
   }
   
-  free(data_id__data_map[data_id] );
-  
+  free(data_id__data_map[data_id] ); data_id__data_map[data_id] = NULL;
   data_id__data_map.del(data_id);
   data_id__recved_size_map.del(data_id);
   // rfp_syncer.notify(patch_sdm::hash_str(patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_) ) );
@@ -130,6 +129,8 @@ void RFPManager::handle_recv(std::string data_id, uint64_t data_size, void* data
   memcpy(data_t_ + recved_size, data_, data_size);
   
   data_id__recved_size_map[data_id] += data_size;
+  
+  free(data_); data_ = NULL;
 }
 
 /********************************************  RIManager  *****************************************/
@@ -228,9 +229,9 @@ void RIManager::handle_get(bool blocking, int cl_id, std::map<std::string, std::
       // Note: If an app local-peer to SDMMaster initiated this get and data is put by another local-peer, 
       // add_access should not be called.
       // Note: add_access will be done by the SDMMaster upon recving SDM_SQUERY for early start of prefetching
-      if (sdm_slave_->add_access(cl_id, key, ver, lb_, ub_) ) {
-        log_(ERROR, "sdm_slave_->add_access failed; c_id= " << cl_id << ", " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
-      }
+      // if (sdm_slave_->add_access(cl_id, key, ver, lb_, ub_) ) {
+      //   log_(ERROR, "sdm_slave_->add_access failed; c_id= " << cl_id << ", " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
+      // }
     }
   }
   if (lsdm_node_->send_msg(cl_id, PACKET_RIMSG, get_map) ) {
@@ -369,6 +370,7 @@ int RIManager::remote_get(std::map<std::string, std::string> msg_map)
   
   if (sdm_slave_->put(false, key, ver, lb_, ub_, REMOTE_P_ID) ) {
     log_(ERROR, "sdm_slave_->put failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
+    return 1;
   }
   else
     data_id_hash__data_info_map[patch_sdm::hash_str(patch_sdm::get_data_id(data_id_t, key, ver, lb_, ub_) ) ] =
@@ -415,8 +417,15 @@ void RIManager::remote_put(std::map<std::string, std::string> msg_map)
     ri_syncer.del_sync_point(sync_point);
     log_(INFO, "done waiting for RI_REPEAT_TRANS_REPLY; data_id= " << data_id)
     
-    err = rfp_manager_->wa_put(trans_info_->lip, trans_info_->lport, trans_info_->tmpfs_dir,
-                               key, ver, data_info_->data_type, data_info_->size, ndim, data_info_->gdim_, lb_, ub_);
+    if (msg_map.count("repeat") == 0) {
+      log_(INFO, "apparently trans was successful, will not repeat; data_id= " << data_id)
+      break;
+    }
+    else {
+      log_(INFO, "indeed trans was failure, will repeat; data_id= " << data_id)
+      err = rfp_manager_->wa_put(trans_info_->lip, trans_info_->lport, trans_info_->tmpfs_dir,
+                                 key, ver, data_info_->data_type, data_info_->size, ndim, data_info_->gdim_, lb_, ub_);
+    }
   }
   
   // Note: To resolve unexpected data_size and data_id received by the tcp_server.
@@ -473,8 +482,20 @@ void RIManager::handle_repeat_trans(std::map<std::string, std::string> msg_map)
   data_id__remote_get_t_map[data_id].reset();
   data_id__remote_get_t_map.del(data_id);
   
-  // boost::thread t(&RIManager::remote_get, this, msg_map);
-  data_id__remote_get_t_map[data_id] = boost::make_shared<boost::thread>(&RIManager::remote_get, this, msg_map);
+  int ndim;
+  std::string key;
+  unsigned ver;
+  uint64_t* gdim_, *lb_, *ub_;
+  return_err_if_ret_cond_flag(msg_coder.decode_msg_map(msg_map, ndim, key, ver, lb_, ub_), err, !=, 0,)
+  rfp_manager_->wait_for_get(key, ver, lb_, ub_);
+  if (sdm_slave_->query(key, ver, lb_, ub_) ) {
+    log_(INFO, "requires repeat indeed; data_id= " << data_id)
+    msg_map["repeat"] = "";
+    data_id__remote_get_t_map[data_id] = boost::make_shared<boost::thread>(&RIManager::remote_get, this, msg_map);
+  }
+  else {
+    log_(INFO, "does not require repeat; data_id= " << data_id)
+  }
   
   msg_map["type"] = RI_REPEAT_TRANS_REPLY;
   return_err_if_ret_cond_flag(sdm_slave_->send_rimsg(boost::lexical_cast<int>(msg_map["id"] ), msg_map), err, !=, 0,)

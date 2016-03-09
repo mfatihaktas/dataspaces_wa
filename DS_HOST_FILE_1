@@ -1,14 +1,7 @@
 # hosts to run ds on
-  dell21 slots=16 max_slots=16
-  dell22 slots=16 max_slots=16
-  dell23 slots=16 max_slots=16
-  dell24 slots=16 max_slots=16
-  dell25 slots=16 max_slots=16
-  dell26 slots=16 max_slots=16
-  dell27 slots=16 max_slots=16
-  dell28 slots=16 max_slots=16
-  dell29 slots=16 max_slots=16
-  dell30 slots=16 max_slots=16
-  dell31 slots=16 max_slots=16
-  dell32 slots=16 max_slots=16
+  dell12 slots=16 max_slots=16
+  dell13 slots=16 max_slots=16
+  dell14 slots=16 max_slots=16
+  dell15 slots=16 max_slots=16
+  dell16 slots=16 max_slots=16
   
