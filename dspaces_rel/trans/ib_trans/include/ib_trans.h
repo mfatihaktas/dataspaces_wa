@@ -22,11 +22,11 @@ class IBTrans {
     
     // void init_server(const char* lport_, ib_data_recv_cb_func data_recv_cb, ib_msg_recv_cb_func msg_recv_cb = 0);
     void init_server(std::string data_type, const char* lport_,
-                     std::string recv_id, ib_data_recv_cb_func data_recv_cb);
+                     std::string recv_id, ib_data_recv_cb_func data_recv_cb, ib_msg_recv_cb_func msg_recv_cb = 0);
     // void init_client(const char* s_lip_, const char* s_lport_,
     //                 std::string data_id, uint64_t data_size, void* data_);
     int init_client(const char* s_lip_, const char* s_lport_,
-                    std::string data_type, int data_length, void* data_);
+                    std::string data_type, std::string data_id, uint64_t data_length, void* data_);
 };
 
 #endif // _IB_TRANS_H_

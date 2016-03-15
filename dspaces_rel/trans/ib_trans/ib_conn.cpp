@@ -68,8 +68,12 @@ Connector::Connector(IBEnd* ib_end_)
 }
 
 Connector::~Connector() {
+  for (std::vector<pthread_t*>::iterator it = pthread_v.begin(); it != pthread_v.end(); it++) {
+    pthread_join(**it, NULL);
+    delete *it;
+  }
+  
   log_(INFO, "destructed.")
-  // delete wrap_;
 }
 
 struct ibv_pd* Connector::get_pd_() { return s_ctx_->pd_; }

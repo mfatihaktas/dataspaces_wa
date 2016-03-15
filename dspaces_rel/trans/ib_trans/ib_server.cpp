@@ -72,13 +72,15 @@ int IBServer::post_receive(struct rdma_cm_id* id_)
 int IBServer::on_pre_conn(struct rdma_cm_id* id_)
 {
   int err;
-  struct conn_context* ctx_ = (struct conn_context*)malloc(sizeof(struct conn_context) );
-
+  struct conn_context* ctx_;
+  return_err_if_ret_cond_flag((struct conn_context*)malloc(sizeof(struct conn_context) ), ctx_, ==, 0, ENOMEM)
+  return_err_if_ret_cond_flag(malloc(BUFFER_SIZE), ctx_->buffer_, ==, 0, ENOMEM)
+  
   id_->context = ctx_;
-
+  
   posix_memalign((void **)&ctx_->buffer_, sysconf(_SC_PAGESIZE), BUFFER_SIZE);
   TEST_Z(ctx_->buffer_mr_ = ibv_reg_mr(connector_->get_pd_(), ctx_->buffer_, BUFFER_SIZE, IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE) );
-
+  
   posix_memalign((void **)&ctx_->msg_, sysconf(_SC_PAGESIZE), sizeof(*ctx_->msg_) );
   TEST_Z(ctx_->msg_mr_ = ibv_reg_mr(connector_->get_pd_(), ctx_->msg_, sizeof(*ctx_->msg_), IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE) );
   
@@ -172,7 +174,6 @@ int IBServer::on_completion(struct ibv_wc* wc_)
           recv_state = HEADER_RECV;
           free(data_id_); data_id_ = NULL;
           // free(data_to_recv_); data_to_recv_ = NULL; // done in data_recv_cb
-          free(data_size_); data_size_ = NULL;
         }
       }
     }

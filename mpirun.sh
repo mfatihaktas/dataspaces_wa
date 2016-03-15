@@ -33,18 +33,11 @@ if [ -n "$DELL" ]; then
   dell15 slots=16 max_slots=16
   dell16 slots=16 max_slots=16
   " > DS_HOST_FILE_1
-  # echo "# hosts to run apps on
-  # dell01 slots=16 max_slots=16
-  # dell02 slots=16 max_slots=16
-  # # dell03 slots=16 max_slots=16
-  # dell04 slots=16 max_slots=16
-  # dell05 slots=16 max_slots=16
-  # dell06 slots=16 max_slots=16
-  # dell07 slots=16 max_slots=16
-  # dell08 slots=16 max_slots=16
-  # dell09 slots=16 max_slots=16
-  # dell10 slots=16 max_slots=16
-  # " > APP_HOST_FILE
+  echo "# hosts to run apps on
+  dell04 slots=16 max_slots=16
+  dell05 slots=16 max_slots=16
+  dell06 slots=16 max_slots=16
+  " > APP_HOST_FILE
   
   DS_NODES=""
   # For site 0
@@ -90,8 +83,16 @@ if [ -n "$DELL" ]; then
   done
   echo "GETTER_NODES= $GETTER_NODES"
   
-  # PUTTER_NODES="dell01,dell02,dell03,dell04,dell05"
-  # GETTER_NODES="dell06,dell07,dell08,dell09,dell10"
+  # APP_NODES=""
+  # BEGIN_ANODE_ID=4
+  # END_ANODE_ID=$(($BEGIN_ANODE_ID + 2))
+  # for i in `seq $BEGIN_ANODE_ID $END_ANODE_ID`; do
+  #   STR=""
+  #   [ "$i" -lt 10 ] && STR+="0"
+  #   APP_NODES+="dell$STR$i"
+  #   [ "$i" -lt $END_ANODE_ID ] && APP_NODES+=","
+  # done
+  # echo "APP_NODES= $APP_NODES"
   
   LCONTROL_LINTF="em2"
   APP_JOIN_LCONTROL_LIP_LIST=( "192.168.2.151" "192.168.2.152" )
@@ -106,7 +107,7 @@ RI_LCONTROL_LPORT_LIST=( 8000 9000 )
 PKILL=/usr/bin/pkill
 
 if [ -z "$2" ]; then
-echo "Which site [0, *]?"
+  echo "Which site [0, *]?"
 elif [[ $1  == 's' || $1  == 'ds' ]]; then
   [ $2 = 0 ] && rm *.log
   [ -a conf ] && rm srv.lck conf dataspaces.conf
@@ -136,13 +137,14 @@ elif [[ $1 == 'map' || $1 == 'dmap' || $1 == 'mag' || $1 == 'dmag' ]]; then
   [[ $1 == 'dmap' || $1 == 'dmag' ]] && GDB="xterm -e gdb --args"
   
   export GLOG_logtostderr=1
-  # This causes dspaces_put/get block mpi processes
+  # Note: This causes dspaces_put/get block mpi processes
   # LOG_F="$1.log"
-  # $MPIRUN -x LD_LIBRARY_PATH -x GLOG_logtostderr --hostfile APP_HOST_FILE -n $NUM_CLIENT --byslot $GDB \
+  # $MPIRUN -x LD_LIBRARY_PATH -x GLOG_logtostderr --hostfile APP_HOST_FILE -n $NUM_CLIENT --bynode $GDB \
   #   ./mput_mget_test --type=$TYPE --cl_id=0 --base_client_id=$(($2*$NUM_CLIENT)) \
   #                   --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=${RI_LCONTROL_LPORT_LIST[$2] } \
   #                   --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2] } --join_lcontrol_lport=${RI_LCONTROL_LPORT_LIST[$2] } \
-  #                   --num_putget=$NUM_PUTGET > $LOG_F 2>&1 < /dev/null &
+  #                   --num_putget=$NUM_PUTGET < /dev/null 2>&1 | tee $LOG_F & # > $LOG_F 2>&1 < /dev/null &
+  
   NODES=$PUTTER_NODES
   [[ $1 = 'mag' || $1 = 'dmag' ]] && NODES=$GETTER_NODES
   NODE_LIST=(${NODES//,/ } )
@@ -173,6 +175,10 @@ elif [ $1  = 'k' ]; then
   for NODE in "${NODE_LIST[@]}"; do
     $MPIRUN -npernode 1 -host $NODE $PKILL -f mput_mget_test
   done
+  # NODE_LIST=(${APP_NODES//,/ } )
+  # for NODE in "${NODE_LIST[@]}"; do
+  #   $MPIRUN -npernode 1 -host $NODE $PKILL -f mput_mget_test
+  # done
 else
   echo "Argument did not match!"
 fi

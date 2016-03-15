@@ -25,7 +25,7 @@ const int IB_MAX_DATA_SIZE_LENGTH = 15;
 const int IB_MAX_MSG_LENGTH = 100;
 // 
 const int TIMEOUT_IN_MS = 500; 
-const uint64_t BUFFER_SIZE = 1024*1024*1024; // 10*1024*1024;
+const uint64_t BUFFER_SIZE = 10*1024*1024;
 const uint64_t MAX_QP__CQ_LENGTH = 100;
 
 struct context {

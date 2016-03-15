@@ -23,7 +23,11 @@
 
 void rc_die(const char *reason);
 
-const size_t BUFFER_LENGTH = 10*1024*1024;
+const char HEADER_DELIMITER = '#';
+
+const int IB_MAX_CHUNK_ID_LENGTH = 20;
+const int IB_CHUNK_LENGTH = 10*1024*1024;
+
 const size_t MAX_QP__CQ_LENGTH = 100;
 
 struct context {

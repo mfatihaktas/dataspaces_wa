@@ -156,6 +156,15 @@ int SDMSlave::get(int app_id, bool blocking, std::string key, unsigned int ver, 
   return 0;
 }
 
+int SDMSlave::stop_get(std::string data_id)
+{
+  unsigned int sync_point = patch_sdm::hash_str(SDM_SQUERY + "_" + data_id);
+  sdm_s_syncer.notify(sync_point);
+  
+  log_(INFO, "done; data_id= " << data_id)
+  return 0;
+}
+
 int SDMSlave::query(std::string key, unsigned int ver, COOR_T* lcoor_, COOR_T* ucoor_)
 {
   int err;

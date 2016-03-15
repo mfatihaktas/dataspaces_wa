@@ -16,11 +16,11 @@ MPBuffer::MPBuffer(int ds_id, int max_num_key_ver, PALGO_T palgo_t,
   else if (palgo_t == MALGO_W_PO)
     palgo_to_pick_app_ = boost::make_shared<POAlgo>();
   else if (palgo_t == MPALGO_W_MC) {
-    std::vector<malgo_t__context_size_pair> malgo_t__context_size_v;
-    malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 3) );
-    malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 4) );
+    std::vector<palgo_t__context_size_pair> palgo_t__context_size_v;
+    palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 3) );
+    palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 4) );
     
-    palgo_to_pick_app_ = boost::make_shared<MMPAlgo>(malgo_t__context_size_v);
+    palgo_to_pick_app_ = boost::make_shared<MMPAlgo>(palgo_t__context_size_v);
   }
   else {
     log_(ERROR, "unknown palgo_t= " << palgo_t)

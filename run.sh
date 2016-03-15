@@ -70,7 +70,7 @@ TCP_LPORT=6000
 GFTP_LPORT=6000
 
 TRANS_PROTOCOL="i" # "t" # "i" # "g"
-W_PREFETCH=1
+W_PREFETCH=0
 
 if [ $1 = 's' ]; then
   [ -a conf ] && rm srv.lck conf dataspaces.conf rm *.log

@@ -1,8 +1,7 @@
 #ifndef _PREFETCH_H_
 #define _PREFETCH_H_
 
-#include "markov.h"
-#include "sfc.h"
+#include "palgo.h"
 
 /********************************************  Cache  **********************************************/
 template <typename ACC_T, typename T>

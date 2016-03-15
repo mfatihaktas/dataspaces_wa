@@ -501,15 +501,15 @@ void test_malgo()
   // // std::cout << "parse_tree_to_pstr= \n" << po_algo_->parse_tree_to_pstr() << "\n";
   // std::cout << "accuracy_seq= \n" << patch::vec_to_str<char>(accuracy_v) << "\n";
   
-  std::vector<malgo_t__context_size_pair> malgo_t__context_size_v;
-  // malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_LZ, 0) );
-  // malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PO, 0) );
-  // malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 1) );
-  malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 2) );
-  malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 4) );
+  std::vector<palgo_t__context_size_pair> palgo_t__context_size_v;
+  // palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_LZ, 0) );
+  // palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PO, 0) );
+  // palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 1) );
+  palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 2) );
+  palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 4) );
   
-  std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.2)(0.2)(0.2)(0.2)(0.2);
-  boost::shared_ptr<MPAlgo> wmmalgo_ = boost::make_shared<WMPAlgo>(malgo_t__context_size_v, malgo_id__weight_v);
+  std::vector<float> palgo_id__weight_v = boost::assign::list_of(0.2)(0.2)(0.2)(0.2)(0.2);
+  boost::shared_ptr<MPAlgo> wmmalgo_ = boost::make_shared<WMPAlgo>(palgo_t__context_size_v, palgo_id__weight_v);
   float wmmalgo_hit_rate;
   accuracy_v.clear();
   sim_prefetch_accuracy<MPAlgo>(*wmmalgo_, cache_size, acc_step_v, wmmalgo_hit_rate, accuracy_v);
@@ -517,7 +517,7 @@ void test_malgo()
             << "hit_rate= " << wmmalgo_hit_rate << "\n";
   // std::cout << "accuracy_seq= \n" << patch::vec_to_str<char>(accuracy_v) << "\n";
   
-  boost::shared_ptr<MPAlgo> mmmalgo_ = boost::make_shared<MMPAlgo>(malgo_t__context_size_v);
+  boost::shared_ptr<MPAlgo> mmmalgo_ = boost::make_shared<MMPAlgo>(palgo_t__context_size_v);
   float mmmalgo_hit_rate;
   accuracy_v.clear();
   sim_prefetch_accuracy<MPAlgo>(*mmmalgo_, cache_size, acc_step_v, mmmalgo_hit_rate, accuracy_v);
@@ -525,7 +525,7 @@ void test_malgo()
             << "hit_rate= " << mmmalgo_hit_rate << "\n";
   // std::cout << "accuracy_seq= \n" << patch::vec_to_str<char>(accuracy_v) << "\n";
   
-  boost::shared_ptr<MPAlgo> bmmalgo_ = boost::make_shared<BMPAlgo>(malgo_t__context_size_v, 4);
+  boost::shared_ptr<MPAlgo> bmmalgo_ = boost::make_shared<BMPAlgo>(palgo_t__context_size_v, 4);
   float bmmalgo_hit_rate;
   accuracy_v.clear();
   sim_prefetch_accuracy<MPAlgo>(*bmmalgo_, cache_size, acc_step_v, bmmalgo_hit_rate, accuracy_v);
@@ -569,14 +569,14 @@ void test_bmmalgo()
   int cache_size = 1;
   std::vector<char> accuracy_v;
   
-  std::vector<malgo_t__context_size_pair> malgo_t__context_size_v;
-  malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_LZ, 0) );
-  malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PO, 0) );
-  malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 1) );
-  malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 2) );
-  malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 4) );
+  std::vector<palgo_t__context_size_pair> palgo_t__context_size_v;
+  palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_LZ, 0) );
+  palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PO, 0) );
+  palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 1) );
+  palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 2) );
+  palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 4) );
   
-  boost::shared_ptr<MPAlgo> bmmalgo_ = boost::make_shared<BMPAlgo>(malgo_t__context_size_v, 10);
+  boost::shared_ptr<MPAlgo> bmmalgo_ = boost::make_shared<BMPAlgo>(palgo_t__context_size_v, 10);
   float bmmalgo_hit_rate;
   accuracy_v.clear();
   sim_prefetch_accuracy<MPAlgo>(*bmmalgo_, cache_size, acc_step_v, bmmalgo_hit_rate, accuracy_v);
@@ -709,22 +709,22 @@ void test_fixed_train()
   // palgo_v.push_back(boost::make_shared<PPMAlgo>(10) );
   // title_v.push_back("ppm order 10");
   
-    std::vector<malgo_t__context_size_pair> malgo_t__context_size_v;
-  // malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_LZ, 0) );
-  // malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 1) );
-  malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 2) );
-  malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 4) );
+    std::vector<palgo_t__context_size_pair> palgo_t__context_size_v;
+  // palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_LZ, 0) );
+  // palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 1) );
+  palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 2) );
+  palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 4) );
   
-  // std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.2)(0.2)(0.2)(0.2)(0.2);
-  // std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.25)(0.25)(0.25)(0.25);
-  std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.5)(0.5);
-  palgo_v.push_back(boost::make_shared<WMPAlgo>(malgo_t__context_size_v, malgo_id__weight_v) );
+  // std::vector<float> palgo_id__weight_v = boost::assign::list_of(0.2)(0.2)(0.2)(0.2)(0.2);
+  // std::vector<float> palgo_id__weight_v = boost::assign::list_of(0.25)(0.25)(0.25)(0.25);
+  std::vector<float> palgo_id__weight_v = boost::assign::list_of(0.5)(0.5);
+  palgo_v.push_back(boost::make_shared<WMPAlgo>(palgo_t__context_size_v, palgo_id__weight_v) );
   title_v.push_back("mixed-blended");
   
-  palgo_v.push_back(boost::make_shared<MMPAlgo>(malgo_t__context_size_v) );
+  palgo_v.push_back(boost::make_shared<MMPAlgo>(palgo_t__context_size_v) );
   title_v.push_back("mixed-most confident");
   
-  palgo_v.push_back(boost::make_shared<BMPAlgo>(malgo_t__context_size_v, 4) );
+  palgo_v.push_back(boost::make_shared<BMPAlgo>(palgo_t__context_size_v, 4) );
   title_v.push_back("mixed-best wnd 4");
   
   int num_algo = palgo_v.size();
@@ -829,7 +829,6 @@ void check_acc_step_v(std::vector<acc_step_pair> acc_step_v)
 void test_rand_shuffle_train()
 {
   std::vector<std::string> title_v;
-  
   std::vector<boost::shared_ptr<PAlgo> > palgo_v;
   palgo_v.push_back(boost::make_shared<LZAlgo>() );
   title_v.push_back("lz");
@@ -848,23 +847,23 @@ void test_rand_shuffle_train()
   // palgo_v.push_back(boost::make_shared<PPMAlgo>(8) );
   // title_v.push_back("ppm order 8");
   
-  std::vector<malgo_t__context_size_pair> malgo_t__context_size_v;
-  // malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_LZ, 0) );
-  // malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 1) );
-  malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 3) );
-  malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 4) );
-  // malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 8) );
+  std::vector<palgo_t__context_size_pair> palgo_t__context_size_v;
+  // palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_LZ, 0) );
+  // palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 1) );
+  palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 3) );
+  palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 4) );
+  // palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 8) );
   
-  // std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.2)(0.2)(0.2)(0.2)(0.2);
-  // std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.25)(0.25)(0.25)(0.25);
-  std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.5)(0.5);
-  // palgo_v.push_back(boost::make_shared<WMPAlgo>(malgo_t__context_size_v, malgo_id__weight_v) );
+  // std::vector<float> palgo_id__weight_v = boost::assign::list_of(0.2)(0.2)(0.2)(0.2)(0.2);
+  // std::vector<float> palgo_id__weight_v = boost::assign::list_of(0.25)(0.25)(0.25)(0.25);
+  std::vector<float> palgo_id__weight_v = boost::assign::list_of(0.5)(0.5);
+  // palgo_v.push_back(boost::make_shared<WMPAlgo>(palgo_t__context_size_v, palgo_id__weight_v) );
   // title_v.push_back("mixed-blended");
   
-  palgo_v.push_back(boost::make_shared<MMPAlgo>(malgo_t__context_size_v) );
+  palgo_v.push_back(boost::make_shared<MMPAlgo>(palgo_t__context_size_v) );
   title_v.push_back("mixed-most confident");
   
-  // palgo_v.push_back(boost::make_shared<BMPAlgo>(malgo_t__context_size_v, 4) );
+  // palgo_v.push_back(boost::make_shared<BMPAlgo>(palgo_t__context_size_v, 4) );
   // title_v.push_back("mixed-best wnd 4");
   
   int num_algo = palgo_v.size();
@@ -972,7 +971,6 @@ void test_rand_shuffle_train_w_varying_cache()
 {
   std::vector<int> cache_size_v;
   std::vector<std::string> title_v;
-  
   std::vector<boost::shared_ptr<PAlgo> > palgo_v;
   // palgo_v.push_back(boost::make_shared<LZAlgo>() );
   // title_v.push_back("lz");
@@ -991,36 +989,36 @@ void test_rand_shuffle_train_w_varying_cache()
   // palgo_v.push_back(boost::make_shared<PPMAlgo>(4) );
   // title_v.push_back("ppm order 4");
   
-  std::vector<malgo_t__context_size_pair> malgo_t__context_size_v;
-  // malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_LZ, 0) );
-  // malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 1) );
-  malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 3) );
-  malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 4) );
-  // malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 8) );
+  std::vector<palgo_t__context_size_pair> palgo_t__context_size_v;
+  // palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_LZ, 0) );
+  // palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 1) );
+  palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 3) );
+  palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 4) );
+  // palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 8) );
   
-  // std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.2)(0.2)(0.2)(0.2)(0.2);
-  // std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.25)(0.25)(0.25)(0.25);
-  std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.5)(0.5);
-  // palgo_v.push_back(boost::make_shared<WMPAlgo>(malgo_t__context_size_v, malgo_id__weight_v) );
+  // std::vector<float> palgo_id__weight_v = boost::assign::list_of(0.2)(0.2)(0.2)(0.2)(0.2);
+  // std::vector<float> palgo_id__weight_v = boost::assign::list_of(0.25)(0.25)(0.25)(0.25);
+  std::vector<float> palgo_id__weight_v = boost::assign::list_of(0.5)(0.5);
+  // palgo_v.push_back(boost::make_shared<WMPAlgo>(palgo_t__context_size_v, palgo_id__weight_v) );
   // title_v.push_back("mixed-blended");
   
-  palgo_v.push_back(boost::make_shared<MMPAlgo>(malgo_t__context_size_v) );
+  palgo_v.push_back(boost::make_shared<MMPAlgo>(palgo_t__context_size_v) );
   cache_size_v.push_back(1);
   title_v.push_back("mixed-most confident cache 1");
-  palgo_v.push_back(boost::make_shared<MMPAlgo>(malgo_t__context_size_v) );
+  palgo_v.push_back(boost::make_shared<MMPAlgo>(palgo_t__context_size_v) );
   cache_size_v.push_back(4);
   title_v.push_back("mixed-most confident cache 4");
-  palgo_v.push_back(boost::make_shared<MMPAlgo>(malgo_t__context_size_v) );
+  palgo_v.push_back(boost::make_shared<MMPAlgo>(palgo_t__context_size_v) );
   cache_size_v.push_back(10);
   title_v.push_back("mixed-most confident cache 10");
-  palgo_v.push_back(boost::make_shared<MMPAlgo>(malgo_t__context_size_v) );
+  palgo_v.push_back(boost::make_shared<MMPAlgo>(palgo_t__context_size_v) );
   cache_size_v.push_back(15);
   title_v.push_back("mixed-most confident cache 15");
-  palgo_v.push_back(boost::make_shared<MMPAlgo>(malgo_t__context_size_v) );
+  palgo_v.push_back(boost::make_shared<MMPAlgo>(palgo_t__context_size_v) );
   cache_size_v.push_back(20);
   title_v.push_back("mixed-most confident cache 20");
   
-  // palgo_v.push_back(boost::make_shared<BMPAlgo>(malgo_t__context_size_v, 4) );
+  // palgo_v.push_back(boost::make_shared<BMPAlgo>(palgo_t__context_size_v, 4) );
   // title_v.push_back("mixed-best wnd 4");
   
   int num_algo = palgo_v.size();
@@ -1120,7 +1118,6 @@ void test_rand_shuffle_train_w_varying_cache()
 void plot_hit_rate_vs_cache_size()
 {
   std::vector<std::string> title_v;
-  
   std::vector<boost::shared_ptr<PAlgo> > palgo_v;
   palgo_v.push_back(boost::make_shared<LZAlgo>() );
   title_v.push_back("lz");
@@ -1135,23 +1132,23 @@ void plot_hit_rate_vs_cache_size()
   palgo_v.push_back(boost::make_shared<PPMAlgo>(4) );
   title_v.push_back("ppm order 4");
   
-  std::vector<malgo_t__context_size_pair> malgo_t__context_size_v;
-  // malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_LZ, 0) );
-  // malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 1) );
-  malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 3) );
-  malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 4) );
-  // malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 8) );
+  std::vector<palgo_t__context_size_pair> palgo_t__context_size_v;
+  // palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_LZ, 0) );
+  // palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 1) );
+  palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 3) );
+  palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 4) );
+  // palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 8) );
   
-  // std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.2)(0.2)(0.2)(0.2)(0.2);
-  // std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.25)(0.25)(0.25)(0.25);
-  std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.5)(0.5);
-  // palgo_v.push_back(boost::make_shared<WMPAlgo>(malgo_t__context_size_v, malgo_id__weight_v) );
+  // std::vector<float> palgo_id__weight_v = boost::assign::list_of(0.2)(0.2)(0.2)(0.2)(0.2);
+  // std::vector<float> palgo_id__weight_v = boost::assign::list_of(0.25)(0.25)(0.25)(0.25);
+  std::vector<float> palgo_id__weight_v = boost::assign::list_of(0.5)(0.5);
+  // palgo_v.push_back(boost::make_shared<WMPAlgo>(palgo_t__context_size_v, palgo_id__weight_v) );
   // title_v.push_back("mixed-blended");
   
-  palgo_v.push_back(boost::make_shared<MMPAlgo>(malgo_t__context_size_v) );
+  palgo_v.push_back(boost::make_shared<MMPAlgo>(palgo_t__context_size_v) );
   title_v.push_back("mixed-most confident");
   
-  // palgo_v.push_back(boost::make_shared<BMPAlgo>(malgo_t__context_size_v, 4) );
+  // palgo_v.push_back(boost::make_shared<BMPAlgo>(palgo_t__context_size_v, 4) );
   // title_v.push_back("mixed-best wnd 4");
   
   int num_algo = palgo_v.size();
@@ -1236,7 +1233,6 @@ void plot_hit_rate_vs_cache_size()
 void plot_hit_rate_w_real()
 {
   std::vector<std::string> title_v;
-  
   std::vector<boost::shared_ptr<PAlgo> > palgo_v;
   palgo_v.push_back(boost::make_shared<LZAlgo>() );
   title_v.push_back("lz");
@@ -1251,23 +1247,23 @@ void plot_hit_rate_w_real()
   palgo_v.push_back(boost::make_shared<PPMAlgo>(4) );
   title_v.push_back("ppm order 4");
   
-  std::vector<malgo_t__context_size_pair> malgo_t__context_size_v;
-  // malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_LZ, 0) );
-  // malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 1) );
-  malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 3) );
-  malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 4) );
-  // malgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 8) );
+  std::vector<palgo_t__context_size_pair> palgo_t__context_size_v;
+  // palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_LZ, 0) );
+  // palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 1) );
+  palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 3) );
+  palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 4) );
+  // palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 8) );
   
-  // std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.2)(0.2)(0.2)(0.2)(0.2);
-  // std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.25)(0.25)(0.25)(0.25);
-  std::vector<float> malgo_id__weight_v = boost::assign::list_of(0.5)(0.5);
-  // palgo_v.push_back(boost::make_shared<WMPAlgo>(malgo_t__context_size_v, malgo_id__weight_v) );
+  // std::vector<float> palgo_id__weight_v = boost::assign::list_of(0.2)(0.2)(0.2)(0.2)(0.2);
+  // std::vector<float> palgo_id__weight_v = boost::assign::list_of(0.25)(0.25)(0.25)(0.25);
+  std::vector<float> palgo_id__weight_v = boost::assign::list_of(0.5)(0.5);
+  // palgo_v.push_back(boost::make_shared<WMPAlgo>(palgo_t__context_size_v, palgo_id__weight_v) );
   // title_v.push_back("mixed-blended");
   
-  palgo_v.push_back(boost::make_shared<MMPAlgo>(malgo_t__context_size_v) );
+  palgo_v.push_back(boost::make_shared<MMPAlgo>(palgo_t__context_size_v) );
   title_v.push_back("mixed-most confident");
   
-  // palgo_v.push_back(boost::make_shared<BMPAlgo>(malgo_t__context_size_v, 4) );
+  // palgo_v.push_back(boost::make_shared<BMPAlgo>(palgo_t__context_size_v, 4) );
   // title_v.push_back("mixed-best wnd 4");
   
   int num_algo = palgo_v.size();

@@ -22,7 +22,6 @@ class RFPManager { // Remote Fetch & Place
     patch::syncer<unsigned int> rfp_syncer;
     
     boost::mutex property_mtx;
-    int num_current_wa_put;
   public:
     RFPManager(DATA_ID_T data_id_t, std::string trans_protocol,
                std::string ib_lip, std::list<std::string> ib_lport_list,
@@ -43,7 +42,7 @@ class RFPManager { // Remote Fetch & Place
     int wa_get(std::string lip, std::string lport, std::string tmpfs_dir,
                std::string key, unsigned int ver, std::string data_type,
                int size, int ndim, uint64_t* gdim_, uint64_t* lb_, uint64_t* ub_);
-    int clean_up_retry(std::string data_id);
+    int clean_up_for_retry(std::string data_id);
     bool is_being_get(std::string key, unsigned int ver, uint64_t* lb_, uint64_t* ub_);
     int wait_for_get(std::string key, unsigned int ver, uint64_t* lb_, uint64_t* ub_);
     int notify_remote_get_done(std::string key, unsigned int ver, uint64_t* lb_, uint64_t* ub_);
@@ -68,6 +67,7 @@ const std::string RI_TINFO_QUERY_REPLY = "ri_tiqr";
 const std::string RI_GRIDFTP_PUT = "ri_gp";
 const std::string RI_REPEAT_TRANS = "ri_rt";
 const std::string RI_REPEAT_TRANS_REPLY = "ri_rtr";
+const std::string RI_FAIL_REMOTE_GET = "ri_frg";
 
 const int CL__RIMANAGER_MAX_MSG_SIZE = 1000;
 
@@ -102,9 +102,11 @@ class RIManager {
     boost::shared_ptr<DSDriver> ds_driver_;
     boost::shared_ptr<SDMNode> lsdm_node_; // Replacing bc_server--client
     boost::shared_ptr<RFPManager> rfp_manager_;
-    patch::thread_safe_map<int, boost::shared_ptr<trans_info> > ds_id__trans_info_map;
+    // patch::thread_safe_map<int, boost::shared_ptr<trans_info> > ds_id__trans_info_map;
+    patch::thread_safe_map<unsigned int, boost::shared_ptr<trans_info> > data_id_hash__trans_info_map;
     patch::thread_safe_map<unsigned int, boost::shared_ptr<data_info> > data_id_hash__data_info_map;
     patch::thread_safe_vector<std::string> busy_data_id_v;
+    patch::thread_safe_vector<std::string> failed_remote_get_data_id_v;
     
     patch::syncer<unsigned int> ri_syncer;
     
@@ -137,6 +139,7 @@ class RIManager {
     void handle_gridftp_put(std::map<std::string, std::string> msg_map);
     void handle_repeat_trans(std::map<std::string, std::string> msg_map);
     void handle_repeat_trans_reply(std::map<std::string, std::string> msg_map);
+    void handle_fail_remote_get(std::map<std::string, std::string> msg_map);
     
     void handle_dm_act(std::map<std::string, std::string> dm_act_map);
     void handle_dm_move(std::map<std::string, std::string> msg_map);

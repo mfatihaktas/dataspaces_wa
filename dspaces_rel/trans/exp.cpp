@@ -123,7 +123,7 @@ int main(int argc , char **argv)
 {
   int err;
   std::string temp;
-  google::InitGoogleLogging("exp");
+  google::InitGoogleLogging(argv[0] );
   // 
   struct timeval start_time;
   struct timeval end_time;
@@ -148,10 +148,9 @@ int main(int argc , char **argv)
     // int data_length = 4* 1024*1024*256;
     int data_length = 1024*1024*256; // 1024; //1024*1024*256;
     void* data_ = (void*)malloc(sizeof(DATA_T)*data_length);
-    
-    for (int i = 0; i < data_length; i++)
-      static_cast<DATA_T*>(data_)[i] = (DATA_T)i*1.2;
-    // 
+    // for (int i = 0; i < data_length; i++)
+    //   static_cast<DATA_T*>(data_)[i] = (DATA_T)i*1.2;
+
     return_if_err(gettimeofday(&start_time, NULL), err)
     trans.init_put(opt_map["s_lip"], opt_map["s_lport"], opt_map["tmpfs_dir"],
                    DATA_T_STR, "dummy", data_length, data_);

@@ -67,12 +67,17 @@ class TProfiler { // Time Profiler
     std::string to_str() {
       std::stringstream ss;
       
+      int num_dur = 0;
       float total_dur_sec = 0;
       for (typename std::map<T, Event>::iterator it = event_map.begin(); it != event_map.end(); it++) {
-        total_dur_sec += (it->second).get_dur_sec();
         ss << "\t" << (it->second).to_str() << "\n";
+        float dur = (it->second).get_dur_sec();
+        if (dur > 0) {
+          total_dur_sec += dur;
+          ++num_dur;
+        }
       }
-      ss << "\t" << "total_dur_sec= " << total_dur_sec << "\n";
+      ss << "\t total_dur_sec= " << total_dur_sec << ", avg_dur_sec= " << total_dur_sec / num_dur << "\n";
       
       return ss.str();
     }
@@ -80,10 +85,16 @@ class TProfiler { // Time Profiler
     std::string to_brief_str() {
       std::stringstream ss;
       
+      int num_dur = 0;
       float total_dur_sec = 0;
-      for (typename std::map<T, Event>::iterator it = event_map.begin(); it != event_map.end(); it++)
-        total_dur_sec += (it->second).get_dur_sec();
-      ss << "\t" << "total_dur_sec= " << total_dur_sec << "\n";
+      for (typename std::map<T, Event>::iterator it = event_map.begin(); it != event_map.end(); it++) {
+        float dur = (it->second).get_dur_sec();
+        if (dur > 0) {
+          total_dur_sec += dur;
+          ++num_dur;
+        }
+      }
+      ss << "\t total_dur_sec= " << total_dur_sec << ", avg_dur_sec= " << total_dur_sec / num_dur << "\n";
       
       return ss.str();
     }

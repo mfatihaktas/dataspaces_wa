@@ -23,8 +23,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
     if (c == -1) //Detect the end of the options.
       break;
     
-    switch (c)
-    {
+    switch (c) {
       case 0:
         opt_map["type"] = optarg;
         break;
@@ -112,7 +111,7 @@ int main(int argc, char **argv)
     // plot_hit_rate_vs_cache_size(); 
     // plot_hit_rate_w_real();
     // test_talgo();
-    plot_galgo_hit_rate_vs_stdev();
+    plot_talgo_hit_rate_vs_stdev();
     // test_gnuplot();
     
     log_(INFO, "exec(ls)= \n" << exec("ls") )
@@ -227,8 +226,9 @@ int main(int argc, char **argv)
     // wa_space.get(get_lcoor_, get_ucoor_, get_v);
     // std::cout << "main:: get_v= " << patch_sfc::vec_to_str<char>(get_v) << "\n";
   }
-  else
+  else {
     log_(ERROR, "unknown type= " << opt_map["type"] )
+  }
   
   return 0;
 }

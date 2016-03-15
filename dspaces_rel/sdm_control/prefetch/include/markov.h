@@ -17,7 +17,6 @@
 #include <boost/property_map/property_map.hpp>
 #include <boost/static_assert.hpp>
 
-#include "palgo.h"
 #include "patch_pre.h"
 
 // Definition of basic boost::graph properties
@@ -236,6 +235,14 @@ class Graph { // The graph base class template
 };
 
 // Note: has to change key type to whatever KEY_T set for ParseTree, making these properties template does not work with boost::property
+typedef char MALGO_T;
+const MALGO_T MALGO_W_LZ = 'l';
+const MALGO_T MALGO_W_ALZ = 'a';
+const MALGO_T MALGO_W_PPM = 'p';
+const MALGO_T MALGO_W_PO = 'o';
+// For convenience to use in MPBuffer constructer
+const MALGO_T MPALGO_W_MC = 'm'; // mixed-most confident
+
 typedef int KEY_T;
 #define PARSE_TREE_ROOT_KEY -2
 #define BACK_TO_ROOT_LEAF_KEY -1
@@ -252,13 +259,6 @@ struct Edge_Properties {
   KEY_T key;
 };
 
-typedef char PALGO_T;
-const PALGO_T MALGO_W_LZ = 'l';
-const PALGO_T MALGO_W_ALZ = 'a';
-const PALGO_T MALGO_W_PPM = 'p';
-const PALGO_T MALGO_W_PO = 'o';
-// For convenience to use in MPBuffer constructer
-const PALGO_T MPALGO_W_MC = 'm'; // mixed-most confident
 class ParseTree {
   typedef boost::adjacency_list<
     boost::setS, // disallow parallel edges
@@ -273,7 +273,7 @@ class ParseTree {
   typedef std::pair<adjacency_iter, adjacency_iter> adjacency_iter_pair_t;
   
   private:
-    PALGO_T malgo_t;
+    MALGO_T malgo_t;
     int context_size;
   
     Graph<Vertex_Properties, Edge_Properties> pt_graph;
@@ -286,7 +286,7 @@ class ParseTree {
     std::map<KEY_T, timeval> key__last_arr_tv_map;
     std::map<KEY_T, float> key__sum_arr_t_map;
   public:
-    ParseTree(PALGO_T malgo_t)
+    ParseTree(MALGO_T malgo_t)
     : malgo_t(malgo_t),
       pt_graph(),
       longest_phrase_length(0)
@@ -310,7 +310,7 @@ class ParseTree {
     }
     
     // Note: context_size matters only for PPM Algo
-    ParseTree(PALGO_T malgo_t, int context_size)
+    ParseTree(MALGO_T malgo_t, int context_size)
     : malgo_t(malgo_t), context_size(context_size),
       pt_graph(),
       longest_phrase_length(0)
@@ -349,7 +349,7 @@ class ParseTree {
       key__sum_arr_t_map.clear();
     }
     
-    PALGO_T get_malgo_t() { return malgo_t; }
+    MALGO_T get_malgo_t() { return malgo_t; }
     
     std::string to_str() { return pt_graph.to_str(); }
     
@@ -390,15 +390,21 @@ class ParseTree {
     
     int get_key_prob_map_for_prefetch(std::map<KEY_T, float>& key_prob_map)
     {
-      if (malgo_t == MALGO_W_LZ)
-        get_key_prob_map_for_prefetch_w_lz(key_prob_map);
-      else if (malgo_t == MALGO_W_ALZ)
-        get_key_prob_map_for_prefetch_w_lz(key_prob_map);
+      int err;
+      if (malgo_t == MALGO_W_LZ) {
+        return_if_err(get_key_prob_map_for_prefetch_w_lz(key_prob_map), err)
+      }
+      else if (malgo_t == MALGO_W_ALZ) {
+        return_if_err(get_key_prob_map_for_prefetch_w_lz(key_prob_map), err)
         // get_key_prob_map_for_prefetch_w_alz(key_prob_map);
-      else if (malgo_t == MALGO_W_PPM)
-        get_key_prob_map_for_prefetch_w_ppm(key_prob_map);
-      else if (malgo_t == MALGO_W_PO)
-        get_key_prob_map_for_prefetch_w_poisson(key_prob_map);
+      }
+      else if (malgo_t == MALGO_W_PPM) {
+        return_if_err(get_key_prob_map_for_prefetch_w_ppm(key_prob_map), err)
+      }
+      else if (malgo_t == MALGO_W_PO) {
+        return_if_err(get_key_prob_map_for_prefetch_w_poisson(key_prob_map), err)
+      }
+      return 0;
     }
     
     int add_access(KEY_T key)
@@ -639,6 +645,8 @@ class ParseTree {
       // log_(INFO, "cur= \n" << pt_graph.vertex_to_str(pt_graph.get_cur() ) )
       get_key_prob_map_for_prefetch_w_lz(key_prob_map);
       move_cur(false, pt_graph.get_root() );
+      
+      return 0;
     }
     
     int add_access_w_ppm(KEY_T key)
@@ -732,120 +740,6 @@ class ParseTree {
       
       return 0;
     }
-};
-
-/**********************************************  MAlgo  *******************************************/
-class MAlgo : public PAlgo { // Markov
-  protected:
-    ParseTree parse_tree;
-  public:
-    MAlgo(PALGO_T malgo_t, int context_size);
-    ~MAlgo();
-    void reset();
-    
-    std::string parse_tree_to_pstr();
-    int train(std::vector<ACC_T> acc_v);
-    int train(std::vector<arr_time__acc_pair> arr_time__acc_pair_v) { return 1; }
-    int add_access(ACC_T acc);
-    int add_access(float acc_time, ACC_T acc) { return 1; }
-    int get_acc_prob_map_for_prefetch(std::map<ACC_T, float>& acc_prob_map); // TODO: will be deprecated
-    int get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
-                        const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v);
-    int get_to_prefetch(float _time, int& num_acc, std::vector<ACC_T>& acc_v,
-                        const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v) { return 1; }
-};
-
-class LZAlgo : public MAlgo {
-  public:
-    LZAlgo();
-    ~LZAlgo();
-};
-
-class ALZAlgo : public MAlgo {
-  public:
-    ALZAlgo();
-    ~ALZAlgo();
-};
-
-class PPMAlgo : public MAlgo {
-  public:
-    PPMAlgo(int context_size);
-    ~PPMAlgo();
-};
-
-class POAlgo : public MAlgo {
-  public:
-    POAlgo();
-    ~POAlgo();
-};
-
-/*********************************************  MPAlgo  *******************************************/
-typedef std::pair<PALGO_T, int> malgo_t__context_size_pair;
-class MPAlgo : public PAlgo { // Mixed
-  protected:
-    std::vector<malgo_t__context_size_pair> malgo_t__context_size_v;
-    
-    std::vector<boost::shared_ptr<ParseTree> > parse_tree_v;
-  public:
-    MPAlgo(std::vector<malgo_t__context_size_pair> malgo_t__context_size_v);
-    ~MPAlgo();
-    virtual std::string to_str();
-    void reset();
-    
-    int train(std::vector<ACC_T> acc_v);
-    int train(std::vector<arr_time__acc_pair> arr_time__acc_pair_v) { return 1; }
-    virtual int add_access(ACC_T acc);
-    int add_access(float acc_time, ACC_T acc) { return 1; }
-    virtual int get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
-                                const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v) = 0;
-    int get_to_prefetch(float _time, int& num_acc, std::vector<ACC_T>& acc_v,
-                        const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v) { return 1; }
-};
-
-/***************************************  WMPAlgo : MPAlgo  ***************************************/
-class WMPAlgo : public MPAlgo { // Weight
-  private:
-    std::vector<float> malgo_id__weight_v;
-  public:
-    WMPAlgo(std::vector<malgo_t__context_size_pair> malgo_t__context_size_v,
-            std::vector<float> malgo_id__weight_v);
-    ~WMPAlgo();
-    std::string to_str();
-    
-    int get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
-                        const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v);
-};
-
-/***************************************  MMPAlgo : MPAlgo  ***************************************/
-class MMPAlgo : public MPAlgo { // Max
-  private:
-    
-  public:
-    MMPAlgo(std::vector<malgo_t__context_size_pair> malgo_t__context_size_v);
-    ~MMPAlgo();
-    std::string to_str();
-    
-    int get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
-                        const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v);
-};
-
-/***************************************  BMPAlgo : MPAlgo  ***************************************/
-class BMPAlgo : public MPAlgo { // Best
-  private:
-    int window_size;
-  
-    std::vector<boost::shared_ptr<patch::Queue<int> > > malgo_id__score_queue_v;
-    std::vector<boost::shared_ptr<std::vector<ACC_T> > > malgo_id__last_predicted_acc_v_v;
-  public:
-    BMPAlgo(std::vector<malgo_t__context_size_pair> malgo_t__context_size_v, int window_size);
-    ~BMPAlgo();
-    std::string to_str();
-    
-    int add_access(ACC_T acc);
-    
-    int get_malgo_score(int malgo_id);
-    int get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
-                        const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v);
 };
 
 #endif // _MARKOV_H_

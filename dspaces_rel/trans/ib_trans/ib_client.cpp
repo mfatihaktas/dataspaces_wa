@@ -25,9 +25,9 @@ IBClient::IBClient(const char* s_lip_, const char* s_lport_)
 {
   log_(INFO, "constructed client= \n" << to_str() )
   // 
-  pthread_t t;
+  pthread_v.push_back(new pthread_t() );
   wrap_IBClient* wrap_ = new wrap_IBClient(this);
-  TEST_NZ(pthread_create(&t, NULL, call_init_w_wrap, wrap_) );
+  TEST_NZ(pthread_create(pthread_v.back(), NULL, call_init_w_wrap, wrap_) );
   
   log_(INFO, "client_name= " << client_name << " waiting for init...")
   syncer.add_sync_point(WAIT_INIT, 1);
@@ -36,9 +36,9 @@ IBClient::IBClient(const char* s_lip_, const char* s_lport_)
   log_(INFO, "client_name= " << client_name << " done waiting for init.")
   
   // To initiate with server so server can start sending MSG_READY_TO_RECV
-  pthread_t t2;
+  pthread_v.push_back(new pthread_t() );
   wrap_IBClient* wrap_2_ = new wrap_IBClient(this);
-  TEST_NZ(pthread_create(&t2, NULL, call_send_next_w_wrap, wrap_2_) );
+  TEST_NZ(pthread_create(pthread_v.back(), NULL, call_send_next_w_wrap, wrap_2_) );
   
   TEST_NZ(send_init() );
 }
@@ -47,7 +47,11 @@ IBClient::~IBClient()
 {
   syncer.close();
   delete connector_;
-  // delete wrap_;
+  
+  for (std::vector<pthread_t*>::iterator it = pthread_v.begin(); it != pthread_v.end(); it++) {
+    pthread_join(**it, NULL);
+    delete *it;
+  }
   // 
   log_(INFO, "destructed.")
 }
@@ -211,10 +215,7 @@ int IBClient::send_next()
     // syncer.notify(WAIT_SEND_DATA);
     return 0;
   }
-  
-  return_if_err(send_chunk(size_data.first, size_data.second), err, free(size_data.second);)
-  // return_if_err(send_chunk(size_data.first, size_data.second), err, free(size_data.second);)
-  // free(size_data.second); // This causes segmentation fault in memcpy(ctx_->buffer_, chunk_, chunk_size);
+  return_if_err(send_chunk(size_data.first, size_data.second), err)
   
   return 0;
 }
@@ -222,7 +223,6 @@ int IBClient::send_next()
 int IBClient::send_chunk(uint64_t chunk_size, void* chunk_)
 {
   int err;
-  // sleep(2);
   struct conn_context* ctx_ = (struct conn_context*)id_->context;
   
   log_(INFO, "chunk_size= " << chunk_size)
@@ -292,7 +292,7 @@ int IBClient::on_pre_conn(struct rdma_cm_id* id_)
 {
   int err;
   struct conn_context* ctx_ = (struct conn_context*)id_->context;
-  ctx_->buffer_ = malloc(BUFFER_SIZE);
+  return_err_if_ret_cond_flag(malloc(BUFFER_SIZE), ctx_->buffer_, ==, 0, ENOMEM)
   
   posix_memalign((void**)&ctx_->buffer_, sysconf(_SC_PAGESIZE), BUFFER_SIZE);
   TEST_Z(ctx_->buffer_mr_ = ibv_reg_mr(connector_->get_pd_(), ctx_->buffer_, BUFFER_SIZE, IBV_ACCESS_LOCAL_WRITE) );
@@ -322,9 +322,9 @@ int IBClient::on_completion(struct ibv_wc* wc_)
     else if (ctx_->msg_->id == MSG_READY_TO_RECV) {
       log_(INFO, "recved MSG_READY_TO_RECV.")
       
-      pthread_t t;
+      pthread_v.push_back(new pthread_t() );
       wrap_IBClient* wrap_ = new wrap_IBClient(this);
-      TEST_NZ(pthread_create(&t, NULL, call_send_next_w_wrap, wrap_) );
+      TEST_NZ(pthread_create(pthread_v.back(), NULL, call_send_next_w_wrap, wrap_) );
     }
     else if (ctx_->msg_->id == MSG_DONE) {
       log_(INFO, "received DONE, disconnecting.")
@@ -346,3 +346,13 @@ int IBClient::on_completion(struct ibv_wc* wc_)
   
   return 0;
 }
+
+int IBClient::on_disconn(struct rdma_cm_id* id_)
+{
+  int err;
+  struct conn_context* ctx_ = (struct conn_context*)id_->context;
+  
+  return_if_err(ibv_dereg_mr(ctx_->buffer_mr_), err)
+  return_if_err(ibv_dereg_mr(ctx_->msg_mr_), err)
+  log_(INFO, "done.")
+};

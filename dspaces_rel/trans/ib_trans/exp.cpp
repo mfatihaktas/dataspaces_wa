@@ -119,8 +119,8 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
   return opt_map;
 }
 
-#define data_type int
-const std::string data_type_str = "int";
+#define DATA_T int
+const std::string DATA_T_STR = "int";
 
 void msg_recv_handler(uint64_t size, char* msg_)
 {
@@ -134,7 +134,7 @@ void data_recv_handler(std::string data_id, uint64_t data_size, void* data_)
   log_(INFO, "data_recv_handler:: for data_id= " << data_id
              << ", recved data_size= " << data_size
              << ", total_recved_size= " << (float)total_recved_size/(1024*1024) << "MB \n")
-            // << "data_= " << patch::arr_to_str<>(data_size, (data_type*)data_) )
+            // << "data_= " << patch::arr_to_str<>(data_size, (DATA_T*)data_) )
 }
 
 int main(int argc , char **argv)
@@ -156,22 +156,20 @@ int main(int argc , char **argv)
     // ib_trans.init_server(ib_trans.get_s_lport().c_str(),
     //                     boost::bind(&data_recv_handler, _1, _2, _3),
     //                     boost::bind(&msg_recv_handler, _1, _2) );
-    ib_trans.init_server(data_type_str, ib_trans.get_s_lport().c_str(),
+    ib_trans.init_server(DATA_T_STR, ib_trans.get_s_lport().c_str(),
                          "dummy", boost::bind(&data_recv_handler, _1, _2, _3) );
   }
   else if (str_cstr_equals(opt_map["type"], "client") ) {
-    uint64_t data_length = 1024; // 1024*1024*256; // 1024*1024*256;
-    void* data_ = (void*)malloc(sizeof(data_type)*data_length);
-    
-    for (int i = 0; i < data_length; i++)
-      static_cast<data_type*>(data_)[i] = (data_type)i*1.2;
-    // 
+    uint64_t data_length = 1024*1024*256; // 1024; // 1024*1024*256; // 1024*1024*256;
+    void* data_ = (void*)malloc(sizeof(DATA_T)*data_length);
+    // for (int i = 0; i < data_length; i++)
+    //   static_cast<DATA_T*>(data_)[i] = (DATA_T)i*1.2;
     
     return_if_err(gettimeofday(&start_time, NULL), err)
     // ib_trans.init_client(opt_map["s_lip"].c_str(), opt_map["s_lport"].c_str(),
-    //                     "dummy", data_length*sizeof(data_type), data_);
+    //                     "dummy", data_length*sizeof(DATA_T), data_);
     ib_trans.init_client(opt_map["s_lip"].c_str(), opt_map["s_lport"].c_str(),
-                         data_type_str, data_length, data_);
+                         DATA_T_STR, "dummy", data_length, data_);
     return_if_err(gettimeofday(&end_time, NULL), err)
     
     long exec_time_sec = end_time.tv_sec - start_time.tv_sec;

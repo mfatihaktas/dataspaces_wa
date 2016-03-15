@@ -1,5 +1,10 @@
 #include "ds_drive.h"
 
+std::string get_data_id(const char* var_name, unsigned int ver, int ndim, uint64_t *lb_, uint64_t *ub_)
+{
+  return boost::lexical_cast<std::string>(var_name) + "_" + boost::lexical_cast<std::string>(ver);
+}
+
 /*****************************************  DspacesDriver  ****************************************/
 #define INTER_LOCK_TIME 1000*1000 //usec
 #define INTER_RI_GET_TIME 2*1000*1000 //usec
@@ -69,6 +74,7 @@ DSDriver::~DSDriver()
   if (!closed)
     close();
   
+  get_poll_t_->interrupt();
   // TEST_NZ(pthread_mutex_destroy(&dspaces_put_get_mtx) )
   // 
   log_(INFO, "destructed.")
@@ -97,7 +103,12 @@ int DSDriver::close()
 
 int DSDriver::init(int num_peer, int app_id)
 {
-  return dspaces_init(num_peer, app_id, &mpi_comm, NULL);
+  int err;
+  return_if_err(dspaces_init(num_peer, app_id, &mpi_comm, NULL), err)
+  
+  // boost::thread t(&DSDriver::get_poll, this);
+  get_poll_t_ = boost::make_shared<boost::thread>(&DSDriver::get_poll, this);
+  return 0;
 }
 
 int DSDriver::sync_put(const char* var_name, unsigned int ver, int size,
@@ -133,7 +144,7 @@ int DSDriver::sync_put(const char* var_name, unsigned int ver, int size,
   // do_timing("sync_put");
   {
     // boost::lock_guard<boost::mutex> guard(dspaces_write_mtx);
-    lock_on_write(var_name);
+    // lock_on_write(var_name);
   }
   // refresh_last_lock_time();
   
@@ -143,12 +154,12 @@ int DSDriver::sync_put(const char* var_name, unsigned int ver, int size,
     r = dspaces_put(var_name, ver, size,
                     ndim, lb_, ub_, data_);
   }
-  // dspaces_put_sync();
+  dspaces_put_sync();
   
   // do_timing("sync_put");
   {
     // boost::lock_guard<boost::mutex> guard(dspaces_write_mtx);
-    unlock_on_write(var_name);
+    // unlock_on_write(var_name);
   }
   // refresh_last_lock_time();
   
@@ -230,14 +241,61 @@ int DSDriver::sync_put(const char* var_name, unsigned int ver, int size,
 // }
 
 int DSDriver::reg_get_wait_for_completion(const char* var_name, unsigned int ver, int size,
-                                          int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
+                                          int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void* data_)
 {
+  get_info_bq.push(
+    boost::make_shared<get_info>(var_name, ver, size, ndim, gdim_, lb_, ub_, &data_) );
   
+  log_(INFO, "waiting for get <var_name= " << var_name << ", ver= " << ver << ">...")
+  unsigned int sync_point = patch::hash_str(get_data_id(var_name, ver, ndim, lb_, ub_) );
+  syncer.add_sync_point(sync_point, 1);
+  syncer.wait(sync_point);
+  syncer.del_sync_point(sync_point);
+  log_(INFO, "done waiting for get <var_name= " << var_name << ", ver= " << ver << ">.")
+  
+  return hashed_data_id__get_return_map[sync_point];
+}
+
+int DSDriver::get_poll()
+{
+  log_(INFO, "started...")
+  while (1) {
+    boost::shared_ptr<get_info> get_info_ = get_info_bq.pop();
+    
+    // lock_on_read(get_info_->var_name);
+    get_done = false;
+    get_success = false;
+    boost::thread t(
+      &DSDriver::plain_get, this, get_info_->var_name, get_info_->ver, get_info_->size,
+                                  get_info_->ndim, get_info_->gdim_, get_info_->lb_, get_info_->ub_, *(get_info_->data__) );
+    int counter = 0;
+    do {
+      if (counter)
+        sleep(1);
+      ++counter;
+    } while (!get_done && counter < 10);
+    
+    int r = 1;
+    if (get_done) {
+      if (get_success)
+        r = 0;
+    }
+    else {
+      log_(INFO, "get_done= " << get_done << " but plain_get returned failure since counter= " << counter)
+      t.interrupt();
+    }
+    // unlock_on_read(get_info_->var_name);
+    
+    unsigned int sync_point = patch::hash_str(
+      get_data_id(get_info_->var_name, get_info_->ver, get_info_->ndim, get_info_->lb_, get_info_->ub_) );
+    hashed_data_id__get_return_map[sync_point] = r;
+    syncer.notify(sync_point);
+  }
 }
 
 // boost::mutex dspaces_get_mtx;
-int DSDriver::get(const char* var_name, unsigned int ver, int size,
-                  int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
+int DSDriver::timed_get(const char* var_name, unsigned int ver, int size,
+                        int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
 {
   int err;
   // boost::recursive_mutex::scoped_lock scoped_lock(dspaces_get_mtx);
@@ -316,7 +374,7 @@ int DSDriver::get(const char* var_name, unsigned int ver, int size,
   // }
   
   // Note: Works but mutual exclusive get using only mutex does not allow fair access between threads
-  lock_on_read(var_name);
+  // lock_on_read(var_name);
   get_done = false;
   get_success = false;
   boost::thread t(&DSDriver::plain_get, this, var_name, ver, size, ndim, gdim_, lb_, ub_, data_);
@@ -336,7 +394,7 @@ int DSDriver::get(const char* var_name, unsigned int ver, int size,
     log_(INFO, "get_done= " << get_done << " but plain_get returned failure since counter= " << counter)
     t.interrupt();
   }
-  unlock_on_read(var_name);
+  // unlock_on_read(var_name);
   
   boost::this_thread::yield();
   
@@ -355,6 +413,19 @@ int DSDriver::plain_get(const char* var_name, unsigned int ver, int size,
   get_done = true;
   
   return 0;
+}
+
+int DSDriver::get(const char* var_name, unsigned int ver, int size,
+                  int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void *data_)
+{
+  // lock_on_read(var_name);
+  int r = dspaces_get(var_name, ver, size, ndim, lb_, ub_, data_);
+  if (r) {
+    log_(ERROR, "dspaces_get failed for <var_name= " << var_name << ", ver= " << ver << ">")
+  }
+  // unlock_on_read(var_name);
+  
+  return r;
 }
 
 // int DSDriver::sync_put_without_lock(const char* var_name, unsigned int ver, int size,

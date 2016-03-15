@@ -116,7 +116,7 @@ int Trans::init_put(std::string s_lip, std::string s_lport, std::string tmpfs_di
     // log_(INFO, "s_lip_= " << s_lip_ << ", s_lport_= " << s_lport_)
     // ib_trans_->init_client(s_lip_, s_lport_, data_id, data_length, data_);
     int err;
-    return_if_err(ib_trans_->init_client(s_lip.c_str(), s_lport.c_str(), data_type, data_length, data_), err)
+    return_if_err(ib_trans_->init_client(s_lip.c_str(), s_lport.c_str(), data_type, data_id, data_length, data_), err)
   }
   else if (str_str_equals(trans_protocol, TCP) ) {
     // Note: data_length should be data_size for TCP
