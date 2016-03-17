@@ -14,6 +14,10 @@ elif [ $1  = 'ds' ]; then
 elif [ $1  = 'vs' ]; then
   export GLOG_logtostderr=1
   valgrind -v --leak-check=yes ./exp --type="sfc"
+elif [ $1  = 'l' ]; then
+  FIG_NAME=fig_galgo_hit_rate_vs_stdev
+  latex $FIG_NAME.tex
+  dvips -o $FIG_NAME.ps $FIG_NAME.dvi
 else
   echo "Argument did not match !"
 fi

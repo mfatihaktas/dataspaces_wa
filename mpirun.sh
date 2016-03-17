@@ -107,7 +107,7 @@ RI_LCONTROL_LPORT_LIST=( 8000 9000 )
 PKILL=/usr/bin/pkill
 
 if [ -z "$2" ]; then
-  echo "Which site [0, *]?"
+echo "Which site [0, *]?"
 elif [[ $1  == 's' || $1  == 'ds' ]]; then
   [ $2 = 0 ] && rm *.log
   [ -a conf ] && rm srv.lck conf dataspaces.conf
@@ -154,10 +154,10 @@ elif [[ $1 == 'map' || $1 == 'dmap' || $1 == 'mag' || $1 == 'dmag' ]]; then
     echo "run s= $2, type= $1, c_id= $i on $NODE"
     
     $MPIRUN -x LD_LIBRARY_PATH -x GLOG_logtostderr -npernode 1 -host $NODE $GDB \
-    ./mput_mget_test --type=$TYPE --cl_id=$i --base_client_id=$(($2*$NUM_CLIENT)) \
-                    --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=${RI_LCONTROL_LPORT_LIST[$2] } \
-                    --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2] } --join_lcontrol_lport=${RI_LCONTROL_LPORT_LIST[$2] } \
-                    --num_putget=$NUM_PUTGET > $LOG_F 2>&1 < /dev/null & # < /dev/null 2>&1 | tee $LOG_F & # 
+      ./mput_mget_test --type=$TYPE --cl_id=$i --base_client_id=$(($2*$NUM_CLIENT)) \
+                      --lcontrol_lintf=$LCONTROL_LINTF --lcontrol_lport=${RI_LCONTROL_LPORT_LIST[$2] } \
+                      --join_lcontrol_lip=${APP_JOIN_LCONTROL_LIP_LIST[$2] } --join_lcontrol_lport=${RI_LCONTROL_LPORT_LIST[$2] } \
+                      --num_putget=$NUM_PUTGET > $LOG_F 2>&1 < /dev/null & # < /dev/null 2>&1 | tee $LOG_F & # 
   done
 elif [ $1  = 'k' ]; then
   # Sometimes works sometimes not!

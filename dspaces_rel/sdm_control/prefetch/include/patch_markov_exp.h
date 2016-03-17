@@ -100,10 +100,10 @@ void make_latex_plot(std::vector<std::vector<T> > x_v_v, std::vector<std::vector
   //           << exec("latex " + out_name + ".tex") << "\n"
   //           << "exec(dvips -o " << out_name << ".ps " << out_name << ".dvi) returned= \n"
   //           << exec("dvips -o " + out_name + ".ps " + out_name + ".dvi") )
-  log_(INFO, "exec(latex " << out_name << ".tex) returned= \n"
-             << exec("latex " + out_name + ".tex") )
-  log_(INFO, "exec(dvips -o " << out_name << ".ps " << out_name << ".dvi) returned= \n"
-             << exec("dvips -o " + out_name + ".ps " + out_name + ".dvi") )
+  // log_(INFO, "exec(latex " << out_name << ".tex) returned= \n"
+  //           << exec("latex " + out_name + ".tex") )
+  // log_(INFO, "exec(dvips -o " << out_name << ".ps " << out_name << ".dvi) returned= \n"
+  //           << exec("dvips -o " + out_name + ".ps " + out_name + ".dvi") )
 }
 
 template<typename T>

@@ -5,8 +5,8 @@
 std::string PAlgo::to_str()
 {
   std::stringstream ss;
-  ss << "acc_s= " << patch::set_to_str<>(acc_s) << "\n"
-     << "acc_v= " << patch::vec_to_str<>(acc_v) << "\n";
+  // ss << "acc_s= " << patch::set_to_str<>(acc_s) << "\n"
+  //   << "acc_v= " << patch::vec_to_str<>(acc_v) << "\n";
   
   return ss.str();
 }
@@ -307,7 +307,8 @@ std::string MPAlgo::to_str()
 {
   std::stringstream ss;
   ss << "PAlgo::to_str= \n" << PAlgo::to_str() << "\n"
-     << "palgo_t__context_size_v= \n" << patch::pvec_to_str<>(palgo_t__context_size_v) << "\n";
+     << "palgo_t__context_size_v= \n" << patch::pvec_to_str<>(palgo_t__context_size_v) << "\n"
+     << "palgo_id_used_v= " << patch::vec_to_str<>(palgo_id_used_v) << "\n";
   
   // ss << "palgo_v= \n";
   // for (std::vector<boost::shared_ptr<PAlgo> >::iterator it = palgo_v.begin(); it != palgo_v.end(); it++)
@@ -377,7 +378,7 @@ std::string WMPAlgo::to_str()
   return ss.str();
 }
 
-int WMPAlgo::get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
+int WMPAlgo::get_to_prefetch(float _time, int& num_acc, std::vector<ACC_T>& acc_v,
                              const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v)
 {
   int num_palgo_ = palgo_v.size();
@@ -385,7 +386,7 @@ int WMPAlgo::get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
   
   for (int i = 0; i < num_palgo_; i++) {
     std::map<ACC_T, float>& acc_prob_map = palgo_id__acc_prob_map_v[i];
-    palgo_v[i]->get_acc_prob_map_for_prefetch(acc_prob_map);
+    palgo_v[i]->get_acc_prob_map_for_prefetch(_time, acc_prob_map);
     // log_(INFO, "parse_tree_" << i << ", acc_prob_map= \n" << patch::map_to_str<ACC_T, float>(acc_prob_map) )
   }
   
@@ -437,7 +438,7 @@ std::string MMPAlgo::to_str()
   return ss.str();
 }
 
-int MMPAlgo::get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
+int MMPAlgo::get_to_prefetch(float _time, int& num_acc, std::vector<ACC_T>& acc_v,
                              const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v)
 {
   int num_palgo_ = palgo_v.size();
@@ -445,7 +446,7 @@ int MMPAlgo::get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
   
   for (int i = 0; i < num_palgo_; i++) {
     std::map<ACC_T, float>& acc_prob_map = palgo_id__acc_prob_map_v[i];
-    palgo_v[i]->get_acc_prob_map_for_prefetch(acc_prob_map);
+    palgo_v[i]->get_acc_prob_map_for_prefetch(_time, acc_prob_map);
     // log_(INFO, "palgo_id= " << i << ", acc_prob_map= \n" << patch::map_to_str<ACC_T, float>(acc_prob_map) )
   }
   
@@ -508,41 +509,43 @@ std::string BMPAlgo::to_str()
   return ss.str();
 }
 
-int BMPAlgo::add_access(ACC_T acc)
+int BMPAlgo::add_access(float acc_time, ACC_T acc)
 {
   int err;
-  return_if_err(MPAlgo::add_access(acc), err)
+  return_if_err(MPAlgo::add_access(acc_time, acc), err)
   
-  int id = 0;
-  for (std::vector<boost::shared_ptr<std::vector<ACC_T> > >::iterator it = palgo_id__last_predicted_acc_v_v.begin(); it != palgo_id__last_predicted_acc_v_v.end(); it++, id++) {
-    if (std::find((*it)->begin(), (*it)->end(), acc) != (*it)->end() )
-      palgo_id__score_queue_v[id]->push(1);
+  for (int i = 0; i < palgo_v.size(); i++) {
+    std::vector<ACC_T>& t_acc_v = *palgo_id__last_predicted_acc_v_v[i];
+    if (std::find(t_acc_v.begin(), t_acc_v.end(), acc) != t_acc_v.end() )
+      palgo_id__score_queue_v[i]->push(1);
     else
-      palgo_id__score_queue_v[id]->push(0);
+      palgo_id__score_queue_v[i]->push(0);
   }
   
   return 0;
 }
 
-int BMPAlgo::get_malgo_score(int malgo_id)
+int BMPAlgo::get_malgo_score(int palgo_id)
 {
   int score = 0;
-  for (std::deque<int>::iterator it = palgo_id__score_queue_v[malgo_id]->begin(); it != palgo_id__score_queue_v[malgo_id]->end(); it++)
+  boost::shared_ptr<patch::Queue<int> > score_q_ = palgo_id__score_queue_v[palgo_id];
+  // log_(INFO, "palgo_id= " << palgo_id << ", score_q= " << score_q_->to_str() )
+  for (std::deque<int>::iterator it = score_q_->begin(); it != score_q_->end(); it++)
     score += *it;
   
   return score;
 }
 
-int BMPAlgo::get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
+int BMPAlgo::get_to_prefetch(float _time, int& num_acc, std::vector<ACC_T>& acc_v,
                              const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v)
 {
   int err;
-  for (int i = 0; i < palgo_t__context_size_v.size(); i++) {
-    palgo_id__last_predicted_acc_v_v[i]->clear();
-    int num_key = 1;
+  for (int i = 0; i < palgo_v.size(); i++) {
+    std::vector<ACC_T>& t_acc_v = *palgo_id__last_predicted_acc_v_v[i];
+    t_acc_v.clear();
     std::vector<ACC_T> t_eacc_v;
-    return_if_err(palgo_v[i]->get_to_prefetch(num_key, *palgo_id__last_predicted_acc_v_v[i],
-                                              std::vector<ACC_T>(), t_eacc_v), err)
+    int t_num_acc = num_acc;
+    return_if_err(palgo_v[i]->get_to_prefetch(_time, num_acc, t_acc_v, std::vector<ACC_T>(), t_eacc_v), err)
   }
   
   // log_(INFO, "palgo_id__last_predicted_acc_v_v=")
@@ -557,7 +560,7 @@ int BMPAlgo::get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
   
   int max_score = 0;
   int i_max = 0;
-  for (int i = 0; i < palgo_t__context_size_v.size(); i++) {
+  for (int i = 0; i < palgo_v.size(); i++) {
     int cur_score = get_malgo_score(i);
     if (cur_score > max_score) {
       max_score = cur_score;
@@ -565,6 +568,7 @@ int BMPAlgo::get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
     }
   }
   
+  palgo_id_used_v.push_back(i_max);
   acc_v = *palgo_id__last_predicted_acc_v_v[i_max];
   num_acc = acc_v.size();
   // 
@@ -589,7 +593,6 @@ MJMPAlgo::MJMPAlgo(std::vector<palgo_t__context_size_pair> palgo_t__context_size
   }
   
   for (int i = 0; i < palgo_v.size(); i++) {
-    // palgo_id__weight_v.push_back(1);
     // palgo_id__weight_v.push_back(std::numeric_limits<float>::max() );
     palgo_id__weight_v.push_back(12345678);
     palgo_id__last_predicted_acc_v_v.push_back(boost::make_shared<std::vector<ACC_T> >() );
@@ -603,10 +606,8 @@ MJMPAlgo::~MJMPAlgo() { log_(INFO, "destructed.") }
 std::string MJMPAlgo::to_str()
 {
   std::stringstream ss;
-  // ss << "MPAlgo::to_str= \n" << MPAlgo::to_str() << "\n"
-  //   << "palgo_id__weight_v= " << patch::vec_to_str<>(palgo_id__weight_v) << "\n";
-  ss << "palgo_id__weight_v= " << patch::vec_to_str<>(palgo_id__weight_v) << "\n"
-     << "palgo_id_used_v= " << patch::vec_to_str<>(palgo_id_used_v) << "\n";
+  ss << "MPAlgo::to_str= \n" << MPAlgo::to_str() << "\n"
+    << "palgo_id__weight_v= " << patch::vec_to_str<>(palgo_id__weight_v) << "\n";
   
   return ss.str();
 }
@@ -683,9 +684,10 @@ int MJMPAlgo::get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
   //   if (acc_v.size() == num_acc)
   //     break;
   // }
-  acc_v = *palgo_id__last_predicted_acc_v_v[
-    std::distance(palgo_id__weight_v.begin(),
-                  std::max_element(palgo_id__weight_v.begin(), palgo_id__weight_v.end() ) ) ];
+  int palgo_id = std::distance(palgo_id__weight_v.begin(),
+                               std::max_element(palgo_id__weight_v.begin(), palgo_id__weight_v.end() ) );
+  palgo_id_used_v.push_back(palgo_id);
+  acc_v = *palgo_id__last_predicted_acc_v_v[palgo_id];
   num_acc = acc_v.size();
   last_predicted_acc_v = acc_v;
   // 
@@ -709,23 +711,7 @@ int MJMPAlgo::get_to_prefetch(float _time, int& num_acc, std::vector<ACC_T>& acc
     std::vector<ACC_T> t_eacc_v;
     int t_num_acc = num_acc;
     return_if_err(palgo_v[i]->get_to_prefetch(_time, num_acc, t_acc_v, std::vector<ACC_T>(), t_eacc_v), err)
-    // for (std::vector<ACC_T>::iterator it = t_acc_v.begin(); it != t_acc_v.end(); it++) {
-    //   if (acc__sum_of_weights_map.count(*it) == 0)
-    //     acc__sum_of_weights_map[*it] = palgo_id__weight_v[i];
-    //   else
-    //     acc__sum_of_weights_map[*it] += palgo_id__weight_v[i];
-    // }
   }
-  // log_(INFO, "acc__sum_of_weights_map= \n" << patch::map_to_str<>(acc__sum_of_weights_map) )
-  // std::map<float, ACC_T> sum_of_weights__acc_map;
-  // for (std::map<ACC_T, float>::iterator it = acc__sum_of_weights_map.begin(); it != acc__sum_of_weights_map.end(); it++)
-  //   sum_of_weights__acc_map[it->second] = it->first;
-  
-  // for (std::map<float, ACC_T>::reverse_iterator rit = sum_of_weights__acc_map.rbegin(); rit != sum_of_weights__acc_map.rend(); rit++) {
-  //   acc_v.push_back(rit->second);
-  //   if (acc_v.size() == num_acc)
-  //     break;
-  // }
   int palgo_id = std::distance(palgo_id__weight_v.begin(),
                                std::max_element(palgo_id__weight_v.begin(), palgo_id__weight_v.end() ) );
   palgo_id_used_v.push_back(palgo_id);

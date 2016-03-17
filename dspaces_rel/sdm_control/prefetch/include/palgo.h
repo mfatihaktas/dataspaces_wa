@@ -41,6 +41,7 @@ class PAlgo { // Prefetching
     // virtual int add_access(float acc_time, ACC_T acc) { return add_access(acc); }
     virtual int add_access(float acc_time, ACC_T acc);
     virtual int get_acc_prob_map_for_prefetch(std::map<ACC_T, float>& acc_prob_map) = 0;
+    virtual int get_acc_prob_map_for_prefetch(float _time, std::map<ACC_T, float>& acc_prob_map) = 0;
     virtual int get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
                                 const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v) = 0;
     virtual int get_to_prefetch(float _time, int& num_acc, std::vector<ACC_T>& acc_v,
@@ -70,6 +71,7 @@ class TAlgo : public PAlgo { // Time
     int add_access(ACC_T acc) { return 1; }
     int add_access(float acc_time, ACC_T acc);
     int get_acc_prob_map_for_prefetch(std::map<ACC_T, float>& acc_prob_map) { return 1; }
+    int get_acc_prob_map_for_prefetch(float _time, std::map<ACC_T, float>& acc_prob_map) { return 1; } // TODO
     int get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
                         const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v) { return 1; }
     int get_to_prefetch(float _time, int& num_acc, std::vector<ACC_T>& acc_v,
@@ -91,12 +93,13 @@ class MAlgo : public PAlgo { // Markov
     int add_access(ACC_T acc);
     int add_access(float acc_time, ACC_T acc) { return add_access(acc); }
     int get_acc_prob_map_for_prefetch(std::map<ACC_T, float>& acc_prob_map);
+    int get_acc_prob_map_for_prefetch(float _time, std::map<ACC_T, float>& acc_prob_map)
+    { return get_acc_prob_map_for_prefetch(acc_prob_map); }
     int get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
                         const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v);
     int get_to_prefetch(float _time, int& num_acc, std::vector<ACC_T>& acc_v,
-                        const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v) {
-      return get_to_prefetch(num_acc, acc_v, cached_acc_v, eacc_v);
-    };
+                        const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v)
+    { return get_to_prefetch(num_acc, acc_v, cached_acc_v, eacc_v); }
 };
 
 class LZAlgo : public MAlgo {
@@ -130,12 +133,14 @@ class MPAlgo : public PAlgo { // Mixed
     std::vector<palgo_t__context_size_pair> palgo_t__context_size_v;
     
     std::vector<boost::shared_ptr<PAlgo> > palgo_v;
+    std::vector<int> palgo_id_used_v;
   public:
     MPAlgo(std::vector<palgo_t__context_size_pair> palgo_t__context_size_v);
     ~MPAlgo();
     virtual std::string to_str();
     void reset();
     int get_acc_prob_map_for_prefetch(std::map<ACC_T, float>& acc_prob_map) { return 1; }
+    int get_acc_prob_map_for_prefetch(float _time, std::map<ACC_T, float>& acc_prob_map) { return 1; }
     
     int train(std::vector<ACC_T> acc_v);
     int train(std::vector<arr_time__acc_pair> arr_time__acc_pair_v) { return 1; }
@@ -158,9 +163,10 @@ class WMPAlgo : public MPAlgo { // Weight
     std::string to_str();
     
     int get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
-                        const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v);
+                        const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v)
+    { return get_to_prefetch(0, num_acc, acc_v, cached_acc_v, eacc_v); }
     int get_to_prefetch(float _time, int& num_acc, std::vector<ACC_T>& acc_v,
-                        const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v) { return 1; }
+                        const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v);
 };
 
 /***************************************  MMPAlgo : MPAlgo  ***************************************/
@@ -173,9 +179,10 @@ class MMPAlgo : public MPAlgo { // Max
     std::string to_str();
     
     int get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
-                        const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v);
+                        const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v)
+    { return get_to_prefetch(0, num_acc, acc_v, cached_acc_v, eacc_v); }
     int get_to_prefetch(float _time, int& num_acc, std::vector<ACC_T>& acc_v,
-                        const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v) { return 1; }
+                        const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v);
 };
 
 /***************************************  BMPAlgo : MPAlgo  ***************************************/
@@ -190,12 +197,15 @@ class BMPAlgo : public MPAlgo { // Best
     ~BMPAlgo();
     std::string to_str();
     
-    int add_access(ACC_T acc);
+    int add_access(ACC_T acc)
+    { return add_access(0, acc); }
+    int add_access(float acc_time, ACC_T acc);
     int get_malgo_score(int malgo_id);
     int get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
-                        const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v);
+                        const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v)
+    { return get_to_prefetch(0, num_acc, acc_v, cached_acc_v, eacc_v); }
     int get_to_prefetch(float _time, int& num_acc, std::vector<ACC_T>& acc_v,
-                        const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v) { return 1; }
+                        const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v);
 };
 
 /**************************************  MJMPAlgo : MPAlgo  ***************************************/
@@ -207,16 +217,13 @@ class BMPAlgo : public MPAlgo { // Best
 //   acc__sum_of_weights_map.begin(), acc__sum_of_weights_map.end(),
 //   compare_pair_w_second<std::pair<ACC_T, int> >);
 
-const int NONE_PALGO = -1;
 class MJMPAlgo : public MPAlgo { // Majority
-  private:
+  protected:
     float beta;
     
     std::vector<ACC_T> last_predicted_acc_v;
     std::vector<boost::shared_ptr<std::vector<ACC_T> > > palgo_id__last_predicted_acc_v_v;
     std::vector<float> palgo_id__weight_v;
-    
-    std::vector<int> palgo_id_used_v;
   public:
     MJMPAlgo(std::vector<palgo_t__context_size_pair> palgo_t__context_size_v,
              float beta);
@@ -224,6 +231,20 @@ class MJMPAlgo : public MPAlgo { // Majority
     std::string to_str();
     int add_access(ACC_T acc);
     int add_access(float acc_time, ACC_T acc);
+    virtual int get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
+                                const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v);
+    virtual int get_to_prefetch(float _time, int& num_acc, std::vector<ACC_T>& acc_v,
+                                const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v);
+};
+
+class RMJMPAlgo : public MJMPAlgo { // Randomized
+  private:
+    
+  public:
+    RMJMPAlgo(std::vector<palgo_t__context_size_pair> palgo_t__context_size_v,
+              float beta);
+    ~RMJMPAlgo();
+    std::string to_str();
     int get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
                         const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v);
     int get_to_prefetch(float _time, int& num_acc, std::vector<ACC_T>& acc_v,
