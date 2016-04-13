@@ -8,7 +8,7 @@
 #include "patch.h"
 
 namespace patch {
-  static std::string exec(std::string cmd)
+  static std::string exec(std::string cmd) 
   {
     boost::shared_ptr<FILE> pipe_(popen(cmd.c_str(), "r"), pclose);
     if (!pipe_) {
@@ -97,7 +97,7 @@ namespace patch {
   }
   
   template<typename T>
-  void make_plot(std::vector<std::vector<T>& > x_v_v, std::vector<std::vector<T> >& y_v_v, std::vector<std::string>& title_v,
+  void make_plot(std::vector<std::vector<T> >& x_v_v, std::vector<std::vector<T> >& y_v_v, std::vector<std::string>& title_v,
                  std::string x_label, std::string y_label,
                  std::string plot_title, std::string out_url)
   {
@@ -109,8 +109,8 @@ namespace patch {
     for (typename std::vector<std::vector<T> >::iterator it = y_v_v.begin(); it != y_v_v.end(); it++)
       std::cout << patch::vec_to_str<>(*it) << "\n";
     // 
-    std::string color_code_[] = {"#0060ad", "#DAA520", "#7F7F7F", "#D2691E", "#556B2F", "#DC143C", "#DA70D6", "#8B008B", "#1E90FF", "#9ACD32"};
-    Gnuplot gp;
+    std::string color_code_[] = {"#0060ad", "#D2691E", "#556B2F", "#DC143C", "#DA70D6", "#7F7F7F", "#DAA520", "#8B008B", "#1E90FF", "#9ACD32"};
+    Gnuplot gp("/cac/u01/mfa51/Desktop/gnuplot-5.0.3/install/bin/gnuplot");
     
     std::vector<T> x_v;
     for (typename std::vector<std::vector<T> >::iterator it = x_v_v.begin(); it != x_v_v.end(); it++)
@@ -126,24 +126,36 @@ namespace patch {
     T min_y = *std::min_element(y_v.begin(), y_v.end() );
     T max_y = *std::max_element(y_v.begin(), y_v.end() );
     
+    gp << "set term x11 dashed\n";
     if (out_url.compare("") != 0) {
-        // << "set term png size 1200,800 enhanced font '/usr/share/fonts/dejavu/DejaVuSans.ttf' 12\n";
+      // gp << "set term png size 1400,1200 enhanced font '/usr/share/fonts/dejavu/DejaVuSans.ttf' 24\n";
+      gp << "set term pngcairo dashed size 1400,1200 enhanced font '/usr/share/fonts/dejavu/DejaVuSans.ttf' 24\n";
         // << "set term post eps enh \"Helvetica\" 12 size 5,4\n"; // For Symbols
-      gp << "set term png enhanced font '/usr/share/fonts/dejavu/DejaVuSans.ttf' 12\n"
-         << "set output \"" << out_url << "\"\n";
+      // gp << "set term png enhanced font '/usr/share/fonts/dejavu/DejaVuSans.ttf' 12\n"
+      // gp << "set term post eps enh \"Helvetica\" 12 size 5,4\n"
+      // gp << "set terminal postscript eps enhanced\n"
+        // << "set term png enhanced font '/usr/share/fonts/dejavu/DejaVuSans.ttf' 12\n"
+      gp << "set output \"" << out_url << "\"\n";
     }
-    gp << "set key right top\n"
-       << "set key outside\n"
-      // << "set title \"" << plot_title << "\"\n";
+    gp << "set key left top\n"
+      // << "set key right top\n"
+      // << "set key outside\n"
+       << "set title \"" << plot_title << "\"\n"
        << "set xrange [" << min_x*0.9 << ":" << max_x*1.05 << "]\nset yrange [" << min_y*0.95 << ":" << max_y*1.1 << "]\n"
        << "set xlabel '" << x_label << "'\n"
        << "set ylabel '" << y_label << "'\n"
+      // << "set logscale xy\n"
+      // << "set logscale x\n"
        << "set grid\n";
     
-    for (int i = 0; i < x_v_v.size(); i++)
-      gp << "set style line " << boost::lexical_cast<std::string>(i + 1) << " lc rgb '" << color_code_[i] << "' " << "pt " << boost::lexical_cast<std::string>(i + 1) << " lt 1 lw 2 ps 1\n";
+    for (int i = 1; i <= x_v_v.size(); i++) {
+      gp << "set style line " << boost::lexical_cast<std::string>(i)
+         << " lc rgb '" << color_code_[(i - 1) / 2] << "' "
+         << "pt " << boost::lexical_cast<std::string>((i + 1)/ 2) << " "
+         << "lt " << boost::lexical_cast<std::string>(abs((i % 2) - 2) ) << " "
+         << "lw 2 ps 1\n";
       // gp << "set style line " << boost::lexical_cast<std::string>(i + 1) << " lc rgb '" << color_code_[i] << "' lt 1 lw 2 pt 5 ps 1.5\n";
-    // gp << "set logscale xy\n";
+    }
     
     gp << "plot";
     for (int i = 0; i < x_v_v.size(); i++) {

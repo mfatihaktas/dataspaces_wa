@@ -15,7 +15,7 @@ elif [ $1  = 'vs' ]; then
   export GLOG_logtostderr=1
   valgrind -v --leak-check=yes ./exp --type="sfc"
 elif [ $1  = 'l' ]; then
-  FIG_NAME=fig_galgo_hit_rate_vs_stdev
+  FIG_NAME=fig_hit_rate_vs_cache_size
   latex $FIG_NAME.tex
   dvips -o $FIG_NAME.ps $FIG_NAME.dvi
 else

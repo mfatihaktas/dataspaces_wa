@@ -19,7 +19,7 @@ void test_talgo()
   
   std::vector<ACC_T> acc_v;
   std::vector<arr_time__acc_pair> arr_time__acc_pair_v;
-  gen_real_acc_seq(alphabet_size, num_acc, 20, 100, 10, acc_v, arr_time__acc_pair_v);
+  gen_timed_acc_seq(alphabet_size, num_acc, 20, 100, 10, acc_v, arr_time__acc_pair_v);
   // 
   std::vector<std::vector<float> > cache_size_v_v(num_algo);
   std::vector<std::vector<float> > hit_rate_v_v(num_algo);
@@ -53,51 +53,53 @@ void test_talgo()
   }
   
   std::stringstream plot_title_ss;
-  plot_title_ss << "Avg Hit rate after training with noisy pattern; "
+  plot_title_ss << "Average Hit rate after training with noisy pattern; "
                 << "alphabet size= " << alphabet_size
                 << ", pattern size= " << num_acc;
   
   std::string out_url = "";
   make_plot<float>(cache_size_v_v, hit_rate_v_v, title_v,
-                   "Cache size (Number of data items)", "Avg Hit rate",
+                   "Cache size (Number of data items)", "Average Hit rate",
                    plot_title_ss.str(), out_url);
   
   out_url = "/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/sdm_control/prefetch/fig_hit_rate_vs_cache_size.png";
   make_plot<float>(cache_size_v_v, hit_rate_v_v, title_v,
-                   "Cache size (Number of data items)", "Avg Hit rate",
+                   "Cache size (Number of data items)", "Average Hit rate",
                    plot_title_ss.str(), out_url);
 }
 
-void plot_talgo_hit_rate_vs_stdev()
+void plot_talgo_hit_rate_vs_cache_size_2()
 {
   std::vector<std::string> sub_title_v;
   std::vector<boost::shared_ptr<PAlgo> > palgo_v;
-  sub_title_v.push_back("time algo");
+  sub_title_v.push_back("pat");
   palgo_v.push_back(boost::make_shared<TAlgo>() );
-  sub_title_v.push_back("ppm_3 algo");
+  sub_title_v.push_back("ppm_3");
   palgo_v.push_back(boost::make_shared<PPMAlgo>(3) );
   
   std::vector<palgo_t__context_size_pair> palgo_t__context_size_v;
+  palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 3) );
+  palgo_t__context_size_v.push_back(std::make_pair(TALGO, 0) );
+  sub_title_v.push_back("mj few algo");
+  palgo_v.push_back(boost::make_shared<MJMPAlgo>(palgo_t__context_size_v, 0.1) );
+  sub_title_v.push_back("bm few algo");
+  palgo_v.push_back(boost::make_shared<BMPAlgo>(palgo_t__context_size_v, 10) );
+  sub_title_v.push_back("rmj few algo");
+  palgo_v.push_back(boost::make_shared<RMJMPAlgo>(palgo_t__context_size_v, 0.1) );
+  
+  palgo_t__context_size_v.clear();
   palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 1) );
   palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 2) );
   palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 3) );
   palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 4) );
   palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 5) );
   palgo_t__context_size_v.push_back(std::make_pair(TALGO, 0) );
-  sub_title_v.push_back("mj long algo");
+  sub_title_v.push_back("mj many algo");
   palgo_v.push_back(boost::make_shared<MJMPAlgo>(palgo_t__context_size_v, 0.1) );
-  
-  sub_title_v.push_back("bm long algo");
+  sub_title_v.push_back("bm many algo");
   palgo_v.push_back(boost::make_shared<BMPAlgo>(palgo_t__context_size_v, 10) );
-  
-  palgo_t__context_size_v.clear();
-  palgo_t__context_size_v.push_back(std::make_pair(MALGO_W_PPM, 3) );
-  palgo_t__context_size_v.push_back(std::make_pair(TALGO, 0) );
-  sub_title_v.push_back("mj short algo");
-  palgo_v.push_back(boost::make_shared<MJMPAlgo>(palgo_t__context_size_v, 0.1) );
-  
-  sub_title_v.push_back("bm short algo");
-  palgo_v.push_back(boost::make_shared<BMPAlgo>(palgo_t__context_size_v, 10) );
+  sub_title_v.push_back("rmj many algo");
+  palgo_v.push_back(boost::make_shared<RMJMPAlgo>(palgo_t__context_size_v, 0.1) );
   
   int alphabet_size = 20; // 4; // 20; // 10;
   int num_acc = 200; // 10; // 200; // 50;
@@ -109,14 +111,17 @@ void plot_talgo_hit_rate_vs_stdev()
   float hit_rate;
   std::vector<char> accuracy_v;
   
-  int num_filtering_run = 2;
+  int num_filtering_run = 3;
   int index = 0;
   for (int stdev = 2; stdev <= 2; stdev += 10) {
     std::vector<ACC_T> acc_v;
     std::vector<arr_time__acc_pair> arr_time__acc_pair_v;
-    gen_real_acc_seq(alphabet_size, num_acc, 20, 100, stdev, acc_v, arr_time__acc_pair_v);
-    // std::vector<acc_step_pair> acc_step_v;
-    // acc_v_to_acc_step_v(acc_v, acc_step_v);
+    // gen_timed_acc_seq(alphabet_size, num_acc, 20, 100, stdev, acc_v, arr_time__acc_pair_v);
+    std::map<ACC_T, float> acc__arr_rate_map;
+    for (ACC_T a = 0; a < alphabet_size; a++)
+      acc__arr_rate_map[a] = 1 + static_cast<float>(rand() ) / static_cast<float>(RAND_MAX);
+    gen_timed_repetitive_acc_seq(alphabet_size, num_acc, 20,
+                                 acc__arr_rate_map, acc_v, arr_time__acc_pair_v);
     
     int palgo_id = 0;
     for (std::vector<boost::shared_ptr<PAlgo> >::iterator it = palgo_v.begin(); it != palgo_v.end(); it++, palgo_id++, index++) {
@@ -125,7 +130,7 @@ void plot_talgo_hit_rate_vs_stdev()
       cache_size_v_v.push_back(std::vector<float>() );
       hit_rate_v_v.push_back(std::vector<float>() );
       
-      for (int cache_size = 1; cache_size <= alphabet_size; cache_size += 4) {
+      for (int cache_size = 1; cache_size <= alphabet_size; cache_size += 1) {
       // for (int cache_size = 1; cache_size <= 7; cache_size++) {
         float total_hit_rate = 0;
         for (int f = 0; f < num_filtering_run; f++) {
@@ -145,25 +150,35 @@ void plot_talgo_hit_rate_vs_stdev()
       }
     }
   }
+  title_v.push_back("lower bound");
+  cache_size_v_v.push_back(std::vector<float>() );
+  hit_rate_v_v.push_back(std::vector<float>() );
+  for (int cache_size = 1; cache_size <= alphabet_size; cache_size += 1) {
+    cache_size_v_v[index].push_back((float)cache_size / alphabet_size);
+    hit_rate_v_v[index].push_back((float)cache_size / alphabet_size);
+  }
   
   log_(INFO, "mjalgo_= \n" << (palgo_v.back() )->to_str() )
   
   std::stringstream plot_title_ss;
-  // plot_title_ss << "Avg Hit rate of Gaussian and Mixed-Most Confident Prefetchers for independent inter arrivals $\\textasciitilde N(U[20, 100], \\sigma^2)$;";
-  // plot_title_ss << "\\shortstack{Avg Hit rate of Gaussian and Mixed-Most Confident Prefetchers "
+  plot_title_ss << "Fusion_s: 20 App-to-20 App coupling";
+  // plot_title_ss << "\\fewstack{Average Hit rate of Gaussian and Mixed-Most Confident Prefetchers "
   //               << "for independent inter arrivals $\\sim N(U[20, 100], \\sigma^2)$ \\\\"
   //               << "alphabet size: " << alphabet_size
   //               << ", number of access per app: " << num_acc << "}";
   
-  make_latex_plot<float>(cache_size_v_v, hit_rate_v_v, title_v,
-                         "Cache size / Alphabet size", "Avg Hit rate",
-                         plot_title_ss.str(), "fig_galgo_hit_rate_vs_stdev");
+  // make_latex_plot<float>(cache_size_v_v, hit_rate_v_v, title_v,
+  //                       "Cache size / Alphabet size", "Average Hit rate",
+  //                       plot_title_ss.str(), "fig_galgo_hit_rate_vs_stdev");
   
   std::string out_url = "";
-  // out_url = "/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/sdm_control/prefetch/fig_galgo_hit_rate_vs_stdev.eps";
   make_plot<float>(cache_size_v_v, hit_rate_v_v, title_v,
-                  "Cache size / Alphabet size", "Avg Hit rate",
-                  plot_title_ss.str(), out_url);
+                   "Cache size / Alphabet size", "Average Hit rate",
+                   plot_title_ss.str(), out_url);
+  out_url = "/cac/u01/mfa51/Desktop/dataspaces_wa/dspaces_rel/sdm_control/prefetch/fig_hit_rate_vs_cache_size_fusion_sync.png";
+  make_plot<float>(cache_size_v_v, hit_rate_v_v, title_v,
+                   "Cache size / Alphabet size", "Average Hit rate",
+                   plot_title_ss.str(), out_url);
 }
 
 #endif // _PATCH_PALGO_EXP_H_

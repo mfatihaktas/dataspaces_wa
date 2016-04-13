@@ -1,4 +1,5 @@
 # hosts to run apps on
+  dell03 slots=16 max_slots=16
   dell04 slots=16 max_slots=16
   dell05 slots=16 max_slots=16
   dell06 slots=16 max_slots=16

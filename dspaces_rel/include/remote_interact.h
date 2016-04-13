@@ -114,6 +114,12 @@ class RIManager {
     boost::asio::signal_set signals;
     
     patch::thread_safe_map<std::string, boost::shared_ptr<boost::thread> > data_id__remote_get_t_map;
+    // 
+    // Note: For nstx_sync_sim
+    // boost::mutex ns_m;
+    // int ns_counter;
+    // patch::thread_safe_vector<int> ns_cl_id_v;
+    // patch::thread_safe_vector<unsigned int> ns_sync_point_v;
   public:
     RIManager(int cl_id, int base_client_id, int num_peer, DATA_ID_T data_id_t,
               std::string lcontrol_lip, int lcontrol_lport, std::string join_lcontrol_lip, int join_lcontrol_lport,

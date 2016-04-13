@@ -6,6 +6,7 @@ width=(max-min)/n #interval width
 #function used to map a value to the intervals
 hist(x,width)=width*floor(x/width)+width/2.0
 set term png #output terminal and file
+set term png size 1200,800 enhanced font '/usr/share/fonts/dejavu/DejaVuSans.ttf' 22
 set output "histogram.png"
 
 set style line 1 lt 1 lc rgb '#7F7F7F' # '#FB9A99' # light red

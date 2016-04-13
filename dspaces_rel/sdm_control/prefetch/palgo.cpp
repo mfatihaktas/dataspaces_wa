@@ -17,6 +17,7 @@ void PAlgo::reset()
 {
   acc_s.clear();
   acc_v.clear();
+  log_(INFO, "done.")
 }
 
 int PAlgo::add_access(ACC_T acc)
@@ -64,6 +65,7 @@ void TAlgo::reset()
   PAlgo::reset();
   acc___arr__inter_time_pair_v_map.clear();
   acc__mean_var_pair_map.clear();
+  log_(INFO, "done.")
 }
 
 int TAlgo::train(std::vector<arr_time__acc_pair> arr_time__acc_pair_v)
@@ -185,6 +187,7 @@ void MAlgo::reset()
 {
   PAlgo::reset();
   parse_tree.reset();
+  log_(INFO, "done.")
 }
 
 std::string MAlgo::parse_tree_to_pstr() { return parse_tree.to_pretty_str(); }
@@ -319,8 +322,13 @@ std::string MPAlgo::to_str()
 
 void MPAlgo::reset()
 {
+  PAlgo::reset();
+  
   for (std::vector<boost::shared_ptr<PAlgo> >::iterator it = palgo_v.begin(); it != palgo_v.end(); it++)
     (*it)->reset();
+  
+  palgo_id_used_v.clear();
+  log_(INFO, "done.")
 }
 
 int MPAlgo::train(std::vector<ACC_T> acc_v)
@@ -509,6 +517,17 @@ std::string BMPAlgo::to_str()
   return ss.str();
 }
 
+void BMPAlgo::reset()
+{
+  MPAlgo::reset();
+  
+  for (int i = 0; i < palgo_t__context_size_v.size(); i++) {
+    palgo_id__score_queue_v[i]->clear();
+    palgo_id__last_predicted_acc_v_v[i]->clear();
+  }
+  log_(INFO, "done.")
+}
+
 int BMPAlgo::add_access(float acc_time, ACC_T acc)
 {
   int err;
@@ -594,7 +613,7 @@ MJMPAlgo::MJMPAlgo(std::vector<palgo_t__context_size_pair> palgo_t__context_size
   
   for (int i = 0; i < palgo_v.size(); i++) {
     // palgo_id__weight_v.push_back(std::numeric_limits<float>::max() );
-    palgo_id__weight_v.push_back(12345678);
+    palgo_id__weight_v.push_back(INITIAL_MJ_WEIGHT);
     palgo_id__last_predicted_acc_v_v.push_back(boost::make_shared<std::vector<ACC_T> >() );
   }
   // 
@@ -607,30 +626,22 @@ std::string MJMPAlgo::to_str()
 {
   std::stringstream ss;
   ss << "MPAlgo::to_str= \n" << MPAlgo::to_str() << "\n"
-    << "palgo_id__weight_v= " << patch::vec_to_str<>(palgo_id__weight_v) << "\n";
+     << "palgo_id__weight_v= " << patch::vec_to_str<>(palgo_id__weight_v) << "\n";
   
   return ss.str();
 }
 
-int MJMPAlgo::add_access(ACC_T acc)
+void MJMPAlgo::reset()
 {
-  int err;
-  return_if_err(MPAlgo::add_access(acc), err)
+  MPAlgo::reset();
   
-  // Note: following works assuming add_access, get_to_prefetch, add_access, ...
-  if (last_predicted_acc_v.empty() ||
-      std::find(last_predicted_acc_v.begin(), last_predicted_acc_v.end(), acc) != last_predicted_acc_v.end() )
-    return 0;
-  
-  int palgo_id = 0;
-  for (std::vector<float>::iterator it = palgo_id__weight_v.begin(); it != palgo_id__weight_v.end(); it++, palgo_id++) {
-    std::vector<ACC_T>& t_last_predicted_acc_v = *palgo_id__last_predicted_acc_v_v[palgo_id];
-    if (std::find(t_last_predicted_acc_v.begin(), t_last_predicted_acc_v.end(), acc) == t_last_predicted_acc_v.end() )
-      *it += (float)log2f(beta);
-      // *it *= beta;
+  last_predicted_acc_v.clear();
+  for (int i = 0; i < palgo_v.size(); i++) {
+    palgo_id__weight_v[i] = INITIAL_MJ_WEIGHT;
+    palgo_id__last_predicted_acc_v_v[i]->clear();
   }
   
-  return 0;
+  log_(INFO, "done.")
 }
 
 int MJMPAlgo::add_access(float acc_time, ACC_T acc)
@@ -644,59 +655,24 @@ int MJMPAlgo::add_access(float acc_time, ACC_T acc)
     return 0;
   
   int palgo_id = 0;
+  bool replenish_weights = false;
   for (std::vector<float>::iterator it = palgo_id__weight_v.begin(); it != palgo_id__weight_v.end(); it++, palgo_id++) {
     std::vector<ACC_T>& t_last_predicted_acc_v = *palgo_id__last_predicted_acc_v_v[palgo_id];
-    if (std::find(t_last_predicted_acc_v.begin(), t_last_predicted_acc_v.end(), acc) == t_last_predicted_acc_v.end() )
+    if (std::find(t_last_predicted_acc_v.begin(), t_last_predicted_acc_v.end(), acc) == t_last_predicted_acc_v.end() ) {
       *it += (float)log2f(beta);
-      // *it *= beta;
+      if (*it < 10)
+        replenish_weights = true;
+    }
   }
-  
-  return 0;
-}
-
-// Predicts next num_acc accesses and fills acc_v accordingly by the majority vote -- starts predicting
-// from the most-voted acc, and continuing with the less-voted ones
-int MJMPAlgo::get_to_prefetch(int& num_acc, std::vector<ACC_T>& acc_v,
-                              const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v)
-{
-  int err;
-  std::map<ACC_T, float> acc__sum_of_weights_map;
-  for (int i = 0; i < palgo_v.size(); i++) {
-    std::vector<ACC_T>& t_acc_v = *palgo_id__last_predicted_acc_v_v[i];
-    t_acc_v.clear();
-    std::vector<ACC_T> t_eacc_v;
-    int t_num_acc = num_acc;
-    return_if_err(palgo_v[i]->get_to_prefetch(num_acc, t_acc_v, std::vector<ACC_T>(), t_eacc_v), err)
-    // for (std::vector<ACC_T>::iterator it = t_acc_v.begin(); it != t_acc_v.end(); it++) {
-    //   if (acc__sum_of_weights_map.count(*it) == 0)
-    //     acc__sum_of_weights_map[*it] = palgo_id__weight_v[i];
-    //   else
-    //     acc__sum_of_weights_map[*it] += palgo_id__weight_v[i];
-    // }
+  if (replenish_weights) {
+    std::vector<float> to_add_v;
+    for (std::vector<float>::iterator it = palgo_id__weight_v.begin(); it != palgo_id__weight_v.end(); it++, palgo_id++)
+      to_add_v.push_back(INITIAL_MJ_WEIGHT - *it);
+    
+    float to_add = *std::min_element(to_add_v.begin(), to_add_v.end() );
+    for (std::vector<float>::iterator it = palgo_id__weight_v.begin(); it != palgo_id__weight_v.end(); it++, palgo_id++)
+      *it += to_add;
   }
-  // log_(INFO, "acc__sum_of_weights_map= \n" << patch::map_to_str<>(acc__sum_of_weights_map) )
-  // std::map<float, ACC_T> sum_of_weights__acc_map;
-  // for (std::map<ACC_T, float>::iterator it = acc__sum_of_weights_map.begin(); it != acc__sum_of_weights_map.end(); it++)
-  //   sum_of_weights__acc_map[it->second] = it->first;
-  
-  // for (std::map<float, ACC_T>::reverse_iterator rit = sum_of_weights__acc_map.rbegin(); rit != sum_of_weights__acc_map.rend(); rit++) {
-  //   acc_v.push_back(rit->second);
-  //   if (acc_v.size() == num_acc)
-  //     break;
-  // }
-  int palgo_id = std::distance(palgo_id__weight_v.begin(),
-                               std::max_element(palgo_id__weight_v.begin(), palgo_id__weight_v.end() ) );
-  palgo_id_used_v.push_back(palgo_id);
-  acc_v = *palgo_id__last_predicted_acc_v_v[palgo_id];
-  num_acc = acc_v.size();
-  last_predicted_acc_v = acc_v;
-  // 
-  for (std::set<ACC_T>::iterator it = acc_s.begin(); it != acc_s.end(); it++) {
-    if (std::find(cached_acc_v.begin(), cached_acc_v.end(), *it) == cached_acc_v.end() && 
-        std::find(acc_v.begin(), acc_v.end(), *it) == acc_v.end() )
-      eacc_v.push_back(*it);
-  }
-  
   return 0;
 }
 
@@ -704,7 +680,6 @@ int MJMPAlgo::get_to_prefetch(float _time, int& num_acc, std::vector<ACC_T>& acc
                               const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v)
 {
   int err;
-  std::map<ACC_T, float> acc__sum_of_weights_map;
   for (int i = 0; i < palgo_v.size(); i++) {
     std::vector<ACC_T>& t_acc_v = *palgo_id__last_predicted_acc_v_v[i];
     t_acc_v.clear();
@@ -727,3 +702,67 @@ int MJMPAlgo::get_to_prefetch(float _time, int& num_acc, std::vector<ACC_T>& acc
   
   return 0;
 }
+
+/************************************  RMJMPAlgo : MJMPAlgo  **************************************/
+RMJMPAlgo::RMJMPAlgo(std::vector<palgo_t__context_size_pair> palgo_t__context_size_v,
+                    float beta)
+: MJMPAlgo(palgo_t__context_size_v, beta)
+{
+  // 
+  log_(INFO, "constructed; \n" << to_str() )
+}
+
+RMJMPAlgo::~RMJMPAlgo() { log_(INFO, "destructed.") }
+
+std::string RMJMPAlgo::to_str()
+{
+  std::stringstream ss;
+  ss << "MJMPAlgo::to_str= \n" << MJMPAlgo::to_str() << "\n";
+  
+  return ss.str();
+}
+
+int RMJMPAlgo::get_to_prefetch(float _time, int& num_acc, std::vector<ACC_T>& acc_v,
+                               const std::vector<ACC_T>& cached_acc_v, std::vector<ACC_T>& eacc_v)
+{
+  int err;
+  for (int i = 0; i < palgo_v.size(); i++) {
+    std::vector<ACC_T>& t_acc_v = *palgo_id__last_predicted_acc_v_v[i];
+    t_acc_v.clear();
+    std::vector<ACC_T> t_eacc_v;
+    int t_num_acc = num_acc;
+    return_if_err(palgo_v[i]->get_to_prefetch(_time, num_acc, t_acc_v, std::vector<ACC_T>(), t_eacc_v), err)
+  }
+  
+  float weight_sum = 0;
+  for (std::vector<float>::iterator it = palgo_id__weight_v.begin(); it != palgo_id__weight_v.end(); it++)
+    weight_sum += powf(2, *it);
+  
+  float _rand = static_cast<float>(rand() ) / static_cast<float>(RAND_MAX) - 0.0001;
+  float prob_sum = 0;
+  int i = 0, palgo_id;
+  for (std::vector<float>::iterator it = palgo_id__weight_v.begin(); it != palgo_id__weight_v.end(); it++, i++) {
+    prob_sum += powf(2, *it) / weight_sum;
+    // std::cout << "weight_sum= " << weight_sum << ", weight= " << powf(2, *it) << ", _rand= " << _rand << ", prob_sum= " << prob_sum << "\n";
+    if (_rand < prob_sum) {
+      // log_(INFO, "_rand= " << _rand << " < prob_sum= " << prob_sum << ", palgo_id= " << i)
+      // std::cout << "_rand= " << _rand << " < prob_sum= " << prob_sum << ", palgo_id= " << i << "\n";
+      palgo_id = i;
+      break;
+    }
+  }
+  
+  palgo_id_used_v.push_back(palgo_id);
+  acc_v = *palgo_id__last_predicted_acc_v_v[palgo_id];
+  num_acc = acc_v.size();
+  last_predicted_acc_v = acc_v;
+  // 
+  for (std::set<ACC_T>::iterator it = acc_s.begin(); it != acc_s.end(); it++) {
+    if (std::find(cached_acc_v.begin(), cached_acc_v.end(), *it) == cached_acc_v.end() && 
+        std::find(acc_v.begin(), acc_v.end(), *it) == acc_v.end() )
+      eacc_v.push_back(*it);
+  }
+  
+  return 0;
+}
+

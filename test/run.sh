@@ -11,7 +11,6 @@ NUM_PUTGET_THREADS=1
 DATA_SIZE=$((1024*1024*1024))
 
 NUM_DSCNODES=2 # 96
-NUM_PEER=1
 
 if [[ $1  == 's' || $1  == 'ds' ]]; then
   [ -a conf ] && rm srv.lck conf dataspaces.conf
@@ -20,30 +19,24 @@ if [[ $1  == 's' || $1  == 'ds' ]]; then
   
   echo "## Config file for DataSpaces
   ndim = 3
-  dims = 256,256,256
+  dims = 1024,1024,1024
   max_versions = 1
   max_readers = 1
   lock_type = 1
   " > dataspaces.conf
   
   $GDB $DSPACES_DIR/bin/./dataspaces_server --server 1 --cnodes $NUM_DSCNODES
-elif [[ $1  == 'p' || $1  == 'dp' ]]; then
+elif [[ $1  == 'p' || $1  == 'dp' || $1  == 'g' || $1  == 'dg' ]]; then
+  TYPE=put_test
+  APP_ID=1
   GDB=
   [ $1  = 'dp' ] && GDB="gdb --args"
+  [[ $1  == 'g' || $1  == 'dg' ]] && { TYPE=get_test; APP_ID=2; }
   
-  export MALLOC_CHECK_=2
+  # export MALLOC_CHECK_=2
   # unset MALLOC_CHECK_
   export GLOG_logtostderr=1
-  $GDB ./exp --type=put_test --app_id=1 --num_peer=$NUM_PEER \
-             --num_putget_threads=$NUM_PUTGET_THREADS --data_size=$DATA_SIZE
-elif [[ $1  == 'g' || $1  == 'dg' ]]; then
-  GDB=
-  [ $1  = 'dg' ] && GDB="gdb --args"
-  
-  export MALLOC_CHECK_=2
-  # unset MALLOC_CHECK_
-  export GLOG_logtostderr=1
-  $GDB ./exp --type=get_test --app_id=2 --num_peer=$NUM_PEER \
+  $GDB ./exp --type=$TYPE --app_id=$APP_ID --num_peer=1 \
              --num_putget_threads=$NUM_PUTGET_THREADS --data_size=$DATA_SIZE
 elif [ $1  = 'init' ]; then
   if [ $2  = 'd' ]; then
@@ -52,28 +45,6 @@ elif [ $1  = 'init' ]; then
     export DSPACES_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces/install
     echo "DSPACES_DIR= "$DSPACES_DIR
   fi
-# elif [ $1  = 'tp' ]; then
-#   NUM_PUTTER=64
-#   $MPIRUN -n $NUM_PUTTER -host $NODE \
-#     $DSPACES_DIR/bin/test_writer DATASPACES $NUM_PUTTER 3 4 4 4 64 64 64 20 1
-# elif [ $1  = 'tg' ]; then
-#   NUM_GETTER=32
-#   $MPIRUN -n $NUM_GETTER -host $NODE \
-#     $DSPACES_DIR/bin/test_writer DATASPACES $NUM_GETTER 3 2 4 4 128 64 64 20 2
 else
   echo "Argument did not match !"
 fi
-
-# ## Config file for DataSpaces
-# # ndim = 3
-# # dims = 12800,12800,12800
-# ndim = 2
-# dims = 12800,12800
-# # ndim = 1
-# # dims = 1280123123
-# # 
-# max_versions = 1
-# max_readers = 100
-
-# # Lock type: 1 - generic, 2 - custom
-# lock_type = 1

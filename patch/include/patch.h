@@ -155,6 +155,11 @@ namespace patch {
         return 0;
       }
       
+      int size() {
+        boost::lock_guard<boost::mutex> guard(this->mutex);
+        return v.size();
+      }
+      
       bool contains(T e) {
         boost::lock_guard<boost::mutex> guard(this->mutex);
         return (std::find(v.begin(), v.end(), e) != v.end() );
@@ -180,6 +185,63 @@ namespace patch {
         for (typename std::vector<T>::iterator it = v.begin(); it != v.end(); it++) {
           ss << *it;
           if (it != (v.end() - 1) )
+            ss << ", ";
+        }
+        
+        return ss.str();
+      }
+  };
+  
+  template <typename T>
+  struct thread_safe_set {
+    private:
+      boost::mutex mutex;
+      typename std::set<T> s;
+    public:
+      thread_safe_set() {}
+      ~thread_safe_set() {}
+      
+      void add(T e) {
+        boost::lock_guard<boost::mutex> guard(this->mutex);
+        s.insert(e);
+      }
+      
+      int del(T e) {
+        boost::lock_guard<boost::mutex> guard(this->mutex);
+        s.erase(std::find(s.begin(), s.end(), e) );
+        return 0;
+      }
+      
+      int size() {
+        boost::lock_guard<boost::mutex> guard(this->mutex);
+        return s.size();
+      }
+      
+      bool contains(T e) {
+        boost::lock_guard<boost::mutex> guard(this->mutex);
+        return (std::find(s.begin(), s.end(), e) != s.end() );
+      }
+      
+      typename std::set<T>::iterator begin() {
+        boost::lock_guard<boost::mutex> guard(this->mutex);
+        return s.begin();
+      }
+      
+      typename std::set<T>::iterator end() {
+        boost::lock_guard<boost::mutex> guard(this->mutex);
+        return s.end();
+      }
+      
+      void clear() {
+        boost::lock_guard<boost::mutex> guard(this->mutex);
+        s.clear();
+      }
+      
+      std::string to_str() {
+        std::stringstream ss;
+        for (typename std::set<T>::iterator it = s.begin(); it != s.end(); it++) {
+          ss << *it;
+          if (it != (s.end() - 1) )
             ss << ", ";
         }
         
@@ -380,6 +442,8 @@ namespace patch {
       typename std::deque<T>::iterator begin() { return q.begin(); }
       
       typename std::deque<T>::iterator end() { return q.end(); }
+      
+      void clear() { q.clear(); }
       
       void push(T const& value) {
         if (q.size() == size)

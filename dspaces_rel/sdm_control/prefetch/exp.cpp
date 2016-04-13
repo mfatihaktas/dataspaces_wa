@@ -106,12 +106,10 @@ int main(int argc, char **argv)
     // m_prefetch_test();
     // mpcsim_test();
     // test_fixed_train();
-    // test_rand_shuffle_train();
-    // test_rand_shuffle_train_w_varying_cache();
-    // plot_hit_rate_vs_cache_size(); 
-    // plot_hit_rate_w_real();
+    test_rand_shuffle_train();
+    // plot_hit_rate_vs_cache_size();
     // test_talgo();
-    plot_talgo_hit_rate_vs_stdev();
+    // plot_talgo_hit_rate_vs_cache_size_2();
     // test_gnuplot();
     
     log_(INFO, "exec(ls)= \n" << exec("ls") )

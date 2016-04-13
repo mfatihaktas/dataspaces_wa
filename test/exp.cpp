@@ -71,7 +71,7 @@ int main(int argc , char** argv__)
   // DSDriver ds_driver(num_peer, app_id);
   
   if (str_cstr_equals(opt_map["type"], "put_test") ) {
-    ds_test.run_multithreaded_put_test("thread", data_size);
+    ds_test.run_multithreaded_put_test("", data_size);
     // ds_test.exp_put(data_size);
     
     std::cout << "Enter \n";
@@ -81,7 +81,7 @@ int main(int argc , char** argv__)
     // sleep(3); // wait for getter to lock on things first
     std::cout << "Enter for run_multithreaded_get_test \n";
     getline(std::cin, temp);
-    ds_test.run_multithreaded_get_test("thread", data_size);
+    ds_test.run_multithreaded_get_test("", data_size);
     
     // std::cout << "Enter for exp_get... \n";
     // getline(std::cin, temp);

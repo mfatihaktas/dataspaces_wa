@@ -32,6 +32,17 @@ namespace patch_sdm {
     return h; // return h % HASH_PRIME_3;
   }
   
+  // unsigned int hash_str(std::string str)
+  // {
+  //   unsigned int seed = 0;
+  //   const char* char_ = str.c_str();
+  //   unsigned int hash = seed;
+  //   while (*char_)
+  //     hash = hash * 101  +  *char_++;
+    
+  //   return hash;
+  // }
+  
   /********************************************  MsgCoder  ******************************************/
   MsgCoder::MsgCoder() { /* LOG(INFO) << "MsgCoder:: constructed."; */ }
   MsgCoder::~MsgCoder() { /* LOG(INFO) << "MsgCoder:: destructed."; */ }

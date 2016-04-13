@@ -125,13 +125,13 @@ int WADSDriver::get(bool blocking, std::string key, unsigned int ver, std::strin
     return 1;
   }
   
-  sleep(1);
-  if (ds_driver_->get(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_) ) {
-    log_(ERROR, "ds_driver_->get failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) )
-    return 1;
-  }
+  // sleep(1);
+  try_n_times__return_if_err(ds_driver_->get(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_), err, 3, 
+                             log_(ERROR, "ds_driver_->get failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) ))
   data_id__ds_id_map.del(data_id);
   // 
+  log_(INFO, "ds_driver_->get is completed for " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) << "\n"
+             "\t lsdm_node_->send_msg_to_master'ing GET_DONE...")
   msg_map["type"] = GET_DONE;
   return_if_err(lsdm_node_->send_msg_to_master(PACKET_RIMSG, msg_map), err)
   

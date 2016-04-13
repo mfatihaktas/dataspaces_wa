@@ -154,6 +154,7 @@ int DSDriver::sync_put(const char* var_name, unsigned int ver, int size,
     r = dspaces_put(var_name, ver, size,
                     ndim, lb_, ub_, data_);
   }
+  // Note: this is crucial for waiting for the server to fully recv and log "finished recving ..."
   dspaces_put_sync();
   
   // do_timing("sync_put");
@@ -243,8 +244,7 @@ int DSDriver::sync_put(const char* var_name, unsigned int ver, int size,
 int DSDriver::reg_get_wait_for_completion(const char* var_name, unsigned int ver, int size,
                                           int ndim, uint64_t *gdim_, uint64_t *lb_, uint64_t *ub_, void* data_)
 {
-  get_info_bq.push(
-    boost::make_shared<get_info>(var_name, ver, size, ndim, gdim_, lb_, ub_, &data_) );
+  get_info_bq.push(boost::make_shared<get_info>(var_name, ver, size, ndim, gdim_, lb_, ub_, &data_) );
   
   log_(INFO, "waiting for get <var_name= " << var_name << ", ver= " << ver << ">...")
   unsigned int sync_point = patch::hash_str(get_data_id(var_name, ver, ndim, lb_, ub_) );
@@ -254,6 +254,17 @@ int DSDriver::reg_get_wait_for_completion(const char* var_name, unsigned int ver
   log_(INFO, "done waiting for get <var_name= " << var_name << ", ver= " << ver << ">.")
   
   return hashed_data_id__get_return_map[sync_point];
+  
+  // Note: To enable faster single-threaded dspaces_get
+  /*
+  int id = boost::lexical_cast<int>(var_name[0] );
+  boost::shared_ptr<patch::BQueue> bq_;
+  if (id__get_info_bq_map.count(id) == 0)
+    id__get_info_bq_map[id] = boost::make_shared<patch::BQueue>();
+  bq_ = id__get_info_bq_map[id]
+  
+  bq_->push(boost::make_shared<get_info>(var_name, ver, size, ndim, gdim_, lb_, ub_, &data_) );
+  */
 }
 
 int DSDriver::get_poll()
@@ -273,7 +284,7 @@ int DSDriver::get_poll()
       if (counter)
         sleep(1);
       ++counter;
-    } while (!get_done && counter < 10);
+    } while (!get_done && counter < 20);
     
     int r = 1;
     if (get_done) {

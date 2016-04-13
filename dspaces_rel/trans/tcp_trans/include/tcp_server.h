@@ -19,7 +19,7 @@
 #define _TRANS_PARS_
 const int TCP_MAX_DATA_ID_LENGTH = 50;
 const int TCP_MAX_DATA_SIZE_LENGTH = 50;
-const uint64_t TCP_CHUNK_SIZE = 10*1024*1024;
+const uint64_t TCP_CHUNK_SIZE = 100*1024*1024;
 #endif // _TRANS_PARS_
 
 typedef boost::function<void(std::string, uint64_t, void*)> tcp_data_recv_cb_func;

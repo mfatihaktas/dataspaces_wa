@@ -47,6 +47,8 @@ int RFPManager::wa_put(std::string lip, std::string lport, std::string tmpfs_dir
   void* data_ = malloc(size*data_length);
   // patch_ds::debug_print(key, ver, size, ndim, gdim_, lb_, ub_, NULL, 0);
   
+  // return_if_err(ds_driver_->get(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_), err, 3,
+  //               log_(ERROR, "ds_driver_->get failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) ) )
   // try_n_times__return_if_err(ds_driver_->get(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_), err, 3,
   //                           log_(ERROR, "ds_driver_->get failed; " << KV_LUCOOR_TO_STR(key, ver, lb_, ub_) ) )
   // try_n_times__return_if_err(ds_driver_->reg_get_wait_for_completion(key.c_str(), ver, size, ndim, gdim_, lb_, ub_, data_), err, 3,
@@ -258,6 +260,31 @@ void RIManager::handle_get(bool blocking, int cl_id, std::map<std::string, std::
       }
     }
   }
+  // Note: For nstx_sync_sim
+  // bool wait = true;
+  // {
+  //   boost::lock_guard<boost::mutex> guard(ns_m);
+    
+  //   if (ns_cl_id_v.contains(cl_id) ) {
+  //     ns_cl_id_v.clear();
+  //   }
+    
+  //   ns_cl_id_v.push_back(cl_id);
+  //   if (ns_cl_id_v.size() > 6) {
+  //     wait = false;
+  //     for (std::vector<unsigned int>::iterator it = ns_sync_point_v.begin(); it != ns_sync_point_v.end(); it++)
+  //       ri_syncer.notify(*it);
+  //     ns_sync_point_v.clear();
+  //   }
+  // }
+  // if (wait) {
+  //   unsigned int sync_point = patch_sdm::hash_str("ns_sim" + patch_sdm::get_data_id(data_id_t, get_map) );
+  //   ns_sync_point_v.push_back(sync_point);
+  //   ri_syncer.add_sync_point(sync_point, 1);
+  //   ri_syncer.wait(sync_point);
+  //   ri_syncer.del_sync_point(sync_point);
+  // }
+  
   if (lsdm_node_->send_msg(cl_id, PACKET_RIMSG, get_map) ) {
     log_(ERROR, "lsdm_node_->send_msg_to_master failed; get_map= \n" << patch::map_to_str<>(get_map) )
     patch::free_all<uint64_t>(3, gdim_, lb_, ub_);

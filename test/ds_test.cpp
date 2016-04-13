@@ -153,12 +153,12 @@ int DSTest::exp_get(uint64_t data_size)
 }
 
 // -----------------------------------  Multi-threaded  ----------------------------------------- //
-#define NUM_REP 1
+#define NUM_REP 5
 
 int DSTest::repetitive_put()
 {
   int err;
-  struct pthread_arg_struct arg_struct = put_thread_arg_struct_vector.pop_back();
+  struct pthread_arg_struct arg_struct = put_thread_arg_struct_v.pop_back();
   return_if_err(init(arg_struct.data_size), err)
   uint64_t data_size = (arg_struct.data_size == 0) ? MSG_SIZE : arg_struct.data_size;
   
@@ -186,7 +186,7 @@ int DSTest::repetitive_put()
 
 int DSTest::repetitive_get()
 {
-  struct pthread_arg_struct arg_struct = get_thread_arg_struct_vector.pop_back();
+  struct pthread_arg_struct arg_struct = get_thread_arg_struct_v.pop_back();
   int err;
   return_if_err(init(arg_struct.data_size), err)
   uint64_t data_size = (arg_struct.data_size == 0) ? MSG_SIZE : arg_struct.data_size;
@@ -229,7 +229,7 @@ int DSTest::run_multithreaded_put_test(std::string base_key, uint64_t data_size)
     arg_struct.base_key = base_key;
     arg_struct.data_size = data_size;
     
-    put_thread_arg_struct_vector.push_back(arg_struct);
+    put_thread_arg_struct_v.push_back(arg_struct);
     
     // log(INFO, "Enter to continue with run_multithreaded_put_test")
     // std::string temp;
@@ -250,7 +250,7 @@ int DSTest::run_multithreaded_get_test(std::string base_key, uint64_t data_size)
     arg_struct.base_key = base_key;
     arg_struct.data_size = data_size;
     
-    get_thread_arg_struct_vector.push_back(arg_struct);
+    get_thread_arg_struct_v.push_back(arg_struct);
     
     wrap_DSTest* wrap_ = new wrap_DSTest(this);
     return_if_err(pthread_create(get_thread_ptr_vector[i], NULL, call_repetitive_get_w_wrap, wrap_), err)

@@ -47,7 +47,7 @@ TSTAMPEDE_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces
 STAMPEDE_DIR=/home1/03016/mfatih
 FSTAMPEDE_DIR=$STAMPEDE_DIR/log
 
-# TELF_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces
+TELF_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces
 # TELF_DIR=/cac/u01/mfa51/Desktop/dataspaces/dataspaces-1.6.0
 # TELF_DIR=/cac/u01/mfa51/Desktop/dataspaces_wa
 # TELF_DIR=/cac/u01/mfa51/Desktop/boost_1_56_0

@@ -98,7 +98,7 @@ std::map<std::string, std::string> parse_opts(int argc, char** argv)
 const float INTER_ARR_TIME = 0; // sec
 const float GET_ARR_RATE = (float)1/20; // num_arr / sec
 
-const uint64_t TEST_DATA_SIZE = 800*1024*1024; // 1024*1024*1024;
+const uint64_t TEST_DATA_SIZE = 600*1024*1024; // 1024*1024*1024;
 const uint64_t TEST_DATA_LENGTH = TEST_DATA_SIZE/sizeof(int);
 const uint64_t TEST_UB_LIMIT = floor(pow(TEST_DATA_LENGTH, (float)1/NDIM) );
 const int TEST_VER = 0;
@@ -131,6 +131,7 @@ void mget_test(int num_get,
       log_s(log_file, ERROR, "wads_driver.get failed for var_name= " << var_name << ", will abort...")
       break;
     }
+    log_(INFO, "got; " << KV_TO_STR(var_name, TEST_VER) )
     get_tprofiler.end_event(i);
     // int counter = 0;
     // while (1) {
@@ -299,11 +300,11 @@ int main(int argc , char **argv)
   getline(std::cin, temp);
   if (str_cstr_equals(opt_map["type"], "mput") ) {
     mput_test(boost::lexical_cast<int>(opt_map["num_putget"] ),
-              std::string("dummy_") + boost::lexical_cast<std::string>(cl_id), wads_driver, putget_tprofiler, log_file);
+              boost::lexical_cast<std::string>(cl_id), wads_driver, putget_tprofiler, log_file);
   }
   else if (str_cstr_equals(opt_map["type"], "mget") ) {
     mget_test(boost::lexical_cast<int>(opt_map["num_putget"] ),
-              std::string("dummy_") + boost::lexical_cast<std::string>(cl_id), wads_driver, putget_tprofiler, log_file);
+              boost::lexical_cast<std::string>(cl_id), wads_driver, putget_tprofiler, log_file);
   }
   else {
     log_(ERROR, "unknown type= " << opt_map["type"] )

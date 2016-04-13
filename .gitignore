@@ -4,3 +4,4 @@ cache
 dummy
 *.png
 *.log
+.zed*

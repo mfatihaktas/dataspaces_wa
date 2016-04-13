@@ -24,8 +24,8 @@ class DSTest {
     // 
     patch_test::thread_safe_vec<pthread_t*> put_thread_ptr_vector;
     patch_test::thread_safe_vec<pthread_t*> get_thread_ptr_vector;
-    patch_test::thread_safe_vec<struct pthread_arg_struct> put_thread_arg_struct_vector;
-    patch_test::thread_safe_vec<struct pthread_arg_struct> get_thread_arg_struct_vector;
+    patch_test::thread_safe_vec<struct pthread_arg_struct> put_thread_arg_struct_v;
+    patch_test::thread_safe_vec<struct pthread_arg_struct> get_thread_arg_struct_v;
   public:
     DSTest(int num_dscnodes, int app_id, int num_putget_threads);
     ~DSTest();
